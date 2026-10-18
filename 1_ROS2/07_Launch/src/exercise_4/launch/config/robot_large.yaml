@@ -1,0 +1,28 @@
+# Large robot configuration - Heavy-duty industrial transport
+battery_monitor:
+  ros__parameters:
+    robot_id: "AMR-HEAVY-TRANSPORT-L01"
+    battery_capacity_ah: 200.0  # Large battery for heavy loads
+    battery_voltage_nominal: 48.0
+    monitor_rate_hz: 1.0  # Slower updates for stable transport
+    simulate_failure: false
+
+navigation_controller:
+  ros__parameters:
+    robot_id: "AMR-HEAVY-TRANSPORT-L01"
+    max_speed_ms: 1.0  # Slower for safety with heavy loads
+    safety_radius_m: 1.5  # Wide safety zone
+    simulate_failure: false
+
+task_processor:
+  ros__parameters:
+    robot_id: "AMR-HEAVY-TRANSPORT-L01"
+    robot_type: "transport"
+    max_tasks_per_hour: 20  # Fewer tasks, heavy items
+    simulate_failure: false
+
+fleet_monitor:
+  ros__parameters:
+    fleet_id: "HEAVY-TRANSPORT-FLEET"
+    num_robots: 5
+    monitor_rate_hz: 0.5
