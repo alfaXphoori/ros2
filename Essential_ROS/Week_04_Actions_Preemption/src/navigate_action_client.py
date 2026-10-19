@@ -10,6 +10,7 @@ import time
 import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionClient
+from rclpy.executors import ExternalShutdownException
 from example_interfaces.action import Fibonacci
 
 
@@ -17,6 +18,7 @@ class NavigateActionClient(Node):
     def __init__(self):
         super().__init__('navigate_action_client')
         self._action_client = ActionClient(self, Fibonacci, '/navigate_distance')
+        self._cancel_timer = None
 
     def send_goal(self, order=6, test_cancel=False):
         self.get_logger().info('⏳ Waiting for /navigate_distance action server...')
@@ -43,12 +45,21 @@ class NavigateActionClient(Node):
 
         if test_cancel:
             self.get_logger().warn('⚠️ Triggering Goal Cancellation in 1.5 seconds...')
-            time.sleep(1.5)
-            cancel_future = goal_handle.cancel_goal_async()
-            cancel_future.add_done_callback(self.cancel_done_callback)
+            # Use non-blocking timer instead of time.sleep
+            self._cancel_timer = self.create_timer(
+                1.5, lambda: self._do_cancel(goal_handle)
+            )
         else:
             get_result_future = goal_handle.get_result_async()
             get_result_future.add_done_callback(self.get_result_callback)
+
+    def _do_cancel(self, goal_handle):
+        if self._cancel_timer:
+            self._cancel_timer.cancel()
+            self._cancel_timer = None
+        self.get_logger().warn('🛑 Sending cancel request now...')
+        cancel_future = goal_handle.cancel_goal_async()
+        cancel_future.add_done_callback(self.cancel_done_callback)
 
     def feedback_callback(self, feedback_msg):
         self.get_logger().info(f'📊 Feedback received: sequence={feedback_msg.feedback.sequence}')

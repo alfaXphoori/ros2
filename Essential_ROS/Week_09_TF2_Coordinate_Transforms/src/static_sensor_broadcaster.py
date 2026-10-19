@@ -10,7 +10,19 @@ import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import TransformStamped
 from tf2_ros.static_transform_broadcaster import StaticTransformBroadcaster
-import tf_transformations
+
+
+def euler_to_quaternion(roll, pitch, yaw):
+    r, p, y = roll * 0.5, pitch * 0.5, yaw * 0.5
+    cr, sr = math.cos(r), math.sin(r)
+    cp, sp = math.cos(p), math.sin(p)
+    cy, sy = math.cos(y), math.sin(y)
+    return (
+        sr * cp * cy - cr * sp * sy,
+        cr * sp * cy + sr * cp * sy,
+        cr * cp * sy - sr * sp * cy,
+        cr * cp * cy + sr * sp * sy
+    )
 
 
 class StaticSensorBroadcaster(Node):
@@ -47,7 +59,7 @@ class StaticSensorBroadcaster(Node):
         t_optical.header.stamp = self.get_clock().now().to_msg()
         t_optical.header.frame_id = 'camera_link'
         t_optical.child_frame_id = 'camera_optical_link'
-        q = tf_transformations.quaternion_from_euler(-math.pi/2, 0, -math.pi/2)
+        q = euler_to_quaternion(-math.pi/2, 0.0, -math.pi/2)
         t_optical.transform.rotation.x = q[0]
         t_optical.transform.rotation.y = q[1]
         t_optical.transform.rotation.z = q[2]

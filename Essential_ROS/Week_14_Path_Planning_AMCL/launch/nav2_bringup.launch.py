@@ -9,7 +9,7 @@ def generate_launch_description():
     pkg_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
     root_dir = os.path.dirname(pkg_dir)
 
-    default_map = os.path.join(root_dir, '04_SLAM_Mapping', 'maps', 'warehouse_map.yaml')
+    default_map = os.path.join(root_dir, 'Week_12_SLAM_Mapping_Ceres', 'maps', 'warehouse_map.yaml')
     default_params = os.path.join(pkg_dir, 'config', 'nav2_params.yaml')
 
     map_arg = DeclareLaunchArgument('map', default_value=default_map, description='Full path to map yaml file')

@@ -11,7 +11,11 @@ import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist, TransformStamped
 from nav_msgs.msg import Odometry
-import tf_transformations
+
+
+def yaw_to_quaternion(yaw):
+    half = yaw * 0.5
+    return (0.0, 0.0, math.sin(half), math.cos(half))
 
 
 class DiffDriveKinematics(Node):
@@ -95,8 +99,8 @@ class DiffDriveKinematics(Node):
         odom_msg.pose.pose.position.y = self.y
         odom_msg.pose.pose.position.z = 0.0
 
-        # Euler to Quaternion
-        q = tf_transformations.quaternion_from_euler(0, 0, self.theta)
+        # Euler to Quaternion (2D Yaw)
+        q = yaw_to_quaternion(self.theta)
         odom_msg.pose.pose.orientation.x = q[0]
         odom_msg.pose.pose.orientation.y = q[1]
         odom_msg.pose.pose.orientation.z = q[2]

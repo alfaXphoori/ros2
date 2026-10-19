@@ -26,7 +26,7 @@
 | **13** | **Nav2 Costmaps & Layers** | [`Week_13/Readme.md`](Week_13_Nav2_Costmaps_Layers/Readme.md) | [`Lab.md`](Week_13_Nav2_Costmaps_Layers/Lab_Exercises.md) | [`costmap_params.yaml`](Week_13_Nav2_Costmaps_Layers/config/costmap_params.yaml) |
 | **14** | **Path Planning & AMCL** | [`Week_14/Readme.md`](Week_14_Path_Planning_AMCL/Readme.md) | [`Lab.md`](Week_14_Path_Planning_AMCL/Lab_Exercises.md) | [`nav2_params.yaml`](Week_14_Path_Planning_AMCL/config/nav2_params.yaml)<br>[`nav2_bringup.launch.py`](Week_14_Path_Planning_AMCL/launch/nav2_bringup.launch.py)<br>[`amcl_initial_pose.py`](Week_14_Path_Planning_AMCL/src/amcl_initial_pose.py) |
 | **15** | **Waypoint Patrol & BT** | [`Week_15/Readme.md`](Week_15_Waypoint_Patrol_BT/Readme.md) | [`Lab.md`](Week_15_Waypoint_Patrol_BT/Lab_Exercises.md) | [`waypoint_patrol.py`](Week_15_Waypoint_Patrol_BT/src/waypoint_patrol.py) |
-| **16** | **🏆 Final Practical Demo** | [`Week_16/Readme.md`](Week_16_Final_Demonstration/Readme.md) | [`Rubric.md`](Week_16_Final_Demonstration/Evaluation_Rubric.md) | [`final_amr_system.launch.py`](Week_16_Final_Demonstration/launch/final_amr_system.launch.py)<br>[`final_mission_executor.py`](Week_16_Final_Demonstration/src/final_mission_executor.py) |
+| **16** | **🏆 Final Practical Demo** | [`Week_16/Readme.md`](Week_16_Final_Demonstration/Readme.md) | [`Lab.md`](Week_16_Final_Demonstration/Lab_Exercises.md)<br>[`Rubric.md`](Week_16_Final_Demonstration/Evaluation_Rubric.md) | [`final_amr_system.launch.py`](Week_16_Final_Demonstration/launch/final_amr_system.launch.py)<br>[`final_mission_executor.py`](Week_16_Final_Demonstration/src/final_mission_executor.py) |
 
 ---
 

@@ -33,6 +33,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-jazzy-navigation2 \
     ros-jazzy-nav2-bringup \
     ros-jazzy-nav2-simple-commander \
+    # Lab helpers used by the weekly exercises
+    ros-jazzy-teleop-twist-keyboard \
+    ros-jazzy-demo-nodes-py \
+    ros-jazzy-tf-transformations \
+    python3-transforms3d \
+    ros-jazzy-rqt-graph \
+    ros-jazzy-rqt-plot \
+    ros-jazzy-cv-bridge \
+    python3-pytest \
  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /workspace

@@ -4,9 +4,10 @@ Lab 1.5: Modular Python Launch System
 Launches the core communication subsystem: Publisher, Subscriber, Service Server, Action Server, and Parameter Node.
 """
 
+import os
 from launch import LaunchDescription
 from launch_ros.actions import Node
-from launch.actions import DeclareLaunchArgument
+from launch.actions import DeclareLaunchArgument, ExecuteProcess
 from launch.substitutions import LaunchConfiguration
 
 
@@ -27,42 +28,39 @@ def generate_launch_description():
     fleet_id = LaunchConfiguration('fleet_id')
 
     pkg_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-    src_dir = os.path.join(pkg_dir, 'src')
+    essential_dir = os.path.dirname(pkg_dir)
+
+    # Resolve paths to nodes across the core communication weeks
+    sensor_pub_path = os.path.join(essential_dir, 'Week_02_Nodes_Topics_QoS', 'src', 'sensor_qos_publisher.py')
+    power_srv_path = os.path.join(essential_dir, 'Week_03_Services_Clients', 'src', 'power_service_server.py')
+    action_srv_path = os.path.join(essential_dir, 'Week_04_Actions_Preemption', 'src', 'navigate_action_server.py')
+    params_path = os.path.join(pkg_dir, 'src', 'fleet_parameters.py')
 
     # 1. Sensor QoS Publisher
-    sensor_pub_node = Node(
-        executable=os.path.join(src_dir, 'sensor_qos_publisher.py'),
+    sensor_pub_node = ExecuteProcess(
+        cmd=['python3', sensor_pub_path],
         name='sensor_qos_publisher',
-        namespace=robot_ns,
         output='screen'
     )
 
     # 2. Power Service Server
-    power_srv_node = Node(
-        executable=os.path.join(src_dir, 'power_service_server.py'),
+    power_srv_node = ExecuteProcess(
+        cmd=['python3', power_srv_path],
         name='power_service_server',
-        namespace=robot_ns,
         output='screen'
     )
 
     # 3. Action Server
-    action_srv_node = Node(
-        executable=os.path.join(src_dir, 'navigate_action_server.py'),
+    action_srv_node = ExecuteProcess(
+        cmd=['python3', action_srv_path],
         name='navigate_action_server',
-        namespace=robot_ns,
         output='screen'
     )
 
     # 4. Fleet Parameters Node
-    params_node = Node(
-        executable=os.path.join(src_dir, 'fleet_parameters.py'),
+    params_node = ExecuteProcess(
+        cmd=['python3', params_path],
         name='fleet_parameters',
-        namespace=robot_ns,
-        parameters=[{
-            'fleet_id': fleet_id,
-            'max_linear_speed': 1.0,
-            'safety_margin': 0.4
-        }],
         output='screen'
     )
 
