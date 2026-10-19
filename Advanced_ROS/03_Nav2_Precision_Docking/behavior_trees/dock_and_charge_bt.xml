@@ -1,0 +1,21 @@
+<!--
+  Advanced Nav2 Behavior Tree: Autonomous Docking & Auto-Charging
+  Pipeline: Check Battery -> Navigate to Staging Area -> Run Precision Docking -> Wait/Charge
+-->
+<root main_tree_to_execute="MainTree">
+  <BehaviorTree ID="MainTree">
+    <Sequence name="DockAndChargeSequence">
+      <!-- 1. Check if Battery is low or charge task commanded -->
+      <Condition ID="IsBatteryLow" min_battery="20.0"/>
+
+      <!-- 2. Navigate AMR to Docking Staging Area (0.6m in front of dock) -->
+      <Action ID="NavigateToPose" goal="{staging_pose}"/>
+
+      <!-- 3. Engage Nav2 Docking Server for Millimeter-level Alignment -->
+      <Action ID="DockRobot" dock_id="charging_station_01" max_staging_time="15.0"/>
+
+      <!-- 4. Wait while charging to 100% -->
+      <Action ID="Wait" wait_duration="30"/>
+    </Sequence>
+  </BehaviorTree>
+</root>

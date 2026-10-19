@@ -26,10 +26,12 @@ def generate_launch_description():
     robot_ns = LaunchConfiguration('robot_ns')
     fleet_id = LaunchConfiguration('fleet_id')
 
+    pkg_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+    src_dir = os.path.join(pkg_dir, 'src')
+
     # 1. Sensor QoS Publisher
     sensor_pub_node = Node(
-        package='01_ROS2_Core',
-        executable='sensor_qos_publisher.py',
+        executable=os.path.join(src_dir, 'sensor_qos_publisher.py'),
         name='sensor_qos_publisher',
         namespace=robot_ns,
         output='screen'
@@ -37,8 +39,7 @@ def generate_launch_description():
 
     # 2. Power Service Server
     power_srv_node = Node(
-        package='01_ROS2_Core',
-        executable='power_service_server.py',
+        executable=os.path.join(src_dir, 'power_service_server.py'),
         name='power_service_server',
         namespace=robot_ns,
         output='screen'
@@ -46,8 +47,7 @@ def generate_launch_description():
 
     # 3. Action Server
     action_srv_node = Node(
-        package='01_ROS2_Core',
-        executable='navigate_action_server.py',
+        executable=os.path.join(src_dir, 'navigate_action_server.py'),
         name='navigate_action_server',
         namespace=robot_ns,
         output='screen'
@@ -55,8 +55,7 @@ def generate_launch_description():
 
     # 4. Fleet Parameters Node
     params_node = Node(
-        package='01_ROS2_Core',
-        executable='fleet_parameters.py',
+        executable=os.path.join(src_dir, 'fleet_parameters.py'),
         name='fleet_parameters',
         namespace=robot_ns,
         parameters=[{

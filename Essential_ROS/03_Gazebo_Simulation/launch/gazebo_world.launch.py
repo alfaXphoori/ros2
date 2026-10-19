@@ -13,7 +13,7 @@ def generate_launch_description():
     
     world_path = os.path.join(pkg_dir, 'worlds', 'warehouse.sdf')
     bridge_config_path = os.path.join(pkg_dir, 'config', 'ros_gz_bridge.yaml')
-    urdf_path = os.path.join(root_dir, '02_Modeling_TF2', 'urdf', 'diff_drive_robot.urdf')
+    urdf_path = os.path.join(root_dir, '02_Robot_Modeling_TF2', 'urdf', 'diff_drive_robot.urdf')
 
     # 1. Start Gazebo Sim
     gz_sim_launch = IncludeLaunchDescription(

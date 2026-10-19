@@ -1,0 +1,27 @@
+# Open-RMF Fleet Adapter Configuration for Warehouse AMR Fleet
+rmf_fleet:
+  name: "warehouse_amr_fleet"
+  limits:
+    linear: [0.8, 0.5]      # max velocity (m/s), max acceleration (m/s^2)
+    angular: [1.2, 1.5]     # max velocity (rad/s), max acceleration (rad/s^2)
+
+  profile:
+    footprint: 0.3          # Robot radius (meters)
+    vicinity: 0.5           # Collision avoidance bubble (meters)
+
+  reversible: false
+
+  battery_system:
+    voltage: 24.0
+    capacity: 40.0          # Amp-hours
+    charging_current: 10.0  # Amps
+    recharge_threshold: 0.20 # 20%
+    drain_battery_factor: 1.0
+
+  robots:
+    amr_01:
+      charger: "charger_alpha"
+      initial_waypoint: "pickup_bay_1"
+    amr_02:
+      charger: "charger_beta"
+      initial_waypoint: "dropoff_bay_2"

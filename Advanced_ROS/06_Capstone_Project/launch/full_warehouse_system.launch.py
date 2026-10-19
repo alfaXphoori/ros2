@@ -7,11 +7,11 @@ from launch.substitutions import LaunchConfiguration
 
 def generate_launch_description():
     pkg_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-    root_dir = os.path.dirname(pkg_dir)
+    repo_root = os.path.dirname(pkg_dir)
 
-    gazebo_launch_path = os.path.join(root_dir, '03_Gazebo_Simulation', 'launch', 'gazebo_world.launch.py')
-    nav2_launch_path = os.path.join(root_dir, '05_Nav2_Navigation', 'launch', 'nav2_bringup.launch.py')
-    display_urdf_path = os.path.join(root_dir, '02_Modeling_TF2', 'launch', 'display_urdf.launch.py')
+    gazebo_launch_path = os.path.join(repo_root, 'Essential_ROS', '03_Gazebo_Simulation', 'launch', 'gazebo_world.launch.py')
+    nav2_launch_path = os.path.join(repo_root, 'Essential_ROS', '05_Nav2_Navigation', 'launch', 'nav2_bringup.launch.py')
+    display_urdf_path = os.path.join(repo_root, 'Essential_ROS', '02_Robot_Modeling_TF2', 'launch', 'display_urdf.launch.py')
 
     # 1. Gazebo Simulation + Spawner + Bridge
     gazebo_sim = IncludeLaunchDescription(
