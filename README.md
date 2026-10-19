@@ -43,15 +43,16 @@ flowchart TD
 ## 📘 1. Essential ROS Track
 > เหมาะสำหรับผู้เริ่มต้น วิศวกร และนักวิจัยที่ต้องการสร้างแบบจำลอง ทำแผนที่ และระบบนำทางพื้นฐาน
 
-👉 **เข้าสู่หน้าหลักของ Track:** [`Essential_ROS/README.md`](Essential_ROS/README.md)
+👉 **เข้าสู่หน้าหลักของ Track:** [`Essential_ROS/README.md`](Essential_ROS/README.md) (ประกอบด้วยโฟลเดอร์บทเรียนและแล็บรายสัปดาห์ครบทั้ง 16 สัปดาห์: `Week_01` ถึง `Week_16`)
 
-| โมดูล | หัวข้อการเรียนรู้ | เอกสารคู่มือ | ใบงานแล็บ |
+| โมดูลหลัก | หัวข้อการเรียนรู้ | เอกสารคู่มือ | ใบงานแล็บ |
 | :--- | :--- | :--- | :--- |
-| **01** | **Core Communication** | [`01_Core_Communication/Readme.md`](Essential_ROS/01_Core_Communication/Readme.md) | [`Lab_Exercises.md`](Essential_ROS/01_Core_Communication/Lab_Exercises.md) |
-| **02** | **Robot Modeling & TF2** | [`02_Robot_Modeling_TF2/Readme.md`](Essential_ROS/02_Robot_Modeling_TF2/Readme.md) | [`Lab_Exercises.md`](Essential_ROS/02_Robot_Modeling_TF2/Lab_Exercises.md) |
-| **03** | **Gazebo Simulation** | [`03_Gazebo_Simulation/Readme.md`](Essential_ROS/03_Gazebo_Simulation/Readme.md) | [`Lab_Exercises.md`](Essential_ROS/03_Gazebo_Simulation/Lab_Exercises.md) |
-| **04** | **SLAM Mapping** | [`04_SLAM_Mapping/Readme.md`](Essential_ROS/04_SLAM_Mapping/Readme.md) | [`Lab_Exercises.md`](Essential_ROS/04_SLAM_Mapping/Lab_Exercises.md) |
-| **05** | **Nav2 Navigation** | [`05_Nav2_Navigation/Readme.md`](Essential_ROS/05_Nav2_Navigation/Readme.md) | [`Lab_Exercises.md`](Essential_ROS/05_Nav2_Navigation/Lab_Exercises.md) |
+| **01** | **Core Communication** (W1-W5) | [`01_Core_Communication/Readme.md`](Essential_ROS/01_Core_Communication/Readme.md) | [`Lab_Exercises.md`](Essential_ROS/01_Core_Communication/Lab_Exercises.md) |
+| **02** | **Robot Modeling & TF2** (W6-W9) | [`02_Robot_Modeling_TF2/Readme.md`](Essential_ROS/02_Robot_Modeling_TF2/Readme.md) | [`Lab_Exercises.md`](Essential_ROS/02_Robot_Modeling_TF2/Lab_Exercises.md) |
+| **03** | **Gazebo Simulation** (W10-W11) | [`03_Gazebo_Simulation/Readme.md`](Essential_ROS/03_Gazebo_Simulation/Readme.md) | [`Lab_Exercises.md`](Essential_ROS/03_Gazebo_Simulation/Lab_Exercises.md) |
+| **04** | **SLAM Mapping** (W12) | [`04_SLAM_Mapping/Readme.md`](Essential_ROS/04_SLAM_Mapping/Readme.md) | [`Lab_Exercises.md`](Essential_ROS/04_SLAM_Mapping/Lab_Exercises.md) |
+| **05** | **Nav2 Navigation** (W13-W16) | [`05_Nav2_Navigation/Readme.md`](Essential_ROS/05_Nav2_Navigation/Readme.md) | [`Lab_Exercises.md`](Essential_ROS/05_Nav2_Navigation/Lab_Exercises.md) |
+| **W01-16** | **16-Week Dedicated Labs** | [**ตารางครบ 16 สัปดาห์**](Essential_ROS/README.md#🗺️-ตารางบทเรียนและแล็บปฏิบัติการครบ-16-สัปดาห์-weeks-01---16) | [**คู่มือปฏิบัติการละเอียด**](Essential_ROS/docs/weekly_lectures_and_labs.md) |
 
 ---
 
