@@ -5,6 +5,8 @@
 **ระยะเวลาเรียน:** 16 สัปดาห์ (1 ภาคการศึกษา)  
 **มาตรฐานซอฟต์แวร์:** ROS 2 Jazzy Jalisco (LTS) | Gazebo Sim 8.15 | ros2_control | Open-RMF | SROS 2  
 
+> 📖 **คู่มือเนื้อหาบรรยายและขั้นตอนแล็บฉบับเต็ม:** ดูรายละเอียดทฤษฎี โค้ดแล็บ และคำสั่งรันทุกสัปดาห์ได้ที่ [`Advanced_ROS/docs/weekly_lectures_and_labs.md`](Advanced_ROS/docs/weekly_lectures_and_labs.md)
+
 ---
 
 ## 🎯 คำอธิบายรายวิชา (Course Description)

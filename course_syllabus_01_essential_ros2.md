@@ -4,6 +4,8 @@
 **ระยะเวลาเรียน:** 16 สัปดาห์ (1 ภาคการศึกษา)  
 **มาตรฐานซอฟต์แวร์:** ROS 2 Jazzy Jalisco (LTS) | Gazebo Sim 8.15 (Harmonic) | Ubuntu 24.04 LTS / Docker  
 
+> 📖 **คู่มือเนื้อหาบรรยายและขั้นตอนแล็บฉบับเต็ม:** ดูรายละเอียดทฤษฎี โค้ดแล็บ และคำสั่งรันทุกสัปดาห์ได้ที่ [`Essential_ROS/docs/weekly_lectures_and_labs.md`](Essential_ROS/docs/weekly_lectures_and_labs.md)
+
 ---
 
 ## 🎯 คำอธิบายรายวิชา (Course Description)
