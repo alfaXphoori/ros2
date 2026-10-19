@@ -99,5 +99,14 @@ cd /mnt/sda/ros
 
 ---
 
-## 📅 แผนการเรียน 16 สัปดาห์ (Weekly Syllabus)
-สำหรับสถาบันการศึกษา หรือการจัดอบรมในองค์กร สามารถดูรายละเอียดหลักสูตร 16 สัปดาห์ฉบับเต็มได้ที่ [`weekly_curriculum.md`](weekly_curriculum.md)
+## 🎓 แผนการสอนระดับมหาวิทยาลัย / องค์กร (Academic Courses: 2x16 Weeks)
+สำหรับสถาบันการศึกษา หรือการจัดอบรมในองค์กร หลักสูตรได้รับการออกแบบเป็น **2 รายวิชาอิสระ (ชุดละ 16 สัปดาห์ ครบ 1 ภาคการศึกษา)**:
+
+1. 📘 **วิชาชุดที่ 1:** [`course_syllabus_01_essential_ros2.md`](course_syllabus_01_essential_ros2.md)  
+   **AMR-101: Essential ROS 2 for Autonomous Mobile Robots (16 สัปดาห์)**  
+   *เน้นพื้นฐานวิศวกรรม, DDS, Topics/Services/Actions, URDF, TF2, Gazebo Sim, SLAM Toolbox และ Nav2 Stack*
+
+2. 🚀 **วิชาชุดที่ 2:** [`course_syllabus_02_advanced_ros2.md`](course_syllabus_02_advanced_ros2.md)  
+   **AMR-201: Advanced ROS 2 & Industrial Fleet Robotics (16 สัปดาห์)**  
+   *เน้นการคุมฮาร์ดแวร์จริงด้วย `ros2_control`, micro-ROS, การมองเห็นด้วย AI (YOLO/AprilTag), Nav2 Docking Server, ระบบฝูงหุ่นยนต์ Open-RMF, Lifecycle Nodes, SROS 2 และ CI/CD*
+
