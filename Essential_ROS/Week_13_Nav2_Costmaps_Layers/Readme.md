@@ -7,160 +7,215 @@
 
 ## 🎯 วัตถุประสงค์การเรียนรู้ (Learning Objectives)
 เมื่อจบบทเรียนนี้ ผู้เรียนจะสามารถ:
-1. อธิบายสถาปัตยกรรมภาพรวมของ **Navigation 2 (Nav2)** และวงจรชีวิตโหนด (Lifecycle Manager)
-2. วิเคราะห์โครงสร้าง **Layered Costmap 2D** ทั้ง 4 เลเยอร์หลัก (Static, Obstacle, Voxel, Inflation)
-3. เข้าใจการแจกแจงค่าต้นทุนอันตราย (**Cost Values: 0, 253, 254, 255**) ในการวางแผนเส้นทาง
-4. คำนวณความชันของค่าคอสต์ตามระยะทางผ่านสมการ **Inflation Decay Formula**
-5. เลือกระหว่างการใช้ **`robot_radius`** (วงกลมสมมาตร) และ **`footprint`** (รูปทรงหลายเหลี่ยมจริง) สำหรับหุ่นยนต์ AMR
+1. **วิเคราะห์สถาปัตยกรรมระบบนำทาง Nav2 Stack** และการควบคุมสถานะโหนดผ่าน Lifecycle Manager (Unconfigured, Inactive, Active, Finalized)
+2. **เข้าใจโครงสร้างแบบซ้อนทับหลายชั้นของ Costmap 2D (Layered Costmap Pipeline)**: Static Layer, Obstacle Layer, Voxel Layer, และ Inflation Layer
+3. **จำแนกความหมายของระดับต้นทุนอันตราย (Cost Values)** ทั้ง 5 ระดับ ($0, 1-252, 253, 254, 255$) และผลกระทบต่ออัลกอริทึมวางแผนเส้นทาง
+4. **คำนวณการกระจายความชันของค่าคอสต์ (Inflation Decay Exponential Formula)** การหา Inscribed Radius และ Circumscribed Radius ตามขนาดตัวถังจริง
+5. **เปรียบเทียบข้อดีและข้อจำกัดระหว่าง `robot_radius` และ `footprint` หลายเหลี่ยม** พร้อมปรับแต่ง Local Costmap (Rolling Window) และ Global Costmap
 
 ---
 
 ## ⏱️ แผนการสอน 2 ชั่วโมง (Lecture Outline)
 | ช่วงเวลา | หัวข้อ | กิจกรรมการเรียนรู้ |
 | :---: | :--- | :--- |
-| **00:00 - 00:30** | สถาปัตยกรรม Nav2: Lifecycle Nodes, Action Servers และ Costmap 2D | บรรยายภาพรวมและระบบ State Management (Unconfigured, Inactive, Active) |
-| **00:30 - 01:00** | โครงสร้าง Costmap หลายชั้น (Layered Costmap Plugin Architecture) | วิเคราะห์การซ้อนทับกันระหว่าง Static Layer, Obstacle Layer, และ Inflation Layer |
-| **01:00 - 01:30** | ค่า Cost Values และสมการการขยายรัศมีความปลอดภัย (Inflation Math) | แสดงการคำนวณสมการ Exponential Decay และการหา Inscribed Radius |
-| **01:30 - 02:00** | Code Walkthrough: `costmap_params.yaml`, Local vs Global Costmap และ Lab | เจาะลึกความแตกต่างระหว่าง Rolling Window ใน Local Costmap กับ Map ใน Global |
+| **00:00 - 00:30** | สถาปัตยกรรม Nav2: Lifecycle Nodes, Action Servers และ Costmap 2D | บรรยายภาพรวมการประสานงานระหว่าง Planner, Controller, และ Behavior Tree |
+| **00:30 - 01:00** | โครงสร้าง Costmap หลายชั้น (Layered Costmap Plugin Architecture) | วิเคราะห์กระบวนการ Marking (Ray-casting) และ Clearing ใน Obstacle Layer |
+| **01:00 - 01:30** | ค่า Cost Values และคณิตศาสตร์การขยายรัศมีความปลอดภัย (Inflation Math) | พิสูจน์สมการ Exponential Decay, การคำนวณ $r_{\text{inscribed}}$ และ $r_{\text{circumscribed}}$ |
+| **01:30 - 02:00** | Code Walkthrough: `costmap_params.yaml`, Local vs Global Costmap และ Lab | เจาะลึกคอนฟิก Footprint, Rolling Window บนเฟรม `odom`, และคำสั่ง CLI |
 
 ---
 
 ## 🏛️ สถาปัตยกรรมระบบ (Architectural Deep Dive)
 
-### 1. สถาปัตยกรรม Navigation 2 (Nav2 Stack)
+### 1. สถาปัตยกรรม Navigation 2 (Nav2 Stack Architecture)
 Nav2 คือสแตกระบบนำทางอัตโนมัติมาตรฐานอุตสาหกรรมใน ROS 2 ซึ่งถูกออกแบบใหม่หมดให้เป็นแบบ Modular, Plugin-based และควบคุมผ่านวงจรชีวิต **Lifecycle Nodes**:
 - ทุกเซิร์ฟเวอร์ใน Nav2 (Planner, Controller, Recoveries, BT Navigator) จะถูกจัดการผ่าน `lifecycle_manager`
 - หัวใจสำคัญของการหลบหลีกสิ่งกีดขวางคือ **Costmap 2D**: ตารางกริด 2 มิติที่แปลงสภาพแวดล้อมให้กลายเป็น "ต้นทุนของความเสี่ยง (Cost)" เพื่อให้อัลกอริทึมเลือกเส้นทางที่ปลอดภัยที่สุด
 
 ```mermaid
 flowchart TD
-    subgraph RawSensors ["ข้อมูลเซนเซอร์นำเข้า"]
-        StaticMap["Static Map (.yaml/.pgm)"]
+    subgraph RawSensors ["ข้อมูลเซนเซอร์นำเข้า (Sensor Inputs)"]
+        StaticMap["Static Map (.yaml/.pgm จาก SLAM)"]
         LaserScan["LiDAR LaserScan (/scan)"]
+        DepthCam["RGB-D PointCloud2 (/camera/points)"]
     end
 
-    subgraph CostmapLayers ["Layered Costmap Architecture"]
-        SL["1. Static Layer: กำแพงและโครงสร้างถาวร"]
-        OL["2. Obstacle Layer: สิ่งกีดขวางเคลื่อนที่ (Marking / Clearing)"]
-        IL["3. Inflation Layer: ขยายเขตอันตรายรอบสิ่งกีดขวาง"]
+    subgraph LayeredPipeline ["กระบวนการรวมเลเยอร์ Costmap (Layer Aggregation Pipeline)"]
+        SL["1. Static Layer<br/>(โหลดกำแพงถาวรจาก Map Server)"]
+        OL["2. Obstacle Layer<br/>(Marking และ Clearing สดจาก LiDAR)"]
+        VL["3. Voxel Layer<br/>(ตรวจจับสิ่งกีดขวาง 3D ป้องกันเพดาน/โต๊ะ)"]
+        IL["4. Inflation Layer<br/>(แผ่สนามศักย์ความปลอดภัยรอบสิ่งกีดขวาง)"]
     end
 
-    subgraph MasterGrid ["Master Costmap Grid"]
-        Values["ค่า Cost แต่ละพิกเซล (0 ถึง 254)"]
+    subgraph MasterGrid ["Master Costmap Output"]
+        Values["ตารางกริดคอสต์ค่า 0 - 255<br/>(ส่งต่อไปยัง Global Planner & Local Controller)"]
     end
 
     StaticMap --> SL
     LaserScan --> OL
+    DepthCam --> VL
     SL --> IL
     OL --> IL
+    VL --> IL
     IL --> Values
+
+    style RawSensors fill:#e1f5fe,stroke:#0288d1,stroke-width:2px
+    style LayeredPipeline fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    style MasterGrid fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
 ```
 
 ---
 
-### 2. ลำดับชั้นของเลเยอร์ใน Costmap 2D (Costmap Plugins)
-1. **Static Layer (`nav2_costmap_2d::StaticLayer`):**
-   - โหลดข้อมูลแผนที่โกดังถาวรที่ได้จาก SLAM เข้ามาเป็นฐานราก
-2. **Obstacle Layer (`nav2_costmap_2d::ObstacleLayer`):**
-   - นำข้อมูลจากเซนเซอร์สด (เช่น `/scan`) มามาร์กสิ่งกีดขวางแบบไดนามิก (กล่องสินค้า คนเดินตัดหน้า):
-     - **Marking:** จุดที่เลเซอร์สะท้อนกลับจะถูกตั้งเป็นสิ่งกีดขวาง
-     - **Clearing (Raytracing):** แนวเส้นทางที่ลำแสงเลเซอร์ยิงผ่านจะถูกล้างค่าให้กลับเป็นทางเดินโล่ง (Free)
-3. **Inflation Layer (`nav2_costmap_2d::InflationLayer`):**
-   - ขยายรัศมีความปลอดภัยรอบสิ่งกีดขวาง เพื่อให้หุ่นยนต์ที่มีมิติตัวถังขนาดใหญ่ไม่เฉี่ยวชน
+### 2. รหัสค่าต้นทุนอันตราย (Cost Values Definition)
+ใน Costmap 2D แต่ละพิกเซลจะถูกแทนด้วยตัวเลขจำนวนเต็ม $0 - 255$ (8 บิต Unsigned Integer):
+
+| ค่าตัวเลข (Cost) | ความหมายตามมาตรฐาน Nav2 | สภาพทางกายภาพ | ผลกระทบต่อ Path Planning |
+| :---: | :--- | :--- | :--- |
+| **0** | **`FREE_SPACE`** | ทางเดินโล่งปลอดภัย ไม่มีสิ่งกีดขวาง | หุ่นยนต์วิ่งผ่านได้อย่างอิสระ (Zero Cost) |
+| **1 - 252** | **Inflation Decay Zone** | โซนเตือนภัยใกล้สิ่งกีดขวาง | ยอมให้วิ่งผ่านได้หากจำเป็น แต่อัลกอริทึมจะหลีกเลี่ยง |
+| **253** | **`INSCRIBED_INFLATED_OBSTACLE`** | รัศมีวงกลมแนบในตัวถังหุ่นยนต์ | **ห้ามจุดกึ่งกลางหุ่นยนต์เข้าไปเด็ดขาด** (ตัวถังจะชนขอบวัตถุ) |
+| **254** | **`LETHAL_OBSTACLE`** | ขอบสิ่งกีดขวาง กำแพง หรือจุดตกกระทบเลเซอร์ | สิ่งกีดขวางจริง ห้ามชนโดยเด็ดขาด |
+| **255** | **`NO_INFORMATION`** | พื้นที่นอกขอบเขตแผนที่ที่เซนเซอร์มองไม่เห็น | ห้ามวางเส้นทางผ่าน (หากเปิด `track_unknown_space: true`) |
 
 ---
 
-### 3. รหัสค่าต้นทุนอันตราย (Cost Values Definition)
-ใน Costmap 2D แต่ละพิกเซลจะถูกแทนด้วยตัวเลขจำนวนเต็ม $0 - 255$:
-
-| ค่าตัวเลข (Cost) | สภาพทางกายภาพ | ผลกระทบต่อ Path Planning |
-| :---: | :--- | :--- |
-| **0** | **Free Space (พื้นที่ว่าง)** | ปลอดภัยสูงสุด หุ่นยนต์วิ่งผ่านได้อย่างอิสระ |
-| **1 - 252** | **Inflation Decay Zone (โซนเตือนภัย)** | สามารถวิ่งผ่านได้หากจำเป็น แต่อัลกอริทึมจะพยายามหลีกเลี่ยง |
-| **253** | **Inscribed Obstacle (รัศมีตัวถังชน)** | จุดศูนย์กลางหุ่นยนต์ **ห้ามผ่านเด็ดขาด** เพราะตัวถังจะชนสิ่งกีดขวาง |
-| **254** | **Lethal Obstacle (ตัวสิ่งกีดขวางจริง)** | กำแพง เสา หรือวัตถุแข็งที่เซนเซอร์ตรวจพบ |
-| **255** | **No Information (พื้นที่ยังไม่ทราบ)** | พื้นที่นอกขอบเขตแผนที่ที่เซนเซอร์มองไม่เห็น |
-
----
-
-### 4. คณิตศาสตร์การกระจายค่าคอสต์ (Inflation Decay Formula)
+### 3. คณิตศาสตร์การกระจายค่าคอสต์ (Inflation Decay Formula)
 ในโซนระหว่างรัศมีตัวถังหุ่นยนต์ ($r_{\text{inscribed}}$) ไปจนถึงรัศมีปลอดภัยสูงสุด ($r_{\text{inflation}}$) ค่าคอสต์จะลดลงแบบเอกซ์โพเนนเชียล (Exponential Decay):
 
-$$\text{cost}(d) = 253 \times \exp\left(-\alpha \cdot (d - r_{\text{inscribed}})\right)$$
+$$\text{cost}(d) = (\text{INSCRIBED COST} - 1) \cdot \exp\left(-\alpha \cdot (d - r_{\text{inscribed}})\right)$$
 
 โดยที่:
-- $d$: ระยะห่างจากจุดกึ่งกลางเซลล์ไปยังขอบสิ่งกีดขวาง ($m$)
+- $\text{INSCRIBED COST} = 253$ (ดังนั้นค่าเริ่มต้นจึงเป็น $253 - 1 = 252$)
+- $d$: ระยะห่างจากจุดกึ่งกลางเซลล์ไปยังขอบสิ่งกีดขวางที่ใกล้ที่สุด ($m$)
 - $r_{\text{inscribed}}$: รัศมีวงกลมแนบในของหุ่นยนต์ (Inscribed Radius)
 - $\alpha$: ค่าตัวคูณปรับสเกลความชัน (`cost_scaling_factor`)
-  - หาก $\alpha$ มีค่ามาก: กราฟจะดิ่งลงอย่างรวดเร็ว หุ่นยนต์จะกล้าวิ่งชิดสิ่งกีดขวางมากขึ้น (เหมาะกับทางแคบ)
-  - หาก $\alpha$ มีค่าน้อย: กราฟจะแผ่กว้าง หุ่นยนต์จะเว้นระยะห่างจากสิ่งกีดขวางอย่างระมัดระวัง (ทางกว้าง)
+
+```mermaid
+flowchart LR
+    Lethal["Lethal (Cost 254)<br/>d = 0"]
+    Inscribed["Inscribed (Cost 253)<br/>d = r_inscribed"]
+    Decay["Decay Zone (Cost 252 -> 1)<br/>r_inscribed < d < r_inflation"]
+    Free["Free Space (Cost 0)<br/>d >= r_inflation"]
+
+    Lethal --> Inscribed --> Decay --> Free
+```
+
+#### การคำนวณรัศมีตัวถังหุ่นยนต์สี่เหลี่ยมผืนผ้า (ยาว $L$, กว้าง $W$):
+1. **รัศมีแนบใน (Inscribed Radius: $r_{\text{inscribed}}$):**
+   $$r_{\text{inscribed}} = \frac{W}{2}$$
+   (จุดศูนย์กลางอยู่ห่างจากขอบด้านข้างน้อยที่สุด ห้ามให้มีสิ่งกีดขวางเข้ามาใกล้กว่านี้)
+2. **รัศมีแนบนอก (Circumscribed Radius: $r_{\text{circumscribed}}$):**
+   $$r_{\text{circumscribed}} = \sqrt{\left(\frac{L}{2}\right)^2 + \left(\frac{W}{2}\right)^2}$$
+   (รัศมีที่ครอบคลุมมุมทั้ง 4 ของตัวถังหุ่นยนต์เมื่อหมุนตัวอยู่กับที่)
+
+**ตัวอย่างการคำนวณหุ่นยนต์ในแล็บ:**  
+ตัวถังยาว $L = 0.40\text{ m}$, กว้าง $W = 0.28\text{ m}$:
+$$r_{\text{inscribed}} = \frac{0.28}{2} = \mathbf{0.14\text{ m}}$$
+$$r_{\text{circumscribed}} = \sqrt{0.20^2 + 0.14^2} = \sqrt{0.0400 + 0.0196} = \sqrt{0.0596} \approx \mathbf{0.244\text{ m}}$$
 
 ---
 
-### 5. การกำหนดขนาดหุ่นยนต์: `robot_radius` vs `footprint`
-- **`robot_radius: 0.25` (แบบวงกลม):**
-  - คิดว่าหุ่นยนต์เป็นทรงกระบอกรัศมี $0.25$ เมตร
-  - ข้อดี: คำนวณรวดเร็วมาก ไม่ขึ้นกับมุมหันของตัวหุ่นยนต์ (Isotropic)
-- **`footprint: "[ [0.20, 0.14], [0.20, -0.14], [-0.20, -0.14], [-0.20, 0.14] ]"` (รูปหลายเหลี่ยม):**
-  - นิยามพิกัดมุม 4 จุดของสี่เหลี่ยมผืนผ้าจริง (ยาว 0.40 m, กว้าง 0.28 m)
-  - ข้อดี: แม่นยำสูงสุด ทำให้หุ่นยนต์สามารถขับลอดช่องทางแคบในโรงงานได้โดยไม่ติดขัด
+### 4. การเปรียบเทียบการกำหนดขนาด: `robot_radius` vs `footprint`
+
+```mermaid
+graph TD
+    subgraph CircleModel ["โมเดลวงกลม (robot_radius = 0.25m)"]
+        C1["รัศมี 0.25m ครอบคลุมทั้งตัว"]
+        C2["ข้อดี: คำนวณ Collision เร็วมาก (O(1))"]
+        C3["ข้อจำกัด: สิ้นเปลืองพื้นที่ในช่องแคบ (Over-conservative)"]
+    end
+
+    subgraph PolyModel ["โมเดลรูปหลายเหลี่ยม (footprint: 4 corners)"]
+        P1["สี่เหลี่ยมผืนผ้า 0.40m x 0.28m"]
+        P2["ข้อดี: แม่นยำ ขับลอดช่องแคบโรงงานได้จริง"]
+        P3["ข้อจำกัด: คำนวณจุดตัด Polygon ซับซ้อนกว่า"]
+    end
+
+    style CircleModel fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    style PolyModel fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+```
 
 ---
 
 ## 🛠️ การวิเคราะห์ไฟล์คอนฟิกในโมดูล (Code Walkthrough)
 
-ในไฟล์ `config/costmap_params.yaml`:
-1. **Local Costmap (สำหรับควบคุมระยะใกล้):**
-   - `global_frame: odom`: ทำงานบนเฟรม Odometry ที่มีความต่อเนื่องสูง
-   - `rolling_window: true`: ขอบเขตแผนที่เลื่อนตามตัวหุ่นยนต์ตลอดเวลา (ขนาด $3 \times 3$ เมตร)
-   - `update_frequency: 5.0`: อัปเดตข้อมูลเซนเซอร์ความถี่สูง 5 Hz
-   - ใช้ `footprint` แบบหลายเหลี่ยมเพื่อความแม่นยำในการหลบหลีก
-2. **Global Costmap (สำหรับวางแผนระยะไกล):**
-   - `global_frame: map`: อิงกับแผนที่โลก
-   - `rolling_window: false`: ครอบคลุมพื้นที่โกดังทั้งหมด
-   - `track_unknown_space: true`: ป้องกันไม่ให้หุ่นยนต์วางเส้นทางผ่านพื้นที่ที่ยังไม่ได้สำรวจ
+### [`costmap_params.yaml`](file:///mnt/sda/ros/Essential_ROS/Week_13_Nav2_Costmaps_Layers/config/costmap_params.yaml)
+ไฟล์คอนฟิกจัดสรรพารามิเตอร์ของ Costmap 2D ทั้งสองตัว:
+
+- **Local Costmap ([L4-L38](file:///mnt/sda/ros/Essential_ROS/Week_13_Nav2_Costmaps_Layers/config/costmap_params.yaml#L4-L38)):**
+  - `global_frame: odom`: ยึดกับเฟรม Odometry ที่ราบเรียบต่อเนื่องไม่มีการกระโดด
+  - `rolling_window: true`: ขอบเขตแผนที่ขนาด $3 \times 3\text{ m}$ จะเลื่อนตามจุดศูนย์กลางหุ่นยนต์ตลอดเวลา
+  - `update_frequency: 5.0`: ประมวลผลเซนเซอร์ความถี่สูง 5 Hz เพื่อหลบสิ่งกีดขวางระยะประชิด
+  - `footprint: "[ [0.20, 0.14], [0.20, -0.14], [-0.20, -0.14], [-0.20, 0.14] ]"`: กำหนดพิกัดมุมทั้ง 4 ตามขนาดจริงของ AMR
+- **Global Costmap ([L39-L72](file:///mnt/sda/ros/Essential_ROS/Week_13_Nav2_Costmaps_Layers/config/costmap_params.yaml#L39-L72)):**
+  - `global_frame: map`: อิงกับแผนที่โลกถาวร
+  - `rolling_window: false`: ครอบคลุมทั้งโกดัง
+  - `plugins: ["static_layer", "obstacle_layer", "inflation_layer"]`: โหลด Static Layer เป็นเลเยอร์หลักเพื่อวางแผนเส้นทางข้ามห้อง
 
 ---
 
 ## ⌨️ ตารางคำสั่ง CLI สำคัญ
-| คำสั่ง | วัตถุประสงค์ | ตัวอย่างการใช้งาน |
+| คำสั่ง | คำอธิบาย | ตัวอย่างการใช้งาน |
 | :--- | :--- | :--- |
-| `ros2 lifecycle list` | ตรวจสอบสถานะของโหนด Nav2 ทั้งหมดในระบบ | `ros2 lifecycle list` |
-| `ros2 lifecycle get /controller_server` | ดูสถานะวงจรชีวิตปัจจุบันของ Controller Server | `ros2 lifecycle get /controller_server` |
+| `ros2 lifecycle list` | แสดงรายชื่อ Lifecycle Nodes ทั้งหมดในระบบ Nav2 | `ros2 lifecycle list` |
+| `ros2 lifecycle get /controller_server` | ตรวจสอบสถานะวงจรชีวิตปัจจุบันของ Controller Server | `ros2 lifecycle get /controller_server` |
 | `ros2 param get /local_costmap/local_costmap inflation_layer.cost_scaling_factor` | อ่านค่าตัวคูณ Inflation ปัจจุบัน | `ros2 param get /local_costmap/local_costmap inflation_layer.cost_scaling_factor` |
-| `ros2 topic echo --once /global_costmap/costmap --field data` | ตรวจสอบข้อมูลดิบของ Master Costmap | `ros2 topic echo --once /global_costmap/costmap --field data` |
+| `ros2 topic echo --once /global_costmap/costmap --field data` | ตรวจสอบข้อมูลดิบใน Master Costmap | `ros2 topic echo --once /global_costmap/costmap --field data` |
+| `ros2 topic hz /local_costmap/costmap` | วัดอัตราความถี่ของการเผยแพร่แผนที่ Local Costmap | `ros2 topic hz /local_costmap/costmap` |
 
 ---
 
 ## ⚠️ ปัญหาที่พบบ่อยและการแก้ไข (Troubleshooting)
-| อาการ | สาเหตุที่เป็นไปได้ | วิธีแก้ไข |
-| :--- | :--- | :--- |
-| ข้อความเตือน `Robot is out of bounds of the costmap` | หุ่นยนต์อยู่นอกพื้นที่แผนที่ หรือพิกัดจุดเริ่มต้นกระโดดไปไกล | ตรวจสอบพิกัด Initial Pose ในเฟรม map ให้ตรงกับขอบเขตแผนที่จริง |
-| หุ่นยนต์ไม่ยอมเดินผ่านช่องประตูที่กว้างพอ | ค่า `inflation_radius` ใหญ่เกินไป หรือ `cost_scaling_factor` ต่ำเกินไปทำให้คอสต์ทับซ้อนกัน | เพิ่มค่า `cost_scaling_factor` (เช่น ปรับเป็น 5.0) หรือลด `inflation_radius` |
-| สิ่งกีดขวางที่เดินผ่านไปแล้วยังค้างอยู่ใน Costmap ไม่ยอมหาย | ปิดพารามิเตอร์ `clearing: true` ใน Obstacle Layer หรือไม่มีลำแสงส่องผ่าน | ตรวจสอบว่าในคอนฟิก scan มีการเปิด `clearing: true` |
+
+| ที่ | อาการที่พบ (Symptom) | สาเหตุรากเหง้า (Root Cause) | แนวทางแก้ไข (Resolution) |
+|:---:| :--- | :--- | :--- |
+| 1 | **หุ่นยนต์ปฏิเสธไม่ยอมเดินผ่านประตูที่กว้างพอ** | ค่า `inflation_radius` ใหญ่เกินไป หรือ `cost_scaling_factor` ต่ำเกินไป ทำให้คอสต์สองฝั่งกำแพงทับซ้อนกันจนปิดทางเดิน | เพิ่ม `cost_scaling_factor` ให้สูงขึ้น (เช่น 4.0 หรือ 5.0) หรือลด `inflation_radius` ลง |
+| 2 | **สิ่งกีดขวางที่เดินผ่านไปแล้วยังค้างอยู่ใน Costmap ตลอดไป** | ลืมเปิด `clearing: true` ใน Obstacle Layer หรือ LiDAR ยิงแสงไม่ถึงจุดเดิม | เปิด `clearing: true` และตรวจสอบว่ามีลำแสงส่องผ่านจุดนั้นเพื่อล้างค่า (Ray-tracing) |
+| 3 | **Nav2 แจ้งเตือน: `Robot is out of bounds of the costmap`** | หุ่นยนต์อยู่นอกพิกัด Bounding Box ของ Global Costmap | ตรวจสอบพิกัด Initial Pose ใน RViz2 ให้ตรงกับขอบเขตแผนที่จริง |
+| 4 | **CPU พุ่งสูง 100% เมื่อเปิด Costmap** | ตั้งค่า `resolution` ละเอียดเกินไป (เช่น 0.01 m) หรือขนาด Rolling Window ใหญ่เกินไป | ปรับค่า Resolution เป็นมาตรฐาน $0.05\text{ m}$ ($5\text{ cm}$) |
+| 5 | **Local Costmap หมุนหรือเอียงตามการเลี้ยวของหุ่นยนต์** | ตั้ง `global_frame: base_link` ใน Local Costmap ซึ่งผิดหลักการ | ต้องตั้ง `global_frame: odom` ใน Local Costmap เสมอ |
+| 6 | **หุ่นยนต์ชนขอบโต๊ะหรือสิ่งกีดขวางที่ลอยอยู่เหนือพื้น** | ใช้เฉพาะ 2D LiDAR ซึ่งยิงแสงในระนาบเดียว ทำให้มองไม่เห็นวัตถุด้านบน | เพิ่ม Voxel Layer เพื่อนำข้อมูล 3D PointCloud จากกล้อง Depth เข้ามาประมวลผล |
 
 ---
 
 ## 📝 แบบทดสอบท้ายบท (Self-Assessment Quiz)
-1. ในสถาปัตยกรรม Costmap 2D การแยกระหว่าง Local Costmap และ Global Costmap มีวัตถุประสงค์ต่างกันอย่างไร?
-2. รหัสคอสต์ 253 (Inscribed Obstacle) มีความสำคัญอย่างไรในการป้องกันการชนของหุ่นยนต์?
-3. กลไก Clearing (Raytracing) ใน Obstacle Layer ทำหน้าที่อะไรเมื่อสิ่งกีดขวางเคลื่อนที่ออกไป?
-4. หากต้องการให้หุ่นยนต์เคลื่อนที่ผ่านช่องทางเดินแคบในโกดังได้ดีขึ้น ควรปรับพารามิเตอร์ `cost_scaling_factor` อย่างไร?
-5. เมื่อใดที่วิศวกรควรเปลี่ยนจากการกำหนด `robot_radius` เป็นการกำหนด `footprint` หลายเหลี่ยม?
+
+1. **คำถาม:** สถาปัตยกรรม Nav2 Costmap 2D ทำหน้าที่อะไรในการนำทางหุ่นยนต์อัตโนมัติ?
+2. **คำถาม:** จงอธิบายความแตกต่างระหว่างเฟรมอ้างอิง `global_frame` ของ Local Costmap และ Global Costmap?
+3. **คำถาม:** รหัสค่าคอสต์ตัวเลข $254$ และ $253$ มีความหมายทางกายภาพแตกต่างกันอย่างไร?
+4. **คำถาม:** ในสมการ Inflation Exponential Decay การปรับเพิ่มค่า `cost_scaling_factor` ให้สูงขึ้นจะส่งผลต่อพฤติกรรมการเคลื่อนที่ของหุ่นยนต์อย่างไร?
+5. **คำถาม:** กำหนดให้หุ่นยนต์ AMR มีรูปทรงสี่เหลี่ยมผืนผ้า กว้าง $0.30\text{ m}$ และยาว $0.50\text{ m}$ จงคำนวณหาค่า Inscribed Radius ($r_{\text{inscribed}}$) และ Circumscribed Radius ($r_{\text{circumscribed}}$)?
+6. **คำถาม:** กลไก Clearing ใน Obstacle Layer ใช้อัลกอริทึมใดในการลบล้างสิ่งกีดขวางที่หายไปแล้วออกจากแผนที่?
+7. **คำถาม:** เหตุใดการใช้ `footprint` รูปหลายเหลี่ยมจึงช่วยให้หุ่นยนต์สามารถเคลื่อนที่ผ่านช่องแคบได้ดีกว่าการใช้ `robot_radius` แบบวงกลม?
+8. **คำถาม:** พารามิเตอร์ `rolling_window: true` ใน Local Costmap มีพฤติกรรมการทำงานอย่างไร?
+9. **คำถาม:** ในวงจรชีวิตของ Nav2 Lifecycle Node สถานะใดที่โหนดพร้อมประมวลผลและส่งข้อมูลได้เต็มรูปแบบ?
+10. **คำถาม:** ค่าคอสต์ $255$ (`NO_INFORMATION`) ส่งผลอย่างไรต่อการวางแผนเส้นทางเมื่อเปิดใช้งาน `track_unknown_space: true`?
 
 <details>
-<summary>🔍 ดูเฉลยคำตอบ</summary>
+<summary>🔍 ดูเฉลยคำตอบพร้อมคำอธิบายอย่างละเอียด</summary>
 
-1. **ตอบ:** Global Costmap ใช้สำหรับวางแผนเส้นทางระยะไกลระดับภาพรวมโกดัง (อิงเฟรม map), ส่วน Local Costmap เป็นแบบ Rolling Window ขนาดเล็กอัปเดตความถี่สูง (อิงเฟรม odom) เพื่อหลบสิ่งกีดขวางเฉพาะหน้าที่ขวางทาง
-2. **ตอบ:** เป็นโซนที่หากจุดกึ่งกลางหุ่นยนต์เข้าไป ขอบตัวถังด้านนอกจะชนกับวัตถุแน่นอน ทำให้อัลกอริทึมตัดเส้นทางนี้ทิ้งโดยสิ้นเชิง
-3. **ตอบ:** ทำการล้างค่าคอสต์ตามแนวเส้นทางที่ลำแสงเลเซอร์ยิงผ่านและไม่พบการสะท้อน เพื่อลบสิ่งกีดขวางเดิมที่ขยับหนีไปแล้วออกจากแผนที่
-4. **ตอบ:** ควรเพิ่มค่า `cost_scaling_factor` ให้สูงขึ้น เพื่อให้กราฟคอสต์ดิ่งลงอย่างรวดเร็ว ทำให้พื้นที่ตรงกลางทางเดินมีค่าคอสต์ต่ำพอที่หุ่นยนต์จะยอมวิ่งผ่าน
-5. **ตอบ:** เมื่อหุ่นยนต์มีรูปทรงที่ไม่เป็นวงกลมสมมาตร (เช่น เป็นสี่เหลี่ยมผืนผ้าที่มีความยาวมากกว่าความกว้างมากๆ) หรือต้องวิ่งผ่านช่องแคบที่การประมาณเป็นวงกลมจะทำให้ติดขัด
+1. **ตอบ:** ทำหน้าที่เป็น **ตารางกริดจำลองสนามศักย์ความเสี่ยง (Obstacle & Risk Representation Grid)** ที่รวบรวมข้อมูลแผนที่คงที่และสิ่งกีดขวางสดจากเซนเซอร์ มาแปลงเป็นตัวเลขต้นทุนความเสี่ยง (Cost 0–254) เพื่อให้อัลกอริทึมวางแผนเส้นทางและหลบหลีกเลือกเส้นทางที่ปลอดภัยที่สุด
+2. **ตอบ:**
+   - **Local Costmap:** ใช้ `global_frame: odom` ซึ่งมีความต่อเนื่องและราบเรียบสูง ไม่มีการกระโดดของพิกัด เหมาะกับการควบคุมหลบหลีกเฉพาะหน้า
+   - **Global Costmap:** ใช้ `global_frame: map` ซึ่งเป็นพิกัดโลกสากลที่เชื่อมโยงกับแผนที่ของอาคารทั้งหมด เหมาะสำหรับการวางแผนเส้นทางระยะไกล
+3. **ตอบ:**
+   - **$254$ (`LETHAL_OBSTACLE`):** คือตัวสิ่งกีดขวางจริงทางกายภาพ (กำแพง เสา วัตถุแข็ง)
+   - **$253$ (`INSCRIBED_INFLATED_OBSTACLE`):** คือระยะขอบเขตที่จุดศูนย์กลางหุ่นยนต์ห้ามผ่าน เพราะตัวถังด้านนอกของหุ่นยนต์จะชนกับสิ่งกีดขวางแน่นอน
+4. **ตอบ:** จะทำให้กราฟค่าคอสต์ **ดิ่งลงอย่างรวดเร็ว (Steeper Slope)** ส่งผลให้สนามอันตรายรอบสิ่งกีดขวางแคบลง หุ่นยนต์จะกล้าเคลื่อนที่เข้าใกล้สิ่งกีดขวางมากขึ้น เหมาะสำหรับพื้นที่ทางเดินแคบในโรงงาน
+5. **ตอบ:**
+   - $r_{\text{inscribed}} = \frac{W}{2} = \frac{0.30}{2} = \mathbf{0.15\text{ m}}$
+   - $r_{\text{circumscribed}} = \sqrt{\left(\frac{0.50}{2}\right)^2 + \left(\frac{0.30}{2}\right)^2} = \sqrt{0.25^2 + 0.15^2} = \sqrt{0.0625 + 0.0225} = \sqrt{0.0850} \approx \mathbf{0.2915\text{ m}}$
+6. **ตอบ:** ใช้อัลกอริทึม **Bresenham's Line Algorithm (Ray-tracing)** ยิงแนวเส้นตรงตามลำแสงเลเซอร์ และลบค่าสิ่งกีดขวางในทุกเซลล์ที่ลำแสงพุ่งผ่านโดยไม่มีการสะท้อนกลับ
+7. **ตอบ:** เพราะโมเดลวงกลมจำเป็นต้องตั้งรัศมีให้ครอบคลุมส่วนที่ยาวที่สุดของตัวถัง ($r_{\text{circumscribed}}$) ทำให้เกิดพื้นที่กันชน (Buffer) ด้านข้างที่ใหญ่เกินจริง ในขณะที่โมเดล `footprint` หลายเหลี่ยมจะอิงตามขอบตัวถังจริง ทำให้ขับแทรกผ่านช่องแคบได้โดยไม่ติดบัฟเฟอร์เท็จ
+8. **ตอบ:** แผนที่กริดจะมีขนาดคงที่ (เช่น $3 \times 3\text{ m}$) และจะ **เลื่อนพิกัดศูนย์กลางตามการเคลื่อนที่ของหุ่นยนต์ตลอดเวลา** โดยข้อมูลเก่าที่หลุดขอบแผนที่จะถูกทิ้งไป และดึงข้อมูลเซนเซอร์ใหม่ในรัศมีรอบตัวเข้ามาแทนที่
+9. **ตอบ:** สถานะ **`ACTIVE`**
+10. **ตอบ:** อัลกอริทึม Global Planner จะถือว่าพื้นที่ที่ยังไม่ทราบค่าเป็นพื้นที่อันตราย และ **จะปฏิเสธการวางเส้นทางตัดผ่านพื้นที่นั้นโดยสิ้นเชิง** จนกว่าหุ่นยนต์จะส่งเซนเซอร์เข้าไปสำรวจ
 </details>
 
 ---
 
 ## 📚 แหล่งอ้างอิงและศึกษาเพิ่มเติม
-- [Nav2 Costmap 2D Architecture (Official Nav2 Docs)](https://docs.nav2.org/configuration/packages/configuring-costmaps.html)
-- [Nav2 Inflation Layer Math Explanation](https://docs.nav2.org/configuration/packages/costmap-plugins/inflation_layer.html)
-- [Understanding ROS 2 Lifecycle Nodes](https://design.ros2.org/articles/node_lifecycle.html)
+- [Nav2 Costmap 2D Architecture Documentation](https://docs.nav2.org/configuration/packages/configuring-costmaps.html)
+- [Nav2 Inflation Layer Technical Details](https://docs.nav2.org/configuration/packages/costmap-plugins/inflation_layer.html)
+- [ROS 2 Managed Nodes / Lifecycle State Machine](https://design.ros2.org/articles/node_lifecycle.html)
+- [Lu et al.: Layered Costmaps for Navigation in Dynamic Environments](https://ieeexplore.ieee.org/document/6907293)

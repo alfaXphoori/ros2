@@ -7,143 +7,206 @@
 
 ## 🎯 วัตถุประสงค์การเรียนรู้ (Learning Objectives)
 เมื่อจบบทเรียนนี้ ผู้เรียนจะสามารถ:
-1. อธิบายหลักการของ **Adaptive Monte Carlo Localization (AMCL)** และอัลกอริทึม **Particle Filter**
-2. ปรับแต่งโมเดลการเคลื่อนที่ ($\alpha_1 - \alpha_4$) และโมเดลเซนเซอร์ (Likelihood Field Model) ใน AMCL
-3. เปรียบเทียบอัลกอริทึมการวางแผนเส้นทางระดับโลก (**Global Planners**: NavFn Dijkstra/A* vs Smac Planner)
-4. เปรียบเทียบตัวควบคุมเส้นทางเฉพาะหน้า (**Local Controllers**: DWB Critics vs Regulated Pure Pursuit)
-5. พัฒนาสคริปต์ Python ตั้งค่าพิกัดเริ่มต้น (**Initial Pose**) เพื่อเปิดใช้งานระบบนำทางอัตโนมัติอย่างสมบูรณ์
+1. **พิสูจน์คณิตศาสตร์ของ Adaptive Monte Carlo Localization (AMCL)**: วงรอบการพยากรณ์ด้วยโมเดลการเคลื่อนที่ (Odometry Motion Model), โมเดลเซนเซอร์ (Likelihood Field), และการปรับจำนวนอนุภาคแบบ KLD-Sampling
+2. **อธิบายการคำนวณและเผยแพร่ทรานส์ฟอร์ม `map` $\rightarrow$ `odom`** เพื่อชดเชยค่า Drift ของ Odometry โดยรักษาความราบเรียบของระบบควบคุมภายใน
+3. **เปรียบเทียบอัลกอริทึมการวางแผนเส้นทางระดับโลก (Global Planners)**: NavFn (Dijkstra vs A*) และ Smac Planner (Hybrid A* สำหรับข้อจำกัดมุมเลี้ยวทางจลนศาสตร์)
+4. **วิเคราะห์ตัวควบคุมความเร็วเฉพาะหน้า (Local Controllers)**: DWB Controller (Dynamic Window Approach & Trajectory Critics) และ Regulated Pure Pursuit (RPP)
+5. **พัฒนาสคริปต์กำหนดตำแหน่งเริ่มต้น (Initial Pose Setup)** พร้อมเมทริกซ์ความแปรปรวนร่วม (Covariance Matrix) เพื่อสั่งงาน Action `/navigate_to_pose`
 
 ---
 
 ## ⏱️ แผนการสอน 2 ชั่วโมง (Lecture Outline)
 | ช่วงเวลา | หัวข้อ | กิจกรรมการเรียนรู้ |
 | :---: | :--- | :--- |
-| **00:00 - 00:35** | ทฤษฎี AMCL: อนุภาคความน่าจะเป็น (Particles) และ KLD Resampling | บรรยายพร้อมกราฟแสดงการลู่เข้าของกลุ่มอนุภาค (Particle Cloud Convergence) |
-| **00:35 - 01:05** | การวางแผนเส้นทางระดับโลก (Global Path Planning: Dijkstra vs A*) | วิเคราะห์ Heuristic Function และการค้นหาเส้นทางที่ปลอดภัยที่สุดบน Costmap |
-| **01:05 - 01:35** | การควบคุมการขับขี่เฉพาะหน้า (Local Controller: DWB vs RPP) | เจาะลึก Trajectory Critics ของ DWB และพารามิเตอร์ Lookahead ใน RPP |
-| **01:35 - 02:00** | Code Walkthrough: `nav2_bringup.launch.py`, `amcl_initial_pose.py` และ Lab | สาธิตการส่ง Initial Pose ผ่าน CLI/Python และคำสั่งตรวจสอบสถานะ Nav2 |
+| **00:00 - 00:35** | ทฤษฎี AMCL: Particle Filter, Motion Noise $\alpha_1 - \alpha_4$, KLD Resampling | พิสูจน์สมการคณิตศาสตร์การเคลื่อนที่และสมการทรานส์ฟอร์ม $\mathbf{T}_{\text{odom}}^{\text{map}}$ |
+| **00:35 - 01:05** | การวางแผนเส้นทางระดับโลก (Global Planners: Dijkstra, A*, Smac) | เปรียบเทียบฮิวริสติกฟังก์ชัน, กราฟ Cost, และข้อจำกัดทางจลนศาสตร์แบบ Non-holonomic |
+| **01:05 - 01:35** | การควบคุมวิถีการเคลื่อนที่เฉพาะหน้า (Local Controllers: DWB vs RPP) | เจาะลึกการให้คะแนน Trajectory Critics ใน DWB และการควบคุมความเร็วตามความโค้งใน RPP |
+| **01:35 - 02:00** | Code Walkthrough: `nav2_params.yaml`, `amcl_initial_pose.py` และเตรียม Lab | วิเคราะห์การส่ง Initial Pose ผ่าน Python/CLI และการสั่ง Navigation Goal |
 
 ---
 
 ## 🏛️ สถาปัตยกรรมระบบ (Architectural Deep Dive)
 
 ### 1. การประมาณตำแหน่งด้วย AMCL (Particle Filter Localization)
-เมื่อหุ่นยนต์มีแผนที่คงที่จาก SLAM อยู่แล้ว หุ่นยนต์ต้องรู้ว่า "ขณะนี้ตนเองอยู่ที่จุดใดบนแผนที่":
-- **AMCL (Adaptive Monte Carlo Localization)** ใช้แบบจำลองกลุ่มอนุภาค (Particles):
-  - แต่ละอนุภาคคือการคาดเดาตำแหน่งหนึ่งที่เป็นไปได้ $(\hat{x}, \hat{y}, \hat{\theta})$ พร้อมค่าน้ำหนักความน่าจะเป็น ($w_i$)
-  - **KLD-Sampling (Kullback-Leibler Divergence):** ปรับจำนวนอนุภาคแบบพลวัต:
-    - เมื่อหุ่นยนต์ยังหลงทาง (Uncertainty สูง): สร้างอนุภาคจำนวนมาก (เช่น 2,000 ตัว) เพื่อค้นหา
-    - เมื่ออนุภาคลู่เข้าสู่ตำแหน่งจริงแล้ว (Certainty สูง): ลดจำนวนอนุภาคลงเหลือขั้นต่ำ (เช่น 500 ตัว) เพื่อประหยัด CPU
+เมื่อหุ่นยนต์มีแผนที่ที่สร้างเสร็จแล้ว หุ่นยนต์จะต้องแก้ปัญหาการระบุตำแหน่งตนเองเทียบกับแผนที่โลก (Global Localization):
 
 ```mermaid
 sequenceDiagram
     autonumber
-    participant Wheel as Odometry (ล้อหมุน)
-    participant PF as AMCL Particles (กลุ่มอนุภาค)
-    participant Laser as LiDAR LaserScan
+    participant Encoders as ล้อหมุน (Odometry)
+    participant AMCL as AMCL Particle Filter
+    participant LiDAR as เลเซอร์สแกน (/scan)
     participant TF as TF Tree (map -> odom)
 
-    Wheel->>PF: 1. Prediction Step: เคลื่อนย้ายอนุภาคทุกตัวตามระยะที่ล้อวิ่ง (Motion Model + Noise alpha)
-    Laser->>PF: 2. Correction Step: นำ Scan จริงเทียบกับแผนที่ในมุมมองของแต่ละอนุภาค (Likelihood Field)
-    Note over PF: 3. Update Weights: อนุภาคใดที่ Scan ตรงกับกำแพงมากที่สุดจะได้คะแนนสูง
-    Note over PF: 4. Resampling: คัดเลือกอนุภาคที่คะแนนสูงมาคัดลอกใหม่ อนุภาคคะแนนต่ำถูกกำจัด
-    PF->>TF: 5. Broadcast Transform: map -> odom
+    Encoders->>AMCL: 1. Prediction Step: อนุภาคทุกตัวขยับตามระยะล้อ + สัญญาณรบกวน (alpha 1-4)
+    LiDAR->>AMCL: 2. Correction Step: นำ LaserScan จริงเทียบกับแผนที่ในมุมมองของแต่ละอนุภาค
+    Note over AMCL: 3. Importance Weighting: อนุภาคที่ลำแสงเลเซอร์ตรงกับกำแพงจะได้ค่าน้ำหนัก w สูง
+    Note over AMCL: 4. KLD Resampling: คัดเลือกอนุภาคน้ำหนักสูงมาขยายพันธุ์ใหม่ ลดจำนวนอนุภาคเมื่อมั่นใจ
+    AMCL->>TF: 5. Broadcast Transform: map -> odom (ชดเชย Drift ให้ระบบ)
 ```
 
-#### พารามิเตอร์สัญญาณรบกวนของโมเดลการเคลื่อนที่ ($\alpha_1 - \alpha_4$):
-- $\alpha_1$: ความผิดพลาดของการหมุน อันเนื่องมาจากการหมุนตัว (Rotation from Rotation)
-- $\alpha_2$: ความผิดพลาดของการหมุน อันเนื่องมาจากการวิ่งตรง (Rotation from Translation)
-- $\alpha_3$: ความผิดพลาดของการวิ่งตรง อันเนื่องมาจากการวิ่งตรง (Translation from Translation)
-- $\alpha_4$: ความผิดพลาดของการวิ่งตรง อันเนื่องมาจากการหมุนตัว (Translation from Rotation)
+#### ก. โมเดลการเคลื่อนที่เชิงสถิติ (Odometry Motion Model Noise $\alpha_1 - \alpha_4$):
+เมื่อหุ่นยนต์เคลื่อนที่จากสถานะ $\mathbf{x} = [x, y, \theta]^T$ ไปยัง $\mathbf{x}' = [x', y', \theta']^T$ คำสั่งจะถูกแบ่งออกเป็น 3 จังหวะ:
+1. การหมุนตัวครั้งที่ 1 ($\delta_{\text{rot1}}$)
+2. การวิ่งตรงไปข้างหน้า ($\delta_{\text{trans}}$)
+3. การหมุนตัวครั้งที่ 2 เพื่อจัดแนวหัวหุ่นยนต์ ($\delta_{\text{rot2}}$)
+
+พารามิเตอร์ความคลาดเคลื่อน $\alpha$ บ่งบอกระดับความไม่แน่นอน:
+- $\alpha_1$: ความแปรปรวนของการหมุน จากการหมุนตัว ($\text{rot} \leftarrow \text{rot}$)
+- $\alpha_2$: ความแปรปรวนของการหมุน จากการวิ่งตรง ($\text{rot} \leftarrow \text{trans}$)
+- $\alpha_3$: ความแปรปรวนของการวิ่งตรง จากการวิ่งตรง ($\text{trans} \leftarrow \text{trans}$)
+- $\alpha_4$: ความแปรปรวนของการวิ่งตรง จากการหมุนตัว ($\text{trans} \leftarrow \text{rot}$)
+
+#### ข. การคำนวณและบรอดแคสต์ทรานส์ฟอร์ม $\mathbf{T}_{\text{odom}}^{\text{map}}$:
+ตามมาตรฐาน REP 105 โหนด AMCL ไม่ได้บรอดแคสต์ทรานส์ฟอร์ม `map` $\rightarrow$ `base_footprint` โดยตรง เพราะจะทำให้เกิดการกระโดดขัดจังหวะ Local Control Loop แต่ AMCL จะคำนวณหาทรานส์ฟอร์มเสมือนที่เชื่อมระหว่าง `map` และ `odom`:
+
+$$\mathbf{T}_{\text{base}}^{\text{map}} = \mathbf{T}_{\text{odom}}^{\text{map}} \cdot \mathbf{T}_{\text{base}}^{\text{odom}}$$
+$$\mathbf{T}_{\text{odom}}^{\text{map}} = \mathbf{T}_{\text{base}}^{\text{map}} \cdot \left(\mathbf{T}_{\text{base}}^{\text{odom}}\right)^{-1}$$
 
 ---
 
-### 2. การวางแผนเส้นทางระดับโลก (Global Planners)
-1. **NavFn Planner (Dijkstra & A*):**
-   - คำนวณเส้นทางที่มี Cost รวมต่ำที่สุดจากจุดเริ่มต้นไปยังเป้าหมาย
-   - มองหุ่นยนต์เป็นจุด (Point Robot) เดินข้าม Grid Cells 2D
-2. **Smac Planner (2D / Hybrid A*):**
-   - คำนึงถึงรัศมีวงเลี้ยวขั้นต่ำและข้อจำกัดทางจลนศาสตร์ของรถ (Non-holonomic constraints) เช่น เดินหน้า ถอยหลัง หรือรัศมีเลี้ยวแบบ Ackerman / Diff-drive
+### 2. การวางแผนเส้นทางระดับโลก (Global Planners Architecture)
+Global Planner มีหน้าที่ค้นหาแนวเส้นทางจากจุดพิกัดปัจจุบันไปยังเป้าหมายบน Global Costmap:
+
+```mermaid
+flowchart TD
+    StartGoal["Start Pose & Goal Pose"] --> Planner{"เลือกใช้อัลกอริทึมใด?"}
+    Planner -->|NavFn Planner| NavFn["Dijkstra / A*<br/>(มองหุ่นยนต์เป็นจุดกลม 2D วิ่งบนตาราง Grid)"]
+    Planner -->|Smac Planner| Smac["Hybrid A* / State Lattice<br/>(คำนึงถึงข้อจำกัดรัศมีวงเลี้ยวและการถอยหลัง)"]
+
+    NavFn --> PathOut["Global Path: nav_msgs/Path<br/>(ชุดพิกัด Waypoints ส่งต่อให้ Controller)"]
+    Smac --> PathOut
+```
+
+| อัลกอริทึม | ลักษณะการทำงาน | จุดเด่น | กรณีการใช้งานที่เหมาะสม |
+| :--- | :--- | :--- | :--- |
+| **NavFn (Dijkstra)** | ค้นหาแบบแผ่คลื่นรอบทิศทาง | การันตีว่าพบเส้นทางที่สั้นที่สุดเสมอ | แผนที่ขนาดเล็กถึงปานกลาง |
+| **NavFn (A*)** | ใช้ฮิวริสติก Euclidean Distance | ค้นหาเร็วกว่า Dijkstra 3–5 เท่า | ทางเดินยาวในโกดังขนาดใหญ่ |
+| **Smac Planner (Hybrid A*)** | ค้นหาในปริภูมิสถานะ $(x, y, \theta)$ | สร้างเส้นทางที่เลี้ยวโค้งได้อย่างนิ่มนวลตามกายภาพรถ | หุ่นยนต์เลี้ยวแบบ Ackerman หรือรถลากจูง |
 
 ---
 
-### 3. การควบคุมการขับขี่เฉพาะหน้า (Local Trajectory Controllers)
-1. **DWB Controller (Dynamic Window Approach):**
-   - สุ่มตัวอย่างคู่ความเร็วที่เป็นไปได้ $(v, \omega)$ หลายร้อยรูปแบบล่วงหน้าในช่วงเวลาสั้นๆ ($1 - 2$ วินาที)
-   - ประเมินคะแนนแต่ละวิถีการเคลื่อนที่ด้วยชุดกรรมการตรวจสอบ (**Critics**):
-     - `BaseObstacleCritic`: ให้คะแนนติดลบหากวิถีวิ่งเข้าใกล้สิ่งกีดขวาง
-     - `PathAlignCritic`: ให้คะแนนสูงหากวิถีขนานไปตามเส้นทางหลักของ Global Path
-     - `GoalDistCritic`: ให้คะแนนสูงหากวิถีพาเข้าใกล้เป้าหมายปลายทาง
-2. **Regulated Pure Pursuit (RPP):**
-   - อัลกอริทึมเรขาคณิตยอดนิยมในโรงงานอุตสาหกรรม
-   - กำหนดจุดเป้าหมายบนเส้นทางข้างหน้าด้วยระยะมองไกล (**Lookahead Distance**)
-   - มีระบบปรับลดความเร็วอัตโนมัติเมื่อเข้าโค้งหักศอก (**Curvature Regulation**)
+### 3. ตัวควบคุมเส้นทางเฉพาะหน้า (Local Trajectory Controllers)
+Local Controller มีหน้าที่รับ Global Path มาแปลงเป็นคำสั่งความเร็วจริง $(v, \omega)$ ส่งไปยังท็อปปิก `/cmd_vel` พร้อมหลบหลีกสิ่งกีดขวางสดใน Local Costmap:
+
+#### ก. DWB Controller (Dynamic Window Approach):
+1. คำนวณช่วงความเร็วที่เป็นไปได้ของหุ่นยนต์ในรอบเวลาถัดไป (Dynamic Window) ภายใต้ขีดจำกัดความเร่ง ($\text{acc lim}$):
+   $$V_d = [v - a_{\text{max}}\Delta t, \; v + a_{\text{max}}\Delta t] \cap [v_{\text{min}}, v_{\text{max}}]$$
+2. สุ่มจำลองวิถีการเคลื่อนที่ (Trajectory Rollout) นับร้อยเส้นทาง
+3. ให้คะแนนแต่ละเส้นทางผ่านฟังก์ชัน **Critics**:
+   $$\text{Total Score} = \sum_{c \in \text{Critics}} w_c \cdot \text{Score}_c(\text{trajectory})$$
+   - `BaseObstacleCritic`: ลงโทษอย่างรุนแรงหากวิถีตัดผ่านเซลล์ที่มี Cost สูง
+   - `PathAlignCritic`: ให้คะแนนความขนานกับเส้นทาง Global Path
+   - `GoalDistCritic`: ให้คะแนนระยะห่างจากเป้าหมายปลายทาง
+
+#### ข. Regulated Pure Pursuit (RPP):
+- ใช้วิธีทางเรขาคณิต เล็งจุดเป้าหมายบนเส้นทางข้างหน้าด้วยระยะมองไกล (**Lookahead Distance: $L$**)
+- คำนวณรัศมีความโค้งของการเลี้ยว: $\kappa = \frac{2y}{L^2}$
+- มีระบบชะลอความเร็วตามความโค้ง (**Curvature Regulation**): เมื่อต้องเลี้ยวโค้งหักศอก หุ่นยนต์จะลดความเร็วลงโดยอัตโนมัติเพื่อป้องกันการหลุดโค้ง
 
 ---
 
 ## 🛠️ การวิเคราะห์โค้ดตัวอย่างในโมดูล (Code Walkthrough)
 
-### 1. `amcl_initial_pose.py`
-การที่ระบบ Nav2 จะเริ่มวางแผนเส้นทางได้ ผู้ควบคุมต้องแจ้งตำแหน่งตั้งต้นให้ AMCL ทราบก่อน:
-```python
-# ส่งไปยังท็อปปิก /initialpose ด้วย QoS แบบ TRANSIENT_LOCAL
-qos_profile = QoSProfile(
-    reliability=ReliabilityPolicy.RELIABLE,
-    durability=DurabilityPolicy.TRANSIENT_LOCAL,
-    history=HistoryPolicy.KEEP_LAST,
-    depth=1
-)
-self.publisher = self.create_publisher(PoseWithCovarianceStamped, '/initialpose', qos_profile)
-```
-- ในฟังก์ชัน `publish_pose`:
-  - กำหนดพิกัด $(x, y, 0)$ และแปลงมุม Yaw ($\theta$) สู่ Quaternion
-  - กำหนดเมทริกซ์ความแปรปรวนร่วม (Covariance Matrix ขนาด $6 \times 6 = 36$ ช่อง) โดยใส่ค่าความไม่แน่นอนตั้งต้น:
-    $$\text{cov}[0] = 0.25 \, (x), \quad \text{cov}[7] = 0.25 \, (y), \quad \text{cov}[35] = 0.068 \, (\text{yaw})$$
+### 1. [`nav2_params.yaml`](file:///mnt/sda/ros/Essential_ROS/Week_14_Path_Planning_AMCL/config/nav2_params.yaml)
+- **การปรับแต่ง AMCL ([L2-L19](file:///mnt/sda/ros/Essential_ROS/Week_14_Path_Planning_AMCL/config/nav2_params.yaml#L2-L19)):**
+  ```yaml
+  alpha1: 0.2
+  alpha2: 0.2
+  alpha3: 0.2
+  alpha4: 0.2
+  min_particles: 500
+  max_particles: 2000
+  ```
+  กำหนดสัญญาณรบกวนของโมเดลการเคลื่อนที่ และตั้งขอบเขตจำนวนอนุภาค KLD-Sampling ไว้ที่ 500 ถึง 2,000 ตัว
+- **การตั้งค่า DWB Controller ([L51-L63](file:///mnt/sda/ros/Essential_ROS/Week_14_Path_Planning_AMCL/config/nav2_params.yaml#L51-L63)):**
+  ```yaml
+  max_vel_x: 0.5
+  max_vel_theta: 1.0
+  acc_lim_x: 1.5
+  decel_lim_x: -1.5
+  ```
+  จำกัดความเร็วสูงสุดที่ $0.5\text{ m/s}$ และความเร็วเชิงมุมที่ $1.0\text{ rad/s}$ เพื่อความปลอดภัยในอาคาร
+- **เกณฑ์ตัดสินความสำเร็จของเป้าหมาย ([L45-L50](file:///mnt/sda/ros/Essential_ROS/Week_14_Path_Planning_AMCL/config/nav2_params.yaml#L45-L50)):**
+  ```yaml
+  xy_goal_tolerance: 0.25   # ระยะห่างปลายทางยอมรับได้ที่ 25 cm
+  yaw_goal_tolerance: 0.25  # มุมหันปลายทางยอมรับได้ที่ ~14 องศา
+  ```
 
-### 2. `nav2_bringup.launch.py`
-- รวมการเปิดโหนด Nav2 ทั้งหมด: `map_server`, `amcl`, `controller_server`, `planner_server`, `bt_navigator`
-- มี Lifecycle Manager คอยควบคุมการเปลี่ยนสถานะของโหนดทั้งหมดให้กลายเป็น `Active` พร้อมกัน
+---
+
+### 2. `amcl_initial_pose.py`
+สคริปต์ Python ส่งพิกัดเริ่มต้นเพื่อปลุกระบบ AMCL:
+- สร้าง Publisher ไปยังท็อปปิก `/initialpose` ด้วย QoS `TRANSIENT_LOCAL`
+- กำหนดค่าเมทริกซ์ความแปรปรวนร่วม (Covariance Matrix $6 \times 6$):
+  ```python
+  msg.pose.covariance[0] = 0.25   # ความไม่แน่นอนในแนวแกน X (sigma = 0.5 m)
+  msg.pose.covariance[7] = 0.25   # ความไม่แน่นอนในแนวแกน Y (sigma = 0.5 m)
+  msg.pose.covariance[35] = 0.068 # ความไม่แน่นอนในมุมหมุน Yaw (sigma = ~15 องศา)
+  ```
+  ค่าความแปรปรวนนี้จะถูก AMCL นำไปใช้สุ่มสร้างกลุ่มอนุภาคเริ่มต้นรอบๆ พิกัดนั้น
 
 ---
 
 ## ⌨️ ตารางคำสั่ง CLI สำคัญ
-| คำสั่ง | วัตถุประสงค์ | ตัวอย่างการใช้งาน |
+| คำสั่ง | คำอธิบาย | ตัวอย่างการใช้งาน |
 | :--- | :--- | :--- |
-| `ros2 launch nav2_bringup.launch.py` | เปิดใช้งาน Nav2 Navigation Stack แบบเต็มระบบ | `ros2 launch Essential_ROS/Week_14_Path_Planning_AMCL/launch/nav2_bringup.launch.py` |
+| `ros2 launch nav2_bringup.launch.py` | เปิดใช้งาน Navigation 2 Stack แบบครบวงจร | `ros2 launch Essential_ROS/Week_14_Path_Planning_AMCL/launch/nav2_bringup.launch.py` |
 | `ros2 topic pub --once /initialpose ...` | ส่งพิกัดเริ่มต้นให้ AMCL ผ่านคำสั่ง CLI | `ros2 topic pub --once /initialpose geometry_msgs/msg/PoseWithCovarianceStamped "{header: {frame_id: 'map'}, pose: {pose: {position: {x: 0.0, y: 0.0}, orientation: {w: 1.0}}}}"` |
 | `ros2 action send_goal /navigate_to_pose ...` | ส่งเป้าหมายพิกัดให้ Nav2 วางแผนและขับเคลื่อนอัตโนมัติ | `ros2 action send_goal /navigate_to_pose nav2_msgs/action/NavigateToPose "{pose: {header: {frame_id: 'map'}, pose: {position: {x: 2.0, y: 1.0}, orientation: {w: 1.0}}}}"` |
+| `ros2 topic echo --once /amcl_pose` | ตรวจสอบตำแหน่งปัจจุบันที่ AMCL คำนวณได้ | `ros2 topic echo --once /amcl_pose` |
 
 ---
 
 ## ⚠️ ปัญหาที่พบบ่อยและการแก้ไข (Troubleshooting)
-| อาการ | สาเหตุที่เป็นไปได้ | วิธีแก้ไข |
-| :--- | :--- | :--- |
-| AMCL ไม่ยอมบรอดแคสต์ทรานส์ฟอร์ม `map -> odom` | ยังไม่ได้รับข้อมูลพิกัดเริ่มต้นจาก `/initialpose` หรือไม่มีข้อมูล `/scan` | ส่งพิกัดเริ่มต้นด้วย `python3 amcl_initial_pose.py` หรือใช้เครื่องมือ 2D Pose Estimate ใน RViz |
-| หุ่นยนต์หมุนวนอยู่กับที่ไม่ยอมเดินไปข้างหน้า | ค่า `GoalDistCritic` หรือ `PathAlignCritic` ไม่สมดุล หรือชนขอบ Inflation | ตรวจสอบพารามิเตอร์ DWB Critics ใน `nav2_params.yaml` |
-| อนุภาค AMCL แตกกระจายกว้างไม่ยอมลู่เข้าหาตำแหน่งจริง | พารามิเตอร์สัญญาณรบกวน $\alpha$ สูงเกินไป หรือการหมุนตัวเร็วเกินไป | ปรับลดค่า $\alpha_1 - \alpha_4$ ให้อยู่ในช่วง $[0.05, 0.2]$ |
+
+| ที่ | อาการที่พบ (Symptom) | สาเหตุรากเหง้า (Root Cause) | แนวทางแก้ไข (Resolution) |
+|:---:| :--- | :--- | :--- |
+| 1 | **AMCL ไม่ยอมบรอดแคสต์ทรานส์ฟอร์ม `map -> odom`** | ยังไม่ได้รับข้อมูลพิกัดเริ่มต้นจาก `/initialpose` หรือไม่มีข้อมูล `/scan` ส่งเข้ามา | ส่งพิกัดเริ่มต้นด้วย `amcl_initial_pose.py` หรือคลิกปุ่ม 2D Pose Estimate ใน RViz2 |
+| 2 | **หุ่นยนต์หมุนวนอยู่กับที่ไม่ยอมเดินหน้า (Spinning in circles)** | ค่าน้ำหนัก `PathAlignCritic` หรือ `GoalDistCritic` ใน DWB ไม่สมดุล หรือล้อติดขอบคอสต์ | ปรับจูนค่าน้ำหนัก Scale ของ Critics ใน `nav2_params.yaml` |
+| 3 | **กลุ่มอนุภาค AMCL แตกกระจายกว้างไม่ยอมลู่เข้าหาตำแหน่งจริง** | พารามิเตอร์สัญญาณรบกวน $\alpha_1 - \alpha_4$ สูงเกินไป หรือหุ่นยนต์หมุนตัวเร็วเกินไป | ปรับลดค่า $\alpha$ ลงให้อยู่ในช่วง $[0.05, 0.2]$ |
+| 4 | **Planner ไม่ยอมวางเส้นทาง แจ้งเตือน: `Failed to create plan`** | จุดเริ่มต้นหรือจุดหมายปลายทางตั้งอยู่ในเขตเซลล์ที่มี Cost 254 (Lethal) หรือ 255 | เลือกจุดเป้าหมายให้อยู่ในพื้นที่ว่างโล่ง (Cost 0) ห่างจากกำแพงอย่างน้อยเท่ากับรัศมีหุ่นยนต์ |
+| 5 | **หุ่นยนต์หยุดก่อนถึงเป้าหมายเล็กน้อยแล้วขึ้น Failed** | ค่า `xy_goal_tolerance` ตั้งไว้เข้มงวดเกินไป (เช่น 0.02 m) จนมอเตอร์ไม่สามารถทำได้ | ขยาย `xy_goal_tolerance` เป็น $0.15 - 0.25\text{ m}$ |
+| 6 | **Nav2 หลุดเข้าสู่ Recovery Spin ต่อเนื่อง** | Progress Checker ตรวจพบว่าหุ่นยนต์ไม่เคลื่อนที่เกินระยะที่กำหนดภายใน 10 วินาที | ตรวจสอบว่าหุ่นยนต์ติดสิ่งกีดขวางหรือไม่ และเพิ่ม `movement_time_allowance` |
 
 ---
 
 ## 📝 แบบทดสอบท้ายบท (Self-Assessment Quiz)
-1. กลไก KLD-Sampling ใน AMCL ช่วยเพิ่มประสิทธิภาพการคำนวณของหุ่นยนต์อย่างไร?
-2. เหตุใดการส่งพิกัดเริ่มต้นผ่าน `/initialpose` จึงต้องแนบค่าเมทริกซ์ Covariance ไปด้วยเสมอ?
-3. ทรานส์ฟอร์มคู่ใดที่โหนด `amcl` มีหน้าที่ต้องคำนวณและ Broadcast ลงใน TF Tree?
-4. DWB Controller ตัดสินใจเลือกความเร็ว $(v, \omega)$ ที่ดีที่สุดให้กับมอเตอร์หุ่นยนต์อย่างไร?
-5. พารามิเตอร์ `xy_goal_tolerance` ทำหน้าที่กำหนดอะไรในขั้นตอนสุดท้ายของการนำทาง?
+
+1. **คำถาม:** ในอัลกอริทึม AMCL กระบวนการ KLD-Sampling ช่วยเพิ่มประสิทธิภาพการทำงานของหุ่นยนต์ได้อย่างไร?
+2. **คำถาม:** โหนด AMCL มีหน้าที่ต้องคำนวณและเผยแพร่ทรานส์ฟอร์มคู่ใดลงบนโครงสร้าง TF Tree?
+3. **คำถาม:** เหตุใดการส่งพิกัดเริ่มต้นผ่าน `/initialpose` จึงต้องแนบค่าในเมทริกซ์ Covariance ไปด้วยเสมอ?
+4. **คำถาม:** พารามิเตอร์สัญญาณรบกวน $\alpha_1$ และ $\alpha_3$ ในโมเดลการเคลื่อนที่ของ AMCL แสดงถึงความไม่แน่นอนของพฤติกรรมใดตามลำดับ?
+5. **คำถาม:** จงอธิบายความแตกต่างระหว่างการทำงานของ Global Planner แบบ NavFn (A*) กับ Smac Planner (Hybrid A*)?
+6. **คำถาม:** DWB Local Controller มีเกณฑ์ในการคัดเลือกคำสั่งความเร็ว $(v, \omega)$ ที่ดีที่สุดให้กับมอเตอร์อย่างไร?
+7. **คำถาม:** อัลกอริทึม Regulated Pure Pursuit (RPP) มีจุดเด่นด้านความปลอดภัยในการเข้าโค้งอย่างไรเมื่อเทียบกับ Pure Pursuit ทั่วไป?
+8. **คำถาม:** หากหุ่นยนต์วิ่งไปถึงพิกัดที่ห่างจากเป้าหมาย $0.18\text{ m}$ แต่ในคอนฟิกตั้ง `xy_goal_tolerance: 0.25` ระบบ Nav2 จะถือว่าภารกิจสำเร็จหรือไม่?
+9. **คำถาม:** ทรานส์ฟอร์ม $\mathbf{T}_{\text{odom}}^{\text{map}}$ มีบทบาทอย่างไรในการประสานความต่อเนื่องของการควบคุมหุ่นยนต์?
+10. **คำถาม:** คำสั่ง CLI ใดที่ใช้ในการส่งเป้าหมายพิกัดการนำทางไปยัง Action `/navigate_to_pose`?
 
 <details>
-<summary>🔍 ดูเฉลยคำตอบ</summary>
+<summary>🔍 ดูเฉลยคำตอบพร้อมคำอธิบายอย่างละเอียด</summary>
 
-1. **ตอบ:** ปรับลดจำนวนอนุภาคลงโดยอัตโนมัติเมื่อหุ่นยนต์มีความมั่นใจในตำแหน่งสูง ช่วยลดภาระการประมวลผลของ CPU ในขณะที่ยังคงความแม่นยำไว้ได้
-2. **ตอบ:** เพื่อบอกให้อัลกอริทึม Particle Filter ทราบถึงระดับความไม่แน่นอน (Uncertainty) ของจุดตั้งต้น เพื่อสร้างการกระจายตัวของกลุ่มอนุภาครอบตำแหน่งนั้นได้อย่างเหมาะสม
-3. **ตอบ:** ทรานส์ฟอร์มจาก `map` ไปยัง `odom`
-4. **ตอบ:** คำนวณวิถีการเคลื่อนที่จำลองล่วงหน้าหลายๆ รูปแบบ แล้วให้คะแนนผ่านฟังก์ชัน Critics ต่างๆ (การหลบสิ่งกีดขวาง, การเกาะเส้นทาง, การเข้าใกล้เป้าหมาย) วิถีที่ได้คะแนนรวมสูงสุดจะถูกส่งไปสั่งงานมอเตอร์
-5. **ตอบ:** กำหนดระยะห่างที่ยอมรับได้ (รัศมีความคลาดเคลื่อน เช่น 0.15 เมตร) ระหว่างพิกัดสุดท้ายของหุ่นยนต์กับเป้าหมาย เพื่อตัดสินว่าภารกิจสำเร็จสมบูรณ์ (Succeeded)
+1. **ตอบ:** **KLD-Sampling (Kullback-Leibler Divergence)** ช่วยปรับลดจำนวนอนุภาคลงโดยอัตโนมัติเมื่อหุ่นยนต์มีความมั่นใจในตำแหน่งสูง (อนุภาคลู่เข้าหากัน) ทำให้ลดภาระการประมวลผล CPU ได้อย่างมหาศาล และจะขยายจำนวนอนุภาคเพิ่มขึ้นเฉพาะเมื่อหุ่นยนต์เริ่มหลงทางหรือมีความไม่แน่นอนสูง
+2. **ตอบ:** ทรานส์ฟอร์มระหว่าง **`map` $\rightarrow$ `odom`**
+3. **ตอบ:** เพื่อบอกให้อัลกอริทึม Particle Filter ทราบถึง **ระดับความไม่แน่นอน (Uncertainty)** ของจุดเริ่มต้น เพื่อให้ระบบสามารถสุ่มกระจายกลุ่มอนุภาคเริ่มต้นรอบๆ พิกัดนั้นได้อย่างสมจริงตามค่าเบี่ยงเบนมาตรฐาน
+4. **ตอบ:**
+   - $\alpha_1$: ความคลาดเคลื่อนของการหมุน อันเนื่องมาจากการสั่งหมุนตัว ($\text{rot} \leftarrow \text{rot}$)
+   - $\alpha_3$: ความคลาดเคลื่อนของการวิ่งตรง อันเนื่องมาจากการสั่งวิ่งตรง ($\text{trans} \leftarrow \text{trans}$)
+5. **ตอบ:**
+   - **NavFn (A*):** วางแผนบนตารางกริด 2 มิติโดยมองหุ่นยนต์เป็นจุดกลมอิสระ ไม่คำนึงถึงมุมหันหรือข้อจำกัดการเลี้ยว
+   - **Smac Planner (Hybrid A*):** วางแผนในปริภูมิสถานะ $(x, y, \theta)$ โดยคำนึงถึงรัศมีวงเลี้ยวขั้นต่ำ จลนศาสตร์การขับเคลื่อน และการสลับเกียร์เดินหน้า-ถอยหลังตามกายภาพจริงของรถ
+6. **ตอบ:** สุ่มจำลองวิถีการเคลื่อนที่ล่วงหน้าหลายร้อยรูปแบบในช่วงเวลาสั้นๆ แล้วนำแต่ละวิถีไปให้คะแนนผ่านชุดกรรมการตรวจสอบ (Critics) เช่น การหลบหลีกสิ่งกีดขวาง, การเกาะเส้นทางหลัก, และการเข้าใกล้เป้าหมาย วิถีที่ได้ผลรวมคะแนนสูงสุดจะถูกเลือกส่งไปสั่งงานมอเตอร์
+7. **ตอบ:** มีระบบ **Curvature Regulation** ที่คอยตรวจจับความโค้งของเส้นทาง หากต้องเลี้ยวโค้งหักศอก ระบบจะสั่งปรับลดความเร็วเชิงเส้น ($v$) ลงโดยอัตโนมัติเพื่อป้องกันไม่ให้หุ่นยนต์เกิดการลื่นไถลหรือหลุดออกจากเส้นทาง
+8. **ตอบ:** **ถือว่าสำเร็จสมบูรณ์ (Succeeded)** เนื่องจากระยะห่างจริง ($0.18\text{ m}$) น้อยกว่ารัศมีความคลาดเคลื่อนที่ยอมรับได้ ($0.25\text{ m}$)
+9. **ตอบ:** ทำหน้าที่ **ชดเชยและดูดซับค่า Drift สะสมของ Odometry** ทำให้หุ่นยนต์สามารถวางตำแหน่งเทียบกับแผนที่โลกได้อย่างแม่นยำ ในขณะที่ความเร็วและการเคลื่อนที่เฉพาะหน้าในระดับย่อยยังคงราบเรียบและต่อเนื่องบนเฟรม `odom` โดยไม่มีการกระตุก
+10. **ตอบ:** `ros2 action send_goal /navigate_to_pose nav2_msgs/action/NavigateToPose "{pose: {header: {frame_id: 'map'}, pose: {position: {x: 2.0, y: 1.0}, orientation: {w: 1.0}}}}"`
 </details>
 
 ---
 
 ## 📚 แหล่งอ้างอิงและศึกษาเพิ่มเติม
-- [Nav2 Navigation Stack Documentation](https://docs.nav2.org/)
+- [Nav2 Navigation Stack Official Documentation](https://docs.nav2.org/)
 - [AMCL Configuration Guide](https://docs.nav2.org/configuration/packages/configuring-amcl.html)
-- [DWB Controller Parameters Reference](https://docs.nav2.org/configuration/packages/configuring-dwb-controller.html)
+- [DWB Controller Parameters & Critics Reference](https://docs.nav2.org/configuration/packages/configuring-dwb-controller.html)
+- [Fox, Burgard, Dellaert, Thrun: Monte Carlo Localization: Efficient Position Estimation for Mobile Robots (AAAI)](https://www.ri.cmu.edu/pub_files/pub1/fox_dieter_1999_1/fox_dieter_1999_1.pdf)
