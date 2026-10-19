@@ -34,7 +34,7 @@
 2. **DDS และโปรโตคอลการค้นพบ (Discovery Mechanism):**
    - ใช้โปรโตคอล **Simple Participant Discovery Protocol (SPDP)** ผ่านเครือข่าย UDP Multicast
    - การแยกกลุ่มเครือข่ายในห้องเรียนหรือโรงงานทำผ่านตัวแปรสภาพแวดล้อม:
-     $$\text{Multicast Port} = 7400 + 250 \times \text{ROS\_DOMAIN\_ID}$$
+     $$\text{Multicast Port} = 7400 + 250 \times \text{Domain ID}$$
      โดย `ROS_DOMAIN_ID` มีค่าตั้งแต่ $0$ ถึง $101$ (ค่าปริยายคือ $0$)
 3. **Colcon Workspaces & Overlay/Underlay:**
    - Underlay คือสภาพแวดล้อมหลักของระบบ (`/opt/ros/jazzy`)

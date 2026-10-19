@@ -95,8 +95,8 @@ sequenceDiagram
 ### 3. การคำนวณพอร์ตและการจัดการ `ROS_DOMAIN_ID`
 เพื่อป้องกันไม่ให้หุ่นยนต์ของนักศึกษาหรือหุ่นยนต์ในสายการผลิตหลายตัวที่ใช้ Wi-Fi วงเดียวกันส่งข้อมูลตีกัน ROS 2 ใช้ตัวแปร `ROS_DOMAIN_ID` (ค่า $0 - 101$) ในการแยกช่วงพอร์ต UDP Multicast:
 
-$$\text{Multicast Port} = 7400 + (250 \times \text{ROS\_DOMAIN\_ID})$$
-$$\text{Unicast Port} = 7410 + (250 \times \text{ROS\_DOMAIN\_ID}) + (2 \times \text{Participant ID})$$
+$$\text{Multicast Port} = 7400 + (250 \times \text{Domain ID})$$
+$$\text{Unicast Port} = 7410 + (250 \times \text{Domain ID}) + (2 \times \text{Participant ID})$$
 
 #### ตัวอย่างการคำนวณพอร์ต:
 - หาก `ROS_DOMAIN_ID=0`: Discovery Port จะอยู่ที่ **7400**
