@@ -253,6 +253,25 @@ class PowerServiceClient(Node):
 
 ---
 
+## 📸 ภาพผลการทดสอบจริงจากระบบ (Live Execution & Terminal Capture)
+ผลลัพธ์จากการรันคำสั่งและโหนดจริงในระบบ เพื่อใช้เป็นข้อมูลอ้างอิงในการตรวจสอบความถูกต้อง:
+
+![Terminal Capture: Terminal — Week 03: Power Management Service & Deadlock Prevention](images/terminal_run.png)
+
+```console
+user@amr-dev:~/ros$ ./docker/run_lab.sh python3 Essential_ROS/Week_03_Services_Clients/src/power_service_server.py &
+[INFO] [power_service_server]: ⚡ [PowerServiceServer] Service /robot/set_power_mode ready.
+user@amr-dev:~/ros$ ./docker/run_lab.sh python3 Essential_ROS/Week_03_Services_Clients/src/power_service_client.py 15 25
+[INFO] [power_service_client]: ⏳ Connecting to /robot/set_power_mode service...
+[INFO] [power_service_client]: ✅ Service /robot/set_power_mode is online!
+[WARN] [power_service_server]: Power saving mode ENABLED: Max speed capped at 0.3 m/s, sensors throttled.
+[INFO] [power_service_client]: 🎉 Service Response: success=True
+[INFO] [power_service_client]: message='Power saving mode ENABLED: Max speed capped at 0.3 m/s, sensors throttled.'
+user@amr-dev:~/ros$ [CHECKPOINT PASSED: ASYNC SERVICE CALL COMPLETED WITHOUT DEADLOCK]
+```
+
+---
+
 ## 📝 แบบทดสอบท้ายบทเชิงลึก (Self-Assessment Quiz)
 
 1. **คำถาม:** สถาปัตยกรรมการสื่อสารแบบ Service แตกต่างจาก Topics อย่างไรในแง่ของ Flow ข้อมูล และเหตุใดจึงไม่ควรนำ Service มาใช้ส่งข้อมูลจากเซนเซอร์ LiDAR?

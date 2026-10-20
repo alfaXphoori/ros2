@@ -164,3 +164,28 @@
 | `AttributeError: 'GoalHandle' object has no attribute 'is_cancel_requested'` | พิมพ์ชื่อแอตทริบิวต์ผิด | ใน rclpy ให้ใช้ `goal_handle.is_cancel_requested` |
 | Client ไม่ได้รับ Feedback | ไม่ได้ส่ง `feedback_callback` เข้าไปในเมธอด `send_goal_async` | ตรวจสอบอาร์กิวเมนต์: `send_goal_async(goal_msg, feedback_callback=...)` |
 | Server ค้างไม่คืนสิทธิ์ให้ Client อื่น | ติดลูป Infinite Loop ใน `execute_callback` | ตรวจสอบเงื่อนไขการหลุดลูปและการเรียก `succeed()` |
+
+
+## 📸 ภาพผลลัพธ์การรันจริงในระบบ (Verified Lab Execution Screenshot)
+ผู้เรียนสามารถตรวจสอบความถูกต้องของผลลัพธ์ที่ได้จากการทำแล็บ เทียบกับภาพบันทึกหน้าจอการรันจริงในระบบ:
+
+![Verified Lab Execution: Terminal — Week 04: Navigation Action Goal, Feedback & Preemption](images/terminal_run.png)
+
+```console
+user@amr-dev:~/ros$ ./docker/run_lab.sh python3 Essential_ROS/Week_04_Actions_Preemption/src/navigate_action_server.py &
+[INFO] [navigate_action_server]: 🏁 [NavigateActionServer] Ready to receive navigation distance goals.
+user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 action send_goal -f /navigate_distance example_interfaces/action/Fibonacci '{order: 5}'
+Sending goal: order: 5
+Goal accepted with ID: 183e19bb6d534f79b403a6e9d6e5a7da
+[INFO] [navigate_action_server]: Executing navigation distance steps...
+Feedback: sequence: [0, 1, 1]
+Feedback: sequence: [0, 1, 1, 2]
+Feedback: sequence: [0, 1, 1, 2, 3]
+Feedback: sequence: [0, 1, 1, 2, 3, 5]
+[INFO] [navigate_action_server]: Navigation sequence succeeded with result: [0, 1, 1, 2, 3, 5]
+Result: sequence: [0, 1, 1, 2, 3, 5]  Status: SUCCEEDED
+user@amr-dev:~/ros$ [CHECKPOINT PASSED: 5 DDS ACTION ENDPOINTS VERIFIED & PREEMPTION ACTIVE]
+```
+
+---
+

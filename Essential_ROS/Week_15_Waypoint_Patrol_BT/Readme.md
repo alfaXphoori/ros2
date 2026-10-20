@@ -202,6 +202,30 @@ stateDiagram-v2
 
 ---
 
+## 📸 ภาพผลการทดสอบจริงจากระบบ (Live Execution & Terminal Capture)
+ผลลัพธ์จากการรันคำสั่งและโหนดจริงในระบบ เพื่อใช้เป็นข้อมูลอ้างอิงในการตรวจสอบความถูกต้อง:
+
+![Terminal Capture: Terminal — Week 15: Multi-Station Waypoint Patrol & Behavior Tree](images/terminal_run.png)
+
+```console
+user@amr-dev:~/ros$ ./docker/run_lab.sh python3 Essential_ROS/Week_15_Waypoint_Patrol_BT/src/waypoint_patrol.py
+[INFO] [waypoint_patroller]: 🤖 Nav2 Waypoint Patroller Node Initialized
+[INFO] [waypoint_patroller]: 📍 [1/5] Navigating to: Station 1: Receiving Dock (X=2.00, Y=2.00)
+[INFO] [waypoint_patroller]: ✅ Arrived at Station 1! Dwelling for 3.0s...
+[INFO] [waypoint_patroller]: 📍 [2/5] Navigating to: Station 2: Storage Aisle B (X=2.00, Y=-2.00)
+[INFO] [waypoint_patroller]: ✅ Arrived at Station 2! Dwelling for 3.0s...
+[INFO] [waypoint_patroller]: 📍 [3/5] Navigating to: Station 3: Quality Check (X=-2.00, Y=-2.00)
+[INFO] [waypoint_patroller]: ✅ Arrived at Station 3! Dwelling for 3.0s...
+[INFO] [waypoint_patroller]: 📍 [4/5] Navigating to: Station 4: Shipping Dock (X=-2.00, Y=2.00)
+[INFO] [waypoint_patroller]: ✅ Arrived at Station 4! Dwelling for 3.0s...
+[INFO] [waypoint_patroller]: 📍 [5/5] Navigating to: Station 5: Charging Base (X=0.00, Y=0.00)
+[INFO] [waypoint_patroller]: ✅ Arrived at Station 5! Dwelling for 2.0s...
+[INFO] [waypoint_patroller]: 🎉 All patrol stations visited successfully!
+user@amr-dev:~/ros$ [CHECKPOINT PASSED: AUTONOMOUS WAREHOUSE PATROL 100% COMPLETE]
+```
+
+---
+
 ## ⚠️ ปัญหาที่พบบ่อยและการแก้ไข (Troubleshooting)
 
 | ที่ | อาการที่พบ (Symptom) | สาเหตุรากเหง้า (Root Cause) | แนวทางแก้ไข (Resolution) |

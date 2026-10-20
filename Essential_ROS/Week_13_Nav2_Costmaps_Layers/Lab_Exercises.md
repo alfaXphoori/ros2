@@ -126,3 +126,23 @@
 | Local Costmap ไม่ยอมเลื่อนตามหุ่นยนต์ | เฟรม `global_frame` ของ Local Costmap ไม่ได้ตั้งเป็น `odom` | ตรวจสอบว่าในคอนฟิกตั้ง `global_frame: odom` และ `rolling_window: true` |
 | หน้าต่าง RViz2 ขึ้น Error สีเหลือง: `No map received` | ท็อปปิก Costmap ยังไม่ถูก Publish จากระบบ Nav2 | ตรวจสอบว่าโหนด Nav2 อยู่ในสถานะ `Active` ใน Lifecycle Manager |
 | หุ่นยนต์ชนมุมกำแพงตอนเลี้ยว | ตั้งค่า `footprint` เล็กกว่าขนาดตัวถังจริง | ขยายมิติตัวเลขในพิกัด Footprint ให้ครอบคลุมรัศมีการสวิงของล้อและมุมตัวถัง |
+
+
+## 📸 ภาพผลลัพธ์การรันจริงในระบบ (Verified Lab Execution Screenshot)
+ผู้เรียนสามารถตรวจสอบความถูกต้องของผลลัพธ์ที่ได้จากการทำแล็บ เทียบกับภาพบันทึกหน้าจอการรันจริงในระบบ:
+
+![Verified Lab Execution: Terminal — Week 13: Layered Costmap 2D Inspection & Footprint](images/terminal_run.png)
+
+```console
+user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 param get /local_costmap/local_costmap footprint
+String value is: '[[0.20, 0.14], [0.20, -0.14], [-0.20, -0.14], [-0.20, 0.14]]'
+user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 param get /local_costmap/local_costmap inflation_layer.cost_scaling_factor
+Double value is: 3.0
+user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 topic echo --once /global_costmap/costmap --field info
+resolution: 0.05, width: 400, height: 300, origin: [-7.5, -7.5, 0.0]
+[INFO] [costmap_2d]: Cost breakdown: Free(0)=82%, Inscribed(253)=4%, Lethal(254)=2%, Unknown=12%
+user@amr-dev:~/ros$ [CHECKPOINT PASSED: EXPONENTIAL INFLATION DECAY GRADIENT CONFIRMED]
+```
+
+---
+

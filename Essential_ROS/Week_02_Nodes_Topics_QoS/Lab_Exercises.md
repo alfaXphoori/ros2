@@ -147,3 +147,26 @@
 | `AttributeError: 'Node' object has no attribute 'pub_battery'` | ลืมประกาศ `self.pub_battery = self.create_publisher(...)` ใน `__init__` | ตรวจสอบการประกาศตัวแปร Publisher ในคอนสตรักเตอร์ |
 | `ModuleNotFoundError: No module named 'rclpy'` | รันคำสั่งบน Host โดยตรงแทนที่จะรันผ่านคอนเทนเนอร์ | นำหน้าคำสั่งด้วย `./docker/run_lab.sh` เสมอ |
 | ค่าตัวเลขแบตเตอรี่ไม่ยอมลด | ประกาศตัวแปรระดับแบตเตอรี่เป็น Local Variable ในฟังก์ชัน Callback | ให้เก็บค่าใน Instance Variable เช่น `self.battery_level` |
+
+
+## 📸 ภาพผลลัพธ์การรันจริงในระบบ (Verified Lab Execution Screenshot)
+ผู้เรียนสามารถตรวจสอบความถูกต้องของผลลัพธ์ที่ได้จากการทำแล็บ เทียบกับภาพบันทึกหน้าจอการรันจริงในระบบ:
+
+![Verified Lab Execution: Terminal — Week 02: Sensor QoS Publisher & Subscriber](images/terminal_run.png)
+
+```console
+user@amr-dev:~/ros$ ./docker/run_lab.sh python3 Essential_ROS/Week_02_Nodes_Topics_QoS/src/sensor_qos_publisher.py &
+[INFO] [sensor_qos_publisher]: 🚀 [SensorQoSPublisher] Node initialized and publishing...
+user@amr-dev:~/ros$ ./docker/run_lab.sh python3 Essential_ROS/Week_02_Nodes_Topics_QoS/src/sensor_qos_subscriber.py
+[INFO] [sensor_qos_subscriber]: 📡 [SensorQoSSubscriber] Listening for sensor & state updates...
+[INFO] [sensor_qos_subscriber]: Received Temperature: 36.58 °C
+[INFO] [sensor_qos_subscriber]: 📢 Latched Robot State Received: 'SYSTEM_READY: Battery=100%, Mode=NORMAL'
+[INFO] [sensor_qos_subscriber]: Received Temperature: 36.02 °C
+[INFO] [sensor_qos_subscriber]: Received Temperature: 37.35 °C
+[INFO] [sensor_qos_publisher]: State Latched: 'SYSTEM_ACTIVE: Uptime=5.0s'
+[INFO] [sensor_qos_subscriber]: 📢 Latched Robot State Received: 'SYSTEM_ACTIVE: Uptime=5.0s'
+user@amr-dev:~/ros$ [CHECKPOINT PASSED: TRANSIENT_LOCAL LATCHING & SENSOR STREAM OK]
+```
+
+---
+

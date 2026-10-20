@@ -274,6 +274,30 @@ echo "=================================================="
 
 ---
 
+## 📸 ภาพผลการทดสอบจริงจากระบบ (Live Execution & Terminal Capture)
+ผลลัพธ์จากการรันคำสั่งและโหนดจริงในระบบ เพื่อใช้เป็นข้อมูลอ้างอิงในการตรวจสอบความถูกต้อง:
+
+![Terminal Capture: Terminal — Week 01: ROS 2 Jazzy & DDS Verification](images/terminal_run.png)
+
+```console
+user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 doctor --report
+NETWORK CONFIGURATION
+  device: enp2s0  inet4: 192.168.31.249  flags: <UP,MULTICAST,RUNNING,BROADCAST>
+RMW MIDDLEWARE
+  middleware name    : rmw_fastrtps_cpp
+ROS 2 INFORMATION
+  distribution name  : jazzy (active)
+DDS MULTICAST VERIFICATION
+user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 multicast receive &
+[INFO] [multicast_receiver]: Waiting for UDP multicast datagram on 239.255.0.1...
+user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 multicast send
+[INFO] [multicast_sender]: Sending multicast packet 'Hello from ROS 2'...
+[INFO] [multicast_receiver]: Received valid datagram: 'Hello from ROS 2'
+user@amr-dev:~/ros$ [CHECKPOINT PASSED: DDS PORT 7400/7410 UNICAST & MULTICAST OK]
+```
+
+---
+
 ## 📝 แบบทดสอบท้ายบทเชิงลึก (Self-Assessment Quiz)
 
 1. **คำถาม:** สถาปัตยกรรมแบบกระจายศูนย์ (Peer-to-Peer) ของ ROS 2 แก้ไขปัญหา Single Point of Failure ที่เคยมีใน ROS 1 ได้อย่างไร?

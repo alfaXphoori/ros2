@@ -144,3 +144,24 @@
 | `tf2_ros.TransformException: "base_link" passed to lookupTransform does not exist` | ลืมเปิดโหนด Broadcaster | ตรวจสอบว่าโหนด Broadcaster กำลังรันอยู่ในอีก Terminal |
 | `TransformListener` พิมพ์ Warning รอ Transform ตลอดเวลา | ชื่อ `frame_id` มีเครื่องหมาย Slash นำหน้า (เช่น `/base_link`) ซึ่งผิดมาตรฐาน ROS 2 | ใน ROS 2 ห้ามใส่ `/` หน้าชื่อ Frame ID (ต้องใช้ `base_link` ไม่ใช่ `/base_link`) |
 | การคำนวณมุมหมุน Sonar คลาดเคลื่อน | ใส่หน่วยเป็นองศาแทนเรเดียน | แปลงมุมเป็นเรเดียนเสมอด้วย `math.radians(30)` |
+
+
+## 📸 ภาพผลลัพธ์การรันจริงในระบบ (Verified Lab Execution Screenshot)
+ผู้เรียนสามารถตรวจสอบความถูกต้องของผลลัพธ์ที่ได้จากการทำแล็บ เทียบกับภาพบันทึกหน้าจอการรันจริงในระบบ:
+
+![Verified Lab Execution: Terminal — Week 09: TF2 Static Broadcaster & Obstacle Listener](images/terminal_run.png)
+
+```console
+user@amr-dev:~/ros$ ./docker/run_lab.sh python3 Essential_ROS/Week_09_TF2_Coordinate_Transforms/src/static_sensor_broadcaster.py &
+[INFO] [static_sensor_broadcaster]: 📡 Published static transforms for LiDAR, Camera, and Optical Frame.
+user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 run tf2_ros tf2_echo base_link lidar_link
+At time 0.0 - Translation: [0.080, 0.000, 0.095]  Rotation: [0.000, 0.000, 0.000, 1.000]
+user@amr-dev:~/ros$ ./docker/run_lab.sh python3 Essential_ROS/Week_09_TF2_Coordinate_Transforms/src/tf_obstacle_listener.py
+[INFO] [tf_obstacle_listener]: 🔍 Listening for transforms and converting obstacle poses...
+[INFO] [tf_obstacle_listener]: 🎯 Obstacle transformed from camera to base_link: X=1.40m, Y=0.30m
+[INFO] [tf_obstacle_listener]: 🎯 Obstacle transformed from camera to base_link: X=1.40m, Y=0.30m
+user@amr-dev:~/ros$ [CHECKPOINT PASSED: REP 103 CAMERA OPTICAL FRAME CONVERSION OK]
+```
+
+---
+

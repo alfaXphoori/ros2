@@ -6,7 +6,8 @@ Demonstrates declaring ROS 2 parameters and intercepting changes via add_on_set_
 
 import rclpy
 from rclpy.node import Node
-from rcl_interfaces.msg import SetParametersResult, ParameterType
+from rclpy.parameter import Parameter
+from rcl_interfaces.msg import SetParametersResult
 
 
 class FleetParametersNode(Node):
@@ -34,7 +35,7 @@ class FleetParametersNode(Node):
 
         for param in params:
             if param.name == 'max_linear_speed':
-                if param.type_ != ParameterType.PARAMETER_DOUBLE:
+                if param.type_ not in (Parameter.Type.DOUBLE, Parameter.Type.INTEGER):
                     result.successful = False
                     result.reason = 'max_linear_speed must be a floating point number.'
                     return result

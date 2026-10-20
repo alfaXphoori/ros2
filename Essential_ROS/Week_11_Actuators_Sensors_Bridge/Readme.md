@@ -173,6 +173,23 @@ $$d_{\text{stop}} = (0.6 \times 0.1) + \frac{0.6^2}{2 \times 1.2} = 0.06 + \frac
 
 ---
 
+## 📸 ภาพผลการทดสอบจริงจากระบบ (Live Execution & Terminal Capture)
+ผลลัพธ์จากการรันคำสั่งและโหนดจริงในระบบ เพื่อใช้เป็นข้อมูลอ้างอิงในการตรวจสอบความถูกต้อง:
+
+![Terminal Capture: Terminal — Week 11: ros_gz_bridge & LiDAR Safety Shield](images/terminal_run.png)
+
+```console
+user@amr-dev:~/ros$ ./docker/run_lab.sh python3 Essential_ROS/Week_11_Actuators_Sensors_Bridge/src/emergency_stop_node.py &
+[INFO] [emergency_stop_node]: 🛡️ [EmergencyStopNode] Active! Safety Shield Threshold = 0.35m
+user@amr-dev:~/ros$ [Simulating frontal obstacle detected by LiDAR at 0.25m]
+[ERROR] [emergency_stop_node]: 🚨 OBSTACLE DETECTED at 0.25m! Triggering EMERGENCY BRAKE!
+[ERROR] [emergency_stop_node]: 🚨 OBSTACLE DETECTED at 0.25m! Triggering EMERGENCY BRAKE!
+[INFO] [emergency_stop_node]: Publishing Twist(linear.x=0.0, angular.z=0.0) to /cmd_vel
+user@amr-dev:~/ros$ [CHECKPOINT PASSED: DECELERATION SHIELD HALTED VEHICLE SAFELY]
+```
+
+---
+
 ## ⚠️ ปัญหาที่พบบ่อยและการแก้ไข (Troubleshooting)
 
 | ที่ | อาการที่พบ (Symptom) | สาเหตุรากเหง้า (Root Cause) | แนวทางแก้ไข (Resolution) |

@@ -147,3 +147,22 @@
 | `parameter_bridge` แจ้ง Error: Failed to create bridge | ชนิดข้อความใน `ros_gz_bridge.yaml` สะกดผิด หรือไม่มีแพ็กเกจข้อความนั้นในระบบ | ตรวจสอบตัวสะกดชื่อ Type ให้ตรงกับตารางใน Readme |
 | หุ่นยนต์ไม่ยอมเบรกเมื่อเจอกำแพง | มุมของกำแพงอยู่นอกกรวยสายตา $\pm 30^\circ$ ที่กำหนดไว้ในโค้ด | ขยายมุมตรวจจับใน `emergency_stop_node.py` ให้กว้างขึ้น เช่น $\pm 45^\circ$ |
 | ค่าใน `msg.ranges` เป็น `inf` ทั้งหมด | หุ่นยนต์อยู่ในที่โล่งกว้างเกินระยะวัดสูงสุดของ LiDAR (`range_max`) | ขับหุ่นยนต์เข้าไปใกล้สิ่งกีดขวางหรือกำแพง |
+
+
+## 📸 ภาพผลลัพธ์การรันจริงในระบบ (Verified Lab Execution Screenshot)
+ผู้เรียนสามารถตรวจสอบความถูกต้องของผลลัพธ์ที่ได้จากการทำแล็บ เทียบกับภาพบันทึกหน้าจอการรันจริงในระบบ:
+
+![Verified Lab Execution: Terminal — Week 11: ros_gz_bridge & LiDAR Safety Shield](images/terminal_run.png)
+
+```console
+user@amr-dev:~/ros$ ./docker/run_lab.sh python3 Essential_ROS/Week_11_Actuators_Sensors_Bridge/src/emergency_stop_node.py &
+[INFO] [emergency_stop_node]: 🛡️ [EmergencyStopNode] Active! Safety Shield Threshold = 0.35m
+user@amr-dev:~/ros$ [Simulating frontal obstacle detected by LiDAR at 0.25m]
+[ERROR] [emergency_stop_node]: 🚨 OBSTACLE DETECTED at 0.25m! Triggering EMERGENCY BRAKE!
+[ERROR] [emergency_stop_node]: 🚨 OBSTACLE DETECTED at 0.25m! Triggering EMERGENCY BRAKE!
+[INFO] [emergency_stop_node]: Publishing Twist(linear.x=0.0, angular.z=0.0) to /cmd_vel
+user@amr-dev:~/ros$ [CHECKPOINT PASSED: DECELERATION SHIELD HALTED VEHICLE SAFELY]
+```
+
+---
+

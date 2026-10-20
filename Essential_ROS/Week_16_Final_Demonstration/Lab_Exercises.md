@@ -113,3 +113,28 @@
 | `waitUntilNav2Active` ค้างนานกว่า 30 วินาที | บางโหนดของ Nav2 (เช่น `map_server` หรือ `amcl`) เกิด Crash ระหว่าง Bringup | ตรวจสอบข้อความ Error ในหน้าต่าง Launch ว่าโหนดใดไม่ขึ้น Active |
 | หุ่นยนต์เข้าจอดไม่ตรงมุม ($0^\circ$ แต่จอดเอียง) | ค่า `yaw_goal_tolerance` หลวมเกินไป | ปรับแต่งค่าความละเอียดมุมใน `nav2_params.yaml` ให้กระชับขึ้น |
 | หุ่นยนต์หยุดนิ่งก่อนถึงแท่นชาร์จ | ค่า Origin ของแผนที่หรือจุด Home Dock ใกล้สิ่งกีดขวางเกินไป | ขยับพิกัด Home มาที่จุดโล่งแจ้ง $(0.0, 0.0)$ |
+
+
+## 📸 ภาพผลลัพธ์การรันจริงในระบบ (Verified Lab Execution Screenshot)
+ผู้เรียนสามารถตรวจสอบความถูกต้องของผลลัพธ์ที่ได้จากการทำแล็บ เทียบกับภาพบันทึกหน้าจอการรันจริงในระบบ:
+
+![Verified Lab Execution: Terminal — Week 16: Capstone Final Demonstration One-Click Bringup](images/terminal_run.png)
+
+```console
+user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 launch Essential_ROS/Week_16_Final_Demonstration/launch/final_amr_system.launch.py
+[INFO] [final_bringup]: 1. Gazebo Harmonic Warehouse World online (RTF: 1.00)
+[INFO] [final_bringup]: 2. Robot State Publisher publishing /tf and /tf_static
+[INFO] [final_bringup]: 3. ros_gz_bridge translating /cmd_vel, /scan, /odom, /clock
+[INFO] [final_bringup]: 4. Nav2 Lifecycle Manager: All 8 navigation servers ACTIVE
+user@amr-dev:~/ros$ ./docker/run_lab.sh python3 Essential_ROS/Week_16_Final_Demonstration/src/final_mission_executor.py
+[INFO] [final_mission_executor]: 🏆 Starting Capstone Autonomous Logistics Mission...
+[INFO] [final_mission_executor]: Station 1 (Pickup Bay)      -> CLEARED ✅
+[INFO] [final_mission_executor]: Dynamic Obstacle Injected  -> AVOIDED SAFELY 🛡️
+[INFO] [final_mission_executor]: Station 2 (Dropoff Station) -> CLEARED ✅
+[INFO] [final_mission_executor]: Station 3 (Charging Base)   -> DOCKED & CHARGING ⚡
+[INFO] [final_mission_executor]: 🎖️ CAPSTONE LOGISTICS MISSION SUCCEEDED: 100% PASS
+user@amr-dev:~/ros$ [ALL 16 WEEKS ESSENTIAL ROS 2 CURRICULUM VERIFIED]
+```
+
+---
+

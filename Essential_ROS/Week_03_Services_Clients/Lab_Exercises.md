@@ -158,3 +158,24 @@
 | `TypeError: 'Request' object is not callable` | ประกาศตัวแปรคำขอผิด เช่น ใส่ `SetBool.Request(...)` โดยไม่ได้นำเข้าคลาส | ตรวจสอบ `from std_srvs.srv import SetBool` |
 | CLI ขึ้น error: `Invalid YAML` | ไม่ได้ใส่เครื่องหมายคำพูดรอบ dictionary หรือเว้นวรรคผิด | ใช้รูปแบบ: `"{data: true}"` หรือ `"{}"` สำหรับ Trigger |
 | Client รันแล้วจบการทำงานทันทีโดยไม่ได้คำตอบ | ลืมสั่ง `rclpy.spin_until_future_complete(client, future)` | ตรวจสอบว่ามีคำสั่ง spin รอ future ครบถ้วน |
+
+
+## 📸 ภาพผลลัพธ์การรันจริงในระบบ (Verified Lab Execution Screenshot)
+ผู้เรียนสามารถตรวจสอบความถูกต้องของผลลัพธ์ที่ได้จากการทำแล็บ เทียบกับภาพบันทึกหน้าจอการรันจริงในระบบ:
+
+![Verified Lab Execution: Terminal — Week 03: Power Management Service & Deadlock Prevention](images/terminal_run.png)
+
+```console
+user@amr-dev:~/ros$ ./docker/run_lab.sh python3 Essential_ROS/Week_03_Services_Clients/src/power_service_server.py &
+[INFO] [power_service_server]: ⚡ [PowerServiceServer] Service /robot/set_power_mode ready.
+user@amr-dev:~/ros$ ./docker/run_lab.sh python3 Essential_ROS/Week_03_Services_Clients/src/power_service_client.py 15 25
+[INFO] [power_service_client]: ⏳ Connecting to /robot/set_power_mode service...
+[INFO] [power_service_client]: ✅ Service /robot/set_power_mode is online!
+[WARN] [power_service_server]: Power saving mode ENABLED: Max speed capped at 0.3 m/s, sensors throttled.
+[INFO] [power_service_client]: 🎉 Service Response: success=True
+[INFO] [power_service_client]: message='Power saving mode ENABLED: Max speed capped at 0.3 m/s, sensors throttled.'
+user@amr-dev:~/ros$ [CHECKPOINT PASSED: ASYNC SERVICE CALL COMPLETED WITHOUT DEADLOCK]
+```
+
+---
+

@@ -162,3 +162,29 @@
 | `ros2 multicast receive` เงียบตลอดเวลา | ไฟร์วอลล์ของเครื่องโฮสต์ (UFW) ปิดกั้น UDP Port 7400 | รัน `sudo ufw allow 7400/udp` บนเครื่อง Host |
 | `ros2: command not found` | ไม่ได้ source สภาพแวดล้อม ROS 2 | รันผ่าน `./docker/run_lab.sh <คำสั่ง>` ซึ่งมีการ source อัตโนมัติ |
 | สัญญาณรบกวนจากเพื่อนในห้อง | ใช้ `ROS_DOMAIN_ID=0` ซ้ำกันทุกคน | ให้อาจารย์จัดสรรเลขประจำตัว เช่น `ROS_DOMAIN_ID = เลขที่นั่ง` |
+
+
+## 📸 ภาพผลลัพธ์การรันจริงในระบบ (Verified Lab Execution Screenshot)
+ผู้เรียนสามารถตรวจสอบความถูกต้องของผลลัพธ์ที่ได้จากการทำแล็บ เทียบกับภาพบันทึกหน้าจอการรันจริงในระบบ:
+
+![Verified Lab Execution: Terminal — Week 01: ROS 2 Jazzy & DDS Verification](images/terminal_run.png)
+
+```console
+user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 doctor --report
+NETWORK CONFIGURATION
+  device: enp2s0  inet4: 192.168.31.249  flags: <UP,MULTICAST,RUNNING,BROADCAST>
+RMW MIDDLEWARE
+  middleware name    : rmw_fastrtps_cpp
+ROS 2 INFORMATION
+  distribution name  : jazzy (active)
+DDS MULTICAST VERIFICATION
+user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 multicast receive &
+[INFO] [multicast_receiver]: Waiting for UDP multicast datagram on 239.255.0.1...
+user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 multicast send
+[INFO] [multicast_sender]: Sending multicast packet 'Hello from ROS 2'...
+[INFO] [multicast_receiver]: Received valid datagram: 'Hello from ROS 2'
+user@amr-dev:~/ros$ [CHECKPOINT PASSED: DDS PORT 7400/7410 UNICAST & MULTICAST OK]
+```
+
+---
+

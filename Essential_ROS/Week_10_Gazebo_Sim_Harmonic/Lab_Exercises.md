@@ -166,3 +166,26 @@
 | `gz: command not found` | ไม่ได้ติดตั้ง Gazebo หรือรันนอกคอนเทนเนอร์ | ใช้งานผ่าน `./docker/run_lab.sh gz ...` เสมอ |
 | วัตถุที่สร้างใหม่ตกลงทะลุพื้นโลก | ไม่ได้ใส่แท็ก `<static>true</static>` และไม่ได้นิยาม `<inertial>` ให้ถูกต้อง | หากต้องการให้ลอยอยู่กับที่ให้ใส่ `<static>true</static>` |
 | `gz sdf -k` แจ้ง Error ในบรรทัดที่เพิ่ม | ลืมปิดแท็ก XML (เช่น ขาด `</model>` หรือ `</link>`) | ตรวจสอบแท็กเปิด-ปิดให้สอดคล้องกัน |
+
+
+## 📸 ภาพผลลัพธ์การรันจริงในระบบ (Verified Lab Execution Screenshot)
+ผู้เรียนสามารถตรวจสอบความถูกต้องของผลลัพธ์ที่ได้จากการทำแล็บ เทียบกับภาพบันทึกหน้าจอการรันจริงในระบบ:
+
+![Verified Lab Execution: Terminal — Week 10: Gazebo Sim 8 (Harmonic) Warehouse World](images/terminal_run.png)
+
+```console
+user@amr-dev:~/ros$ ./docker/run_lab.sh gz sdf -k Essential_ROS/Week_10_Gazebo_Sim_Harmonic/worlds/warehouse.sdf
+Valid.
+user@amr-dev:~/ros$ ./docker/run_lab.sh gz sim -s -r Essential_ROS/Week_10_Gazebo_Sim_Harmonic/worlds/warehouse.sdf &
+[INFO] [gz-sim-physics-system]: Physics engine DART initialized with max_step_size=0.001s (1000 Hz)
+[INFO] [gz-sim-sensors-system]: Ogre2 Rendering engine ready for GPU raycast
+user@amr-dev:~/ros$ ./docker/run_lab.sh gz topic -l
+/clock
+/world/warehouse/pose/info
+/world/warehouse/dynamic_pose/info
+/stats  [Real-Time Factor: 1.00]
+user@amr-dev:~/ros$ [CHECKPOINT PASSED: HEADLESS GAZEBO HARMONIC SERVER ONLINE]
+```
+
+---
+

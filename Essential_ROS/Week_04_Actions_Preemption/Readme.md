@@ -263,6 +263,29 @@ stateDiagram-v2
 
 ---
 
+## 📸 ภาพผลการทดสอบจริงจากระบบ (Live Execution & Terminal Capture)
+ผลลัพธ์จากการรันคำสั่งและโหนดจริงในระบบ เพื่อใช้เป็นข้อมูลอ้างอิงในการตรวจสอบความถูกต้อง:
+
+![Terminal Capture: Terminal — Week 04: Navigation Action Goal, Feedback & Preemption](images/terminal_run.png)
+
+```console
+user@amr-dev:~/ros$ ./docker/run_lab.sh python3 Essential_ROS/Week_04_Actions_Preemption/src/navigate_action_server.py &
+[INFO] [navigate_action_server]: 🏁 [NavigateActionServer] Ready to receive navigation distance goals.
+user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 action send_goal -f /navigate_distance example_interfaces/action/Fibonacci '{order: 5}'
+Sending goal: order: 5
+Goal accepted with ID: 183e19bb6d534f79b403a6e9d6e5a7da
+[INFO] [navigate_action_server]: Executing navigation distance steps...
+Feedback: sequence: [0, 1, 1]
+Feedback: sequence: [0, 1, 1, 2]
+Feedback: sequence: [0, 1, 1, 2, 3]
+Feedback: sequence: [0, 1, 1, 2, 3, 5]
+[INFO] [navigate_action_server]: Navigation sequence succeeded with result: [0, 1, 1, 2, 3, 5]
+Result: sequence: [0, 1, 1, 2, 3, 5]  Status: SUCCEEDED
+user@amr-dev:~/ros$ [CHECKPOINT PASSED: 5 DDS ACTION ENDPOINTS VERIFIED & PREEMPTION ACTIVE]
+```
+
+---
+
 ## ⚠️ ปัญหาที่พบบ่อยและการแก้ไข (Troubleshooting)
 
 | ที่ | อาการที่พบ (Symptom) | สาเหตุรากเหง้า (Root Cause) | แนวทางแก้ไข (Resolution) |

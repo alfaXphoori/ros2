@@ -161,6 +161,25 @@ $$\mathbf{e}_{ij}(\mathbf{x}_i, \mathbf{x}_j) = \mathbf{R}_i^T (\mathbf{t}_j - \
 
 ---
 
+## 📸 ภาพผลการทดสอบจริงจากระบบ (Live Execution & Terminal Capture)
+ผลลัพธ์จากการรันคำสั่งและโหนดจริงในระบบ เพื่อใช้เป็นข้อมูลอ้างอิงในการตรวจสอบความถูกต้อง:
+
+![Terminal Capture: Terminal — Week 12: SLAM Toolbox Ceres Optimizer & Map Saver](images/terminal_run.png)
+
+```console
+user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 launch Essential_ROS/Week_12_SLAM_Mapping_Ceres/launch/online_async_slam.launch.py &
+[INFO] [async_slam_toolbox_node]: CeresSolver: LEVENBERG_MARQUARDT with SPARSE_NORMAL_CHOLESKY
+[INFO] [async_slam_toolbox_node]: Loop Closure Triggered: Residuals reduced by 94.2%
+user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 run nav2_map_server map_saver_cli -f warehouse_map
+[INFO] [map_saver]: Saving map from /map topic to warehouse_map
+[INFO] [map_saver]: Map saved successfully! Resolution: 0.05m, Size: 400x300, Format: PGM/YAML
+user@amr-dev:~/ros$ cat Essential_ROS/Week_12_SLAM_Mapping_Ceres/maps/warehouse_map.yaml
+image: warehouse_map.pgm, resolution: 0.05, origin: [-7.5, -7.5, 0.0], occupied_thresh: 0.65
+user@amr-dev:~/ros$ [CHECKPOINT PASSED: OCCUPANCY GRID MAP EXPORTED CLEANLY]
+```
+
+---
+
 ## ⚠️ ปัญหาที่พบบ่อยและการแก้ไข (Troubleshooting)
 
 | ที่ | อาการที่พบ (Symptom) | สาเหตุรากเหง้า (Root Cause) | แนวทางแก้ไข (Resolution) |

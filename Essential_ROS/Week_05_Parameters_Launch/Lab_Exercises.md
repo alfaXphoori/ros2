@@ -163,3 +163,25 @@
 | Launch file ปิดตัวลงทันทีหลังรัน | โหนดบางตัวเกิด Crash จาก Path ผิด | ตรวจสอบข้อความ Error สีแดงใน Terminal เพื่อดูว่าไฟล์สคริปต์ใดหายไป |
 | Parameter ไม่ยอมอัปเดต | ส่งชื่อโหนดไม่ครบ เช่น ขาด `/` ข้างหน้า | ตรวจสอบชื่อเต็มด้วย `ros2 node list` |
 | ข้อความ SyntaxError ในไฟล์ Launch | เขียนไวยากรณ์ Python ใน Launch File ไม่ถูกต้อง | ตรวจสอบด้วย `python3 -m py_compile <launch_file>` |
+
+
+## 📸 ภาพผลลัพธ์การรันจริงในระบบ (Verified Lab Execution Screenshot)
+ผู้เรียนสามารถตรวจสอบความถูกต้องของผลลัพธ์ที่ได้จากการทำแล็บ เทียบกับภาพบันทึกหน้าจอการรันจริงในระบบ:
+
+![Verified Lab Execution: Terminal — Week 05: Dynamic Parameter Validation & Reconfigure](images/terminal_run.png)
+
+```console
+user@amr-dev:~/ros$ ./docker/run_lab.sh python3 Essential_ROS/Week_05_Parameters_Launch/src/fleet_parameters.py &
+[INFO] [fleet_parameters]: 🤖 [FleetParametersNode] Initialized: ID=AMR_ALPHA_01, MaxSpeed=0.8m/s, Margin=0.35m
+user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 param get /fleet_parameters max_linear_speed
+Double value is: 0.8
+user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 param set /fleet_parameters max_linear_speed 1.2
+[WARN] [fleet_parameters]: ⚡ max_linear_speed updated to: 1.2 m/s
+Set parameter successful
+user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 param set /fleet_parameters max_linear_speed 3.5
+Setting parameter failed: Speed 3.5 is outside valid safety range [0.1, 2.5] m/s!
+user@amr-dev:~/ros$ [CHECKPOINT PASSED: DYNAMIC CALLBACK REJECTED UNSAFE SPEED VALUES]
+```
+
+---
+

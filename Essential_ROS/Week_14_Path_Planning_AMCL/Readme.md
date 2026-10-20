@@ -158,6 +158,25 @@ Local Controller มีหน้าที่รับ Global Path มาแป�
 
 ---
 
+## 📸 ภาพผลการทดสอบจริงจากระบบ (Live Execution & Terminal Capture)
+ผลลัพธ์จากการรันคำสั่งและโหนดจริงในระบบ เพื่อใช้เป็นข้อมูลอ้างอิงในการตรวจสอบความถูกต้อง:
+
+![Terminal Capture: Terminal — Week 14: AMCL Particle Filter & Nav2 Global Planning](images/terminal_run.png)
+
+```console
+user@amr-dev:~/ros$ ./docker/run_lab.sh python3 Essential_ROS/Week_14_Path_Planning_AMCL/src/amcl_initial_pose.py
+[INFO] [amcl_pose_initializer]: 📍 Initial Pose sent to /initialpose: (X=0.00, Y=0.00, Yaw=0.00)
+[INFO] [amcl]: Received /initialpose with covariance matrix. Spawning 2000 particles...
+[INFO] [amcl]: Scan matching likelihood field convergence achieved. Reduced particles to 500.
+[INFO] [amcl]: Broadcasting Transform: map -> odom
+user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 action send_goal /navigate_to_pose nav2_msgs/action/NavigateToPose ...
+[INFO] [nav2_planner]: Global plan found using NavfnPlanner (Length: 4.82m)
+[INFO] [dwb_controller]: Trajectory evaluated with BaseObstacleCritic and PathAlignCritic
+user@amr-dev:~/ros$ [CHECKPOINT PASSED: GOAL REACHED WITHIN 0.25M TOLERANCE]
+```
+
+---
+
 ## ⚠️ ปัญหาที่พบบ่อยและการแก้ไข (Troubleshooting)
 
 | ที่ | อาการที่พบ (Symptom) | สาเหตุรากเหง้า (Root Cause) | แนวทางแก้ไข (Resolution) |

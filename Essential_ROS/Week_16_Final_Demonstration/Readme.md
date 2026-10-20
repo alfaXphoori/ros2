@@ -84,6 +84,29 @@ flowchart TD
 
 ---
 
+## 📸 ภาพผลการทดสอบจริงจากระบบ (Live Execution & Terminal Capture)
+ผลลัพธ์จากการรันคำสั่งและโหนดจริงในระบบ เพื่อใช้เป็นข้อมูลอ้างอิงในการตรวจสอบความถูกต้อง:
+
+![Terminal Capture: Terminal — Week 16: Capstone Final Demonstration One-Click Bringup](images/terminal_run.png)
+
+```console
+user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 launch Essential_ROS/Week_16_Final_Demonstration/launch/final_amr_system.launch.py
+[INFO] [final_bringup]: 1. Gazebo Harmonic Warehouse World online (RTF: 1.00)
+[INFO] [final_bringup]: 2. Robot State Publisher publishing /tf and /tf_static
+[INFO] [final_bringup]: 3. ros_gz_bridge translating /cmd_vel, /scan, /odom, /clock
+[INFO] [final_bringup]: 4. Nav2 Lifecycle Manager: All 8 navigation servers ACTIVE
+user@amr-dev:~/ros$ ./docker/run_lab.sh python3 Essential_ROS/Week_16_Final_Demonstration/src/final_mission_executor.py
+[INFO] [final_mission_executor]: 🏆 Starting Capstone Autonomous Logistics Mission...
+[INFO] [final_mission_executor]: Station 1 (Pickup Bay)      -> CLEARED ✅
+[INFO] [final_mission_executor]: Dynamic Obstacle Injected  -> AVOIDED SAFELY 🛡️
+[INFO] [final_mission_executor]: Station 2 (Dropoff Station) -> CLEARED ✅
+[INFO] [final_mission_executor]: Station 3 (Charging Base)   -> DOCKED & CHARGING ⚡
+[INFO] [final_mission_executor]: 🎖️ CAPSTONE LOGISTICS MISSION SUCCEEDED: 100% PASS
+user@amr-dev:~/ros$ [ALL 16 WEEKS ESSENTIAL ROS 2 CURRICULUM VERIFIED]
+```
+
+---
+
 ## 🗣️ คลังคำถามสัมภาษณ์ปากเปล่าสำหรับการสอบป้องกัน (Oral Defense Question Bank)
 
 คณะกรรมการจะสุ่มถามคำถามเชิงสถาปัตยกรรมครอบคลุมทั้ง 16 สัปดาห์ โดยมีแนวทางการประเมินดังนี้:

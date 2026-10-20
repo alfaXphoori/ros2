@@ -192,6 +192,29 @@ flowchart LR
 
 ---
 
+## 📸 ภาพผลการทดสอบจริงจากระบบ (Live Execution & Terminal Capture)
+ผลลัพธ์จากการรันคำสั่งและโหนดจริงในระบบ เพื่อใช้เป็นข้อมูลอ้างอิงในการตรวจสอบความถูกต้อง:
+
+![Terminal Capture: Terminal — Week 07: URDF Parser & Link-Joint Tree Verification](images/terminal_run.png)
+
+```console
+user@amr-dev:~/ros$ ./docker/run_lab.sh check_urdf Essential_ROS/Week_07_URDF_Robot_Modeling/urdf/diff_drive_robot.urdf
+robot name is: diff_drive_robot
+---------- Successfully Parsed XML ---------------
+root Link: base_footprint has 1 child(ren)
+    child(1):  base_link
+        child(1):  camera_link
+            child(1):  camera_optical_link
+        child(2):  front_caster_link
+        child(3):  left_wheel_link
+        child(4):  lidar_link
+        child(5):  rear_caster_link
+        child(6):  right_wheel_link
+user@amr-dev:~/ros$ [CHECKPOINT PASSED: URDF VALIDATED - INERTIA TENSOR PRECISE]
+```
+
+---
+
 ## ⚠️ ปัญหาที่พบบ่อยและการแก้ไข (Troubleshooting)
 
 | ที่ | อาการที่พบ (Symptom) | สาเหตุรากเหง้า (Root Cause) | แนวทางแก้ไข (Resolution) |

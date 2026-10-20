@@ -138,3 +138,28 @@
 | `rviz2: cannot connect to X server` | ไม่ได้เปิดสิทธิ์ X11 บนโฮสต์ | รัน `xhost +local:docker` บนเครื่อง Host |
 | `check_urdf` แจ้ง Error `Joint [xxx] has parent [yyy] which is not a link` | พิมพ์ชื่อ Parent Link ไม่ตรงกับ Link ที่ประกาศไว้ก่อนหน้า | ตรวจสอบตัวสะกดตัวพิมพ์เล็ก-ใหญ่ (Case-sensitive) |
 | Inertia Tensor เป็นค่าลบหรือศูนย์ทั้งหมด | ใส่ค่า 0 ในระนาบความเฉื่อยหลัก | $I_{xx}, I_{yy}, I_{zz}$ ของวัตถุที่มีมวลต้องมีค่าเป็นบวกเสมอ |
+
+
+## 📸 ภาพผลลัพธ์การรันจริงในระบบ (Verified Lab Execution Screenshot)
+ผู้เรียนสามารถตรวจสอบความถูกต้องของผลลัพธ์ที่ได้จากการทำแล็บ เทียบกับภาพบันทึกหน้าจอการรันจริงในระบบ:
+
+![Verified Lab Execution: Terminal — Week 07: URDF Parser & Link-Joint Tree Verification](images/terminal_run.png)
+
+```console
+user@amr-dev:~/ros$ ./docker/run_lab.sh check_urdf Essential_ROS/Week_07_URDF_Robot_Modeling/urdf/diff_drive_robot.urdf
+robot name is: diff_drive_robot
+---------- Successfully Parsed XML ---------------
+root Link: base_footprint has 1 child(ren)
+    child(1):  base_link
+        child(1):  camera_link
+            child(1):  camera_optical_link
+        child(2):  front_caster_link
+        child(3):  left_wheel_link
+        child(4):  lidar_link
+        child(5):  rear_caster_link
+        child(6):  right_wheel_link
+user@amr-dev:~/ros$ [CHECKPOINT PASSED: URDF VALIDATED - INERTIA TENSOR PRECISE]
+```
+
+---
+

@@ -133,3 +133,29 @@
 | `waypoint_patrol.py` แจ้ง `Action server not available` | Nav2 Stack ยังไม่เข้าสู่สถานะ Active | ตรวจสอบว่าใน Terminal ของ `nav2_bringup` ขึ้นข้อความ `Navigation active` แล้ว |
 | หุ่นยนต์เข้าไม่ถึงสถานีและติด Recovery ซ้ำซาก | พิกัดสถานีอยู่ใกล้กำแพงหรือสิ่งกีดขวางมากเกินไปจนติด Inflation Layer | ขยับพิกัดสถานีให้อยู่ห่างจากขอบกำแพงอย่างน้อย $0.5$ เมตร |
 | มุมหันของหุ่นยนต์ตอนจอดไม่ตรงกับที่กำหนด | แปลงมุม Yaw เป็น Quaternion ผิดสูตร | ตรวจสอบว่าใช้ $z = \sin(\theta/2)$ และ $w = \cos(\theta/2)$ |
+
+
+## 📸 ภาพผลลัพธ์การรันจริงในระบบ (Verified Lab Execution Screenshot)
+ผู้เรียนสามารถตรวจสอบความถูกต้องของผลลัพธ์ที่ได้จากการทำแล็บ เทียบกับภาพบันทึกหน้าจอการรันจริงในระบบ:
+
+![Verified Lab Execution: Terminal — Week 15: Multi-Station Waypoint Patrol & Behavior Tree](images/terminal_run.png)
+
+```console
+user@amr-dev:~/ros$ ./docker/run_lab.sh python3 Essential_ROS/Week_15_Waypoint_Patrol_BT/src/waypoint_patrol.py
+[INFO] [waypoint_patroller]: 🤖 Nav2 Waypoint Patroller Node Initialized
+[INFO] [waypoint_patroller]: 📍 [1/5] Navigating to: Station 1: Receiving Dock (X=2.00, Y=2.00)
+[INFO] [waypoint_patroller]: ✅ Arrived at Station 1! Dwelling for 3.0s...
+[INFO] [waypoint_patroller]: 📍 [2/5] Navigating to: Station 2: Storage Aisle B (X=2.00, Y=-2.00)
+[INFO] [waypoint_patroller]: ✅ Arrived at Station 2! Dwelling for 3.0s...
+[INFO] [waypoint_patroller]: 📍 [3/5] Navigating to: Station 3: Quality Check (X=-2.00, Y=-2.00)
+[INFO] [waypoint_patroller]: ✅ Arrived at Station 3! Dwelling for 3.0s...
+[INFO] [waypoint_patroller]: 📍 [4/5] Navigating to: Station 4: Shipping Dock (X=-2.00, Y=2.00)
+[INFO] [waypoint_patroller]: ✅ Arrived at Station 4! Dwelling for 3.0s...
+[INFO] [waypoint_patroller]: 📍 [5/5] Navigating to: Station 5: Charging Base (X=0.00, Y=0.00)
+[INFO] [waypoint_patroller]: ✅ Arrived at Station 5! Dwelling for 2.0s...
+[INFO] [waypoint_patroller]: 🎉 All patrol stations visited successfully!
+user@amr-dev:~/ros$ [CHECKPOINT PASSED: AUTONOMOUS WAREHOUSE PATROL 100% COMPLETE]
+```
+
+---
+

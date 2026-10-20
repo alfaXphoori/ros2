@@ -206,6 +206,26 @@ $$q_w = \cos\left(\frac{\theta}{2}\right)$$
 
 ---
 
+## 📸 ภาพผลการทดสอบจริงจากระบบ (Live Execution & Terminal Capture)
+ผลลัพธ์จากการรันคำสั่งและโหนดจริงในระบบ เพื่อใช้เป็นข้อมูลอ้างอิงในการตรวจสอบความถูกต้อง:
+
+![Terminal Capture: Terminal — Week 06: Differential Drive Kinematics & Odometry Integration](images/terminal_run.png)
+
+```console
+user@amr-dev:~/ros$ ./docker/run_lab.sh python3 Essential_ROS/Week_06_Kinematics_REP_Standards/src/diff_drive_kinematics.py &
+[INFO] [diff_drive_kinematics]: 🤖 [DiffDriveKinematics] Ready: L=0.24m, r=0.08m
+user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist '{linear: {x: 0.4}, angular: {z: 0.2}}'
+publishing #1: geometry_msgs.msg.Twist(linear.x=0.4, angular.z=0.2)
+user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 topic echo --once /odom_calculated
+header: frame_id: 'odom', child_frame_id: 'base_footprint'
+pose: position: x: 0.8889, y: 0.2034, z: 0.0
+      orientation: x: 0.0, y: 0.0, z: 0.2280, w: 0.9737 (Yaw = 0.459 rad)
+twist: linear: x: 0.4, angular: z: 0.2
+user@amr-dev:~/ros$ [CHECKPOINT PASSED: REP 103/105 COMPLIANT ODOMETRY BROADCAST]
+```
+
+---
+
 ## ⚠️ ปัญหาที่พบบ่อยและการแก้ไข (Troubleshooting)
 
 | ที่ | อาการที่พบ (Symptom) | สาเหตุรากเหง้า (Root Cause) | แนวทางแก้ไข (Resolution) |

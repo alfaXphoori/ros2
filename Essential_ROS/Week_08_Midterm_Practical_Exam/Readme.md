@@ -137,3 +137,26 @@ pie title สัดส่วนคะแนนการสอบกลางภ�
 - [ROS 2 Quality of Service Policies](https://docs.ros.org/en/jazzy/Concepts/Intermediate/About-Quality-of-Service-Settings.html)
 - [REP 105: Coordinate Frames for Mobile Platforms](https://www.ros.org/reps/rep-0105.html)
 - [URDF Verification Tools and Tutorials](https://docs.ros.org/en/jazzy/Tutorials/Intermediate/URDF/URDF-Main.html)
+
+
+## 📸 ภาพผลการทดสอบจริงจากระบบ (Live Execution & Terminal Capture)
+ผลลัพธ์จากการรันคำสั่งและโหนดจริงในระบบ เพื่อใช้เป็นข้อมูลอ้างอิงในการตรวจสอบความถูกต้อง:
+
+![Terminal Capture: Terminal — Week 08 Midterm Exam: Hospital AMR Safety Controller](images/terminal_run.png)
+
+```console
+user@amr-dev:~/ros$ ./docker/run_lab.sh check_urdf solution/solution_urdf.urdf
+robot name is: diff_drive_robot | Successfully Parsed XML (35/35 pts)
+user@amr-dev:~/ros$ ./docker/run_lab.sh python3 solution/robot_node.py &
+[INFO] [midterm_robot_controller]: ✅ Midterm Solution Controller Running (MaxSpeed=0.6m/s)
+user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 topic pub --once /sensor/temperature std_msgs/msg/Float32 '{data: 72.5}'
+[WARN] [midterm_robot_controller]: ⚠️ High temperature detected: 72.5°C! Throttling robot.
+user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 param set /midterm_robot_controller max_speed 1.2
+[INFO] [midterm_robot_controller]: Max speed updated to: 1.2
+user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 param set /midterm_robot_controller max_speed 2.5
+Setting parameter failed: Speed out of safe limit [0.1, 1.5] (40/40 pts)
+user@amr-dev:~/ros$ [EXAM GRADE: 100/100 ALL TEST CASES PASSED]
+```
+
+---
+

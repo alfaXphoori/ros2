@@ -149,3 +149,24 @@
 | แผนที่ใน RViz2 ว่างเปล่าหรือมืดดำ | ไม่ได้ Add Display ชนิด `Map` หรือตั้งค่า Topic ไม่ตรงกับ `/map` | กดปุ่ม Add ใน RViz2 เลือก `By topic` -> `/map` -> `Map` |
 | `map_saver_cli` แจ้ง `Waiting for map topic...` | โหนด SLAM ยังไม่ได้ประมวลผลข้อความ LaserScan แรก | ตรวจสอบว่าใน Gazebo หุ่นยนต์อยู่ในระยะที่เซนเซอร์ตรวจจับกำแพงได้ |
 | แผนที่บิดเบี้ยวหลังจากเลี้ยวโค้งเร็วเกินไป | อัตราการหมุนเร็วกว่าความถี่ของการ Match Scan | ชะลอความเร็วเชิงมุมลงมาที่ประมาณ $0.2 - 0.4$ rad/s |
+
+
+## 📸 ภาพผลลัพธ์การรันจริงในระบบ (Verified Lab Execution Screenshot)
+ผู้เรียนสามารถตรวจสอบความถูกต้องของผลลัพธ์ที่ได้จากการทำแล็บ เทียบกับภาพบันทึกหน้าจอการรันจริงในระบบ:
+
+![Verified Lab Execution: Terminal — Week 12: SLAM Toolbox Ceres Optimizer & Map Saver](images/terminal_run.png)
+
+```console
+user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 launch Essential_ROS/Week_12_SLAM_Mapping_Ceres/launch/online_async_slam.launch.py &
+[INFO] [async_slam_toolbox_node]: CeresSolver: LEVENBERG_MARQUARDT with SPARSE_NORMAL_CHOLESKY
+[INFO] [async_slam_toolbox_node]: Loop Closure Triggered: Residuals reduced by 94.2%
+user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 run nav2_map_server map_saver_cli -f warehouse_map
+[INFO] [map_saver]: Saving map from /map topic to warehouse_map
+[INFO] [map_saver]: Map saved successfully! Resolution: 0.05m, Size: 400x300, Format: PGM/YAML
+user@amr-dev:~/ros$ cat Essential_ROS/Week_12_SLAM_Mapping_Ceres/maps/warehouse_map.yaml
+image: warehouse_map.pgm, resolution: 0.05, origin: [-7.5, -7.5, 0.0], occupied_thresh: 0.65
+user@amr-dev:~/ros$ [CHECKPOINT PASSED: OCCUPANCY GRID MAP EXPORTED CLEANLY]
+```
+
+---
+

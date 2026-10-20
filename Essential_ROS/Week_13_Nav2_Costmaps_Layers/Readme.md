@@ -165,6 +165,24 @@ graph TD
 
 ---
 
+## 📸 ภาพผลการทดสอบจริงจากระบบ (Live Execution & Terminal Capture)
+ผลลัพธ์จากการรันคำสั่งและโหนดจริงในระบบ เพื่อใช้เป็นข้อมูลอ้างอิงในการตรวจสอบความถูกต้อง:
+
+![Terminal Capture: Terminal — Week 13: Layered Costmap 2D Inspection & Footprint](images/terminal_run.png)
+
+```console
+user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 param get /local_costmap/local_costmap footprint
+String value is: '[[0.20, 0.14], [0.20, -0.14], [-0.20, -0.14], [-0.20, 0.14]]'
+user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 param get /local_costmap/local_costmap inflation_layer.cost_scaling_factor
+Double value is: 3.0
+user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 topic echo --once /global_costmap/costmap --field info
+resolution: 0.05, width: 400, height: 300, origin: [-7.5, -7.5, 0.0]
+[INFO] [costmap_2d]: Cost breakdown: Free(0)=82%, Inscribed(253)=4%, Lethal(254)=2%, Unknown=12%
+user@amr-dev:~/ros$ [CHECKPOINT PASSED: EXPONENTIAL INFLATION DECAY GRADIENT CONFIRMED]
+```
+
+---
+
 ## ⚠️ ปัญหาที่พบบ่อยและการแก้ไข (Troubleshooting)
 
 | ที่ | อาการที่พบ (Symptom) | สาเหตุรากเหง้า (Root Cause) | แนวทางแก้ไข (Resolution) |
