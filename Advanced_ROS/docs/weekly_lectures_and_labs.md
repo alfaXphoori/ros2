@@ -37,10 +37,10 @@
    - **DiffDriveController:** คำนวณ Odometry และแปลง Twist เป็นความเร็วล้อซ้าย-ขวาอย่างแม่นยำ
 
 #### 🛠️ 2. คู่มือปฏิบัติการ (Hands-on Lab)
-- **ไฟล์คอนฟิก:** [`Advanced_ROS/01_ros2_control_Hardware/config/diff_drive_controller.yaml`](file:///mnt/sda/ros/Advanced_ROS/01_ros2_control_Hardware/config/diff_drive_controller.yaml)
+- **ไฟล์คอนฟิก:** [`Advanced_ROS/01_ros2_control_Hardware/config/diff_drive_controller.yaml`](../01_ros2_control_Hardware/config/diff_drive_controller.yaml)
 - **การทดลอง:**
   - วิเคราะห์การตั้งค่า `wheel_separation_multiplier` และ `twist_covariance_diagonal`
-  - ตรวจสอบโครงสร้างแท็ก `<ros2_control>` ใน [`diff_drive_ros2_control.xacro`](file:///mnt/sda/ros/Advanced_ROS/01_ros2_control_Hardware/urdf/diff_drive_ros2_control.xacro)
+  - ตรวจสอบโครงสร้างแท็ก `<ros2_control>` ใน [`diff_drive_ros2_control.xacro`](../01_ros2_control_Hardware/urdf/diff_drive_ros2_control.xacro)
 
 ---
 
@@ -111,7 +111,7 @@
    - การแปลง Bounding Box เป็นพิกัด 3D เชิงเรขาคณิตโดยใช้ระยะทางจาก Depth Image
 
 #### 🛠️ 2. คู่มือปฏิบัติการ (Hands-on Lab)
-- **ไฟล์โค้ด:** [`Advanced_ROS/02_Vision_AI_Perception/src/cv_bridge_yolo_node.py`](file:///mnt/sda/ros/Advanced_ROS/02_Vision_AI_Perception/src/cv_bridge_yolo_node.py)
+- **ไฟล์โค้ด:** [`Advanced_ROS/02_Vision_AI_Perception/src/cv_bridge_yolo_node.py`](../02_Vision_AI_Perception/src/cv_bridge_yolo_node.py)
 - **ขั้นตอนการทดลอง:**
   ```bash
   ./docker/run_lab.sh python3 Advanced_ROS/02_Vision_AI_Perception/src/cv_bridge_yolo_node.py
@@ -133,7 +133,7 @@
    - แปลงเป็น Quaternion $(x, y, z, w)$ เพื่อส่งต่อให้ Nav2 Docking Server
 
 #### 🛠️ 2. คู่มือปฏิบัติการ (Hands-on Lab)
-- **ไฟล์โค้ด:** [`Advanced_ROS/02_Vision_AI_Perception/src/apriltag_dock_tracker.py`](file:///mnt/sda/ros/Advanced_ROS/02_Vision_AI_Perception/src/apriltag_dock_tracker.py)
+- **ไฟล์โค้ด:** [`Advanced_ROS/02_Vision_AI_Perception/src/apriltag_dock_tracker.py`](../02_Vision_AI_Perception/src/apriltag_dock_tracker.py)
 - **ขั้นตอนการทดลอง:**
   ```bash
   ./docker/run_lab.sh python3 Advanced_ROS/02_Vision_AI_Perception/src/apriltag_dock_tracker.py
@@ -174,7 +174,7 @@
    - **Stage 3 (Contact Verification):** ตรวจสอบแรงสัมผัสหรือระดับกระแสไฟชาร์จก่อนตัดกำลังขับ
 
 #### 🛠️ 2. คู่มือปฏิบัติการ (Hands-on Lab)
-- **ไฟล์คอนฟิก:** [`Advanced_ROS/03_Nav2_Precision_Docking/config/docking_server_params.yaml`](file:///mnt/sda/ros/Advanced_ROS/03_Nav2_Precision_Docking/config/docking_server_params.yaml)
+- **ไฟล์คอนฟิก:** [`Advanced_ROS/03_Nav2_Precision_Docking/config/docking_server_params.yaml`](../03_Nav2_Precision_Docking/config/docking_server_params.yaml)
 - **การทดลอง:** วิเคราะห์พารามิเตอร์ `docking_threshold` (0.03 ม.) และการตั้งค่า `staging_x_offset`
 
 ---
@@ -190,7 +190,7 @@
    $$\text{ComputePath} \rightarrow \text{FollowPath} \xrightarrow{\text{Failed}} \text{ClearCostmap} \rightarrow \text{Spin} \rightarrow \text{BackUp}$$
 
 #### 🛠️ 2. คู่มือปฏิบัติการ (Hands-on Lab)
-- **ไฟล์ BT XML:** [`Advanced_ROS/03_Nav2_Precision_Docking/behavior_trees/dock_and_charge_bt.xml`](file:///mnt/sda/ros/Advanced_ROS/03_Nav2_Precision_Docking/behavior_trees/dock_and_charge_bt.xml)
+- **ไฟล์ BT XML:** [`Advanced_ROS/03_Nav2_Precision_Docking/behavior_trees/dock_and_charge_bt.xml`](../03_Nav2_Precision_Docking/behavior_trees/dock_and_charge_bt.xml)
 - **การทดลอง:** ศึกษาขั้นตอนการผูกเงื่อนไขแบตเตอรี่ต่ำเพื่อกระตุ้นให้หุ่นยนต์เข้าสู่โหมดชาร์จไฟอัตโนมัติ
 
 ---
@@ -218,7 +218,7 @@
    - แก้ปัญหา Multicast Storm ใน Wi-Fi อุตสาหกรรม โดยใช้ Zenoh Router ในการส่งข้อมูลข้ามซับเน็ต
 
 #### 🛠️ 2. คู่มือปฏิบัติการ (Hands-on Lab)
-- **ไฟล์โค้ด:** [`Advanced_ROS/04_Multi_Robot_Fleet_OpenRMF/launch/multi_robot_fleet.launch.py`](file:///mnt/sda/ros/Advanced_ROS/04_Multi_Robot_Fleet_OpenRMF/launch/multi_robot_fleet.launch.py)
+- **ไฟล์โค้ด:** [`Advanced_ROS/04_Multi_Robot_Fleet_OpenRMF/launch/multi_robot_fleet.launch.py`](../04_Multi_Robot_Fleet_OpenRMF/launch/multi_robot_fleet.launch.py)
 - **ขั้นตอนการทดลอง:**
   ```bash
   ./docker/run_lab.sh ros2 launch Advanced_ROS/04_Multi_Robot_Fleet_OpenRMF/launch/multi_robot_fleet.launch.py
@@ -239,7 +239,7 @@
    - **Infrastructure Interfaces:** สื่อสารกับระบบลิฟต์และประตูปิด-เปิดอัตโนมัติ
 
 #### 🛠️ 2. คู่มือปฏิบัติการ (Hands-on Lab)
-- **ไฟล์คอนฟิก:** [`Advanced_ROS/04_Multi_Robot_Fleet_OpenRMF/config/fleet_adapter_config.yaml`](file:///mnt/sda/ros/Advanced_ROS/04_Multi_Robot_Fleet_OpenRMF/config/fleet_adapter_config.yaml)
+- **ไฟล์คอนฟิก:** [`Advanced_ROS/04_Multi_Robot_Fleet_OpenRMF/config/fleet_adapter_config.yaml`](../04_Multi_Robot_Fleet_OpenRMF/config/fleet_adapter_config.yaml)
 - **การทดลอง:** วิเคราะห์การกำหนด Vicinity Bubble รัศมี 0.5 ม. ป้องกันไม่ให้หุ่นยนต์เข้าใกล้กันเกินไป
 
 ---
@@ -255,7 +255,7 @@
    - ป้องกันอันตรายจากการที่โหนดสั่งหมุนมอเตอร์ก่อนที่เซนเซอร์ LiDAR จะพร้อมทำงาน
 
 #### 🛠️ 2. คู่มือปฏิบัติการ (Hands-on Lab)
-- **ไฟล์โค้ด:** [`Advanced_ROS/05_Production_CI_CD_Security/src/lifecycle_laser_sensor.py`](file:///mnt/sda/ros/Advanced_ROS/05_Production_CI_CD_Security/src/lifecycle_laser_sensor.py)
+- **ไฟล์โค้ด:** [`Advanced_ROS/05_Production_CI_CD_Security/src/lifecycle_laser_sensor.py`](../05_Production_CI_CD_Security/src/lifecycle_laser_sensor.py)
 - **ขั้นตอนการทดลอง:**
   1. เปิดโหนด Lifecycle:
      ```bash
@@ -281,7 +281,7 @@
    - การใช้ `launch_testing` รันหุ่นยนต์ในคอนเทนเนอร์แบบไร้หน้าจอ (Headless) เพื่อทดสอบการประกอบโหนดก่อน Deploy ขึ้นหุ่นยนต์จริง
 
 #### 🛠️ 2. คู่มือปฏิบัติการ (Hands-on Lab)
-- **ไฟล์ชุดทดสอบ:** [`Advanced_ROS/05_Production_CI_CD_Security/tests/test_amr_launch.py`](file:///mnt/sda/ros/Advanced_ROS/05_Production_CI_CD_Security/tests/test_amr_launch.py)
+- **ไฟล์ชุดทดสอบ:** [`Advanced_ROS/05_Production_CI_CD_Security/tests/test_amr_launch.py`](../05_Production_CI_CD_Security/tests/test_amr_launch.py)
 - **การทดลอง:** รันชุดทดสอบความสมบูรณ์ของระบบผ่าน `pytest`:
   ```bash
   pytest-3 Advanced_ROS/05_Production_CI_CD_Security/tests/test_amr_launch.py
@@ -292,8 +292,8 @@
 ### สัปดาห์ที่ 16: Capstone Final Showcase & Industrial Defense
 
 #### 🏆 เกณฑ์การสอบโครงงานบูรณาการระดับอุตสาหกรรม (Final Capstone Evaluation)
-- **ไฟล์ระบบครบวงจร:** [`Advanced_ROS/06_Capstone_Project/launch/full_warehouse_system.launch.py`](file:///mnt/sda/ros/Advanced_ROS/06_Capstone_Project/launch/full_warehouse_system.launch.py)
-- **เกณฑ์การประเมิน 5 มิติ:** ดูรายละเอียดใน [`rubrics.md`](file:///mnt/sda/ros/Advanced_ROS/06_Capstone_Project/rubrics.md)
+- **ไฟล์ระบบครบวงจร:** [`Advanced_ROS/06_Capstone_Project/launch/full_warehouse_system.launch.py`](../06_Capstone_Project/launch/full_warehouse_system.launch.py)
+- **เกณฑ์การประเมิน 5 มิติ:** ดูรายละเอียดใน [`rubrics.md`](../06_Capstone_Project/rubrics.md)
   1. สถาปัตยกรรมระบบและความถูกต้องตามมาตรฐานวิศวกรรม (20%)
   2. การควบคุมฮาร์ดแวร์จริงและการจัดการความปลอดภัยแบบ Lifecycle (20%)
   3. ประสิทธิภาพของการนำทางอัตโนมัติและการหลบหลีกสิ่งกีดขวาง (25%)

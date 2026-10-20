@@ -68,14 +68,14 @@ flowchart TD
 
 👉 **เข้าสู่หน้าหลักของ Track:** [`Advanced_ROS/README.md`](Advanced_ROS/README.md)
 
-| โมดูล | หัวข้อการเรียนรู้ | เอกสารคู่มือและโค้ดตัวอย่าง |
-| :--- | :--- | :--- |
-| **01** | **`ros2_control` & Hardware** | [`01_ros2_control_Hardware/README.md`](Advanced_ROS/01_ros2_control_Hardware/README.md) <br> • [`diff_drive_controller.yaml`](Advanced_ROS/01_ros2_control_Hardware/config/diff_drive_controller.yaml) <br> • [`diff_drive_ros2_control.xacro`](Advanced_ROS/01_ros2_control_Hardware/urdf/diff_drive_ros2_control.xacro) |
-| **02** | **Vision & AI Perception** | [`02_Vision_AI_Perception/README.md`](Advanced_ROS/02_Vision_AI_Perception/README.md) <br> • [`cv_bridge_yolo_node.py`](Advanced_ROS/02_Vision_AI_Perception/src/cv_bridge_yolo_node.py) <br> • [`apriltag_dock_tracker.py`](Advanced_ROS/02_Vision_AI_Perception/src/apriltag_dock_tracker.py) |
-| **03** | **Nav2 Precision Docking** | [`03_Nav2_Precision_Docking/README.md`](Advanced_ROS/03_Nav2_Precision_Docking/README.md) <br> • [`docking_server_params.yaml`](Advanced_ROS/03_Nav2_Precision_Docking/config/docking_server_params.yaml) <br> • [`dock_and_charge_bt.xml`](Advanced_ROS/03_Nav2_Precision_Docking/behavior_trees/dock_and_charge_bt.xml) |
-| **04** | **Multi-Robot Fleet & Open-RMF** | [`04_Multi_Robot_Fleet_OpenRMF/README.md`](Advanced_ROS/04_Multi_Robot_Fleet_OpenRMF/README.md) <br> • [`fleet_adapter_config.yaml`](Advanced_ROS/04_Multi_Robot_Fleet_OpenRMF/config/fleet_adapter_config.yaml) <br> • [`multi_robot_fleet.launch.py`](Advanced_ROS/04_Multi_Robot_Fleet_OpenRMF/launch/multi_robot_fleet.launch.py) |
-| **05** | **Production, CI/CD & Security** | [`05_Production_CI_CD_Security/README.md`](Advanced_ROS/05_Production_CI_CD_Security/README.md) <br> • [`lifecycle_laser_sensor.py`](Advanced_ROS/05_Production_CI_CD_Security/src/lifecycle_laser_sensor.py) <br> • [`test_amr_launch.py`](Advanced_ROS/05_Production_CI_CD_Security/tests/test_amr_launch.py) |
-| **06** | **Capstone AMR Project** | [`06_Capstone_Project/Readme.md`](Advanced_ROS/06_Capstone_Project/Readme.md) <br> • [`full_warehouse_system.launch.py`](Advanced_ROS/06_Capstone_Project/launch/full_warehouse_system.launch.py) <br> • [`rubrics.md`](Advanced_ROS/06_Capstone_Project/rubrics.md) |
+| โมดูล | หัวข้อการเรียนรู้ | เอกสารคู่มือ | ใบงานแล็บ | โค้ดตัวอย่างสำคัญ |
+| :---: | :--- | :--- | :--- | :--- |
+| **01** | **`ros2_control` & Hardware** | [`01_ros2_control/README.md`](Advanced_ROS/01_ros2_control_Hardware/README.md) | [`Lab_01.md`](Advanced_ROS/01_ros2_control_Hardware/Lab_Exercises.md) | [`diff_drive_controller.yaml`](Advanced_ROS/01_ros2_control_Hardware/config/diff_drive_controller.yaml) |
+| **02** | **Vision & AI Perception** | [`02_Vision_AI/README.md`](Advanced_ROS/02_Vision_AI_Perception/README.md) | [`Lab_02.md`](Advanced_ROS/02_Vision_AI_Perception/Lab_Exercises.md) | [`cv_bridge_yolo_node.py`](Advanced_ROS/02_Vision_AI_Perception/src/cv_bridge_yolo_node.py) |
+| **03** | **Nav2 Precision Docking** | [`03_Precision_Docking/README.md`](Advanced_ROS/03_Nav2_Precision_Docking/README.md) | [`Lab_03.md`](Advanced_ROS/03_Nav2_Precision_Docking/Lab_Exercises.md) | [`dock_and_charge_bt.xml`](Advanced_ROS/03_Nav2_Precision_Docking/behavior_trees/dock_and_charge_bt.xml) |
+| **04** | **Multi-Robot Fleet & Open-RMF** | [`04_Multi_Robot/README.md`](Advanced_ROS/04_Multi_Robot_Fleet_OpenRMF/README.md) | [`Lab_04.md`](Advanced_ROS/04_Multi_Robot_Fleet_OpenRMF/Lab_Exercises.md) | [`multi_robot_fleet.launch.py`](Advanced_ROS/04_Multi_Robot_Fleet_OpenRMF/launch/multi_robot_fleet.launch.py) |
+| **05** | **Production, CI/CD & Security** | [`05_Production/README.md`](Advanced_ROS/05_Production_CI_CD_Security/README.md) | [`Lab_05.md`](Advanced_ROS/05_Production_CI_CD_Security/Lab_Exercises.md) | [`lifecycle_laser_sensor.py`](Advanced_ROS/05_Production_CI_CD_Security/src/lifecycle_laser_sensor.py) |
+| **06** | **Capstone AMR Project** | [`06_Capstone/Readme.md`](Advanced_ROS/06_Capstone_Project/Readme.md) | [`Lab_06.md`](Advanced_ROS/06_Capstone_Project/Lab_Exercises.md) | [`full_warehouse_system.launch.py`](Advanced_ROS/06_Capstone_Project/launch/full_warehouse_system.launch.py) |
 
 ---
 

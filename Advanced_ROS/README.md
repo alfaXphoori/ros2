@@ -25,6 +25,15 @@ flowchart TD
     M5 --> M6
 ```
 
+| โมดูล | หัวข้อการเรียนรู้ | เอกสารคู่มือ | ใบงานแล็บ | โค้ดตัวอย่างสำคัญ |
+| :---: | :--- | :--- | :--- | :--- |
+| **01** | **`ros2_control` & Hardware** | [`01_ros2_control/README.md`](01_ros2_control_Hardware/README.md) | [`Lab_01.md`](01_ros2_control_Hardware/Lab_Exercises.md) | [`diff_drive_controller.yaml`](01_ros2_control_Hardware/config/diff_drive_controller.yaml) |
+| **02** | **Vision & AI Perception** | [`02_Vision_AI/README.md`](02_Vision_AI_Perception/README.md) | [`Lab_02.md`](02_Vision_AI_Perception/Lab_Exercises.md) | [`cv_bridge_yolo_node.py`](02_Vision_AI_Perception/src/cv_bridge_yolo_node.py) |
+| **03** | **Nav2 Precision Docking** | [`03_Precision_Docking/README.md`](03_Nav2_Precision_Docking/README.md) | [`Lab_03.md`](03_Nav2_Precision_Docking/Lab_Exercises.md) | [`dock_and_charge_bt.xml`](03_Nav2_Precision_Docking/behavior_trees/dock_and_charge_bt.xml) |
+| **04** | **Multi-Robot & Open-RMF** | [`04_Multi_Robot/README.md`](04_Multi_Robot_Fleet_OpenRMF/README.md) | [`Lab_04.md`](04_Multi_Robot_Fleet_OpenRMF/Lab_Exercises.md) | [`multi_robot_fleet.launch.py`](04_Multi_Robot_Fleet_OpenRMF/launch/multi_robot_fleet.launch.py) |
+| **05** | **Production & SROS 2** | [`05_Production/README.md`](05_Production_CI_CD_Security/README.md) | [`Lab_05.md`](05_Production_CI_CD_Security/Lab_Exercises.md) | [`lifecycle_laser_sensor.py`](05_Production_CI_CD_Security/src/lifecycle_laser_sensor.py) |
+| **06** | **Capstone Warehouse AMR** | [`06_Capstone/Readme.md`](06_Capstone_Project/Readme.md) | [`Lab_06.md`](06_Capstone_Project/Lab_Exercises.md) | [`full_warehouse_system.launch.py`](06_Capstone_Project/launch/full_warehouse_system.launch.py) |
+
 ---
 
 ## 📑 สารบัญบทเรียนและคู่มือปฏิบัติการ (Advanced Tutorials)
