@@ -3,7 +3,9 @@
 ยินดีต้อนรับสู่ **Essential ROS 2 Track** — เส้นทางการเรียนรู้หลักสำหรับวิศวกรที่ต้องการสร้างและควบคุมหุ่นยนต์เคลื่อนที่อัตโนมัติ (Autonomous Mobile Robot - AMR) ตั้งแต่ระดับพื้นฐานจนถึงการขับเคลื่อนอัตโนมัติในแบบจำลอง 3 มิติ ด้วย **ROS 2 Jazzy Jalisco** และ **Gazebo Sim 8 (Harmonic)**
 
 > 🎓 **แผนการสอน 16 สัปดาห์เต็ม:** สำหรับอาจารย์ผู้สอนหรือสถาบันการศึกษา สามารถดูโครงสร้างแผนการสอนฉบับเต็มได้ที่ [`course_syllabus_01_essential_ros2.md`](../course_syllabus_01_essential_ros2.md)  
-> 📖 **คู่มือเนื้อหาบรรยายและขั้นตอนแล็บละเอียด 16 สัปดาห์:** อ่านได้ที่ [`docs/weekly_lectures_and_labs.md`](docs/weekly_lectures_and_labs.md)
+> 📖 **คู่มือเนื้อหาบรรยายและขั้นตอนแล็บละเอียด 16 สัปดาห์:** อ่านได้ที่ [`docs/weekly_lectures_and_labs.md`](docs/weekly_lectures_and_labs.md)  
+> 🛠️ **คู่มือการติดตั้ง ROS 2 ทุกระบบปฏิบัติการ (Native, Docker, WSL2):** อ่านได้ที่ [**`docs/ros2_installation_guide.md`**](../docs/ros2_installation_guide.md)  
+> 🧰 **คู่มือเครื่องมือโปรแกรมเมอร์ & CLI Cheat Sheet:** อ่านได้ที่ [**`docs/ros2_developer_toolkit.md`**](../docs/ros2_developer_toolkit.md)
 
 ---
 

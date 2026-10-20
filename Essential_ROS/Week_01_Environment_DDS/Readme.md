@@ -202,6 +202,63 @@ flowchart TD
 
 ---
 
+### 7. วิธีการติดตั้ง ROS 2 อย่างละเอียด (Native Installation & Containerization Guide)
+> 📖 สำหรับคู่มือฉบับเต็มและเจาะลึกทุกแพลตฟอร์ม สามารถอ่านเพิ่มเติมได้ที่ [**คู่มือการติดตั้ง ROS 2 อย่างสมบูรณ์**](../../docs/ros2_installation_guide.md)
+
+#### ก. การติดตั้งแบบเนทีฟบน Ubuntu 24.04 LTS (ROS 2 Jazzy Jalisco)
+1. **ตั้งค่า System Locale เป็น UTF-8:**
+   ```bash
+   sudo apt update && sudo apt install -y locales
+   sudo locale-gen en_US en_US.UTF-8
+   sudo update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
+   export LANG=en_US.UTF-8
+   ```
+2. **เปิดใช้งาน Ubuntu Universe Repository:**
+   ```bash
+   sudo apt install -y software-properties-common curl gnupg
+   sudo add-apt-repository universe -y
+   ```
+3. **เพิ่ม ROS 2 GPG Key และ Repository:**
+   ```bash
+   sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg
+   echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
+   sudo apt update
+   ```
+4. **ติดตั้งแพ็กเกจ Desktop และเครื่องมือพัฒนา:**
+   ```bash
+   sudo apt install -y ros-jazzy-desktop ros-dev-tools python3-colcon-common-extensions python3-rosdep
+   sudo rosdep init && rosdep update
+   ```
+5. **ตั้งค่า Sourcing อัตโนมัติใน `~/.bashrc`:**
+   ```bash
+   echo "source /opt/ros/jazzy/setup.bash" >> ~/.bashrc
+   echo "source /usr/share/colcon_argcomplete/hook/colcon-argcomplete.bash" >> ~/.bashrc
+   source ~/.bashrc
+   ```
+
+#### ข. การติดตั้งและใช้งานผ่าน Docker Container (Isolated & Lab Runner)
+1. ติดตั้ง Docker บน Ubuntu Host และเพิ่มสิทธิ์ User:
+   ```bash
+   sudo apt update && sudo apt install -y docker.io
+   sudo usermod -aG docker $USER
+   ```
+2. อนุญาตการแสดงผล GUI ไปยังหน้าจอ Host:
+   ```bash
+   xhost +local:root
+   ```
+3. รันคอนเทนเนอร์ของวิชาผ่านสคริปต์ที่เตรียมไว้:
+   ```bash
+   cd /mnt/sda/ros
+   ./docker/run_lab.sh
+   ```
+
+#### ค. การติดตั้งบน Windows 10/11 ผ่าน WSL2 + WSLg
+1. เปิด PowerShell (Admin) แล้วสั่ง `wsl --install -d Ubuntu-24.04`
+2. สร้างไฟล์ `.wslconfig` ที่ `C:\Users\<User>\.wslconfig` ใส่ `[wsl2]\nnetworkingMode=mirrored` เพื่อรองรับ UDP Multicast
+3. เปิด Ubuntu Terminal บน Windows แล้วทำตามขั้นตอนการติดตั้งแบบเนทีฟข้างต้นทันที โดย GUI (เช่น RViz2) จะเด้งขึ้นมาบน Windows ผ่าน WSLg โดยอัตโนมัติ
+
+---
+
 ## 🛠️ การวิเคราะห์โค้ดสคริปต์ในโมดูล (Script Code Walkthrough)
 
 ในโฟลเดอร์ `Essential_ROS/Week_01_Environment_DDS/src/domain_check.sh`:

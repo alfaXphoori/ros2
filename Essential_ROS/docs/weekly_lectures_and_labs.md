@@ -39,6 +39,11 @@
 3. **Colcon Workspaces & Overlay/Underlay:**
    - Underlay คือสภาพแวดล้อมหลักของระบบ (`/opt/ros/jazzy`)
    - Overlay คือโค้ดที่เราเขียนขึ้นเอง (`~/ros2_ws/install/setup.bash`) ซึ่งจะ Overwrite การทำงานของแพ็กเกจเดิมหากมีชื่อซ้ำกัน
+4. **วิธีการติดตั้งสภาพแวดล้อม ROS 2:**
+   - ติดตั้งแบบ Native บน Ubuntu 24.04 (ผ่าน APT Official Repo)
+   - ติดตั้งแบบ Containerization ผ่าน Docker (`ros:lab-runner`)
+   - ติดตั้งบน Windows 10/11 ผ่าน WSL2 + WSLg
+   *(รายละเอียดขั้นตอนทั้งหมดระบุไว้ใน [docs/ros2_installation_guide.md](../../docs/ros2_installation_guide.md))*
 
 #### 🛠️ 2. คู่มือปฏิบัติการ (Hands-on Lab)
 - **วัตถุประสงค์:** ติดตั้งสภาพแวดล้อม รัน Docker Container และทดสอบการค้นพบโหนดข้าม Domain ID

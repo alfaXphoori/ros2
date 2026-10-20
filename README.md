@@ -10,6 +10,13 @@
 
 ---
 
+## 🛠️ คู่มือการติดตั้งและชุดเครื่องมือพัฒนา (Installation & Toolkit)
+> เลือกลิงก์คู่มือฉบับเต็มด้านล่างสำหรับการติดตั้งสภาพแวดล้อมตั้งแต่เริ่มต้น:
+- 📖 [**คู่มือการติดตั้ง ROS 2 อย่างละเอียด (Native, Docker, WSL2, macOS)**](docs/ros2_installation_guide.md): ขั้นตอนการติดตั้งแบบ Step-by-Step, การตั้งค่าเครือข่าย DDS, และการแก้ปัญหาพบบ่อย
+- 🧰 [**คู่มือชุดเครื่องมือโปรแกรมเมอร์ (Developer Toolkit & CLI Cheat Sheet)**](docs/ros2_developer_toolkit.md): การตั้งค่า VSCode, การออกแบบ Colcon Workspace, และรวมคำสั่งลัด CLI ครบวงจร
+
+---
+
 ## 🎯 เลือกเส้นทางการเรียนรู้ (Choose Your Track)
 
 ```mermaid

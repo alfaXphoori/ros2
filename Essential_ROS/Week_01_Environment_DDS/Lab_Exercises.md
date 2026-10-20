@@ -24,10 +24,32 @@
   ```bash
   ./docker/run_lab.sh ros2 --help
   ```
+> 💡 *หากยังไม่ได้ติดตั้ง สามารถดูขั้นตอนการติดตั้ง Native หรือ WSL2 อย่างละเอียดได้ที่ [คู่มือการติดตั้ง ROS 2](../../docs/ros2_installation_guide.md)*
 
 ---
 
 ## 🧪 ขั้นตอนการทดลอง (Step-by-Step Lab Tasks)
+
+### 🔹 Lab 1.0: การติดตั้งและตรวจสอบความพร้อมของระบบ (Installation & System Verification)
+**เป้าหมาย:** ยืนยันการตั้งค่า Locale, การเข้าถึง Repository และความพร้อมของชุดเครื่องมือ ROS 2
+
+1. ตรวจสอบเวอร์ชันของระบบปฏิบัติการและเคอร์เนล:
+   ```bash
+   cat /etc/os-release | grep -E "PRETTY_NAME|VERSION_ID"
+   uname -r
+   ```
+2. ตรวจสอบความถูกต้องของ System Locale (ต้องเป็น UTF-8):
+   ```bash
+   locale | grep -E "LANG|LC_ALL"
+   ```
+   *ผลลัพธ์ที่ถูกต้อง:* ค่า `LANG` ควรมีค่าเป็น `en_US.UTF-8` หรือลงท้ายด้วย `.UTF-8`
+3. ทดสอบการเรียกใช้งานคำสั่งแกนกลางของ ROS 2:
+   ```bash
+   ./docker/run_lab.sh ros2 pkg list | head -n 10
+   ```
+   *ผลลัพธ์ที่ถูกต้อง:* รายชื่อแพ็กเกจมาตรฐานของ ROS 2 Jazzy แสดงขึ้นมาอย่างน้อย 10 แพ็กเกจ
+
+---
 
 ### 🔹 Lab 1.1: ตรวจสอบความสมบูรณ์ของสภาพแวดล้อมและรัน Diagnostic Script
 **เป้าหมาย:** ทำความเข้าใจสถานะตัวแปรสภาพแวดล้อม (Environment Variables) และการทำงานของ ROS 2 Daemon
