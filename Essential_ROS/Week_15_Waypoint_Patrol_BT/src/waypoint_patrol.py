@@ -18,7 +18,7 @@ import math
 import sys
 
 from action_msgs.msg import GoalStatus
-from lifecycle_msgs.srv import GetState
+from amr_week14.nav2_lifecycle_guard import describe, ensure_nav2_active
 from nav2_msgs.action import NavigateToPose
 import rclpy
 from rclpy.action import ActionClient
@@ -89,18 +89,11 @@ class WaypointPatroller(Node):
         return result.result().status
 
     def wait_nav2_active(self, timeout_s=120.0):
-        """bt_navigator rejects goals until it is ACTIVE, so wait for that state."""
-        cli = self.create_client(GetState, 'bt_navigator/get_state')
-        start = self.get_clock().now()
-        while rclpy.ok():
-            if cli.wait_for_service(timeout_sec=1.0):
-                fut = cli.call_async(GetState.Request())
-                if self.wait_future(fut, 5.0) and fut.result().current_state.label == 'active':
-                    return True
-            if (self.get_clock().now() - start).nanoseconds * 1e-9 > timeout_s:
-                return False
-            self.sleep(1.0)
-        return False
+        """bt_navigator rejects goals until it is ACTIVE: wait for every Nav2 lifecycle node
+        (Week 14 guard, which also heals a lost lifecycle_manager reply)."""
+        ok, states, healed = ensure_nav2_active(self, timeout=timeout_s)
+        (self.get_logger().info if ok else self.get_logger().error)(describe(states, healed))
+        return ok
 
     def run_patrol(self):
         self.get_logger().info('Waiting for Nav2 (bt_navigator active, /navigate_to_pose)...')

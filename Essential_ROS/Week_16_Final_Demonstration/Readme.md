@@ -74,7 +74,7 @@ ros2 launch amr_week16 final_amr_system.launch.py rviz:=true         # + RViz2 (
 ### 2. [`src/final_mission_executor.py`](src/final_mission_executor.py)
 `ros2 run amr_week16 final_mission_executor --ros-args -p use_sim_time:=true`
 - ใช้ `nav2_simple_commander.robot_navigator.BasicNavigator` (ชื่อโหนด `final_mission_executor`)
-- **Stage 0:** ตั้ง Initial Pose ที่ $(0.0, 0.0, 0^\circ)$ แล้ว `waitUntilNav2Active(localizer='amcl')`
+- **Stage 0:** รอให้โหนด Nav2 ทั้ง 10 ตัว ACTIVE ด้วย [`nav2_lifecycle_guard`](../Week_14_Path_Planning_AMCL/src/nav2_lifecycle_guard.py) ของสัปดาห์ 14 (แก้กรณี lifecycle manager ค้าง และเลิกรอหลัง `bringup_timeout` 150 s แทนการค้างตลอดไป) จากนั้นตั้ง Initial Pose ที่ $(0.0, 0.0, 0^\circ)$ แล้ว `waitUntilNav2Active(localizer='amcl')`
 - **Stage 1–3** (ทุกจุดอยู่ในพื้นที่ว่างของแผนที่จริง ห่างสิ่งกีดขวาง > 0.55 m — ตรวจโดย `test/test_mission_unit.py`):
   1. **Cargo Pickup Bay:** $(1.5, 1.0, 90^\circ)$ Dwell 3 s
   2. **Dropoff Station:** $(-1.5, -1.0, 180^\circ)$ Dwell 2 s

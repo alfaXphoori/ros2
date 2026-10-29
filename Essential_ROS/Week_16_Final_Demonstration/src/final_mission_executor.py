@@ -5,7 +5,8 @@ Week 16: Final Practical Examination mission executor.
   ros2 run amr_week16 final_mission_executor --ros-args -p use_sim_time:=true
 
 Warehouse delivery scenario (map frame, all stations in free space of the real map):
-  0. set the AMCL initial pose at Home (0, 0, 0 deg) and wait until Nav2 is active
+  0. wait until every Nav2 lifecycle node is active (Week 14 nav2_lifecycle_guard),
+     then set the AMCL initial pose at Home (0, 0, 0 deg)
   1. Cargo Pickup Bay   ( 1.5,  1.0,  90 deg), dwell 3 s
   2. Dropoff Station    (-1.5, -1.0, 180 deg), dwell 2 s
   3. Home Charging Base ( 0.0,  0.0,   0 deg), dwell 1 s
@@ -18,6 +19,7 @@ stages SUCCEEDED (PASS); otherwise it logs FAIL and exits 1.
 import math
 import sys
 
+from amr_week14.nav2_lifecycle_guard import describe, ensure_nav2_active
 from geometry_msgs.msg import PoseStamped
 from nav2_simple_commander.robot_navigator import BasicNavigator, TaskResult
 import rclpy
@@ -57,8 +59,17 @@ def run_mission(nav):
     log = nav.get_logger()
     dwell_scale = nav.declare_parameter('dwell_scale', 1.0).value
     timeout = nav.declare_parameter('stage_timeout', 120.0).value
+    bringup_timeout = nav.declare_parameter('bringup_timeout', 150.0).value
 
     log.info('AMR-101 final mission: initial pose (0.0, 0.0, 0 deg), waiting for Nav2')
+    # waitUntilNav2Active() has no timeout and would wait forever if a lifecycle_manager
+    # reply is lost; the Week 14 guard heals that case and gives up after bringup_timeout
+    ok, states, healed = ensure_nav2_active(nav, timeout=bringup_timeout)
+    (log.info if ok else log.error)(describe(states, healed))
+    if not ok:
+        log.error(f'MISSION SUMMARY: 0/{len(MISSION)} stages SUCCEEDED (0%), '
+                  'Nav2 not active -> FAIL')
+        return False
     nav.setInitialPose(create_pose(nav, 0.0, 0.0, 0.0))
     nav.waitUntilNav2Active(localizer='amcl')
     log.info('Stage 0 Localization + Nav2 bringup: ACTIVE')

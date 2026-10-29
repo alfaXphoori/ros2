@@ -16,6 +16,11 @@ import rclpy
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 
+try:
+    from amr_week14.nav2_lifecycle_guard import ensure_nav2_active, LOCALIZATION_NODES
+except ImportError:  # python3 src/amcl_initial_pose.py
+    from nav2_lifecycle_guard import ensure_nav2_active, LOCALIZATION_NODES
+
 
 def make_initial_pose(x, y, theta, frame_id='map', sigma_xy=0.5, sigma_yaw=math.radians(15)):
     """PoseWithCovarianceStamped with a diagonal covariance (x, y, yaw)."""
@@ -53,6 +58,11 @@ class InitialPosePublisher(Node):
         # with use_sim_time, wait for the first /clock message so the stamp is valid
         while rclpy.ok() and clock.now().nanoseconds == 0:
             rclpy.spin_once(self, timeout_sec=0.1)
+        # AMCL only answers when it is ACTIVE; heal a lost lifecycle_manager reply
+        ok, states, _ = ensure_nav2_active(self, LOCALIZATION_NODES, timeout=self.timeout)
+        if not ok:
+            self.get_logger().error(f'Localization nodes not active: {states}')
+            return False
         start = clock.now()
         while rclpy.ok() and self.pub.get_subscription_count() == 0:
             rclpy.spin_once(self, timeout_sec=0.1)

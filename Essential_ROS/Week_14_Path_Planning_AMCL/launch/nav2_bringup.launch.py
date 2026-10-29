@@ -15,11 +15,14 @@ Nodes (all lifecycle nodes, configured + activated by two lifecycle managers):
                  velocity_smoother, collision_monitor, bt_navigator, waypoint_follower
 behavior_server (Spin/BackUp/Wait) is required by the default behavior tree,
 waypoint_follower provides /follow_waypoints (Week 15).
+If a lifecycle manager hangs (node left unconfigured/inactive, see nav2_lifecycle_guard.py):
+  ros2 run amr_week14 nav2_lifecycle_guard --ros-args -p use_sim_time:=true
 """
 
 import os
 
 from ament_index_python.packages import get_package_share_directory
+from amr_week14.nav2_lifecycle_guard import LOCALIZATION_NODES, NAVIGATION_NODES
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, SetEnvironmentVariable
 from launch.substitutions import LaunchConfiguration
@@ -54,12 +57,10 @@ def generate_launch_description():
         Node(package='nav2_lifecycle_manager', executable='lifecycle_manager',
              name='lifecycle_manager_localization', output='screen',
              parameters=[{'use_sim_time': use_sim_time, 'autostart': autostart,
-                          'node_names': ['map_server', 'amcl']}]),
+                          'node_names': LOCALIZATION_NODES}]),
     ]
 
-    navigation_names = ['controller_server', 'smoother_server', 'planner_server',
-                        'behavior_server', 'velocity_smoother', 'collision_monitor',
-                        'bt_navigator', 'waypoint_follower']
+    navigation_names = NAVIGATION_NODES
     navigation = [
         nav2_node('nav2_controller', 'controller_server', remappings=nav_cmd),
         nav2_node('nav2_smoother', 'smoother_server'),

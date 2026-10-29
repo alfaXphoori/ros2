@@ -180,7 +180,7 @@ stateDiagram-v2
       self.get_logger().error(f"[{idx}/{n}] {wp['name']}: {name} after {dt:.1f} s")
   ```
   เวอร์ชันเดิมรอ `get_result_async()` เสร็จแล้วพิมพ์ "Arrived" ทุกครั้ง **แม้ Nav2 จะ ABORTED** — ตอนนี้นับเฉพาะ `STATUS_SUCCEEDED`, ยกเลิก goal ที่เกิน `goal_timeout` (120 s) และ **exit code 1** ถ้ามีสถานีใดล้มเหลว
-- **รอ Nav2 พร้อมก่อน:** ถาม `/bt_navigator/get_state` จนเป็น `active` (ถ้าส่ง goal เร็วเกินไป bt_navigator จะตอบ `Action server is inactive. Rejecting the goal.`)
+- **รอ Nav2 พร้อมก่อน:** เรียก [`nav2_lifecycle_guard`](../Week_14_Path_Planning_AMCL/src/nav2_lifecycle_guard.py) ของสัปดาห์ 14 ให้ถาม `get_state` ของโหนด Nav2 ทั้ง 10 ตัวจนเป็น `active` (ถ้าส่ง goal เร็วเกินไป bt_navigator จะตอบ `Action server is inactive. Rejecting the goal.`) และถ้า lifecycle manager ค้างเพราะคำตอบหาย guard จะ activate โหนดที่ค้างให้เอง
 - **Dwell ด้วยเวลาจำลอง:** `self.sleep()` วน `spin_once` ตามนาฬิกาของโหนด (sim time) แทน `time.sleep()` ที่บล็อก callback; พารามิเตอร์ `dwell_scale` ใช้ย่อเวลาพักในการทดสอบ
 
 ### 2. [`behavior_trees/patrol_nav_to_pose.xml`](behavior_trees/patrol_nav_to_pose.xml) — Behavior Tree ของเราเอง

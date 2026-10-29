@@ -165,8 +165,17 @@ Local Controller มีหน้าที่รับ Global Path มาแป�
   ```
   ค่าความแปรปรวนนี้จะถูก AMCL นำไปใช้สุ่มสร้างกลุ่มอนุภาคเริ่มต้นรอบๆ พิกัดนั้น
 
-### 4. การทดสอบอัตโนมัติ
+### 4. [`src/nav2_lifecycle_guard.py`](src/nav2_lifecycle_guard.py): กันระบบค้างตอน bringup
+`ros2 run amr_week14 nav2_lifecycle_guard --ros-args -p use_sim_time:=true` (exit code 0 เมื่อทั้ง 10 โหนด ACTIVE)
+- **ปัญหาที่เจอจริง:** `lifecycle_manager` ของ Nav2 ส่งคำสั่ง transition (configure/activate) ไปยังแต่ละโหนด **ครั้งเดียว** แล้วรอคำตอบ **โดยไม่มี timeout** (Jazzy เรียก `change_state(transition)` แบบไม่มี timeout และไม่มีพารามิเตอร์ให้ตั้ง) ในการรันจริงของวิชานี้ราว 2 ใน 21 ครั้ง โหนดทำ transition แล้ว (log ของโหนดขึ้น `Configuring`) แต่คำตอบไปไม่ถึง manager ระบบทั้งชุดจึงค้างตลอดไป และ `waitUntilNav2Active()` ของ `nav2_simple_commander` ก็ไม่มี timeout เช่นกัน
+- **อาการ:** `ros2 lifecycle get /amcl` (หรือโหนดอื่น) ค้างที่สถานะ **คงที่** `unconfigured`/`inactive` ไม่เปลี่ยนอีกเลย
+- **วิธีแก้ของ guard:** อ่าน `lifecycle_msgs/GetState` ของทุกโหนด ถ้าโหนดใดยังค้างในสถานะคงที่เกิน `heal_after` (ค่าเริ่มต้น 25 s, navigation servers ได้ 2 เท่าเพราะ manager เปิดทีละตัวและ `planner_server` ต้องรอ TF `map → odom` จาก AMCL) guard จะส่ง `ChangeState` (configure → activate) ให้เองและพิมพ์ WARN ไม่แตะโหนดที่อยู่ระหว่าง transition (`configuring`/`activating`) และเลิกรอเมื่อครบ `timeout`
+- `amcl_initial_pose` (สัปดาห์นี้), `waypoint_patrol` (สัปดาห์ 15) และ `final_mission_executor` (สัปดาห์ 16) เรียก guard นี้ก่อนเริ่มงานทุกครั้ง รายชื่อโหนดมาจากที่เดียวกับ `nav2_bringup.launch.py`
+
+### 5. การทดสอบอัตโนมัติ
 - [`test/test_nav2_config.py`](test/test_nav2_config.py): DWB มี critics, schema `progress_checker_plugins`, `laser_max_range` ≤ 10 m, behavior plugins ครบ, costmap ตรงกับสัปดาห์ที่ 13, launch มีทุก server
+- [`test/test_lifecycle_guard_unit.py`](test/test_lifecycle_guard_unit.py): ตรรกะของ guard (รอ `heal_after` ก่อน, ไม่แตะสถานะ transitional, ทำทีละโหนดตามลำดับ manager) และ launch ใช้รายชื่อโหนดชุดเดียวกับ guard
+- [`test/test_lifecycle_guard_launch.py`](test/test_lifecycle_guard_launch.py): **fault injection** เปิด `map_server` + `amcl` โดย **ไม่มี** lifecycle manager (เหมือน manager ที่คำตอบหาย) แล้ว configure `amcl` ด้วยมือให้ค้างที่ `inactive` guard ต้องพาทั้งสองโหนดถึง ACTIVE เอง และ `/map` ต้องออกมาขนาด 200×199 จริง
 - [`test/test_navigation.py`](test/test_navigation.py): Gazebo headless + Nav2 + แผนที่จริง → ตั้ง initial pose → `NavigateToPose` ไป $(2.0, -2.0, -90^\circ)$ ต้อง `SUCCEEDED` ภายใน 90 วินาที และตำแหน่ง **ground truth จาก Gazebo** ต้องห่างเป้า < 0.45 m
 
 ---
@@ -180,6 +189,7 @@ Local Controller มีหน้าที่รับ Global Path มาแป�
 | `ros2 action send_goal /navigate_to_pose ...` | ส่งเป้าหมายพิกัดให้ Nav2 วางแผนและขับเคลื่อนอัตโนมัติ | `ros2 action send_goal /navigate_to_pose nav2_msgs/action/NavigateToPose "{pose: {header: {frame_id: 'map'}, pose: {position: {x: 2.0, y: -2.0}, orientation: {z: -0.7071, w: 0.7071}}}}"` |
 | `ros2 topic echo --once /amcl_pose` | ตรวจสอบตำแหน่งปัจจุบันที่ AMCL คำนวณได้ | `ros2 topic echo --once /amcl_pose geometry_msgs/msg/PoseWithCovarianceStamped` |
 | `ros2 run amr_week11 ground_truth_pose` | ตำแหน่งจริงของหุ่นยนต์ใน Gazebo (ใช้ตรวจความแม่นของ AMCL/Nav2) | `ros2 run amr_week11 ground_truth_pose` |
+| `ros2 run amr_week14 nav2_lifecycle_guard` | รอจนโหนด Nav2 ทั้ง 10 ตัว ACTIVE และแก้กรณี lifecycle manager ค้าง | `ros2 run amr_week14 nav2_lifecycle_guard --ros-args -p use_sim_time:=true` |
 
 ---
 
@@ -221,6 +231,17 @@ diff_drive_robot ground truth: x=1.900 y=-1.927 yaw=-1.321 rad (-75.7 deg)
 ผลวัด: เป้าหมาย $(2.0, -2.0, -90^\circ)$ — `SUCCEEDED` ใน 14.2 วินาที (เวลาจริง), ตำแหน่งจริงจาก Gazebo คลาดจากเป้า 0.125 m / 14.3°
 (ชุดทดสอบ `test_navigation.py` สองรอบวัดได้ 0.192 m / 12.2° ใน 11.9 s และ 0.140 m / 14.5° ใน 12.2 s)
 
+Fault injection ของ lifecycle guard ([`results/lifecycle_guard_fault_injection.txt`](results/lifecycle_guard_fault_injection.txt)):
+```console
+[WARN] [w14_lifecycle_guard_test]: lifecycle guard: map_server still unconfigured after 2 s (lifecycle_manager reply lost?) -> sending its transitions directly
+[WARN] [w14_lifecycle_guard_test]: lifecycle guard: map_server configure -> True
+[WARN] [w14_lifecycle_guard_test]: lifecycle guard: map_server activate -> True
+[WARN] [w14_lifecycle_guard_test]: lifecycle guard: amcl still inactive after 2 s (lifecycle_manager reply lost?) -> sending its transitions directly
+[WARN] [w14_lifecycle_guard_test]: lifecycle guard: amcl activate -> True
+[w14 guard] 2/2 Nav2 lifecycle nodes ACTIVE (guard drove: map_server, amcl) in 2.0 s
+[w14 guard] /map 200x199 @ 0.05 m
+```
+
 ---
 
 ## ⚠️ ปัญหาที่พบบ่อยและการแก้ไข (Troubleshooting)
@@ -232,6 +253,7 @@ diff_drive_robot ground truth: x=1.900 y=-1.927 yaw=-1.321 rad (-75.7 deg)
 | 3 | **กลุ่มอนุภาค AMCL แตกกระจายกว้างไม่ยอมลู่เข้าหาตำแหน่งจริง** | พารามิเตอร์สัญญาณรบกวน $\alpha_1 - \alpha_4$ สูงเกินไป หรือหุ่นยนต์หมุนตัวเร็วเกินไป | ปรับลดค่า $\alpha$ ลงให้อยู่ในช่วง $[0.05, 0.2]$ — แต่ถ้า odometry ของหุ่นยนต์มี drift จริง (ตรวจด้วย `ground_truth_pose`) ต้อง *เพิ่ม* α ตัวที่เกี่ยวข้องแทน |
 | 7 | **Nav2 ไม่ active: `controller_server` configure ล้มเหลว** | DWB ไม่มี `critics` หรือใช้คีย์ `progress_checker_plugin` แบบเก่า | ใช้คอนฟิกของแพ็กเกจนี้ ตรวจด้วย `ros2 lifecycle get /controller_server` |
 | 8 | **`bt_navigator` activate ไม่ผ่านเพราะโหลด BT ไม่ได้** | ไม่มี `behavior_server` (BT ค่าเริ่มต้นใช้ Spin/BackUp/Wait) | ใช้ `nav2_bringup.launch.py` ของแพ็กเกจนี้ซึ่งเปิด `behavior_server` แล้ว |
+| 9 | **bringup ค้างตลอดไป: บางโหนดค้างที่ `unconfigured`/`inactive` ทั้งที่ log ของโหนดขึ้น `Configuring`/`Activating` แล้ว** | คำตอบ `change_state` หายระหว่างทางไปยัง `lifecycle_manager` ซึ่งรอโดยไม่มี timeout | `ros2 run amr_week14 nav2_lifecycle_guard --ros-args -p use_sim_time:=true` (หรือ `ros2 lifecycle set /<node> activate` เอง) ดูหัวข้อ `nav2_lifecycle_guard.py` |
 | 4 | **Planner ไม่ยอมวางเส้นทาง แจ้งเตือน: `Failed to create plan`** | จุดเริ่มต้นหรือจุดหมายปลายทางตั้งอยู่ในเขตเซลล์ที่มี Cost 254 (Lethal) หรือ 255 | เลือกจุดเป้าหมายให้อยู่ในพื้นที่ว่างโล่ง (Cost 0) ห่างจากกำแพงอย่างน้อยเท่ากับรัศมีหุ่นยนต์ |
 | 5 | **หุ่นยนต์หยุดก่อนถึงเป้าหมายเล็กน้อยแล้วขึ้น Failed** | ค่า `xy_goal_tolerance` ตั้งไว้เข้มงวดเกินไป (เช่น 0.02 m) จนมอเตอร์ไม่สามารถทำได้ | ขยาย `xy_goal_tolerance` เป็น $0.15 - 0.25\text{ m}$ |
 | 6 | **Nav2 หลุดเข้าสู่ Recovery Spin ต่อเนื่อง** | Progress Checker ตรวจพบว่าหุ่นยนต์ไม่เคลื่อนที่เกินระยะที่กำหนดภายใน 10 วินาที | ตรวจสอบว่าหุ่นยนต์ติดสิ่งกีดขวางหรือไม่ และเพิ่ม `movement_time_allowance` |

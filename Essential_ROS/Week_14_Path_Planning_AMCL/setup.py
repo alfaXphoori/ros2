@@ -25,6 +25,7 @@ setup(
     entry_points={
         'console_scripts': [
             'amcl_initial_pose = amr_week14.amcl_initial_pose:main',
+            'nav2_lifecycle_guard = amr_week14.nav2_lifecycle_guard:main',
         ],
     },
 )

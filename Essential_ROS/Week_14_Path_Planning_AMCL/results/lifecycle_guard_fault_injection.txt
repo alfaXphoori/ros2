@@ -1,0 +1,25 @@
+# Real run: ros:lab-runner (ROS 2 Jazzy), Linux 7.0, 2026-10-29
+# Isolation: ROS_DOMAIN_ID=77, ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST
+# Fault injection: map_server + amcl started WITHOUT lifecycle_manager (= a manager that lost
+# a transition reply); amcl configured by hand -> inactive. Only test, guard and lifecycle
+# lines are kept; other node log lines were removed. No values were edited.
+
+$ launch_test Essential_ROS/Week_14_Path_Planning_AMCL/test/test_lifecycle_guard_launch.py
+test_guard_activates_nodes_left_behind_by_the_manager (test_lifecycle_guard_launch.TestLifecycleGuard.test_guard_activates_nodes_left_behind_by_the_manager) ... [amcl-2] [INFO] [1793258333.113261751] [amcl]: Configuring
+[WARN] [1793258335.170367167] [w14_lifecycle_guard_test]: lifecycle guard: map_server still unconfigured after 2 s (lifecycle_manager reply lost?) -> sending its transitions directly
+[map_server-1] [INFO] [1793258335.170604667] [map_server]: Configuring
+[WARN] [1793258335.175322065] [w14_lifecycle_guard_test]: lifecycle guard: map_server configure -> True
+[map_server-1] [INFO] [1793258335.175413822] [map_server]: Activating
+[WARN] [1793258335.177409918] [w14_lifecycle_guard_test]: lifecycle guard: map_server activate -> True
+[WARN] [1793258335.178113604] [w14_lifecycle_guard_test]: lifecycle guard: amcl still inactive after 2 s (lifecycle_manager reply lost?) -> sending its transitions directly
+[amcl-2] [INFO] [1793258335.178172213] [amcl]: Activating
+[WARN] [1793258335.179707225] [w14_lifecycle_guard_test]: lifecycle guard: amcl activate -> True
+ok
+test_guard_returns_quickly_when_everything_is_active (test_lifecycle_guard_launch.TestLifecycleGuard.test_guard_returns_quickly_when_everything_is_active) ... ok
+Ran 2 tests in 2.514s
+OK
+[w14 guard] 2/2 Nav2 lifecycle nodes ACTIVE (guard drove: map_server, amcl) in 2.0 s
+[w14 guard] /map 200x199 @ 0.05 m
+test_exit_codes (test_lifecycle_guard_launch.TestShutdown.test_exit_codes) ... ok
+Ran 1 test in 0.000s
+OK
