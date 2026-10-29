@@ -10,6 +10,8 @@
 #                              launch tests share ROS_DOMAIN_ID / GZ_PARTITION)
 #   make test PKG=amr_week04   build/test one package (and what it depends on)
 #   make lint                  YAML / XML / URDF / markdown-link checks (no ROS graph)
+#   make check                 lint + test: run this on your machine before every push
+#                              (there is no GitHub CI; ~11 min on a desktop CPU)
 #   make list                  list all course packages
 #   make clean                 remove build/ install/ log/
 
@@ -24,7 +26,7 @@ export ROS_AUTOMATIC_DISCOVERY_RANGE ?= LOCALHOST
 export ROS_DOMAIN_ID ?= 42
 export GZ_PARTITION ?= amr_make_test
 
-.PHONY: image build test lint list clean
+.PHONY: image build test lint check list clean
 
 image:
 	docker build -t ros:lab-runner -f docker/Dockerfile docker
@@ -40,6 +42,8 @@ lint:
 	  && xmllint --noout $$(git ls-files "*.xml" "*.sdf" "*.urdf") \
 	  && for f in $$(git ls-files "*.urdf"); do check_urdf $$f >/dev/null || exit 1; done \
 	  && python3 scripts/check_links.py'
+
+check: lint test
 
 list:
 	$(RUN) colcon list $(BASES) --names-only

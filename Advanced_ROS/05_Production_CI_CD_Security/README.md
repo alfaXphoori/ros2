@@ -142,11 +142,12 @@ export RMW_IMPLEMENTATION=rmw_zenoh_cpp
 
 ## 🧪 การทดสอบระบบอัตโนมัติ (CI/CD Pipeline with launch_testing)
 
-ทุกครั้งที่ Push โค้ด GitHub Actions จะ build และรันชุดทดสอบใน container เดียวกับที่ใช้ในห้องแล็บ:
+repo นี้รันชุดทดสอบบนเครื่องก่อน push ด้วย `make check` (lint + `colcon build` + `colcon test` ใน container `ros:lab-runner`
+เดียวกับที่ใช้ในห้องแล็บ) ในงานจริงนำคำสั่งเดียวกันไปใส่ใน CI runner (เช่น GitHub Actions หรือ GitLab CI) เพื่อให้รันอัตโนมัติทุกครั้งที่ push:
 
 ```mermaid
 flowchart LR
-    Dev["วิศวกร Git Push"] --> Action["GitHub Actions Runner (ros:lab-runner)"]
+    Dev["วิศวกร: make check (ก่อน git push)"] --> Action["container ros:lab-runner (หรือ CI runner)"]
     Action --> Build["colcon build"]
     Build --> Unit["pytest unit tests"]
     Unit --> IntTest["launch_testing: เปิดโหนดจริง แล้วตรวจพฤติกรรมบนกราฟ ROS"]

@@ -107,6 +107,7 @@ make build                 # colcon build ทุกแพ็กเกจ
 make test                  # colcon test ทุกแพ็กเกจ (รันทีละแพ็กเกจ, headless, ไม่ต้องใช้ GPU)
 make test PKG=amr_week14   # เฉพาะแพ็กเกจเดียว
 make lint                  # yamllint / xmllint / check_urdf / ตรวจลิงก์ markdown
+make check                 # lint + test ทั้งหมด: รันบนเครื่องก่อน push ทุกครั้ง (repo นี้ไม่ใช้ GitHub CI, ~11 นาที)
 
 # ตัวอย่างการรันแล็บ (headless:=true เมื่อไม่มีจอ; เปิด GUI ได้เมื่อตั้ง DISPLAY + xhost +local:)
 ./docker/run_lab.sh ros2 launch amr_week05 core_system.launch.py robot_ns:=amr_01
