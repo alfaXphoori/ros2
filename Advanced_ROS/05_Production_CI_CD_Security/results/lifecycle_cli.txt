@@ -1,0 +1,69 @@
+# Lab 5.1-5.2 lifecycle_laser_sensor - real run in ros:lab-runner (ROS 2 Jazzy), Linux 7.0, 2026-10-29
+# Recorded in one container (node in background, CLI in foreground); students use two terminals.
+$ ros2 run amr_adv05 lifecycle_laser_sensor &
+$ ros2 lifecycle nodes
+$ ros2 lifecycle get /lifecycle_laser_sensor
+unconfigured [1]
+$ ros2 lifecycle list /lifecycle_laser_sensor
+- configure [1]
+	Start: unconfigured
+	Goal: configuring
+- shutdown [5]
+	Start: unconfigured
+	Goal: shuttingdown
+$ ros2 lifecycle set /lifecycle_laser_sensor configure
+Transitioning successful
+$ ros2 lifecycle get /lifecycle_laser_sensor
+inactive [2]
+$ ros2 topic hz /scan_managed    # (4 s window)
+[hz window closed]
+$ ros2 lifecycle set /lifecycle_laser_sensor activate
+Transitioning successful
+$ ros2 topic hz /scan_managed    # (6 s window)
+WARNING: topic [/scan_managed] does not appear to be published yet
+average rate: 9.998
+	min: 0.100s max: 0.100s std dev: 0.00022s window: 12
+average rate: 9.996
+	min: 0.099s max: 0.101s std dev: 0.00044s window: 22
+average rate: 9.997
+	min: 0.099s max: 0.102s std dev: 0.00057s window: 33
+[hz window closed]
+$ ros2 topic echo --once --no-arr /scan_managed
+header:
+  stamp:
+    sec: 1793242349
+    nanosec: 443277619
+  frame_id: lidar_link
+angle_min: -3.1415927410125732
+angle_max: 3.1241393089294434
+angle_increment: 0.01745329238474369
+time_increment: 0.00027777778450399637
+scan_time: 0.10000000149011612
+range_min: 0.11999999731779099
+range_max: 10.0
+ranges: '<sequence type: float, length: 360>'
+intensities: '<sequence type: float, length: 0>'
+---
+$ ros2 lifecycle set /lifecycle_laser_sensor deactivate
+Transitioning successful
+$ ros2 topic hz /scan_managed    # (4 s window)
+WARNING: topic [/scan_managed] does not appear to be published yet
+[hz window closed]
+$ ros2 lifecycle set /lifecycle_laser_sensor activate
+Transitioning successful
+$ ros2 lifecycle set /lifecycle_laser_sensor shutdown
+Transitioning successful
+$ ros2 lifecycle get /lifecycle_laser_sensor
+finalized [4]
+$ ros2 topic hz /scan_managed    # (4 s window)
+WARNING: topic [/scan_managed] does not appear to be published yet
+[hz window closed]
+[node exit code: 0]
+----- node log (Terminal 1) -----
+[INFO] [1793242321.806568451] [lifecycle_laser_sensor]: [LifecycleLaserSensor] Created in UNCONFIGURED state.
+[INFO] [1793242333.435405326] [lifecycle_laser_sensor]: Configuring hardware connection and buffers...
+[INFO] [1793242333.508270438] [lifecycle_laser_sensor]: Configured successfully. Transitioned to INACTIVE.
+[INFO] [1793242341.142614299] [lifecycle_laser_sensor]: Activating node: starting laser emission & timer...
+[WARN] [1793242352.768896796] [lifecycle_laser_sensor]: Deactivating node: pausing laser emission...
+[INFO] [1793242358.997172400] [lifecycle_laser_sensor]: Activating node: starting laser emission & timer...
+[INFO] [1793242362.077857899] [lifecycle_laser_sensor]: Shutting down sensor node permanently.

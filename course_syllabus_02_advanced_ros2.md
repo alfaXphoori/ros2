@@ -19,7 +19,7 @@
 | :--- | :---: | :--- |
 | **1. Advanced Weekly Labs** | 25% | ใบงานปฏิบัติการระบบขั้นสูง (ros2_control, AI Perception, Docking, Open-RMF) |
 | **2. Midterm System Architecture Review** | 20% | สอบปฏิบัติการและนำเสนอโครงสร้างฮาร์ดแวร์ + AI Pipeline (สัปดาห์ที่ 8) |
-| **3. Industrial Capstone AMR Project** | 35% | โครงงานบูรณาการหุ่นยนต์คลังสินค้าอัจฉริยะ (ส่งมอบซอฟต์แวร์, รายงาน, และการทดสอบ) |
+| **3. Industrial Capstone AMR Project** | 35% | โครงงานบูรณาการหุ่นยนต์คลังสินค้าอัจฉริยะ: 100 คะแนนตาม 5 มิติ (20/20/25/20/15) วัดผลด้วย `capstone_mission` เทียบ Ground Truth |
 | **4. Final Oral Defense & Demonstration** | 10% | สาธิตการทำงานจริงในโลกจำลองแบบครบวงจร และการตอบคำถามเชิงวิศวกรรม (สัปดาห์ที่ 16) |
 | **5. Code Review & Engineering Standards** | 10% | คุณภาพโค้ด, Lifecycle Nodes, SROS 2 Security, CI/CD Integration Tests |
 
@@ -61,6 +61,29 @@ flowchart TD
     Part2 --> Part3
     Part3 --> Part4
 ```
+
+### 🧭 การจับคู่สัปดาห์กับโมดูลแล็บใน repo (ตรวจสอบเมื่อ 2026-10-29)
+แผน 16 สัปดาห์นี้สอนบนแล็บ 6 โมดูลใน [`Advanced_ROS/`](Advanced_ROS/README.md) ทุกโมดูลเป็น ROS 2 package
+(`amr_adv01`…`amr_adv06`) ที่รันได้จริงแบบ headless ใน `ros:lab-runner` (ไม่ต้องมีหุ่นยนต์จริงหรือ GPU) และมีชุดทดสอบ
+อัตโนมัติ (`make test PKG=amr_adv0N`) กับผลรันจริงใน `results/` หัวข้อที่ต้องใช้ฮาร์ดแวร์หรือยังไม่มีแล็บ ระบุไว้ตามจริงด้านล่าง
+
+| สัปดาห์ | หัวข้อ | แล็บ / แพ็กเกจ | สถานะแล็บ |
+| :---: | :--- | :--- | :--- |
+| 1–2 | ros2_control, Hardware Interface | [01 ros2_control](Advanced_ROS/01_ros2_control_Hardware/README.md) `amr_adv01` | ✅ mock hardware (GenericSystem) + Gazebo (gz_ros2_control) headless |
+| 3 | micro-ROS | — | 🟡 บรรยาย/สาธิต: ต้องใช้บอร์ด MCU (ESP32/STM32) จริง และ `micro_ros_agent` ไม่อยู่ใน image |
+| 4 | Vision pipeline & camera calibration | [02 Vision](Advanced_ROS/02_Vision_AI_Perception/README.md) `amr_adv02` | ✅ กล้องจำลอง + `cv_bridge`; 🟡 การคาลิเบรตใช้ `camera_calibration` กับกล้องจริง/ภาพ checkerboard ที่ผู้สอนเตรียม |
+| 5 | Object detection | `amr_adv02` (`object_detector`) | ✅ classical CV → `vision_msgs/Detection2DArray`; 🟡 YOLO (ultralytics) เป็นแบบฝึกหัดเสริม ติดตั้งเองใน venv |
+| 6 | AprilTag pose estimation | `amr_adv02` (`apriltag_dock_tracker`) | ✅ วัดจริง 0.99 mm / 0.23° ที่ 0.8 m |
+| 7 | 3D Point Cloud (PCL) | — | 🟡 บรรยายเท่านั้น (ยังไม่มีแล็บ/แพ็กเกจ PCL ใน image) |
+| 8 | Midterm | โมดูล 01 + 02 | ✅ ใช้แล็บ 01–02 เป็นฐาน (วัด CPU/latency บนเครื่องผู้เรียน ไม่กำหนดให้ใช้ GPU) |
+| 9 | Nav2 Docking | [03 Docking](Advanced_ROS/03_Nav2_Precision_Docking/README.md) `amr_adv03` | ✅ `opennav_docking` จริง + vision ในลูป, วัดจริง 11.4–14.5 mm |
+| 10 | Behavior Trees | `amr_adv03` (`dock_and_charge_bt.xml`, `check_bt`) + Essential [Week 15](Essential_ROS/Week_15_Waypoint_Patrol_BT/Readme.md) | ✅ BT ผ่านการตรวจกับ node ที่ติดตั้งจริง; custom BT โหลดใน `bt_navigator` จริงใน Week 15 |
+| 11 | Costmap Filters | Essential [Week 13](Essential_ROS/Week_13_Nav2_Costmaps_Layers/Readme.md) (costmap พื้นฐาน) | 🟡 Keepout/Speed filter เป็นแบบฝึกหัดต่อยอดจาก Week 13 (ยังไม่มีไฟล์ mask ใน repo) |
+| 12–13 | Multi-robot & Open-RMF | [04 Fleet](Advanced_ROS/04_Multi_Robot_Fleet_OpenRMF/README.md) `amr_adv04` | ✅ 2–3 หุ่นยนต์ namespaced + config RMF ผ่าน parser จริงของ `rmf_fleet_adapter` 2.7.2 |
+| 14–15 | Lifecycle, SROS 2, CI/CD | [05 Production](Advanced_ROS/05_Production_CI_CD_Security/README.md) `amr_adv05` | ✅ lifecycle launch_test, SROS 2 Enforce จริง, DDS vs Zenoh |
+| 16 | Capstone | [06 Capstone](Advanced_ROS/06_Capstone_Project/Readme.md) `amr_adv06` | ✅ ระบบคลังสินค้าบูรณาการ headless (ดูผลรันจริงในโมดูล) |
+
+✅ = มีแล็บที่รันได้จริงและมีชุดทดสอบ · 🟡 = บรรยาย/ต้องใช้ฮาร์ดแวร์หรือเป็นแบบฝึกหัดเสริม
 
 ---
 
@@ -118,7 +141,7 @@ flowchart TD
   - สถาปัตยกรรม Inference Engine: PyTorch, ONNX Runtime, TensorRT สำหรับ Edge AI
   - การสร้าง Custom Detection Messages และการส่งพิกัด Bounding Boxes
 - **ปฏิบัติการ (3 ชม.):**
-  - ศึกษาและรันโหนดตรวจจับวัตถุ [`cv_bridge_yolo_node.py`](Advanced_ROS/02_Vision_AI_Perception/src/cv_bridge_yolo_node.py)
+  - ศึกษาและรันโหนดตรวจจับวัตถุ [`object_detector_node.py`](Advanced_ROS/02_Vision_AI_Perception/src/object_detector_node.py)
   - ทดสอบจำลองการตรวจจับพาเลทสินค้าและกรวยจราจรในคลังสินค้า
 - **การบ้าน/แบบฝึกหัด:** เพิ่มตัวกรองความเชื่อมั่น (Confidence Threshold Filter) คัดกรองเฉพาะวัตถุที่มั่นใจเกิน 80%
 
@@ -235,14 +258,14 @@ flowchart TD
   - Automated Integration Testing ด้วยเฟรมเวิร์ก `launch_testing` และ GitHub Actions
 - **ปฏิบัติการ (3 ชม.):**
   - สร้าง Keystores และ Enclaves สำหรับเข้ารหัสข้อความของหุ่นยนต์
-  - รันชุดทดสอบความสมบูรณ์ของระบบ [`test_amr_launch.py`](Advanced_ROS/05_Production_CI_CD_Security/tests/test_amr_launch.py)
+  - รันชุดทดสอบความสมบูรณ์ของระบบ [`test_lifecycle_launch.py`](Advanced_ROS/05_Production_CI_CD_Security/test/test_lifecycle_launch.py)
 - **การบ้าน/แบบฝึกหัด:** สร้างไฟล์ GitHub Actions Workflow `.github/workflows/ci.yml` รันการทดสอบอัตโนมัติเมื่อมีการเปิด Pull Request
 
 ---
 
 ### สัปดาห์ที่ 16: 🏆 Capstone Project Final Showcase & Defense
 - **การนำเสนอและประเมินผลโครงการ (Final Industrial Defense):**
-  - รันระบบคลังสินค้าครบวงจร [`full_warehouse_system.launch.py`](Advanced_ROS/06_Capstone_Project/launch/full_warehouse_system.launch.py)
-  - ทดสอบการรับคำสั่งขนส่งสินค้า (Pickup -> Carry -> Dropoff -> Autocharge)
-  - ประเมินคะแนนตามเกณฑ์ 5 มิติใน [`rubrics.md`](Advanced_ROS/06_Capstone_Project/rubrics.md)
+  - รันระบบคลังสินค้าครบวงจร [`full_warehouse_system.launch.py`](Advanced_ROS/06_Capstone_Project/launch/full_warehouse_system.launch.py): `ros2 launch amr_adv06 full_warehouse_system.launch.py headless:=true`
+  - รันภารกิจและวัด KPI: `ros2 run amr_adv06 capstone_mission --ros-args -p use_sim_time:=true` (pick → drop → `DockRobot` → `UndockRobot` → ทดสอบ e-stop → กลับบ้าน พิมพ์ตาราง KPI และคืน exit code)
+  - เกณฑ์/KPI: [`rubrics.md`](Advanced_ROS/06_Capstone_Project/rubrics.md) + [`config/kpi_targets.yaml`](Advanced_ROS/06_Capstone_Project/config/kpi_targets.yaml) (Oral Defense ใช้ checklist fault injection ใน `rubrics.md`: kidnapped robot, สิ่งกีดขวางเคลื่อนที่, e-stop)
   - ส่งมอบซอฟต์แวร์ คลังโค้ด Git และรายงานทางวิศวกรรมฉบับสมบูรณ์

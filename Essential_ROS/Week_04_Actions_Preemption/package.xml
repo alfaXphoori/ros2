@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>amr_week04</name>
+  <version>1.0.0</version>
+  <description>Week 04: actions (example_interfaces/Fibonacci as a navigation-distance task) with
+    feedback, cancellation and single-goal preemption on a MultiThreadedExecutor.</description>
+  <maintainer email="phoori.ch@ksu.ac.th">Phoori Chantima</maintainer>
+  <license>Apache-2.0</license>
+
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>action_msgs</exec_depend>
+  <exec_depend>example_interfaces</exec_depend>
+
+  <test_depend>python3-pytest</test_depend>
+  <test_depend>ament_index_python</test_depend>
+  <test_depend>launch</test_depend>
+  <test_depend>launch_ros</test_depend>
+  <test_depend>launch_testing</test_depend>
+  <test_depend>launch_testing_ros</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

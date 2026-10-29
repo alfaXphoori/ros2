@@ -1,0 +1,39 @@
+# Docking accuracy in 4 start/dock configurations (fresh container per run).
+# error = fake-base ground truth vs the TRUE dock pose; the dock database prior is 5 cm off (db_error_y).
+
+$ ros2 launch amr_adv03 docking_sim.launch.py 
+$ ros2 run amr_adv03 dock_client --ros-args -p undock:=false -p "true_dock:=[1.0, 0.0, 0.0]"
+DockRobot dock_id=home_dock  start pose: x=0.000 y=-0.080 yaw=8.6 deg
+DockRobot result: success=True error_code=0 (NONE) num_retries=0  (6.8 s)
+docked: robot x=0.9855 y=-0.0006 yaw=0.79 deg | true dock x=1.000 y=0.000 yaw=0.00 deg
+docked: error = 14.5 mm (lateral -0.6 mm, longitudinal -14.5 mm), yaw error = +0.79 deg
+
+$ ros2 launch amr_adv03 docking_sim.launch.py start_y:=0.12 start_yaw:=-0.2
+$ ros2 run amr_adv03 dock_client --ros-args -p undock:=false -p "true_dock:=[1.0, 0.0, 0.0]"
+DockRobot dock_id=home_dock  start pose: x=0.000 y=0.120 yaw=-11.5 deg
+DockRobot result: success=True error_code=0 (NONE) num_retries=0  (6.9 s)
+docked: robot x=0.9890 y=0.0030 yaw=-1.60 deg | true dock x=1.000 y=0.000 yaw=0.00 deg
+docked: error = 11.4 mm (lateral +3.0 mm, longitudinal -11.0 mm), yaw error = -1.60 deg
+
+$ ros2 launch amr_adv03 docking_sim.launch.py dock_y:=0.2 dock_yaw:=0.3 start_yaw:=0.0
+$ ros2 run amr_adv03 dock_client --ros-args -p undock:=false -p "true_dock:=[1.0, 0.2, 0.3]"
+DockRobot dock_id=home_dock  start pose: x=0.000 y=-0.080 yaw=0.0 deg
+DockRobot result: success=True error_code=0 (NONE) num_retries=0  (7.6 s)
+docked: robot x=0.9866 y=0.1949 yaw=18.02 deg | true dock x=1.000 y=0.200 yaw=17.19 deg
+docked: error = 14.3 mm (lateral -0.9 mm, longitudinal -14.3 mm), yaw error = +0.83 deg
+
+$ ros2 launch amr_adv03 docking_sim.launch.py start_x:=-0.3 start_y:=0.05 start_yaw:=0.0
+$ ros2 run amr_adv03 dock_client --ros-args -p undock:=false -p "true_dock:=[1.0, 0.0, 0.0]"
+DockRobot dock_id=home_dock  start pose: x=-0.300 y=0.050 yaw=0.0 deg
+DockRobot result: success=True error_code=0 (NONE) num_retries=0  (8.7 s)
+docked: robot x=0.9857 y=0.0012 yaw=-0.58 deg | true dock x=1.000 y=0.000 yaw=0.00 deg
+docked: error = 14.3 mm (lateral +1.2 mm, longitudinal -14.3 mm), yaw error = -0.58 deg
+
+# Same start pose, AprilTag ignored (use_vision:=false): the robot docks at the 5 cm-off database pose
+$ ros2 launch amr_adv03 docking_sim.launch.py use_vision:=false
+$ ros2 run amr_adv03 dock_client --ros-args -p undock:=false -p "true_dock:=[1.0, 0.0, 0.0]"
+DockRobot dock_id=home_dock  start pose: x=0.000 y=-0.080 yaw=8.6 deg
+DockRobot result: success=True error_code=0 (NONE) num_retries=0  (6.9 s)
+docked: robot x=0.9884 y=0.0475 yaw=1.55 deg | true dock x=1.000 y=0.000 yaw=0.00 deg
+docked: error = 48.9 mm (lateral +47.5 mm, longitudinal -11.6 mm), yaw error = +1.55 deg
+

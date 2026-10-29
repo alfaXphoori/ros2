@@ -1,0 +1,78 @@
+# Lab 5.4 SROS2 Enforce - real run in ros:lab-runner (ROS 2 Jazzy, rmw_fastrtps_cpp), Linux 7.0, 2026-10-29
+# (commands run from /mnt/sda/ros with ROS_DOMAIN_ID=15 ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST)
+$ ./docker/run_lab.sh ros2 security create_keystore Advanced_ROS/05_Production_CI_CD_Security/sros2_keystore
+$ ./docker/run_lab.sh ros2 security create_enclave Advanced_ROS/05_Production_CI_CD_Security/sros2_keystore /talker_listener/talker
+$ ./docker/run_lab.sh ros2 security create_enclave Advanced_ROS/05_Production_CI_CD_Security/sros2_keystore /talker_listener/listener
+$ ./docker/run_lab.sh ros2 security list_enclaves Advanced_ROS/05_Production_CI_CD_Security/sros2_keystore
+/talker_listener/listener
+/talker_listener/talker
+$ find Advanced_ROS/05_Production_CI_CD_Security/sros2_keystore/enclaves -type f | sort
+Advanced_ROS/05_Production_CI_CD_Security/sros2_keystore/enclaves/governance.p7s
+Advanced_ROS/05_Production_CI_CD_Security/sros2_keystore/enclaves/governance.xml
+Advanced_ROS/05_Production_CI_CD_Security/sros2_keystore/enclaves/talker_listener/listener/cert.pem
+Advanced_ROS/05_Production_CI_CD_Security/sros2_keystore/enclaves/talker_listener/listener/key.pem
+Advanced_ROS/05_Production_CI_CD_Security/sros2_keystore/enclaves/talker_listener/listener/permissions.p7s
+Advanced_ROS/05_Production_CI_CD_Security/sros2_keystore/enclaves/talker_listener/listener/permissions.xml
+Advanced_ROS/05_Production_CI_CD_Security/sros2_keystore/enclaves/talker_listener/talker/cert.pem
+Advanced_ROS/05_Production_CI_CD_Security/sros2_keystore/enclaves/talker_listener/talker/key.pem
+Advanced_ROS/05_Production_CI_CD_Security/sros2_keystore/enclaves/talker_listener/talker/permissions.p7s
+Advanced_ROS/05_Production_CI_CD_Security/sros2_keystore/enclaves/talker_listener/talker/permissions.xml
+
+# ---- secured shell(s): Enforce ----
+$ export ROS_SECURITY_KEYSTORE=/workspace/Advanced_ROS/05_Production_CI_CD_Security/sros2_keystore ROS_SECURITY_ENABLE=true ROS_SECURITY_STRATEGY=Enforce
+$ ./docker/run_lab.sh ros2 run demo_nodes_py talker        # (no --enclave)
+[INFO] [1793241941.118911579] [rcl]: Found security directory: /workspace/Advanced_ROS/05_Production_CI_CD_Security/sros2_keystore/enclaves
+/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/node.py:188: RuntimeWarning: Failed to fini rosout publisher: rcl node implementation is invalid, at ./src/rcl/node.c:390
+  self.__node = _rclpy.Node(
+Traceback (most recent call last):
+  File "/opt/ros/jazzy/lib/demo_nodes_py/talker", line 33, in <module>
+    sys.exit(load_entry_point('demo-nodes-py==0.33.11', 'console_scripts', 'talker')())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/demo_nodes_py/topics/talker.py", line 42, in main
+    node = Talker()
+           ^^^^^^^^
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/demo_nodes_py/topics/talker.py", line 25, in __init__
+    super().__init__('talker')
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/node.py", line 188, in __init__
+    self.__node = _rclpy.Node(
+                  ^^^^^^^^^^^^
+rclpy._rclpy_pybind11.RCLError: error creating node: couldn't find all security files!, at ./src/participant.cpp:360, at ./src/rcl/node.c:252
+[ros2run]: Process exited with failure 1
+[exit code: 1]
+
+# ---- three terminals at the same time (each run_lab.sh call wrapped in `timeout -s INT 12..14` for recording) ----
+# Terminal 1 (secured):
+$ ./docker/run_lab.sh ros2 run demo_nodes_py talker --ros-args --enclave /talker_listener/talker
+[INFO] [1793242130.334678522] [rcl]: Found security directory: /workspace/Advanced_ROS/05_Production_CI_CD_Security/sros2_keystore/enclaves/talker_listener/talker
+[INFO] [1793242131.411051832] [talker]: Publishing: "Hello World: 0"
+[INFO] [1793242132.399984192] [talker]: Publishing: "Hello World: 1"
+[INFO] [1793242133.399840026] [talker]: Publishing: "Hello World: 2"
+[INFO] [1793242134.399831499] [talker]: Publishing: "Hello World: 3"
+[INFO] [1793242135.399803882] [talker]: Publishing: "Hello World: 4"
+[INFO] [1793242136.399889957] [talker]: Publishing: "Hello World: 5"
+[INFO] [1793242137.399912230] [talker]: Publishing: "Hello World: 6"
+[INFO] [1793242138.399858026] [talker]: Publishing: "Hello World: 7"
+[INFO] [1793242139.399770761] [talker]: Publishing: "Hello World: 8"
+[INFO] [1793242140.399753122] [talker]: Publishing: "Hello World: 9"
+[INFO] [1793242141.399771166] [talker]: Publishing: "Hello World: 10"
+[INFO] [1793242142.401476807] [talker]: Publishing: "Hello World: 11"
+[INFO] [1793242143.399830852] [talker]: Publishing: "Hello World: 12"
+
+# Terminal 2 (secured):
+$ ./docker/run_lab.sh ros2 run demo_nodes_py listener --ros-args --enclave /talker_listener/listener
+[INFO] [1793242130.307006239] [rcl]: Found security directory: /workspace/Advanced_ROS/05_Production_CI_CD_Security/sros2_keystore/enclaves/talker_listener/listener
+[INFO] [1793242131.421782129] [listener]: I heard: [Hello World: 0]
+[INFO] [1793242132.400730106] [listener]: I heard: [Hello World: 1]
+[INFO] [1793242133.400471805] [listener]: I heard: [Hello World: 2]
+[INFO] [1793242134.400427940] [listener]: I heard: [Hello World: 3]
+[INFO] [1793242135.400416869] [listener]: I heard: [Hello World: 4]
+[INFO] [1793242136.400540019] [listener]: I heard: [Hello World: 5]
+[INFO] [1793242137.400551408] [listener]: I heard: [Hello World: 6]
+[INFO] [1793242138.400435201] [listener]: I heard: [Hello World: 7]
+[INFO] [1793242139.400504411] [listener]: I heard: [Hello World: 8]
+[INFO] [1793242140.400511299] [listener]: I heard: [Hello World: 9]
+[INFO] [1793242141.400544926] [listener]: I heard: [Hello World: 10]
+
+# Terminal 3 (NO ROS_SECURITY_* variables, same ROS_DOMAIN_ID):
+$ ./docker/run_lab.sh ros2 run demo_nodes_py listener --ros-args -r __node:=intruder
+(no output: the unauthenticated participant is not matched by the secured talker; 0 'I heard' lines in 12 s)

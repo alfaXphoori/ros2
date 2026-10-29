@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>amr_week10</name>
+  <version>1.0.0</version>
+  <description>Week 10: Gazebo Sim 8 (Harmonic) warehouse world (worlds/warehouse.sdf) and a
+    launch file that starts it with or without the GUI. Reused by weeks 11-16.</description>
+  <maintainer email="phoori.ch@ksu.ac.th">Phoori Chantima</maintainer>
+  <license>Apache-2.0</license>
+
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>ament_index_python</exec_depend>
+  <exec_depend>ros_gz_sim</exec_depend>
+
+  <test_depend>python3-pytest</test_depend>
+  <test_depend>gz_tools_vendor</test_depend>
+  <test_depend>gz_sim_vendor</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

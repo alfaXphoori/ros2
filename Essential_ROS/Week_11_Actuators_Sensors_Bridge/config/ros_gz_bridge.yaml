@@ -1,4 +1,5 @@
 # ROS 2 <-> Gazebo Sim (Harmonic) Topic Bridge Configuration
+# Used by launch/gazebo_world.launch.py (ros_gz_bridge parameter_bridge, config_file:=...)
 - ros_topic_name: "/cmd_vel"
   gz_topic_name: "/cmd_vel"
   ros_type_name: "geometry_msgs/msg/Twist"
@@ -17,10 +18,18 @@
   gz_type_name: "gz.msgs.LaserScan"
   direction: GZ_TO_ROS
 
+# odom -> base_footprint published by the Gazebo DiffDrive system
 - ros_topic_name: "/tf"
   gz_topic_name: "/tf"
   ros_type_name: "tf2_msgs/msg/TFMessage"
   gz_type_name: "gz.msgs.Pose_V"
+  direction: GZ_TO_ROS
+
+# Wheel joint angles -> robot_state_publisher -> base_link -> *_wheel_link TF
+- ros_topic_name: "/joint_states"
+  gz_topic_name: "/joint_states"
+  ros_type_name: "sensor_msgs/msg/JointState"
+  gz_type_name: "gz.msgs.Model"
   direction: GZ_TO_ROS
 
 - ros_topic_name: "/clock"

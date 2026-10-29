@@ -1,0 +1,69 @@
+# Real run: ros:lab-runner (ROS 2 Jazzy, Gazebo Sim 8.15.0), Linux 7.0, 2026-10-29
+# Isolation: ROS_DOMAIN_ID=16, GZ_PARTITION=agent_f, ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST
+# Lines replaced by '...' were trimmed (repetition); no values were edited.
+# Planned fault injection (deactivate/cleanup /docking_server via the CLI) did not take effect:
+# the freshly started CLI daemon had not discovered the node yet ("Node not found"). In this
+# same run, however, lifecycle_manager_docking hung by itself: docking_server executed
+# "Configuring" but the manager never received the reply and never sent "activate" (see the
+# launch excerpt). The Stage 0 supervisor (heal_after:=5.0) activated the node and the mission
+# passed.
+
+$ ros2 launch amr_adv06 full_warehouse_system.launch.py headless:=true   # terminal 1
+# fault injection: take docking_server back to UNCONFIGURED behind its lifecycle manager
+$ ros2 lifecycle set /docking_server deactivate
+Node not found
+$ ros2 lifecycle set /docking_server cleanup
+Node not found
+$ ros2 lifecycle get /docking_server
+Node not found
+$ ros2 run amr_adv06 capstone_mission --ros-args -p use_sim_time:=true -p heal_after:=5.0
+[INFO] [1793253199.788254438] [capstone_mission]: Stage 0 System bringup: waiting for 11 lifecycle nodes, initial pose at Home (0.00, 0.00)
+[WARN] [1793253204.865527180] [capstone_mission]: supervisor: docking_server still inactive after 5 s -> sending its lifecycle transitions directly
+[WARN] [1793253204.889654089] [capstone_mission]: supervisor: docking_server activate -> True
+[INFO] [1793253205.425808759] [capstone_mission]: Publishing Initial Pose
+...
+[INFO] [1793253209.450974033] [capstone_mission]: Nav2 is ready for use!
+[INFO] [1793253209.451469579] [capstone_mission]: Stage 0 System bringup: PASS in 9.7 s (sim) | 11/11 lifecycle nodes ACTIVE (supervisor drove: docking_server), ground truth x=-0.000 y=0.000
+[INFO] [1793253209.451850496] [capstone_mission]: Stage 1 -> Pick Station A (x=2.00, y=1.00, yaw=90 deg)
+[INFO] [1793253209.452501004] [capstone_mission]: Navigating to goal: 2.0 1.0...
+[INFO] [1793253219.981157953] [capstone_mission]: Stage 1 Pick Station A: PASS in 10.5 s (sim) | SUCCEEDED, true final error 0.230 m / -14.6 deg, AMCL error 0.027 m
+[INFO] [1793253221.998572965] [capstone_mission]: Stage 2 -> Drop Station B (x=-2.00, y=1.00, yaw=90 deg)
+[INFO] [1793253221.999661159] [capstone_mission]: Navigating to goal: -2.0 1.0...
+[INFO] [1793253239.827752364] [capstone_mission]: Stage 2 Drop Station B: PASS in 17.7 s (sim) | SUCCEEDED, true final error 0.216 m / +13.7 deg, AMCL error 0.040 m
+[INFO] [1793253241.838292197] [capstone_mission]: Stage 3 -> DockRobot dock_id=home_dock (true dock x=-1.00 y=-3.50 yaw=-90 deg, staging x=-1.00 y=-2.80)
+[INFO] [1793253241.839827054] [capstone_mission]: Waiting for 'DockRobot' action server
+[INFO] [1793253241.841851557] [capstone_mission]: Docking at dock ID: home_dock...
+[INFO] [1793253241.947521701] [capstone_mission]:   docking feedback: NAV_TO_STAGING_POSE (retries 0)
+[INFO] [1793253257.616264391] [capstone_mission]:   docking feedback: CONTROLLING (retries 0)
+[INFO] [1793253267.564564482] [capstone_mission]: Stage 3 Dock: PASS in 25.4 s (sim) | success=True error_code=0 (NONE) retries=0; TRUE docking error 3.9 mm (lateral -0.7 mm, longitudinal +3.8 mm), yaw +0.86 deg; robot x=-1.0007 y=-3.5038
+[INFO] [1793253267.565052582] [capstone_mission]: Stage 4 -> UndockRobot dock_type=simple_charging_dock
+[INFO] [1793253267.566298053] [capstone_mission]: Waiting for 'UndockRobot' action server
+[INFO] [1793253267.567933444] [capstone_mission]: Undocking from dock of type: simple_charging_dock...
+[INFO] [1793253276.023795774] [capstone_mission]: Stage 4 Undock: PASS in 8.3 s (sim) | SUCCEEDED, robot 0.651 m from the dock (>= 0.50 m required)
+[INFO] [1793253276.024676126] [capstone_mission]: Stage 5 -> E-stop fault injection: driving to Home, box appears 0.35 m ahead at >= 0.15 m/s
+[INFO] [1793253276.025670563] [capstone_mission]: Navigating to goal: 0.0 0.0...
+[INFO] [1793253278.315351221] [capstone_mission]:   box spawned=True at x=-0.542 y=-2.958 (face 0.35 m ahead) while v=0.240 m/s
+[INFO] [1793253279.930481943] [capstone_mission]: Canceling current task.
+[INFO] [1793253280.941855635] [capstone_mission]: Stage 5 E-stop test: PASS in 4.7 s (sim) | LiDAR saw the box at 0.197 m; scan stamp -> cmd_vel=0 26.0 ms sim (21.3 ms wall receive-to-receive); box spawn request -> cmd_vel=0 194.0 ms sim; robot stopped with 6.3 cm between bumper and box; box removed=True
+[INFO] [1793253280.944771103] [capstone_mission]: Stage 6 -> Home (x=0.00, y=0.00, yaw=0 deg)
+[INFO] [1793253280.947608990] [capstone_mission]: Navigating to goal: 0.0 0.0...
+[INFO] [1793253294.325178518] [capstone_mission]: Stage 6 Home: PASS in 13.4 s (sim) | SUCCEEDED, true final error 0.279 m / +14.0 deg, AMCL error 0.046 m
+[INFO] [1793253294.325907401] [capstone_mission]: KPI Mission stage success: 100.000 % (passing target >= 100.0 %) -> PASS
+[INFO] [1793253294.333011339] [capstone_mission]: KPI Navigation final position error (true, max): 0.279 m (passing target <= 0.35 m) -> PASS
+[INFO] [1793253294.334480446] [capstone_mission]: KPI AMCL localisation error (true, max): 0.046 m (passing target <= 0.1 m) -> PASS
+[INFO] [1793253294.335663902] [capstone_mission]: KPI Docking position error (true): 3.909 mm (passing target <= 15.0 mm) -> PASS
+[INFO] [1793253294.336742355] [capstone_mission]: KPI Docking yaw error (true): 0.860 deg (passing target <= 3.0 deg) -> PASS
+[INFO] [1793253294.337736135] [capstone_mission]: KPI E-stop processing latency (scan -> cmd_vel=0, sim time): 26.000 ms (passing target <= 150.0 ms) -> PASS
+[INFO] [1793253294.341022694] [capstone_mission]: KPI E-stop remaining bumper gap: 6.269 cm (passing target >= 2.0 cm) -> PASS
+[INFO] [1793253294.342520212] [capstone_mission]: MISSION SUMMARY: 7/7 stages PASS, 7/7 KPIs met, total 118.9 s (sim time) -> PASS
+(exit code 0)
+
+# --- launch log excerpt (docking server + its lifecycle manager) ---
+[lifecycle_manager-21] [INFO] [1793253171.996015900] [lifecycle_manager_docking]: Creating
+[lifecycle_manager-21] [INFO] [1793253172.011098358] [lifecycle_manager_docking]: Creating and initializing lifecycle service clients
+[lifecycle_manager-21] [INFO] [1793253172.029553005] [lifecycle_manager_docking]: Starting managed nodes bringup...
+[lifecycle_manager-21] [INFO] [1793253172.029592677] [lifecycle_manager_docking]: Configuring docking_server
+[opennav_docking-20] [INFO] [1793253172.114831019] [docking_server]: Configuring docking_server
+[opennav_docking-20] [INFO] [1793253172.156945565] [docking_server]: Docking Server has 1 dock types and 1 dock instances available.
+[opennav_docking-20] [INFO] [1793253204.866011985] [docking_server]: Activating docking_server
+[opennav_docking-20] [INFO] [1793253204.882593332] [docking_server]: Creating bond (docking_server) to lifecycle manager.

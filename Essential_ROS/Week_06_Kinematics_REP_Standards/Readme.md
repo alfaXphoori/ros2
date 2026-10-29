@@ -8,7 +8,7 @@
 ## 🎯 วัตถุประสงค์การเรียนรู้ (Learning Objectives)
 เมื่อจบบทเรียนนี้ ผู้เรียนจะสามารถ:
 1. **ประยุกต์ใช้มาตรฐานวิศวกรรมหุ่นยนต์ REP 103** สำหรับหน่วยวัดทางกายภาพและระบบพิกัดคาร์ทีเซียนแบบมือขวา (Right-Handed Rule) ได้อย่างถูกต้อง
-2. **วิเคราะห์ลำดับชั้นโครงสร้างต้นไม้พิกัด (TF Tree Architecture) ตามมาตรฐาน REP 105** (`earth` $\rightarrow$ `map` $\rightarrow$ `odom` $\rightarrow$ `base_footprint` $\rightarrow$ `base_link`) พร้อมอธิบายเหตุผลในการแยกความรับผิดชอบระหว่าง `map` และ `odom`
+2. **วิเคราะห์ลำดับชั้นโครงสร้างต้นไม้พิกัด (TF Tree Architecture) ตามมาตรฐาน REP 105** (`earth` $\rightarrow$ `map` $\rightarrow$ `odom` $\rightarrow$ `base_link`) และเฟรม `base_footprint` จาก **REP 120** ที่หุ่นยนต์ล้อนิยมแทรกระหว่าง `odom` กับ `base_link` พร้อมอธิบายเหตุผลในการแยกความรับผิดชอบระหว่าง `map` และ `odom`
 3. **พิสูจน์สมการจลนศาสตร์เดินหน้าและย้อนกลับ (Forward and Inverse Kinematics)** ของหุ่นยนต์ขับเคลื่อนสองล้อแบบดิฟเฟอเรนเชียล (Differential Drive) ในรูปสมการเมทริกซ์
 4. **คำนวณตำแหน่งและทิศทางสะสม (Dead Reckoning & Odometry Integration)** ด้วยวิธี Runge-Kutta / Midpoint Integration และแปลงมุม Yaw เข้าสู่ Quaternion
 5. **เข้าใจโครงสร้างข้อมูลและการกำหนดค่าความคลาดเคลื่อน (Covariance Matrix)** ในข้อความมาตรฐาน `nav_msgs/msg/Odometry` สำหรับส่งต่อให้ระบบฟิวชันเซนเซอร์ (Extended Kalman Filter: EKF)
@@ -56,7 +56,7 @@ flowchart TD
     Earth["earth<br/>(พิกัดละติจูด/ลองจิจูด สากล WGS-84 / UTM)"]
     Map["map<br/>(พิกัดแผนที่โลก: World-fixed, ปลอด Drift, อาจมีการกระโดด)"]
     Odom["odom<br/>(พิกัดการเคลื่อนที่สะสม: ต่อเนื่อง ไม่มีทางกระโดด แต่มี Drift สะสม)"]
-    BaseFootprint["base_footprint<br/>(เงาของหุ่นยนต์ฉายลงบนพื้นระนาบ 2D: Z=0)"]
+    BaseFootprint["base_footprint (REP 120)<br/>(เงาของหุ่นยนต์ฉายลงบนพื้นระนาบ 2D: Z=0)"]
     BaseLink["base_link<br/>(จุดศูนย์กลางทางกายภาพของหุ่นยนต์ 3D)"]
     Lidar["laser_frame<br/>(พิกัดของเซนเซอร์ LiDAR)"]
     IMU["imu_link<br/>(พิกัดของเซนเซอร์ IMU)"]
@@ -72,6 +72,9 @@ flowchart TD
     style Odom fill:#fff3e0,stroke:#f57c00,stroke-width:2px
     style BaseLink fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
 ```
+
+> [!NOTE]
+> REP 105 นิยามเฉพาะ `earth`, `map`, `odom` และ `base_link` ส่วน **`base_footprint`** (จุดใต้หุ่นยนต์บนพื้น, $Z = 0$) นิยามไว้ใน **REP 120** (Coordinate Frames for Humanoid Robots) แต่ถูกนำมาใช้อย่างแพร่หลายกับ AMR ล้อ (เช่น TurtleBot, Nav2 ใช้เป็น `robot_base_frame` ได้) เพื่อให้ Planner 2D ไม่ต้องสนใจความสูงของแชสซี
 
 #### การวิเคราะห์เปรียบเทียบเชิงวิศวกรรม: `odom` vs `map`
 หนึ่งในหัวใจสำคัญของการออกแบบระบบขับขี่อัตโนมัติคือการทำความเข้าใจความขัดแย้งระหว่าง **ความต่อเนื่อง (Continuity)** และ **ความแม่นยำระดับโลก (Global Accuracy)**:
@@ -101,8 +104,8 @@ flowchart LR
     Wheels["คำสั่งรอบหมุนมอเตอร์<br/>(omega_R, omega_L)"]
     Odometry["การประมาณตำแหน่งและพิกัด<br/>(x, y, theta)"]
 
-    CmdVel -->|"Forward Kinematics (FK)"| Wheels
-    Wheels -->|"Inverse Kinematics (IK) & Dead Reckoning"| Odometry
+    CmdVel -->|"Inverse Kinematics (IK)"| Wheels
+    Wheels -->|"Forward Kinematics (FK) & Dead Reckoning"| Odometry
 ```
 
 #### ก. จุดศูนย์กลางการหมุนชั่วขณะ (Instantaneous Center of Curvature: ICC)
@@ -111,7 +114,9 @@ $$v = \omega R$$
 $$v_R = \omega \left(R + \frac{L}{2}\right)$$
 $$v_L = \omega \left(R - \frac{L}{2}\right)$$
 
-#### ข. จลนศาสตร์เดินหน้า (Forward Kinematics: แปลงคำสั่ง Twist สู่ความเร็วรอบล้อ)
+> **นิยามที่ใช้ในวงการหุ่นยนต์เคลื่อนที่:** **Forward Kinematics (FK)** = ความเร็วล้อ → ความเร็วตัวหุ่นยนต์ $(v, \omega)$ (ทิศทางที่ "ฟิสิกส์" เกิดขึ้นจริง: ล้อหมุนแล้วตัวรถจึงเคลื่อนที่) และ **Inverse Kinematics (IK)** = $(v, \omega)$ ที่ต้องการ → ความเร็วล้อที่ต้องสั่ง (เช่นเดียวกับแขนกล: FK = ข้อต่อ → ปลายแขน, IK = ปลายแขน → ข้อต่อ) [Siegwart et al., Ch. 3]
+
+#### ข. จลนศาสตร์ผกผัน (Inverse Kinematics: แปลงคำสั่ง Twist สู่ความเร็วรอบล้อ)
 จากสมการความสัมพันธ์ข้างต้น เราสามารถคำนวณความเร็วเชิงเส้นของล้อแต่ละข้าง:
 $$v_R = v + \frac{\omega L}{2}$$
 $$v_L = v - \frac{\omega L}{2}$$
@@ -120,16 +125,16 @@ $$v_L = v - \frac{\omega L}{2}$$
 $$\omega_R = \frac{v + \frac{\omega L}{2}}{r} = \frac{1}{r} v + \frac{L}{2r} \omega$$
 $$\omega_L = \frac{v - \frac{\omega L}{2}}{r} = \frac{1}{r} v - \frac{L}{2r} \omega$$
 
-เขียนในรูปสมการเมทริกซ์ (Forward Kinematics Matrix):
+เขียนในรูปสมการเมทริกซ์ (Inverse Kinematics Matrix):
 $$\begin{bmatrix} \omega_R \\ \omega_L \end{bmatrix} = \begin{bmatrix} \frac{1}{r} & \frac{L}{2r} \\ \frac{1}{r} & -\frac{L}{2r} \end{bmatrix} \begin{bmatrix} v \\ \omega \end{bmatrix}$$
 
-#### ค. จลนศาสตร์ย้อนกลับ (Inverse Kinematics: จาก Encoder สู่ความเร็วหุ่นยนต์)
+#### ค. จลนศาสตร์เดินหน้า (Forward Kinematics: จาก Encoder สู่ความเร็วหุ่นยนต์)
 เมื่อตัวเข้ารหัสสัญญาณ (Encoders) วัดความเร็วเชิงมุมของล้อทั้งสองข้างได้ $(\omega_R, \omega_L)$ เราสามารถถอดรหัสความเร็วรวมของหุ่นยนต์ได้:
 $$v_R = \omega_R \cdot r, \quad v_L = \omega_L \cdot r$$
 $$v = \frac{v_R + v_L}{2} = \frac{r}{2} (\omega_R + \omega_L)$$
 $$\omega = \frac{v_R - v_L}{L} = \frac{r}{L} (\omega_R - \omega_L)$$
 
-เขียนในรูปสมการเมทริกซ์ (Inverse Kinematics Matrix):
+เขียนในรูปสมการเมทริกซ์ (Forward Kinematics Matrix):
 $$\begin{bmatrix} v \\ \omega \end{bmatrix} = \begin{bmatrix} \frac{r}{2} & \frac{r}{2} \\ \frac{r}{L} & -\frac{r}{L} \end{bmatrix} \begin{bmatrix} \omega_R \\ \omega_L \end{bmatrix}$$
 
 ---
@@ -149,6 +154,10 @@ $$x_{k+1} = x_k + \Delta x$$
 $$y_{k+1} = y_k + \Delta y$$
 $$\theta_{k+1} = \text{atan2}\left(\sin(\theta_k + \Delta \theta), \cos(\theta_k + \Delta \theta)\right)$$
 
+**เปรียบเทียบกับคำตอบแบบ Exact Arc:** ถ้า $(v, \omega)$ คงที่ตลอดช่วง $\Delta t$ หุ่นยนต์วิ่งบนส่วนโค้งของวงกลมรัศมี $R = v/\omega$ (ICC) ได้คำตอบแม่นตรง:
+$$x_{k+1} = x_k + R\left[\sin(\theta_k + \Delta\theta) - \sin\theta_k\right], \quad y_{k+1} = y_k - R\left[\cos(\theta_k + \Delta\theta) - \cos\theta_k\right]$$
+(เมื่อ $\omega \to 0$ ให้ใช้สูตรเส้นตรง) Midpoint ชี้ไปตามทิศของคอร์ดพอดี ต่างจาก Exact เพียงความยาวคอร์ด ($v\Delta t$ เทียบกับ $2R\sin(\Delta\theta/2)$) จึงมี Error ต่อสเต็ป $O(\Delta t^3)$ ส่วน Euler ใช้ทิศ ณ ต้นช่วงทำให้เบี่ยงออกด้านข้าง Error ต่อสเต็ป $O(\Delta t^2)$ — จากการคำนวณใน [`test/test_kinematics.py`](test/test_kinematics.py) ที่ $v = 0.4$ m/s, $\omega = 0.8$ rad/s วิ่ง 270° ด้วย 120 สเต็ป ตำแหน่งสุดท้ายของ Midpoint ห่างจาก Exact ประมาณ $4.5 \times 10^{-5}$ m ขณะที่ Euler ห่าง $1.4 \times 10^{-2}$ m (โหนดใช้ Midpoint เป็นค่าปริยาย เลือก `exact`/`euler` ได้ด้วยพารามิเตอร์ `integration`)
+
 #### การแปลงมุมระนาบ 2D (Yaw) สู่ Quaternion ในพิกัด 3D
 ใน ROS 2 การแสดงการวางแนวทิศทาง (Orientation) ต้องใช้ควอเทอร์เนียน $q = (x, y, z, w)$ เสมอ สำหรับหุ่นยนต์เคลื่อนที่บนระนาบ 2D ($Roll = 0, Pitch = 0, Yaw = \theta$):
 $$q_x = 0.0$$
@@ -160,39 +169,70 @@ $$q_w = \cos\left(\frac{\theta}{2}\right)$$
 
 ## 🛠️ การวิเคราะห์โค้ดตัวอย่างในโมดูล (Code Walkthrough)
 
-### [`diff_drive_kinematics.py`](file:///mnt/sda/ros/Essential_ROS/Week_06_Kinematics_REP_Standards/src/diff_drive_kinematics.py)
-โหนดจลนศาสตร์และประมาณตำแหน่ง Odometry แบบสมบูรณ์:
+โค้ดอยู่ในแพ็กเกจ `amr_week06` (ament_python):
+```bash
+./docker/run_lab.sh colcon build --base-paths Essential_ROS --packages-select amr_week06   # หรือ make build PKG=amr_week06
+./docker/run_lab.sh ros2 run amr_week06 diff_drive_kinematics
+./docker/run_lab.sh ros2 run amr_week06 square_driver            # Lab 6.4
+```
 
-- **การประกาศขนาดหุ่นยนต์ ([L26-L30](file:///mnt/sda/ros/Essential_ROS/Week_06_Kinematics_REP_Standards/src/diff_drive_kinematics.py#L26-L30)):**
-  ```python
-  self.declare_parameter('wheel_separation', 0.24)  # L = 24 cm
-  self.declare_parameter('wheel_radius', 0.08)       # r = 8 cm
-  ```
-  กำหนดขนาดกายภาพของหุ่นยนต์ผ่านพารามิเตอร์เพื่อให้สามารถปรับเปลี่ยนตามสเปกของหุ่นยนต์จริงได้
-- **Forward Kinematics Callback ([L53-L64](file:///mnt/sda/ros/Essential_ROS/Week_06_Kinematics_REP_Standards/src/diff_drive_kinematics.py#L53-L64)):**
+### 1. [`kinematics.py`](src/kinematics.py) — คณิตศาสตร์ล้วน (ไม่มี ROS ทดสอบได้ด้วย pytest)
+```python
+def inverse_kinematics(v, omega, wheel_separation, wheel_radius):
+    """(v [m/s], omega [rad/s]) -> (w_left, w_right) [rad/s]."""
+    v_right = v + omega * wheel_separation / 2.0
+    v_left = v - omega * wheel_separation / 2.0
+    return v_left / wheel_radius, v_right / wheel_radius
+
+
+def forward_kinematics(w_left, w_right, wheel_separation, wheel_radius):
+    """(w_left, w_right) [rad/s] -> (v [m/s], omega [rad/s])."""
+    ...
+    v = (v_right + v_left) / 2.0
+    omega = (v_right - v_left) / wheel_separation
+
+
+def integrate_midpoint(x, y, theta, v, omega, dt):
+    """Midpoint (2nd-order Runge-Kutta): use the heading halfway through the interval."""
+    theta_mid = theta + omega * dt / 2.0
+    return (x + v * math.cos(theta_mid) * dt,
+            y + v * math.sin(theta_mid) * dt,
+            normalize_angle(theta + omega * dt))
+```
+- แยกสมการออกจากโหนดเป็น **Pure Functions** ทำให้ทดสอบได้โดยไม่ต้องเปิด ROS: [`test/test_kinematics.py`](test/test_kinematics.py) ตรวจวิ่งตรง, หมุนอยู่กับที่, `forward_kinematics(inverse_kinematics(v, ω)) == (v, ω)`, ส่วนโค้งเสี้ยววงกลมแบบ Exact และอัตราการลดลงของ Error แบบ Midpoint ($\propto \Delta t^2$)
+- มี `integrate_euler`, `integrate_midpoint` และ `integrate_exact` ให้เปรียบเทียบ (เลือกในโหนดด้วยพารามิเตอร์ `integration`)
+
+### 2. [`diff_drive_kinematics.py`](src/diff_drive_kinematics.py) — โหนด Odometry
+- **พารามิเตอร์:** `wheel_separation` (0.24 m), `wheel_radius` (0.08 m), `cmd_vel_timeout` (0.5 s), `integration` (`midpoint`), `publish_tf` (`true`), `odom_frame`/`base_frame`
+- **Inverse Kinematics ใน `cmd_vel_callback`:**
   ```python
   def cmd_vel_callback(self, msg: Twist):
-      v = msg.linear.x
-      omega = msg.angular.z
-      v_right = v + (omega * self.L / 2.0)
-      v_left = v - (omega * self.L / 2.0)
-      self.w_right = v_right / self.r
-      self.w_left = v_left / self.r
+      # Inverse kinematics: body twist (v, omega) -> wheel angular speeds (rad/s)
+      self.w_left, self.w_right = inverse_kinematics(msg.linear.x, msg.angular.z, self.L, self.r)
+      self.last_cmd_time = self.get_clock().now()
   ```
-  รับคำสั่งจาก `/cmd_vel` แล้วแตกเป็นความเร็วเชิงมุมของมอเตอร์แต่ละข้าง
-- **Dead Reckoning & Odometry Loop 20 Hz ([L65-L113](file:///mnt/sda/ros/Essential_ROS/Week_06_Kinematics_REP_Standards/src/diff_drive_kinematics.py#L65-L113)):**
+- **Watchdog + Forward Kinematics + Dead Reckoning ใน `update_odometry` (20 Hz):**
   ```python
-  delta_x = v * math.cos(self.theta) * dt
-  delta_y = v * math.sin(self.theta) * dt
-  delta_theta = omega * dt
-  self.x += delta_x
-  self.y += delta_y
-  self.theta += delta_theta
-  self.theta = math.atan2(math.sin(self.theta), math.cos(self.theta))
+  if self.last_cmd_time is not None and self.cmd_timeout > 0.0:
+      silent = (current_time - self.last_cmd_time).nanoseconds / 1e9
+      if silent > self.cmd_timeout:
+          self.w_left = self.w_right = 0.0      # stop the wheels
+  v, omega = forward_kinematics(self.w_left, self.w_right, self.L, self.r)
+  self.x, self.y, self.theta = self.integrate(self.x, self.y, self.theta, v, omega, dt)
   ```
-  อินทิเกรตตำแหน่งสะสม พร้อมใช้ฟังก์ชัน `atan2` ในการ Wrap มุม $\theta$ ให้อยู่ในช่วง $[-\pi, \pi]$ ป้องกันตัวเลขสะสมจนโอเวอร์โฟลว์
-- **การประกอบ Odometry Message ([L93-L112](file:///mnt/sda/ros/Essential_ROS/Week_06_Kinematics_REP_Standards/src/diff_drive_kinematics.py#L93-L112)):**
-  กำหนด `frame_id = 'odom'` และ `child_frame_id = 'base_footprint'` ตามมาตรฐาน REP 105 อย่างแม่นยำ
+  ถ้า Teleop หรือ Planner ตาย/หยุดส่ง `cmd_vel` เกิน 0.5 วินาที ล้อจะถูกสั่งหยุด — หากไม่มี Watchdog หุ่นยนต์ (และ Odometry) จะวิ่งด้วยคำสั่งสุดท้ายไปตลอดกาล ไดรเวอร์มอเตอร์จริงทุกตัวควรมีกลไกนี้
+- **ข้อความ `nav_msgs/Odometry` และ TF `odom → base_footprint`:**
+  ```python
+  odom_msg.header.frame_id = self.odom_frame       # 'odom'
+  odom_msg.child_frame_id = self.base_frame        # 'base_footprint'
+  ...
+  tf.header.frame_id = self.odom_frame
+  tf.child_frame_id = self.base_frame
+  tf.transform.rotation = odom_msg.pose.pose.orientation
+  self.tf_broadcaster.sendTransform(tf)
+  ```
+  ทั้ง Topic และ TF ใช้เวลาประทับเดียวกัน ตามหลัก REP 105 ว่าผู้ประมาณ Odometry เป็นผู้ Broadcast `odom → base` เอง (Nav2/RViz ใช้ TF นี้) ส่วน Twist ใน Odometry อยู่ในเฟรมของ `child_frame_id`
+- [`test/test_odom_launch.py`](test/test_odom_launch.py) (launch_testing) ป้อน `/cmd_vel` แล้วตรวจ `/odom_calculated` (ระยะทาง = $v \cdot t$ จาก Timestamp), TF `odom → base_footprint` ตรงกับข้อความ Odometry และ Watchdog หยุดการอินทิเกรตเมื่อไม่มีคำสั่ง
 
 ---
 
@@ -203,26 +243,54 @@ $$q_w = \cos\left(\frac{\theta}{2}\right)$$
 | `ros2 topic echo /odom_calculated` | ดูข้อมูลตำแหน่ง พิกัด และความเร็วแบบเรียลไทม์ | `ros2 topic echo /odom_calculated` |
 | `ros2 topic hz /odom_calculated` | วัดความถี่ของการอัปเดต Odometry (เป้าหมาย 20 Hz) | `ros2 topic hz /odom_calculated` |
 | `ros2 topic info /odom_calculated -v` | ตรวจสอบ QoS Profile และจำนวนผู้รับส่งข้อมูล | `ros2 topic info /odom_calculated -v` |
+| `ros2 run tf2_ros tf2_echo odom base_footprint` | ดู Transform ที่โหนด Broadcast (Translation, Quaternion, RPY) | `ros2 run tf2_ros tf2_echo odom base_footprint` |
 
 ---
 
-## 📸 ภาพผลการทดสอบจริงจากระบบ (Live Execution & Terminal Capture)
-ผลลัพธ์จากการรันคำสั่งและโหนดจริงในระบบ เพื่อใช้เป็นข้อมูลอ้างอิงในการตรวจสอบความถูกต้อง:
-
-![Terminal Capture: Terminal — Week 06: Differential Drive Kinematics & Odometry Integration](images/terminal_run.png)
+## 📟 ผลการรันจริง (Real Run Output)
+บันทึกจากการรันจริงใน ros:lab-runner (ROS 2 Jazzy, Gazebo Sim 8.15.0) บน Linux 7.0 เมื่อ 2026-10-29 — ไฟล์เต็ม: [`results/kinematics_lab_run.txt`](results/kinematics_lab_run.txt), [`results/square_run.txt`](results/square_run.txt), [`results/square_odom.csv`](results/square_odom.csv)
 
 ```console
-user@amr-dev:~/ros$ ./docker/run_lab.sh python3 Essential_ROS/Week_06_Kinematics_REP_Standards/src/diff_drive_kinematics.py &
-[INFO] [diff_drive_kinematics]: 🤖 [DiffDriveKinematics] Ready: L=0.24m, r=0.08m
-user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist '{linear: {x: 0.4}, angular: {z: 0.2}}'
-publishing #1: geometry_msgs.msg.Twist(linear.x=0.4, angular.z=0.2)
-user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 topic echo --once /odom_calculated
-header: frame_id: 'odom', child_frame_id: 'base_footprint'
-pose: position: x: 0.8889, y: 0.2034, z: 0.0
-      orientation: x: 0.0, y: 0.0, z: 0.2280, w: 0.9737 (Yaw = 0.459 rad)
-twist: linear: x: 0.4, angular: z: 0.2
-user@amr-dev:~/ros$ [CHECKPOINT PASSED: REP 103/105 COMPLIANT ODOMETRY BROADCAST]
+$ ros2 topic hz /odom_calculated   (5 s)
+average rate: 19.995
+	min: 0.048s max: 0.052s std dev: 0.00076s window: 61
+
+$ ros2 topic pub -r 10 -t 50 /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.2}}"   # 50 msgs = 5 s
+Waiting for at least 1 matching subscription(s)...
+publisher: beginning loop
+publishing #1: geometry_msgs.msg.Twist(linear=geometry_msgs.msg.Vector3(x=0.2, y=0.0, z=0.0), angular=geometry_msgs.msg.
+...
+publishing #50: geometry_msgs.msg.Twist(linear=geometry_msgs.msg.Vector3(x=0.2, y=0.0, z=0.0), angular=geometry_msgs.msg
+
+$ ros2 topic echo /odom_calculated --field pose.pose --once     # 1 s after the last command
+position:
+  x: 1.0800343727999997
+  y: 0.0
+  z: 0.0
+orientation:
+  x: 0.0
+  y: 0.0
+  z: 0.0
+  w: 1.0
+---
+
+$ ros2 run tf2_ros tf2_echo odom base_footprint   (stopped after 5 s)
+At time 1793242933.846810339
+- Translation: [1.080, 0.000, 0.000]
+- Rotation: in Quaternion (xyzw) [0.000, 0.000, 0.768, 0.641]
+- Rotation: in RPY (radian) [0.000, -0.000, 1.750]
+- Rotation: in RPY (degree) [0.000, -0.000, 100.268]
+- Matrix:
+ -0.178 -0.984  0.000  1.080
+  0.984 -0.178  0.000  0.000
+  0.000  0.000  1.000  0.000
 ```
+- วิ่งตรง 50 คำสั่ง × 0.1 s = 5 s ที่ 0.2 m/s ควรได้ 1.0 m แต่ได้ $x = 1.080$ m: ส่วนเกิน 0.08 m คือช่วงที่ล้อยังทำตามคำสั่งสุดท้ายจนกว่า Watchdog (0.5 s) จะหยุดล้อ ($0.2 \times 0.4 \approx 0.08$ m) — ในทำนองเดียวกันการหมุน 31 คำสั่งได้ Yaw 1.750 rad (100.3°) แทน 90°
+- Lab 6.4 (สี่เหลี่ยม 1 m แบบ Open-loop ตามเวลา): `loop closure error sqrt(dx^2+dy^2) = 0.0672 m`, Yaw คลาด +5.26° ทั้งที่สมการจลนศาสตร์ไม่มี Error เลย — ความคลาดเคลื่อนมาจาก **จังหวะเวลาของคำสั่ง** (คำสั่งส่งทุก 0.1 s, Odometry อินทิเกรตทุก 0.05 s และความหน่วงในการส่งข้อความ) นี่คือเหตุผลที่การนำทางจริงต้องใช้ Feedback (Closed-loop) จาก Odometry/Localization
+
+![Real /odom_calculated trajectory of the Lab 6.4 square run](images/square_odom.png)
+
+*ภาพ: เส้นทางจาก `/odom_calculated` ของการรันจริงข้างต้น (บันทึกโดย `square_driver --csv` เป็น [`results/square_odom.csv`](results/square_odom.csv) แล้วพล็อตด้วย matplotlib) เทียบกับสี่เหลี่ยม 1 m ที่สั่ง*
 
 ---
 
@@ -236,6 +304,7 @@ user@amr-dev:~/ros$ [CHECKPOINT PASSED: REP 103/105 COMPLIANT ODOMETRY BROADCAST
 | 4 | **ความคลาดเคลื่อนสูงเมื่อหุ่นยนต์เลี้ยวด้วยความเร็วสูง** | ใช้วิธี Forward Euler Integration ธรรมดา ซึ่งมี Error สะสมสูงในการคำนวณแนวโค้ง | เปลี่ยนมาใช้ Midpoint Integration หรือคำนวณผ่านรัศมีความโค้ง ICC |
 | 5 | **ข้อความ Odometry สั่นหรือไม่สม่ำเสมอ** | การคำนวณ $\Delta t$ ใช้ค่าคงที่แทนที่จะวัดจริงจากนาฬิการะบบ | ใช้ `current_time - last_time` วัดค่า $\Delta t$ จริงในทุก Loop Iteration |
 | 6 | **Quaternion Normalization Error** | ผลรวมกำลังสองของควอเทอร์เนียน $x^2 + y^2 + z^2 + w^2 \neq 1.0$ จากความคลาดเคลื่อนทศนิยม | ใช้สูตร $\sin(\theta/2)$ และ $\cos(\theta/2)$ หรือฟังก์ชัน Normalize เวกเตอร์ก่อนบรรจุลงข้อความ |
+| 7 | **หุ่นยนต์ยังวิ่งต่อหลังปิด Teleop / Planner ค้าง** | ไม่มี Watchdog ล้อทำตามคำสั่งสุดท้ายตลอดไป | ตั้ง `cmd_vel_timeout` (โหนดนี้ 0.5 s) ให้หยุดล้อเมื่อไม่มีคำสั่งใหม่ |
 
 ---
 
@@ -250,7 +319,7 @@ user@amr-dev:~/ros$ [CHECKPOINT PASSED: REP 103/105 COMPLIANT ODOMETRY BROADCAST
 7. **คำถาม:** ในการแปลงมุมทิศทาง Yaw ($\theta = \pi\text{ rad} = 180^\circ$) เข้าสู่ Quaternion ค่าขององค์ประกอบ $(z, w)$ จะมีค่าเท่ากับเท่าใด?
 8. **คำถาม:** ทำไมการอินทิเกรต Odometry ด้วยวิธี Midpoint Integration จึงให้ผลลัพธ์ที่แม่นยำกว่า Forward Euler Integration ในการเลี้ยวโค้ง?
 9. **คำถาม:** ฟิลด์ `pose.covariance` ในข้อความ `nav_msgs/msg/Odometry` มีขนาดกี่มิติ และตัวเลขบนเส้นทแยงมุมหลัก (Diagonal) แสดงถึงค่าทางสถิติใด?
-10. **คำถาม:** ตามมาตรฐาน REP 105 ข้อใดคือความแตกต่างทางความสูงระหว่างเฟรม `base_footprint` และ `base_link`?
+10. **คำถาม:** เฟรม `base_footprint` นิยามไว้ใน REP ฉบับใด และมีความแตกต่างทางความสูงจากเฟรม `base_link` อย่างไร?
 
 <details>
 <summary>🔍 ดูเฉลยคำตอบพร้อมคำอธิบายอย่างละเอียด</summary>
@@ -272,7 +341,7 @@ user@amr-dev:~/ros$ [CHECKPOINT PASSED: REP 103/105 COMPLIANT ODOMETRY BROADCAST
    - (โดยที่ $q_x = 0.0$ และ $q_y = 0.0$)
 8. **ตอบ:** เพราะ Forward Euler นำมุมทิศทาง ณ จุดเริ่มต้นคาบเวลา ($\theta_k$) มาฉายเวกเตอร์ตลอดช่วงเวลา $\Delta t$ ทำให้เกิดการประเมินส่วนโค้งตัดตรง (Underestimation of turning) ในขณะที่ Midpoint นำมุมกึ่งกลางช่วงเวลา ($\theta_k + \frac{\Delta \theta}{2}$) มาใช้ ซึ่งเฉลี่ยเวกเตอร์สัมผัสความโค้งได้ใกล้เคียงกับส่วนโค้งจริงทางคณิตศาสตร์มากกว่า
 9. **ตอบ:** มีขนาด **$6 \times 6$ (อาเรย์ 36 ช่อง)** สำหรับ $(x, y, z, \text{roll}, \text{pitch}, \text{yaw})$ โดยค่าบนเส้นทแยงมุมหลักแสดงค่า **ความแปรปรวน (Variance: $\sigma^2$)** ของตัวแปรแต่ละมิติ ซึ่งบ่งบอกระดับความไม่แน่นอนของข้อมูล
-10. **ตอบ:** `base_footprint` จะถูกฉายระนาบลงบนผิวสัมผัสพื้นดินพอดี ($Z = 0$) เพื่อการวางแผนเส้นทางแบบ 2 มิติ ในขณะที่ `base_link` จะมีระยะยกสูงตามแกน Z เท่ากับระดับความสูงของจุดศูนย์กลางการหมุนหรือแชสซีจริงของหุ่นยนต์
+10. **ตอบ:** `base_footprint` นิยามใน **REP 120** (ไม่ใช่ REP 105 ซึ่งกำหนดเพียง `earth`/`map`/`odom`/`base_link`) โดยจะถูกฉายระนาบลงบนผิวสัมผัสพื้นดินพอดี ($Z = 0$) เพื่อการวางแผนเส้นทางแบบ 2 มิติ ในขณะที่ `base_link` จะมีระยะยกสูงตามแกน Z เท่ากับระดับความสูงของจุดศูนย์กลางการหมุนหรือแชสซีจริงของหุ่นยนต์
 </details>
 
 ---
@@ -280,5 +349,6 @@ user@amr-dev:~/ros$ [CHECKPOINT PASSED: REP 103/105 COMPLIANT ODOMETRY BROADCAST
 ## 📚 แหล่งอ้างอิงและศึกษาเพิ่มเติม
 - [REP 103: Standard Units of Measure & Coordinate Conventions](https://www.ros.org/reps/rep-0103.html)
 - [REP 105: Coordinate Frames for Mobile Platforms](https://www.ros.org/reps/rep-0105.html)
+- [REP 120: Coordinate Frames for Humanoid Robots (นิยาม `base_footprint`)](https://www.ros.org/reps/rep-0120.html)
 - [Siegwart, Nourbakhsh, Scaramuzza: Introduction to Autonomous Mobile Robots (MIT Press)](https://mitpress.mit.edu/9780262015356/introduction-to-autonomous-mobile-robots/)
 - [ROS 2 nav_msgs/msg/Odometry Documentation](https://docs.ros2.org/latest/api/nav_msgs/msg/Odometry.html)

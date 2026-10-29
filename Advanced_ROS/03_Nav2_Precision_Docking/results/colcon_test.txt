@@ -1,0 +1,20 @@
+$ colcon test --base-paths Essential_ROS Advanced_ROS --packages-select amr_adv03 --pytest-args -v --event-handlers console_direct+
+test/test_bt_check.py::test_installed_models_are_found PASSED            [  7%]
+test/test_bt_check.py::test_module_tree_is_valid PASSED                  [ 15%]
+test/test_bt_check.py::test_docking_plugins_must_be_loaded PASSED        [ 23%]
+test/test_bt_check.py::test_old_tree_is_rejected PASSED                  [ 30%]
+test/test_bt_check.py::test_typo_in_port_is_rejected PASSED              [ 38%]
+test/test_config.py::test_dock_database PASSED                           [ 46%]
+test/test_config.py::test_dock_plugin PASSED                             [ 53%]
+test/test_config.py::test_controller_block PASSED                        [ 61%]
+test/test_config.py::test_tag_offset_matches_launch PASSED               [ 69%]
+test/test_config.py::test_integrate_straight_and_arc PASSED              [ 76%]
+test/test_config.py::test_step_toward_limits_acceleration PASSED         [ 84%]
+test/test_config.py::test_pose_error_in_dock_frame PASSED                [ 92%]
+test/test_docking_launch.py::test_docking_launch PASSED                  [100%]
+============================= 13 passed in 22.04s ==============================
+Finished <<< amr_adv03 [22.6s]
+Summary: 1 package finished [22.7s]
+
+$ colcon test-result --verbose
+Summary: 13 tests, 0 errors, 0 failures, 0 skipped

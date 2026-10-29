@@ -1,7 +1,17 @@
 # 🛠️ คู่มือการติดตั้งและตั้งค่าสภาพแวดล้อม ROS 2 อย่างสมบูรณ์
 ## Comprehensive ROS 2 Installation & Environment Setup Guide
 **ระบบเป้าหมายหลัก:** ROS 2 Jazzy Jalisco (LTS) บน Ubuntu 24.04 LTS (Noble Numbat)  
-**ระบบเป้าหมายทางเลือก:** Docker Container, Windows 11 (WSL2), macOS, และ Ubuntu 22.04 (ROS 2 Humble)
+**ระบบเป้าหมายทางเลือก:** Docker Container (`ros:lab-runner`), Windows 11 (WSL2) และ macOS (ผ่าน Docker)
+
+> [!IMPORTANT]
+> **เครื่องที่เป็น Ubuntu 26.04 (Resolute) หรือ Linux distro อื่น ให้ใช้ Docker (วิธีที่ 2)** — repository ของ ROS
+> สำหรับ `resolute` มีเฉพาะ ROS 2 **Lyrical Luth** (LTS ปี 2026, ตรวจสอบเมื่อ 2026-10-29: มี `ros-lyrical-*` แต่ไม่มี
+> `ros-jazzy-*`) ถ้าทำตามวิธีที่ 1 บน 26.04 คำสั่ง `apt install ros-jazzy-desktop` จะหาแพ็กเกจไม่เจอ
+> หลักสูตรนี้ล็อกไว้ที่ **Jazzy + Gazebo Harmonic** เพื่อให้ผลแล็บตรงกันทุกเครื่อง ผลการรันจริงทั้งหมดใน repo
+> บันทึกจาก `ros:lab-runner` บนโฮสต์ Ubuntu 26.04 / Linux 7.0
+>
+> ROS 2 Humble (Ubuntu 22.04) ไม่แนะนำสำหรับวิชานี้: Humble จับคู่อย่างเป็นทางการกับ Gazebo **Fortress** ไม่ใช่ Harmonic
+> และ API หลายส่วนที่ใช้ในแล็บ (เช่น Nav2 docking server, `ROS_AUTOMATIC_DISCOVERY_RANGE`) ไม่มีใน Humble
 
 ---
 
@@ -78,13 +88,13 @@ sudo add-apt-repository universe -y
 
 ### ขั้นตอนที่ 1.3: เพิ่ม ROS 2 GPG Key และ Official APT Repository
 ```bash
-# ดาวน์โหลดและติดตั้ง ROS 2 GPG Key เข้าสู่ Keyrings
-sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg
+# ตั้งแต่ปี 2025 ROS แจกคีย์ + sources ผ่านแพ็กเกจ ros2-apt-source (ต่ออายุคีย์ให้อัตโนมัติ)
+# วิธีเดิมที่ curl ไฟล์ ros.key เข้า keyrings เองใช้ไม่ได้แล้วหลังการเปลี่ยนคีย์ (ได้ NO_PUBKEY / EXPKEYSIG)
+export ROS_APT_SOURCE_VERSION=$(curl -s https://api.github.com/repos/ros-infrastructure/ros-apt-source/releases/latest | grep -F "tag_name" | awk -F\" '{print $4}')
+curl -L -o /tmp/ros2-apt-source.deb "https://github.com/ros-infrastructure/ros-apt-source/releases/download/${ROS_APT_SOURCE_VERSION}/ros2-apt-source_${ROS_APT_SOURCE_VERSION}.$(. /etc/os-release && echo ${UBUNTU_CODENAME:-${VERSION_CODENAME}})_all.deb"
+sudo dpkg -i /tmp/ros2-apt-source.deb
 
-# เพิ่ม ROS 2 Repository ลงใน Sources List
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
-
-# อัปเดตรายการแพ็กเกจ
+# อัปเดตรายการแพ็กเกจ (ต้องเป็น Ubuntu 24.04 noble เท่านั้นจึงจะมี ros-jazzy-*)
 sudo apt update
 ```
 
@@ -127,7 +137,7 @@ rosdep update
 ```mermaid
 flowchart LR
     Host["🖥️ Host OS (Linux/WSL)"] -- "X11 Display Socket & Network" --> Container["🐳 Docker Container (ros:lab-runner)"]
-    Container -- "Mount Volume (/workspace)" --> Code["📁 โค้ดโปรเจกต์ (/mnt/sda/ros)"]
+    Container -- "Mount Volume (/workspace)" --> Code["📁 โค้ดโปรเจกต์ (โฟลเดอร์ที่ clone repo นี้)"]
 ```
 
 ### ขั้นตอนที่ 2.1: ตรวจสอบและติดตั้ง Docker Engine
@@ -146,14 +156,15 @@ newgrp docker
 ### ขั้นตอนที่ 2.2: สั่ง Build Docker Image ของโปรเจกต์
 เข้าสู่โฟลเดอร์โครงการแล้วสั่ง Build:
 ```bash
-cd /mnt/sda/ros
-docker build -t ros:lab-runner docker/
+git clone https://github.com/alfaXphoori/ros2.git && cd ros2
+make image          # = docker build -t ros:lab-runner -f docker/Dockerfile docker  (ครั้งแรกประมาณ 6 GB)
 ```
 
 ### ขั้นตอนที่ 2.3: การอนุญาตสิทธิ์การแสดงผล GUI ข้ามคอนเทนเนอร์ (X11 Forwarding)
 ```bash
 # สั่งอนุญาตการเชื่อมต่อ X11 Display จาก Local Container
-xhost +local:root
+# (run_lab.sh รันคอนเทนเนอร์ด้วย uid ของผู้ใช้ ไม่ใช่ root จึงใช้ +local: แทน +local:root)
+xhost +local:
 ```
 
 ### ขั้นตอนที่ 2.4: เปิดใช้งานคอนเทนเนอร์ด้วยสคริปต์อเนกประสงค์
@@ -165,7 +176,21 @@ xhost +local:root
 
 # หรือส่งคำสั่งตรงไปรันภายในคอนเทนเนอร์
 ./docker/run_lab.sh ros2 doctor --report
+
+# Build แพ็กเกจของทุกสัปดาห์ (colcon) และรันชุดทดสอบอัตโนมัติ
+make build
+make test                    # ทั้งหมด
+make test PKG=amr_week04     # เฉพาะสัปดาห์ที่ 4
 ```
+
+หลัง `make build` สคริปต์จะ source `install/setup.bash` ให้อัตโนมัติ จึงใช้ `ros2 run amr_weekNN ...` /
+`ros2 launch amr_weekNN ...` ได้ทันที ไฟล์ที่คอนเทนเนอร์สร้าง (`build/`, `install/`, `log/`) เป็นของผู้ใช้บนโฮสต์
+ไม่ใช่ root ถ้าจำเป็นต้องเป็น root จริง ๆ ให้ตั้ง `LAB_AS_ROOT=1`
+
+> [!TIP]
+> ไม่มีจอหรือรันบนเซิร์ฟเวอร์? ใช้ Gazebo แบบ server-only (`gz sim -s -r --headless-rendering`) และดูข้อมูลผ่าน
+> Foxglove: `./docker/run_lab.sh ros2 launch foxglove_bridge foxglove_bridge_launch.xml` แล้วเปิด Foxglove Studio
+> เชื่อม `ws://localhost:8765`
 
 > [!TIP]
 > หากเครื่องของท่านมีการ์ดจอ NVIDIA และต้องการเปิดใช้งานฮาร์ดแวร์เร่งความเร็ว 3D ใน Gazebo ให้ติดตั้ง **NVIDIA Container Toolkit** แล้วเพิ่มแฟล็ก `--gpus all` ในสคริปต์รัน
@@ -173,6 +198,10 @@ xhost +local:root
 ---
 
 ## วิธีที่ 3: การติดตั้งบน Windows 10/11 ผ่าน WSL2 + WSLg GUI
+
+> [!NOTE]
+> `networkingMode=mirrored` ในขั้นตอนที่ 3.2 ต้องใช้ **Windows 11 22H2 ขึ้นไป** บน Windows 10 ให้รันโหนดทุกตัว
+> ภายใน WSL เดียวกัน (ไม่ข้ามไปฝั่ง Windows) หรือใช้ Docker Desktop แทน
 
 สำหรับผู้ใช้งาน Windows แนะนำให้ใช้ **WSL2 (Windows Subsystem for Linux)** ร่วมกับ **WSLg** ซึ่งสามารถรันโปรแกรม GUI ของ Linux (เช่น RViz2, Gazebo, rqt) เสมือนเป็นหน้าต่าง Native บน Windows ได้อย่างราบรื่น
 
@@ -213,7 +242,10 @@ wsl --shutdown
 
 1. **ติดตั้ง OrbStack หรือ Docker Desktop:**
    - ดาวน์โหลด [OrbStack](https://orbstack.dev/) (แนะนำสำหรับ Mac เพราะใช้ RAM น้อยและเปิดเร็วมาก) หรือ [Docker Desktop](https://www.docker.com/)
-2. **ติดตั้ง XQuartz สำหรับแสดงผล GUI:**
+2. **ติดตั้ง XQuartz สำหรับแสดงผล GUI (เฉพาะ RViz2/rqt):**
+   > ⚠️ XQuartz ให้ได้แค่ OpenGL 2.1 ทำให้ Gazebo Harmonic (ogre2 ต้องใช้ OpenGL 3.3+) แสดงผล 3D ไม่ได้
+   > บน macOS ให้รัน Gazebo แบบ server-only (`gz sim -s -r --headless-rendering`) และดูผลด้วย Foxglove
+   > (`foxglove_bridge` มีใน image แล้ว) แทนหน้าต่าง Gazebo GUI
    ```bash
    brew install --cask xquartz
    ```
@@ -315,7 +347,14 @@ sequenceDiagram
 ```bash
 ros2 doctor
 ```
-*ระบบควรแสดงผล:* `All 4 checks passed`
+*ระบบควรแสดงผล* (ผลจริงใน `ros:lab-runner`, 2026-10-29):
+```console
+UserWarning: tf2_bullet has been updated to a new version. local: 0.36.22 < latest: 0.36.23
+...
+All 5 checks passed
+```
+จำนวน check ขึ้นกับเวอร์ชัน ส่วน `UserWarning: ... has been updated to a new version` แปลว่ามีแพ็กเกจเวอร์ชันใหม่กว่าใน apt
+ไม่ใช่ข้อผิดพลาด
 
 ### การทดสอบที่ 2: ทดสอบการสื่อสารแบบ Pub/Sub
 เปิด 2 หน้าต่าง Terminal:
@@ -343,10 +382,11 @@ rviz2
 ## คู่มือแก้ปัญหาและข้อผิดพลาดที่พบบ่อย (Troubleshooting & FAQs)
 
 ### 🔴 ปัญหาที่ 1: GPG Key Error (`NO_PUBKEY F42ED6FBAB17C654`)
-* **สาเหตุ:** คีย์ GPG เก่าหมดอายุ หรือยังไม่ได้เพิ่ม Key เข้าสู่ระบบ APT
-* **วิธีแก้:**
+* **สาเหตุ:** คีย์ GPG เก่าหมดอายุ (ROS เปลี่ยนคีย์ในปี 2025) หรือยังไม่ได้เพิ่ม Key เข้าสู่ระบบ APT
+* **วิธีแก้:** ลบ source/คีย์แบบเก่าแล้วติดตั้ง `ros2-apt-source` ตาม[ขั้นตอนที่ 1.3](#ขั้นตอนที่-13-เพิ่ม-ros-2-gpg-key-และ-official-apt-repository):
   ```bash
-  sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg
+  sudo rm -f /etc/apt/sources.list.d/ros2.list /usr/share/keyrings/ros-archive-keyring.gpg
+  # จากนั้นทำขั้นตอนที่ 1.3 ใหม่ แล้ว
   sudo apt update
   ```
 
@@ -376,12 +416,16 @@ rviz2
   ```
 
 ### 🔴 ปัญหาที่ 5: สองเครื่องมองไม่เห็น Node ของกันและกัน
-* **สาเหตุ:** `ROS_DOMAIN_ID` ไม่ตรงกัน, หรือ Firewall บล็อกพอร์ต UDP Multicast (ช่วงพอร์ต 7400 - 7650)
+* **สาเหตุ:** `ROS_DOMAIN_ID` ไม่ตรงกัน, หรือ Firewall บล็อกพอร์ต UDP ของ DDS ซึ่งขึ้นกับ Domain ID
+  ตามสูตร RTPS: พอร์ตเริ่มต้น = 7400 + 250 × `ROS_DOMAIN_ID` และแต่ละ domain ใช้พอร์ตได้สูงสุด 250 พอร์ต
+  (Domain 0 → 7400–7649, Domain 42 → 17900–18149)
 * **วิธีแก้:**
   1. ตรวจสอบว่าทั้งสองเครื่องใช้ Domain ID เดียวกัน: `echo $ROS_DOMAIN_ID`
   2. ปลดล็อกพอร์ต Firewall บน Ubuntu:
      ```bash
-     sudo ufw allow 7400:7650/udp
+     # ตัวอย่างสำหรับ ROS_DOMAIN_ID=d : เปิด 7400+250d ถึง 7400+250d+249
+     d=${ROS_DOMAIN_ID:-0}
+     sudo ufw allow $((7400+250*d)):$((7400+250*d+249))/udp
      ```
   3. ทดสอบส่งสัญญาณด้วย Multicast Probe:
      - เครื่องที่ 1: `ros2 multicast receive`

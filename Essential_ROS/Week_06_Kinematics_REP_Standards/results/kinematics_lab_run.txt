@@ -1,0 +1,93 @@
+# Week 06 real run: ros:lab-runner (ROS 2 Jazzy), Linux 7.0, 2026-10-29; ROS_DOMAIN_ID=11, LOCALHOST discovery
+
+$ ros2 run amr_week06 diff_drive_kinematics     # terminal 1
+
+$ ros2 topic echo /odom_calculated --field pose.pose --once
+position:
+  x: 0.0
+  y: 0.0
+  z: 0.0
+orientation:
+  x: 0.0
+  y: 0.0
+  z: 0.0
+  w: 1.0
+---
+
+$ ros2 topic hz /odom_calculated   (5 s)
+average rate: 19.995
+	min: 0.048s max: 0.052s std dev: 0.00076s window: 61
+
+$ ros2 topic pub -r 10 -t 50 /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.2}}"   # 50 msgs = 5 s
+Waiting for at least 1 matching subscription(s)...
+publisher: beginning loop
+publishing #1: geometry_msgs.msg.Twist(linear=geometry_msgs.msg.Vector3(x=0.2, y=0.0, z=0.0), angular=geometry_msgs.msg.
+...
+publishing #50: geometry_msgs.msg.Twist(linear=geometry_msgs.msg.Vector3(x=0.2, y=0.0, z=0.0), angular=geometry_msgs.msg
+
+
+$ ros2 topic echo /odom_calculated --field pose.pose --once     # 1 s after the last command
+position:
+  x: 1.0800343727999997
+  y: 0.0
+  z: 0.0
+orientation:
+  x: 0.0
+  y: 0.0
+  z: 0.0
+  w: 1.0
+---
+
+$ ros2 topic pub -r 10 -t 31 /cmd_vel geometry_msgs/msg/Twist "{angular: {z: 0.5}}"   # ~3.1 s ≈ 90°
+
+$ ros2 topic echo /odom_calculated --field pose.pose --once
+position:
+  x: 1.0800343727999997
+  y: 0.0
+  z: 0.0
+orientation:
+  x: 0.0
+  y: 0.0
+  z: 0.767547063282228
+  w: 0.6409925940655067
+---
+
+$ ros2 run tf2_ros tf2_echo odom base_footprint   (stopped after 5 s)
+At time 1793242933.846810339
+- Translation: [1.080, 0.000, 0.000]
+- Rotation: in Quaternion (xyzw) [0.000, 0.000, 0.768, 0.641]
+- Rotation: in RPY (radian) [0.000, -0.000, 1.750]
+- Rotation: in RPY (degree) [0.000, -0.000, 100.268]
+- Matrix:
+ -0.178 -0.984  0.000  1.080
+  0.984 -0.178  0.000  0.000
+  0.000  0.000  1.000  0.000
+
+$ ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.4}, angular: {z: 0.2}}"
+Waiting for at least 1 matching subscription(s)...
+Waiting for at least 1 matching subscription(s)...
+Waiting for at least 1 matching subscription(s)...
+publisher: beginning loop
+publishing #1: geometry_msgs.msg.Twist(linear=geometry_msgs.msg.Vector3(x=0.4, y=0.0, z=0.0), angular=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.2))
+
+
+$ ros2 topic echo /odom_calculated --field twist.twist --once   # 2 s later: watchdog stopped the wheels
+linear:
+  x: 0.0
+  y: 0.0
+  z: 0.0
+angular:
+  x: 0.0
+  y: 0.0
+  z: 0.0
+---
+
+$ python3 square.py /tmp/square.csv     # Lab 6.4: 4 x (1 m straight + 90 deg turn) via /cmd_vel
+final pose: x=+1.1092 m  y=+0.2343 m  yaw=+111.25 deg
+loop closure error sqrt(x^2+y^2) = 1.1337 m
+
+--- terminal 1 (node) output:
+[INFO] [1793242902.560118803] [diff_drive_kinematics]: 🤖 [DiffDriveKinematics] Ready: L=0.24m, r=0.08m, integration=midpoint, cmd_vel_timeout=0.5s
+[WARN] [1793242920.647591315] [diff_drive_kinematics]: No cmd_vel for 0.50 s (> 0.5 s): stopping wheels
+[WARN] [1793242928.046882515] [diff_drive_kinematics]: No cmd_vel for 0.50 s (> 0.5 s): stopping wheels
+[WARN] [1793242939.746814021] [diff_drive_kinematics]: No cmd_vel for 0.53 s (> 0.5 s): stopping wheels

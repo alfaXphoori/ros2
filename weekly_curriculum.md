@@ -1,4 +1,13 @@
-# แผนการจัดการเรียนรู้เชิงลึก: Robotics & Autonomous Systems with ROS 2
+# [Legacy] แผนการจัดการเรียนรู้เชิงลึก: Robotics & Autonomous Systems with ROS 2
+
+> [!WARNING]
+> **เอกสารฉบับเก่า (Legacy draft) — ไม่ใช่แผนการสอนที่ใช้จริง**
+> ไฟล์นี้เป็นร่างแผน 16 สัปดาห์ฉบับแรก (Humble/Jazzy, Ubuntu 22.04/24.04, มี C++/Composition, robot_localization EKF,
+> Cartographer) ซึ่ง **ไม่ตรงกับโค้ดและแล็บใน repo** เก็บไว้เป็นแหล่งไอเดียสำหรับหัวข้อเสริมเท่านั้น
+> แผนการสอนที่ใช้จริงและมีแล็บ/ผลรันจริงครบคือ
+> [`course_syllabus_01_essential_ros2.md`](course_syllabus_01_essential_ros2.md) (Essential_ROS, Week 01–16) และ
+> [`course_syllabus_02_advanced_ros2.md`](course_syllabus_02_advanced_ros2.md) (Advanced_ROS, โมดูล 01–06)
+
 **รหัสหลักสูตร:** ROS2-AMR-MASTER  
 **ระดับ:** Beginner -> Intermediate -> Advanced (16-Week Intensive Roadmap)  
 **เป้าหมาย:** พัฒนาวิศวกรหุ่นยนต์และระบบอัตโนมัติให้มีความเชี่ยวชาญในการออกแบบ พัฒนา และใช้งานระบบ Autonomous Mobile Robot (AMR) ด้วย ROS 2 (Humble / Jazzy)

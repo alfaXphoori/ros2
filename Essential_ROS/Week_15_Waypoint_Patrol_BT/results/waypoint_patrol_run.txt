@@ -1,0 +1,59 @@
+# Real run: ros:lab-runner (ROS 2 Jazzy, Gazebo Sim 8.15.0), Linux 7.0, 2026-10-29
+# Isolation: ROS_DOMAIN_ID=13, GZ_PARTITION=agent_c, ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST
+# Lines replaced by '...' were trimmed (repetition); no values were edited.
+
+$ ros2 launch amr_week15 patrol_system.launch.py headless:=true   # terminal 1
+$ ros2 param get /bt_navigator default_nav_to_pose_bt_xml
+String value is: /workspace/.colcon/c/install/amr_week15/share/amr_week15/behavior_trees/patrol_nav_to_pose.xml
+$ ros2 run amr_week15 waypoint_patrol --ros-args -p use_sim_time:=true
+[INFO] [1793246902.779426712] [waypoint_patroller]: Waiting for Nav2 (bt_navigator active, /navigate_to_pose)...
+[INFO] [1793246904.054665454] [waypoint_patroller]: [1/5] Navigating to Station 1: Receiving Dock (x=2.00, y=3.50, yaw=0.00)
+[INFO] [1793246920.529044781] [waypoint_patroller]: [1/5] Station 1: Receiving Dock: SUCCEEDED after 16.4 s, dwelling 3.0 s
+[INFO] [1793246923.548490325] [waypoint_patroller]: [2/5] Navigating to Station 2: Storage Aisle B (x=2.00, y=-2.00, yaw=-1.57)
+[INFO] [1793246947.872586855] [waypoint_patroller]: [2/5] Station 2: Storage Aisle B: SUCCEEDED after 24.2 s, dwelling 3.0 s
+[INFO] [1793246950.899491906] [waypoint_patroller]: [3/5] Navigating to Station 3: Quality Check (x=-2.00, y=-2.00, yaw=3.14)
+[INFO] [1793246965.173777686] [waypoint_patroller]: [3/5] Station 3: Quality Check: SUCCEEDED after 14.2 s, dwelling 3.0 s
+[INFO] [1793246968.192004624] [waypoint_patroller]: [4/5] Navigating to Station 4: Shipping Dock (x=-2.00, y=3.50, yaw=1.57)
+[INFO] [1793246992.966556927] [waypoint_patroller]: [4/5] Station 4: Shipping Dock: SUCCEEDED after 24.5 s, dwelling 3.0 s
+[INFO] [1793246995.990225090] [waypoint_patroller]: [5/5] Navigating to Station 5: Charging Base (x=0.00, y=0.00, yaw=0.00)
+[INFO] [1793247014.562584142] [waypoint_patroller]: [5/5] Station 5: Charging Base: SUCCEEDED after 18.4 s, dwelling 2.0 s
+[INFO] [1793247016.588136858] [waypoint_patroller]: Patrol finished: 5/5 stations SUCCEEDED in 111.6 s (sim time)
+(exit code 0)
+$ ros2 action send_goal /follow_waypoints nav2_msgs/action/FollowWaypoints {poses: [{header: {frame_id: map}, pose: {position: {x: 1.0, y: -1.0}, orientation: {w: 1.0}}}, {header: {frame_id: map}, pose: {position: {x: -1.0, y: -1.0}, orientation: {w: 1.0}}}]}
+Waiting for an action server to become available...
+Sending goal:
+...
+Goal accepted with ID: 4660d390f5904bdb8aab2eb244025072
+
+Result:
+    missed_waypoints: []
+error_code: 0
+error_msg: ''
+
+Goal finished with status: SUCCEEDED
+$ ros2 run amr_week11 ground_truth_pose
+diff_drive_robot ground truth: x=-0.802 y=-1.064 yaw=0.243 rad (13.9 deg)
+
+# --- launch log (excerpt) ---
+[lifecycle_manager-7] [INFO] [1793246865.488700826] [lifecycle_manager_localization]: Managed nodes are active
+[lifecycle_manager-16] [INFO] [1793246870.348285489] [lifecycle_manager_navigation]: Activating bt_navigator
+[lifecycle_manager-16] [INFO] [1793246870.654667737] [lifecycle_manager_navigation]: Managed nodes are active
+[bt_navigator-14] [INFO] [1793246904.056143911] [bt_navigator]: Begin navigating from current location (0.00, -0.00) to (2.00, 3.50)
+[bt_navigator-14] [INFO] [1793246920.526702528] [bt_navigator]: Goal succeeded
+[bt_navigator-14] [INFO] [1793246923.548903927] [bt_navigator]: Begin navigating from current location (1.82, 3.36) to (2.00, -2.00)
+[bt_navigator-14] [INFO] [1793246947.869409852] [bt_navigator]: Goal succeeded
+[bt_navigator-14] [INFO] [1793246950.901046192] [bt_navigator]: Begin navigating from current location (1.86, -1.83) to (-2.00, -2.00)
+[bt_navigator-14] [INFO] [1793246965.171569197] [bt_navigator]: Goal succeeded
+[bt_navigator-14] [INFO] [1793246968.192903930] [bt_navigator]: Begin navigating from current location (-1.77, -2.01) to (-2.00, 3.50)
+[bt_navigator-14] [INFO] [1793246992.963368949] [bt_navigator]: Goal succeeded
+[bt_navigator-14] [INFO] [1793246995.991315248] [bt_navigator]: Begin navigating from current location (-1.79, 3.38) to (0.00, 0.00)
+[bt_navigator-14] [INFO] [1793247014.561561084] [bt_navigator]: Goal succeeded
+[waypoint_follower-15] [INFO] [1793247018.687769116] [waypoint_follower]: Received follow waypoint request with 2 waypoints.
+[bt_navigator-14] [INFO] [1793247018.688644761] [bt_navigator]: Begin navigating from current location (-0.07, 0.15) to (1.00, -1.00)
+[bt_navigator-14] [INFO] [1793247026.659164906] [bt_navigator]: Goal succeeded
+[waypoint_follower-15] [INFO] [1793247027.838100014] [waypoint_follower]: Succeeded processing waypoint 0, processing waypoint task execution
+[waypoint_follower-15] [INFO] [1793247029.855178398] [waypoint_follower]: Task execution at waypoint 0 succeeded
+[bt_navigator-14] [INFO] [1793247029.857152907] [bt_navigator]: Begin navigating from current location (0.87, -0.85) to (-1.00, -1.00)
+[bt_navigator-14] [INFO] [1793247043.127954980] [bt_navigator]: Goal succeeded
+[waypoint_follower-15] [INFO] [1793247043.805639640] [waypoint_follower]: Succeeded processing waypoint 1, processing waypoint task execution
+[waypoint_follower-15] [INFO] [1793247045.823398803] [waypoint_follower]: Task execution at waypoint 1 succeeded

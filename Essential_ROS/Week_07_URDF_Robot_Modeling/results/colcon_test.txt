@@ -1,0 +1,35 @@
+$ colcon build --base-paths Essential_ROS --packages-select amr_week07 amr_week08 amr_week09
+Starting >>> amr_week07
+Finished <<< amr_week07 [0.76s]
+Starting >>> amr_week08
+Starting >>> amr_week09
+Finished <<< amr_week08 [0.91s]
+Finished <<< amr_week09 [0.91s]
+
+Summary: 3 packages finished [1.76s]
+$ colcon test --base-paths Essential_ROS --packages-select amr_week07 amr_week08 amr_week09
+Starting >>> amr_week07
+--- stderr: amr_week07
+
+=============================== warnings summary ===============================
+test/test_gz_odometry.py::test_rotation_in_place_yaw_within_5_percent
+  Warning: Type google.protobuf.pyext._message.ScalarMapContainer uses PyType_Spec with a metaclass that has custom tp_new. This is deprecated and will no longer be allowed in Python 3.14.
+
+test/test_gz_odometry.py::test_rotation_in_place_yaw_within_5_percent
+  Warning: Type google.protobuf.pyext._message.MessageMapContainer uses PyType_Spec with a metaclass that has custom tp_new. This is deprecated and will no longer be allowed in Python 3.14.
+
+test/test_gz_odometry.py::test_rotation_in_place_yaw_within_5_percent
+  Warning: datetime.datetime.utcfromtimestamp() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.fromtimestamp(timestamp, datetime.UTC).
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+---
+Finished <<< amr_week07 [25.0s]
+Starting >>> amr_week08
+Starting >>> amr_week09
+Finished <<< amr_week08 [26.5s]
+Finished <<< amr_week09 [30.3s]
+
+Summary: 3 packages finished [55.5s]
+  1 package had stderr output: amr_week07
+$ colcon test-result --verbose
+Summary: 60 tests, 0 errors, 0 failures, 0 skipped

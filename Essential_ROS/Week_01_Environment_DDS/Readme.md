@@ -126,7 +126,7 @@ sequenceDiagram
 ```
 
 1. **SPDP (Simple Participant Discovery Protocol):**
-   - โหนดจะส่งแพ็กเก็ต Multicast Heartbeat เรียกว่า `DATA(p)` ประกาศการมีตัวตนไปยัง IP Multicast ทั่วโลก (`239.255.0.1` หรือ Subnet Multicast)
+   - โหนดจะส่งแพ็กเก็ต Multicast เป็นระยะ เรียกว่า `DATA(p)` ประกาศการมีตัวตนไปยังกลุ่ม Multicast `239.255.0.1` (ค่าปริยายของ RTPS) ซึ่งอยู่ในช่วง **Administratively Scoped** `239.0.0.0/8` (RFC 2365) หมายถึงใช้ได้เฉพาะภายในเครือข่ายขององค์กร/ห้องแล็บ เราเตอร์จะไม่ส่งต่อออกอินเทอร์เน็ต ไม่ใช่ Multicast "ทั่วโลก" — โดยปกติแพ็กเก็ตจึงไปถึงเฉพาะเครื่องใน Subnet เดียวกัน
    - ข้อมูลที่ส่งจะประกอบด้วย Domain ID, GUID (Globally Unique Identifier), และรายการ IP/Port Unicast ที่ตนเองรอรับข้อมูล
 2. **SEDP (Simple Endpoint Discovery Protocol):**
    - เมื่อต่างฝ่ายต่างรู้จักกันผ่าน SPDP แล้ว ทั้งสองโหนดจะหันมาคุยกันโดยตรงผ่าน **Unicast (จุดต่อจุด)** เพื่อแลกเปลี่ยนรายละเอียดระดับลึก
@@ -168,7 +168,8 @@ $$\text{Port} = PB + (DG \times \text{Domain ID}) + d + (PG \times \text{Partici
 
 > [!WARNING]
 > ทำไม ROS 2 จึงแนะนำให้ใช้ `ROS_DOMAIN_ID` ไม่เกิน **101**?  
-> เนื่องจากพอร์ตของ Domain 102 จะเริ่มต้นที่ $7400 + (250 \times 102) = 32900$ ซึ่งจะเริ่มล่วงล้ำเข้าไปในย่าน **Linux Ephemeral Port Range (ช่วง 32768 ถึง 60999)** ซึ่งระบบปฏิบัติการ Linux สงวนไว้สำหรับสุ่มเปิดเชื่อมต่อเครือข่ายชั่วคราว (เช่น การเปิดเว็บเบราว์เซอร์หรือการดาวน์โหลดไฟล์) หากพอร์ตสุ่มของ OS ไปตรงกับพอร์ตของ DDS จะทำให้โหนด ROS 2 Crash ทันทีโดยไม่ทราบสาเหตุ!
+> เนื่องจากพอร์ตของ Domain 102 จะเริ่มต้นที่ $7400 + (250 \times 102) = 32900$ ซึ่งอยู่ในย่าน **Linux Ephemeral Port Range (ค่าปริยาย 32768 ถึง 60999, ดูได้จาก `/proc/sys/net/ipv4/ip_local_port_range`)** ที่เคอร์เนลสุ่มแจกให้การเชื่อมต่อขาออกชั่วคราว (เช่น เว็บเบราว์เซอร์หรือการดาวน์โหลดไฟล์)  
+> ความเสี่ยงจริงคือ **พอร์ตชนกัน (Port Collision)**: ถ้าโปรแกรมอื่นถือพอร์ตที่ DDS ต้องใช้อยู่ก่อน Participant นั้นจะ bind พอร์ตไม่ได้ ผลที่เห็นคือโหนด "มองไม่เห็นกัน" หรือค้นพบกันได้ไม่สม่ำเสมอแบบสุ่ม (บาง Vendor จะเลื่อนไปใช้ Participant ID ถัดไป บางกรณีสร้าง Participant ไม่สำเร็จ) ไม่ใช่การ Crash ทันทีทุกครั้ง ปัญหาจึงวินิจฉัยยากมาก — ใช้ Domain ID 0–101 บน Linux เพื่อตัดปัญหานี้ (`domain_check.sh` ของสัปดาห์นี้ตรวจให้อัตโนมัติ)
 
 ---
 
@@ -248,7 +249,7 @@ flowchart TD
    ```
 3. รันคอนเทนเนอร์ของวิชาผ่านสคริปต์ที่เตรียมไว้:
    ```bash
-   cd /mnt/sda/ros
+   cd ros        # โฟลเดอร์ที่ clone repository ของวิชามา
    ./docker/run_lab.sh
    ```
 
@@ -261,44 +262,40 @@ flowchart TD
 
 ## 🛠️ การวิเคราะห์โค้ดสคริปต์ในโมดูล (Script Code Walkthrough)
 
-ในโฟลเดอร์ `Essential_ROS/Week_01_Environment_DDS/src/domain_check.sh`:
+สคริปต์ [`src/domain_check.sh`](src/domain_check.sh) ถูกติดตั้งเป็นส่วนหนึ่งของแพ็กเกจ `amr_week01` (ament_python) จึงเรียกได้ทั้งสองแบบ:
 ```bash
-#!/usr/bin/env bash
-# สคริปต์ตรวจสอบสภาพแวดล้อม ROS 2 และ DDS Discovery อัตโนมัติ
-
-echo "=================================================="
-echo "🔍 ROS 2 & DDS Environment Diagnostic Probe"
-echo "=================================================="
-
-# 1. ตรวจสอบการ Source สภาพแวดล้อม ROS
-if [ -z "$ROS_DISTRO" ]; then
-    echo "❌ ERROR: ROS 2 environment is not sourced!"
-    exit 1
-else
-    echo "✅ ROS_DISTRO: $ROS_DISTRO"
-fi
-
-# 2. ตรวจสอบค่า ROS_DOMAIN_ID
-DOMAIN=${ROS_DOMAIN_ID:-0}
-echo "ℹ️ ROS_DOMAIN_ID: $DOMAIN"
-
-# 3. คำนวณ Discovery Multicast Port ตามสูตรมาตรฐาน RTPS
-BASE_PORT=7400
-MULTICAST_PORT=$((BASE_PORT + 250 * DOMAIN))
-UNICAST_PORT=$((BASE_PORT + 250 * DOMAIN + 10))
-
-echo "📡 DDS Discovery Multicast Port: $MULTICAST_PORT"
-echo "🔌 DDS Unicast Base Port:       $UNICAST_PORT"
-
-# 4. ตรวจสอบสถานะ ROS 2 Daemon
-DAEMON_STATUS=$(ros2 daemon status 2>&1)
-echo "🚀 ROS 2 Daemon Status: $DAEMON_STATUS"
-echo "=================================================="
+./docker/run_lab.sh colcon build --base-paths Essential_ROS --packages-select amr_week01   # หรือ make build PKG=amr_week01
+./docker/run_lab.sh ros2 run amr_week01 domain_check.sh          # ใช้ ROS_DOMAIN_ID ปัจจุบัน
+./docker/run_lab.sh ros2 run amr_week01 domain_check.sh 7 3      # Domain 7, Participant 3
+./docker/run_lab.sh bash Essential_ROS/Week_01_Environment_DDS/src/domain_check.sh   # ไม่ต้อง build
 ```
-- **บรรทัดที่ 8-13:** ตรวจสอบว่าตัวแปร `$ROS_DISTRO` ถูกประกาศหรือไม่ หากค่าว่างแสดงว่าผู้ใช้ลืม `source /opt/ros/jazzy/setup.bash`
-- **บรรทัดที่ 16-17:** ตรวจสอบตัวแปร `$ROS_DOMAIN_ID` หากไม่ได้ตั้งค่าไว้ จะใช้ค่าปริยายคือ `0`
-- **บรรทัดที่ 20-22:** ใช้คณิตศาสตร์ของ Bash `$((...))` คำนวณหมายเลขพอร์ต Discovery Multicast และ Unicast จริงตามสูตร OMG DDS
-- **บรรทัดที่ 27:** รันคำสั่ง `ros2 daemon status` เพื่อตรวจสอบว่าเซอร์วิสแคชเบื้องหลังกำลังทำงานอยู่หรือไม่
+
+แกนหลักของสคริปต์คือสูตรพอร์ตของ RTPS (ตัดมาบางส่วน):
+```bash
+PB=7400
+DG=250
+PG=2
+
+DOMAIN="${1:-${ROS_DOMAIN_ID:-0}}"
+PARTICIPANT="${2:-0}"
+...
+echo "  Discovery multicast (SPDP, d0=0)  : $((PB + DG * DOMAIN + 0))"
+echo "  User data multicast (d2=1)        : $((PB + DG * DOMAIN + 1))"
+echo "  Discovery unicast   (SEDP, d1=10) : $((PB + DG * DOMAIN + 10 + PG * PARTICIPANT))"
+echo "  User data unicast   (d3=11)       : $((PB + DG * DOMAIN + 11 + PG * PARTICIPANT))"
+
+# Highest port a domain can use with the ~120 participants ROS 2 assumes per host
+LAST_PORT=$((PB + DG * DOMAIN + 11 + PG * 119))
+...
+    read -r EPH_LO EPH_HI < /proc/sys/net/ipv4/ip_local_port_range
+    if [ "$LAST_PORT" -ge "$EPH_LO" ] && [ "$((PB + DG * DOMAIN))" -le "$EPH_HI" ]; then
+        echo "  WARNING: overlaps the Linux ephemeral range ..."
+```
+- **`DOMAIN="${1:-${ROS_DOMAIN_ID:-0}}"`:** รับ Domain ID จากอาร์กิวเมนต์ตัวแรก ถ้าไม่ระบุใช้ `$ROS_DOMAIN_ID` และถ้ายังว่างใช้ค่าปริยาย `0` (ตรวจด้วยว่าเป็นจำนวนเต็มบวก ไม่ใช่จะได้ exit code 2)
+- **คณิตศาสตร์ `$((...))`:** คำนวณพอร์ตทั้ง 4 ชนิดตามสูตร OMG RTPS ในหัวข้อที่ 4 — Multicast ไม่ขึ้นกับ Participant ID ส่วน Unicast เลื่อนทีละ $PG = 2$ ต่อ Participant
+- **`LAST_PORT` และ `/proc/sys/net/ipv4/ip_local_port_range`:** หาช่วงพอร์ตทั้งหมดของโดเมน แล้วเทียบกับช่วง Ephemeral จริงของเครื่อง เพื่อเตือนความเสี่ยงพอร์ตชนกันเมื่อ Domain ID สูงเกินไป
+- **ส่วนท้าย:** รัน `ros2 daemon status` เพื่อดูว่าแคชกราฟของ ROS 2 กำลังทำงานหรือไม่
+- **ชุดทดสอบอัตโนมัติ** [`test/test_domain_check.py`](test/test_domain_check.py) ตรวจสูตรพอร์ต (เช่น `ROS_DOMAIN_ID=7` → $7400 + 250 \times 7 = 9150$), คำเตือน Ephemeral Port และตรวจว่า `ros2 doctor --report` รายงานชื่อ RMW ถูกต้อง รันด้วย `make test PKG=amr_week01`
 
 ---
 
@@ -307,9 +304,9 @@ echo "=================================================="
 | :--- | :--- | :--- | :--- |
 | `ros2 doctor` | ตรวจสุขภาพเครือข่ายและระบบของ ROS 2 ภาพรวม | `ros2 doctor` | `All 4 checks passed` |
 | `ros2 doctor --report` | แสดงรายงานการตั้งค่าระบบ ฮาร์ดแวร์ RMW อย่างละเอียด | `ros2 doctor --report` | รายการ RMW, IP, Platform, Versions |
-| `ros2 multicast receive` | เปิดพอร์ตดักรอรับสัญญาณทดสอบ Multicast บนเครือข่าย | `ros2 multicast receive` | `Received from 192.168.1.10: Hello World!` |
-| `ros2 multicast send` | ส่งแพ็กเก็ตทดสอบ Multicast กระจายไปทั่ววงเครือข่าย | `ros2 multicast send` | `Sent 1 packet to 239.255.0.1:7400` |
-| `ros2 daemon status` | ตรวจสอบว่าแบ็กกราวด์แคชของ ROS 2 ทำงานอยู่หรือไม่ | `ros2 daemon status` | `The daemon is running` |
+| `ros2 multicast receive` | รอรับแพ็กเก็ตทดสอบ Multicast 1 แพ็กเก็ต (กลุ่ม `225.0.0.1` พอร์ต `49150` — ทดสอบว่าเครือข่ายส่ง Multicast ได้ ไม่ใช่พอร์ต DDS) | `ros2 multicast receive` | `Received from 192.168.31.249:55099: 'Hello World!'` |
+| `ros2 multicast send` | ส่งแพ็กเก็ตทดสอบ Multicast 1 แพ็กเก็ตไปยังกลุ่มเดียวกัน | `ros2 multicast send` | `Sending one UDP multicast datagram...` |
+| `ros2 daemon status` | ตรวจสอบว่าแบ็กกราวด์แคชของ ROS 2 ทำงานอยู่หรือไม่ | `ros2 daemon status` | `The daemon is running` หรือ `The daemon is not running` |
 | `ros2 daemon stop` | สั่งหยุดและล้างหน่วยความจำแคชเมื่อโหนดค้นหากันไม่เจอ | `ros2 daemon stop` | `The daemon has been stopped` |
 | `ros2 daemon start` | สั่งเปิดระบบแบ็กกราวด์แคชใหม่ | `ros2 daemon start` | `The daemon is running` |
 | `ros2 topic list` | เรียกดูรายชื่อท็อปปิกทั้งหมดที่มีอยู่ในวงโดเมนปัจจุบัน | `ros2 topic list` | `/parameter_events`<br>`/rosout` |
@@ -331,26 +328,42 @@ echo "=================================================="
 
 ---
 
-## 📸 ภาพผลการทดสอบจริงจากระบบ (Live Execution & Terminal Capture)
-ผลลัพธ์จากการรันคำสั่งและโหนดจริงในระบบ เพื่อใช้เป็นข้อมูลอ้างอิงในการตรวจสอบความถูกต้อง:
-
-![Terminal Capture: Terminal — Week 01: ROS 2 Jazzy & DDS Verification](images/terminal_run.png)
+## 📟 ผลการรันจริง (Real Run Output)
+บันทึกจากการรันจริงใน ros:lab-runner (ROS 2 Jazzy, Gazebo Sim 8.15.0) บน Linux 7.0 เมื่อ 2026-10-29 — ไฟล์เต็มอยู่ใน [`results/domain_check_and_doctor.txt`](results/domain_check_and_doctor.txt) และ [`results/domain_isolation.txt`](results/domain_isolation.txt) (รันด้วย `ROS_DOMAIN_ID=11` และ `ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST` เพราะเครื่องแล็บใช้ร่วมกันหลายคน)
 
 ```console
-user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 doctor --report
-NETWORK CONFIGURATION
-  device: enp2s0  inet4: 192.168.31.249  flags: <UP,MULTICAST,RUNNING,BROADCAST>
-RMW MIDDLEWARE
-  middleware name    : rmw_fastrtps_cpp
-ROS 2 INFORMATION
-  distribution name  : jazzy (active)
-DDS MULTICAST VERIFICATION
-user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 multicast receive &
-[INFO] [multicast_receiver]: Waiting for UDP multicast datagram on 239.255.0.1...
-user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 multicast send
-[INFO] [multicast_sender]: Sending multicast packet 'Hello from ROS 2'...
-[INFO] [multicast_receiver]: Received valid datagram: 'Hello from ROS 2'
-user@amr-dev:~/ros$ [CHECKPOINT PASSED: DDS PORT 7400/7410 UNICAST & MULTICAST OK]
+$ ros2 run amr_week01 domain_check.sh 7
+...
+[2/3] RTPS ports for domain 7, participant 0
+  Discovery multicast (SPDP, d0=0)  : 9150
+  User data multicast (d2=1)        : 9151
+  Discovery unicast   (SEDP, d1=10) : 9160
+  User data unicast   (d3=11)       : 9161
+  Port range of this domain         : 9150-9399
+  OK: no overlap with the Linux ephemeral range 32768-60999
+
+$ ros2 run amr_week01 domain_check.sh 120
+[2/3] RTPS ports for domain 120, participant 0
+  Discovery multicast (SPDP, d0=0)  : 37400
+...
+  WARNING: overlaps the Linux ephemeral range 32768-60999; another program may
+           already hold one of these ports (use ROS_DOMAIN_ID 0-101 on Linux)
+
+$ ros2 doctor --report
+...
+   RMW MIDDLEWARE
+middleware name    : rmw_fastrtps_cpp
+
+   ROS 2 INFORMATION
+distribution name      : jazzy
+...
+$ ros2 multicast receive   # terminal 1 (waits for one datagram)
+
+$ ros2 multicast send      # terminal 2
+Sending one UDP multicast datagram...
+--- terminal 1 output:
+Waiting for UDP multicast datagram...
+Received from 192.168.31.249:55099: 'Hello World!'
 ```
 
 ---
@@ -361,7 +374,7 @@ user@amr-dev:~/ros$ [CHECKPOINT PASSED: DDS PORT 7400/7410 UNICAST & MULTICAST O
 2. **คำถาม:** เลเยอร์ RMW (ROS Middleware Interface) มีบทบาทสำคัญอย่างไรในการทำให้นักพัฒนาสามารถเปลี่ยนผู้ให้บริการ DDS ได้โดยไม่ต้องแก้ไขซอร์สโค้ด?
 3. **คำถาม:** จงอธิบายความแตกต่างระหว่างโปรโตคอล SPDP และ SEDP ในแง่ของประเภทการส่งข้อมูลทางเครือข่าย (Multicast vs Unicast) และข้อมูลที่แลกเปลี่ยนกัน?
 4. **คำถาม:** หากกำหนดให้หุ่นยนต์ทำงานที่ `ROS_DOMAIN_ID = 8` จงคำนวณหาหมายเลขพอร์ต Discovery Multicast และพอร์ต Unicast ของ Participant ลำดับที่ 0?
-5. **คำถาม:** เพราะเหตุใดการกำหนดค่า `ROS_DOMAIN_ID` ที่สูงเกิน 101 จึงมีความเสี่ยงที่จะทำให้ระบบหุ่นยนต์เกิดการแฮงก์หรือขัดข้องในระบบปฏิบัติการ Linux?
+5. **คำถาม:** เพราะเหตุใดการกำหนดค่า `ROS_DOMAIN_ID` ที่สูงเกิน 101 จึงมีความเสี่ยงที่โหนดจะค้นพบกันไม่ได้หรือทำงานไม่สม่ำเสมอบนระบบปฏิบัติการ Linux?
 6. **คำถาม:** หากหุ่นยนต์สองตัวทำงานบนเครื่องเดียวกัน ตัวหนึ่งรันผ่าน Docker ที่ใช้ `--net host` และอีกตัวรันบน Host OS โดยตรง หากทั้งสองใช้ `ROS_DOMAIN_ID = 0` จะสามารถสื่อสารกันได้หรือไม่ เพราะเหตุใด?
 7. **คำถาม:** ตัวแปรสภาพแวดล้อม `ROS_AUTOMATIC_DISCOVERY_RANGE = LOCALHOST` มีประโยชน์อย่างไรในแง่ของความปลอดภัย (Security) และการประหยัดทรัพยากรเครือข่าย?
 8. **คำถาม:** ในระบบ Colcon Workspace หากใน Underlay มีแพ็กเกจ `sensor_msgs` เวอร์ชันทางการติดตั้งอยู่ แต่ผู้พัฒนาได้ดาวน์โหลด `sensor_msgs` ซอร์สโค้ดมาปรับปรุงใหม่ในโฟลเดอร์ `src/` ของ Overlay ระบบจะเรียกใช้แพ็กเกจจากที่ใดเมื่อสั่งรัน?
@@ -381,7 +394,7 @@ user@amr-dev:~/ros$ [CHECKPOINT PASSED: DDS PORT 7400/7410 UNICAST & MULTICAST O
 4. **เฉลยข้อ 4:** 
    - Discovery Multicast Port $= 7400 + (250 \times 8) = 7400 + 2000 = \mathbf{9400}$
    - Unicast Base Port $= 7410 + (250 \times 8) + (2 \times 0) = 7410 + 2000 + 0 = \mathbf{9410}$
-5. **เฉลยข้อ 5:** เพราะค่า Domain ID ที่มากกว่า 101 จะส่งผลให้พอร์ตที่คำนวณได้มีค่าเกิน $32767$ ซึ่งจะเริ่มไปทับซ้อนกับช่วง **Ephemeral / Dynamic Ports (32768–60999)** ของระบบปฏิบัติการ Linux ซึ่งเคอร์เนลของ OS มักสุ่มนำไปใช้กับการเชื่อมต่อเครือข่ายชั่วคราว หากพอร์ตของ DDS ไปตรงกับพอร์ตที่ OS สุ่มเปิดใช้งานอยู่ จะเกิดข้อผิดพลาด Port Conflict ทันที
+5. **เฉลยข้อ 5:** เพราะค่า Domain ID ที่มากกว่า 101 จะส่งผลให้พอร์ตที่คำนวณได้มีค่าเกิน $32767$ ซึ่งทับซ้อนกับช่วง **Ephemeral / Dynamic Ports (ค่าปริยาย 32768–60999)** ที่เคอร์เนลสุ่มแจกให้การเชื่อมต่อขาออกชั่วคราว หากโปรแกรมอื่นได้พอร์ตที่ DDS ต้องใช้ไปก่อน DDS จะ bind พอร์ตนั้นไม่ได้ (Port Collision) ทำให้ Discovery ล้มเหลวเป็นครั้งคราวแบบสุ่ม ซึ่งวินิจฉัยยากมาก — ไม่ใช่ว่าโหนดจะ Crash ทันทีทุกครั้ง
 6. **เฉลยข้อ 6:** **สื่อสารกันได้ตามปกติ** เพราะการใช้แฟล็ก `--net host` ทำให้คอนเทนเนอร์ Docker ใช้ Network Stack, Network Interfaces, และ Routing Table เดียวกันกับเครื่องโฮสต์ ทำให้แพ็กเก็ต Multicast และ Loopback Interface (`127.0.0.1`) เชื่อมโยงถึงกันอย่างสมบูรณ์เสมือนรันบนเครื่องเดียวกัน
 7. **เฉลยข้อ 7:** ช่วยป้องกันไม่ให้แพ็กเก็ต Multicast Discovery ของหุ่นยนต์รั่วไหลออกสู่วงเครือข่าย Wi-Fi ภายนอก ซึ่งนอกจากจะช่วยป้องกันไม่ให้คอมพิวเตอร์เครื่องอื่นส่งสัญญาณเข้ามารบกวนหุ่นยนต์แล้ว ยังช่วยประหยัดแบนด์วิดท์ของระบบเครือข่ายไร้สายในโรงงานได้อย่างมหาศาล
 8. **เฉลยข้อ 8:** ระบบจะเลือกใช้แพ็กเกจจาก **Overlay** เสมอ เนื่องจากเมื่อเราสั่ง `source ~/ros2_ws/install/setup.bash` ระบบจะนำพาธของ Overlay ไปใส่ไว้ที่ลำดับแรกสุดของตัวแปร `AMENT_PREFIX_PATH` ทำให้ระบบค้นหาและโหลดแพ็กเกจใหม่ของเราก่อนแพ็กเกจเดิมของระบบปฏิบัติการ

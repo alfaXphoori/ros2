@@ -51,8 +51,8 @@ sequenceDiagram
     participant Server as Action Server (Motor & Path Controller)
 
     Note over Client,Server: Phase 1: การส่งและตอบรับเป้าหมาย (Goal Request)
-    Client->>Server: Send Goal Request (Pose X=10.0, Y=5.0)
-    Server-->>Client: Goal Response: ACCEPTED (UUID: 8a4f...)
+    Client->>Server: Send Goal Request (UUID 8a4f... สุ่มโดย Client, Pose X=10.0, Y=5.0)
+    Server-->>Client: Goal Response: ACCEPTED (+ เวลาที่รับงาน)
 
     Note over Client,Server: Phase 2: การดำเนินงานและรายงานความคืบหน้า (Feedback Loop)
     loop ทุกๆ 500 ms ขณะกำลังนำทาง
@@ -104,7 +104,7 @@ graph TD
 #### คุณลักษณะของแต่ละแชนเนล:
 1. **`/action_name/_action/send_goal` (ROS 2 Service):**
    - Type: `<ActionType>_SendGoal`
-   - หน้าที่: รับ Goal Definition จาก Client และประทับเวลาพร้อมสุ่มเลข UUID ขนาด 128 บิต (16 ไบต์) เพื่อใช้เป็น Primary Key อ้างอิง Goal นี้
+   - หน้าที่: รับ Goal Definition จาก Client พร้อม `goal_id` ซึ่งเป็น UUID ขนาด 128 บิต (16 ไบต์) ที่ **Client เป็นผู้สุ่มสร้าง** (ใน rclpy คือ `ActionClient.send_goal_async()`) เพื่อใช้เป็น Primary Key อ้างอิง Goal นี้ในทุกแชนเนล — Server เพียงตัดสินใจรับ/ปฏิเสธและประทับเวลาที่รับงาน
    - Response: ส่งค่า `accepted: bool` และ `stamp: builtin_interfaces/Time` กลับไปยัง Client
 2. **`/action_name/_action/cancel_goal` (ROS 2 Service):**
    - Type: `action_msgs/srv/CancelGoal`
@@ -182,73 +182,95 @@ stateDiagram-v2
 
 ---
 
+### 5. Cancellation vs Preemption และเหตุที่ต้องใช้ MultiThreadedExecutor
+คำว่า "ยกเลิกกลางคัน" ในระบบ Action มี 2 กลไกที่ต่างกัน:
+
+| กลไก | ใครเป็นผู้เริ่ม | เกิดอะไรกับ Goal เดิม | สถานะสุดท้าย |
+| :--- | :--- | :--- | :--- |
+| **Cancellation** | Client ส่ง `cancel_goal` (เช่น ผู้ใช้กดยกเลิก) | Server ตอบรับ → `STATUS_CANCELING` → หยุดแล้วเรียก `goal_handle.canceled()` | `STATUS_CANCELED` |
+| **Preemption** | Client (ตัวเดิมหรือตัวอื่น) ส่ง **Goal ใหม่** ขณะ Goal เดิมยังทำงาน | นโยบาย Single-Goal ของ Server ยุติ Goal เดิมด้วย `abort()` แล้วทำ Goal ใหม่แทน (แบบเดียวกับ `navigate_to_pose` ของ Nav2) | Goal เดิม `STATUS_ABORTED`, Goal ใหม่ทำต่อจนจบ |
+
+`navigate_action_server.py` ของสัปดาห์นี้รองรับทั้งสองแบบ (ปิด Preemption ได้ด้วย `--ros-args -p preempt:=false` ซึ่งจะ **ปฏิเสธ** Goal ใหม่ขณะยังทำงานอยู่แทน)
+
+> [!IMPORTANT]
+> `execute_callback` ที่ใช้ `time.sleep()` ระหว่างสเต็ป **ห้ามหมุนด้วย `rclpy.spin()` (SingleThreadedExecutor)** เพราะเธรดเดียวถูกยึดอยู่ใน `execute_callback` จนจบ คำขอ `cancel_goal` และ Goal ใหม่จะถูกประมวลผลหลังงานเสร็จแล้วเท่านั้น (ผลคือ Cancel "ไม่ได้ผล" และ Goal จบเป็น SUCCEEDED) — Server ในแล็บนี้จึงใช้ `MultiThreadedExecutor` + `ReentrantCallbackGroup` ให้เธรดอื่นว่างรับ Cancel/Goal ใหม่ได้ตลอด (หลักการเดียวกับ Deadlock ในสัปดาห์ที่ 3)
+
+---
+
 ## 🛠️ การวิเคราะห์โค้ดตัวอย่างในโมดูล (Code Walkthrough)
 
-### 1. [`navigate_action_server.py`](file:///mnt/sda/ros/Essential_ROS/Week_04_Actions_Preemption/src/navigate_action_server.py)
-ไฟล์เซิร์ฟเวอร์จำลองการเดินเป็นระยะทาง (Fibonacci sequence steps):
-- **การลงทะเบียน Action Server ([L18-L25](file:///mnt/sda/ros/Essential_ROS/Week_04_Actions_Preemption/src/navigate_action_server.py#L18-L25)):**
+โค้ดอยู่ในแพ็กเกจ `amr_week04` (ament_python):
+```bash
+./docker/run_lab.sh colcon build --base-paths Essential_ROS --packages-select amr_week04   # หรือ make build PKG=amr_week04
+./docker/run_lab.sh ros2 run amr_week04 navigate_action_server
+./docker/run_lab.sh ros2 run amr_week04 navigate_action_client [run|cancel|preempt]
+```
+
+### 1. [`navigate_action_server.py`](src/navigate_action_server.py)
+ไฟล์เซิร์ฟเวอร์จำลองการเดินเป็นระยะทาง (หนึ่งสเต็ปของลำดับ Fibonacci ทุก 0.5 วินาที — Goal `order: 6` ได้ผล `[0, 1, 1, 2, 3, 5, 8]`):
+- **การลงทะเบียน Action Server:**
   ```python
   self._action_server = ActionServer(
       self,
       Fibonacci,
-      '/navigate_distance',
+      'navigate_distance',
       execute_callback=self.execute_callback,
       goal_callback=self.goal_callback,
-      cancel_callback=self.cancel_callback
+      handle_accepted_callback=self.handle_accepted_callback,
+      cancel_callback=self.cancel_callback,
+      callback_group=ReentrantCallbackGroup(),
   )
   ```
-  กำหนด Callbacks สำคัญ 3 ตัวเพื่อควบคุมพฤติกรรมในแต่ละช่วงวงจรชีวิต
-- **การกรองคำขอใน Goal Callback ([L28-L33](file:///mnt/sda/ros/Essential_ROS/Week_04_Actions_Preemption/src/navigate_action_server.py#L28-L33)):**
+  Callbacks ทั้ง 4 ตัวอยู่ใน `ReentrantCallbackGroup` จึงรันพร้อมกันได้บน `MultiThreadedExecutor` (ดู `main()`)
+- **การกรองคำขอใน Goal Callback:**
   ```python
   def goal_callback(self, goal_request):
       if goal_request.order < 0:
           return GoalResponse.REJECT
+      ...
       return GoalResponse.ACCEPT
   ```
   สกัดกั้น Goal ที่ไม่สมเหตุสมผลตั้งแต่ชั้นแรก ก่อนที่จะนำเข้าสู่คิวการประมวลผล
-- **การจัดการ Preemption ใน Cancel Callback ([L35-L37](file:///mnt/sda/ros/Essential_ROS/Week_04_Actions_Preemption/src/navigate_action_server.py#L35-L37)):**
+- **นโยบาย Preemption ใน `handle_accepted_callback`:**
   ```python
-  def cancel_callback(self, goal_handle):
-      self.get_logger().warn('Received request to cancel goal execution!')
-      return CancelResponse.ACCEPT
+  def handle_accepted_callback(self, goal_handle):
+      with self._goal_lock:
+          # Single-goal policy: a newer goal preempts (aborts) the one still running
+          if self._active_goal is not None and self._active_goal.is_active:
+              self._active_goal.abort()
+          self._active_goal = goal_handle
+      goal_handle.execute()
   ```
-  ตอบรับการขอยกเลิกทันทีเพื่อให้ระบบเข้าสู่สถานะ `STATUS_CANCELING`
-- **การประมวลผลและตรวจสอบ Flag ยกเลิก ([L39-L65](file:///mnt/sda/ros/Essential_ROS/Week_04_Actions_Preemption/src/navigate_action_server.py#L39-L65)):**
+- **การตรวจ Flag ในทุกสเต็ปของ `execute_callback`:**
   ```python
   for i in range(1, order):
-      if goal_handle.is_cancel_requested:
-          goal_handle.canceled()
-          result = Fibonacci.Result()
-          result.sequence = feedback_msg.sequence
-          return result
+      with self._goal_lock:
+          if self._stop_requested(goal_handle):   # preempted (not active) or cancel requested
+              result.sequence = feedback_msg.sequence
+              return result
       # คำนวณและสตรีม Feedback...
       goal_handle.publish_feedback(feedback_msg)
-      time.sleep(0.5)
+      time.sleep(STEP_PERIOD)  # OK here: other executor threads keep serving cancel/goals
   ```
-  หัวใจสำคัญ: ในทุกๆ รอบของการเคลื่อนที่หรือการคำนวณ **ต้องตรวจสอบ `goal_handle.is_cancel_requested` เสมอ** หากไม่ตรวจสอบ หุ่นยนต์จะไม่ยอมหยุดเดินแม้ว่า Client จะส่งคำสั่งยกเลิกมาแล้วก็ตาม
+  `_stop_requested()` คืน `True` เมื่อ Goal ถูก Preempt ไปแล้ว (`not goal_handle.is_active`) หรือเมื่อ `goal_handle.is_cancel_requested` (แล้วเรียก `goal_handle.canceled()`) — **ต้องตรวจในทุกรอบเสมอ** มิฉะนั้นหุ่นยนต์จะไม่หยุดแม้ Client สั่งยกเลิก การเปลี่ยนสถานะทั้งหมดทำภายใต้ `_goal_lock` เพื่อไม่ให้ `abort()` จากเธรดอื่นชนกับ `canceled()`/`succeed()`
+- **`main()`:** ใช้ `MultiThreadedExecutor()` แทน `rclpy.spin(node)` และใช้ Clean Shutdown แบบสัปดาห์ที่ 2
 
----
-
-### 2. [`navigate_action_client.py`](file:///mnt/sda/ros/Essential_ROS/Week_04_Actions_Preemption/src/navigate_action_client.py)
-ไฟล์ไคลเอนต์ที่รองรับการรับ Feedback แบบ Non-blocking และสั่งยกเลิกเป้าหมาย:
-- **การส่ง Goal แบบ Asynchronous ([L23-L37](file:///mnt/sda/ros/Essential_ROS/Week_04_Actions_Preemption/src/navigate_action_client.py#L23-L37)):**
-  ```python
-  self._send_goal_future = self._action_client.send_goal_async(
-      goal_msg, feedback_callback=self.feedback_callback
-  )
-  self._send_goal_future.add_done_callback(
-      lambda future: self.goal_response_callback(future, test_cancel)
-  )
-  ```
-  ส่ง Goal ออกไปโดยไม่บล็อกเธรดหลัก พร้อมแนบฟังก์ชัน `feedback_callback` เพื่อดักจับทุกข้อความความคืบหน้าที่ถูกสตรีมกลับมา
-- **การกระตุ้นคำสั่งยกเลิกอย่างปลอดภัย ([L46-L63](file:///mnt/sda/ros/Essential_ROS/Week_04_Actions_Preemption/src/navigate_action_client.py#L46-L63)):**
-  ```python
-  if test_cancel:
-      self._cancel_timer = self.create_timer(
-          1.5, lambda: self._do_cancel(goal_handle)
-      )
-  ```
-  ใช้ ROS 2 Timer เพื่อหน่วงเวลา 1.5 วินาทีแทนการใช้ `time.sleep()` ช่วยรักษา Event Loop ของโหนดให้ทำงานได้อย่างต่อเนื่อง
+### 2. [`navigate_action_client.py`](src/navigate_action_client.py)
+ไคลเอนต์แบบลำดับขั้น (Sequential) ที่ยังไม่บล็อก Event Loop เพราะทุกจุดที่รอใช้ `rclpy.spin_until_future_complete()`:
+```python
+goal = self.send_goal(order)                  # send_goal_async() + spin until accepted/rejected
+...
+early = self.wait_result(goal, timeout_sec=cancel_after)   # let it run for 1.5 s
+if early is None and mode == 'cancel':
+    cancel_future = goal.cancel_goal_async()
+    rclpy.spin_until_future_complete(self, cancel_future, timeout_sec=5.0)
+    status, seq = self.wait_result(goal)      # wait for the final CANCELED result
+```
+- **UUID ของ Goal ถูกสุ่มโดย `send_goal_async()` ฝั่ง Client** (Log พิมพ์ 8 ตัวอักษรแรกของ `goal_handle.goal_id.uuid`)
+- **โหมด `cancel`:** รอ 1.5 วินาที ส่ง `cancel_goal_async()` แล้ว **รอ Result จนจบ** จากนั้นพิมพ์สถานะสุดท้ายและออกจากโปรแกรม (exit code 0 เมื่อได้ `CANCELED`)
+- **โหมด `preempt`:** รอ 1.5 วินาที แล้วส่ง Goal ใหม่ (`order=4`) — Goal แรกต้องจบเป็น `ABORTED` และ Goal ใหม่เป็น `SUCCEEDED`
+- อาร์กิวเมนต์อ่านผ่าน `rclpy.utilities.remove_ros_args()` จึงใช้ร่วมกับ `--ros-args` ได้; รูปแบบเดิม `--cancel` ยังใช้ได้
+- [`test/test_navigate_action.py`](test/test_navigate_action.py) ตรวจ: Goal 6 → `[0, 1, 1, 2, 3, 5, 8]`, Goal ติดลบถูกปฏิเสธ, Cancel ที่ ~1 วินาที → `STATUS_CANCELED`, Goal ใหม่ Preempt Goal เดิม → `ABORTED`/`SUCCEEDED`, และไคลเอนต์ออกจากโปรแกรมเองหลัง Cancel
 
 ---
 
@@ -263,25 +285,46 @@ stateDiagram-v2
 
 ---
 
-## 📸 ภาพผลการทดสอบจริงจากระบบ (Live Execution & Terminal Capture)
-ผลลัพธ์จากการรันคำสั่งและโหนดจริงในระบบ เพื่อใช้เป็นข้อมูลอ้างอิงในการตรวจสอบความถูกต้อง:
-
-![Terminal Capture: Terminal — Week 04: Navigation Action Goal, Feedback & Preemption](images/terminal_run.png)
+## 📟 ผลการรันจริง (Real Run Output)
+บันทึกจากการรันจริงใน ros:lab-runner (ROS 2 Jazzy, Gazebo Sim 8.15.0) บน Linux 7.0 เมื่อ 2026-10-29 — ไฟล์เต็ม: [`results/action_lab_run.txt`](results/action_lab_run.txt)
 
 ```console
-user@amr-dev:~/ros$ ./docker/run_lab.sh python3 Essential_ROS/Week_04_Actions_Preemption/src/navigate_action_server.py &
-[INFO] [navigate_action_server]: 🏁 [NavigateActionServer] Ready to receive navigation distance goals.
-user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 action send_goal -f /navigate_distance example_interfaces/action/Fibonacci '{order: 5}'
-Sending goal: order: 5
-Goal accepted with ID: 183e19bb6d534f79b403a6e9d6e5a7da
-[INFO] [navigate_action_server]: Executing navigation distance steps...
-Feedback: sequence: [0, 1, 1]
-Feedback: sequence: [0, 1, 1, 2]
-Feedback: sequence: [0, 1, 1, 2, 3]
-Feedback: sequence: [0, 1, 1, 2, 3, 5]
-[INFO] [navigate_action_server]: Navigation sequence succeeded with result: [0, 1, 1, 2, 3, 5]
-Result: sequence: [0, 1, 1, 2, 3, 5]  Status: SUCCEEDED
-user@amr-dev:~/ros$ [CHECKPOINT PASSED: 5 DDS ACTION ENDPOINTS VERIFIED & PREEMPTION ACTIVE]
+$ ros2 run amr_week04 navigate_action_client cancel      # cancel after 1.5 s
+[INFO] [1793242448.569637315] [navigate_action_client]: ⏳ Waiting for navigate_distance action server...
+[INFO] [1793242448.820180528] [navigate_action_client]: 🚀 Sending goal with order=6...
+[INFO] [1793242448.821784104] [navigate_action_client]: ✅ Goal accepted (id=0d1c6395...) Executing...
+[INFO] [1793242448.822987237] [navigate_action_client]: 📊 Feedback received: sequence=[0, 1, 1]
+[INFO] [1793242449.324273212] [navigate_action_client]: 📊 Feedback received: sequence=[0, 1, 1, 2]
+[INFO] [1793242449.824384242] [navigate_action_client]: 📊 Feedback received: sequence=[0, 1, 1, 2, 3]
+[WARN] [1793242450.322448677] [navigate_action_client]: 🛑 Sending cancel request now...
+[WARN] [1793242450.324227506] [navigate_action_client]: 🛑 Cancel request accepted by server.
+[INFO] [1793242450.325729869] [navigate_action_client]: 🏁 Goal finished: status=CANCELED, sequence=[0, 1, 1, 2, 3]
+(exit 0)
+
+$ ros2 run amr_week04 navigate_action_client preempt --order 10
+[INFO] [1793242450.929344479] [navigate_action_client]: ⏳ Waiting for navigate_distance action server...
+[INFO] [1793242451.429942504] [navigate_action_client]: 🚀 Sending goal with order=10...
+[INFO] [1793242451.431535508] [navigate_action_client]: ✅ Goal accepted (id=f5c871be...) Executing...
+[INFO] [1793242451.432863520] [navigate_action_client]: 📊 Feedback received: sequence=[0, 1, 1]
+[INFO] [1793242451.933546453] [navigate_action_client]: 📊 Feedback received: sequence=[0, 1, 1, 2]
+[INFO] [1793242452.434379187] [navigate_action_client]: 📊 Feedback received: sequence=[0, 1, 1, 2, 3]
+[WARN] [1793242452.932233308] [navigate_action_client]: 🔀 Sending a NEW goal (order=4) to preempt the running one...
+[INFO] [1793242452.932459004] [navigate_action_client]: 🚀 Sending goal with order=4...
+[INFO] [1793242452.933897809] [navigate_action_client]: ✅ Goal accepted (id=7bf81765...) Executing...
+[INFO] [1793242452.936188053] [navigate_action_client]: 📊 Feedback received: sequence=[0, 1, 1]
+[INFO] [1793242453.436769535] [navigate_action_client]: 📊 Feedback received: sequence=[0, 1, 1, 2]
+[INFO] [1793242453.937313306] [navigate_action_client]: 📊 Feedback received: sequence=[0, 1, 1, 2, 3]
+[INFO] [1793242454.439636033] [navigate_action_client]: 🎯 Second goal finished: status=SUCCEEDED, sequence=[0, 1, 1, 2, 3]
+[INFO] [1793242454.439961172] [navigate_action_client]: 🏁 Goal finished: status=ABORTED, sequence=[0, 1, 1, 2, 3]
+(exit 0)
+```
+
+Log ฝั่ง Server ช่วง Preemption (จากไฟล์เดียวกัน):
+```console
+[INFO] [1793242451.430915227] [navigate_action_server]: Received goal request with order/distance steps: 10
+[INFO] [1793242452.933326890] [navigate_action_server]: Received goal request with order/distance steps: 4
+[WARN] [1793242452.933768893] [navigate_action_server]: ⚠️ New goal accepted -> preempting (aborting) the current goal.
+[WARN] [1793242452.935158262] [navigate_action_server]: Goal preempted by a newer goal.
 ```
 
 ---
@@ -295,7 +338,8 @@ user@amr-dev:~/ros$ [CHECKPOINT PASSED: 5 DDS ACTION ENDPOINTS VERIFIED & PREEMP
 | 3 | **ไคลเอนต์ไม่ได้รับ Feedback ระหว่างทาง ได้แค่ Result ตอนจบ** | ตอนเรียก `send_goal_async` ลืมระบุอาร์กิวเมนต์ `feedback_callback=self.feedback_callback` | เพิ่มพารามิเตอร์ `feedback_callback` ในเมธอด `send_goal_async` |
 | 4 | **ส่ง Goal ไปแล้วติด Error: `Action Server not available`** | โหนดเซิร์ฟเวอร์ยังไม่พร้อม หรือระบุชื่อ Action Namespace ไม่ตรงกัน | เรียก `self._action_client.wait_for_server(timeout_sec=5.0)` ก่อนส่ง Goal เสมอ |
 | 5 | **หน้าจอ CLI ไม่พิมพ์ Feedback เมื่อใช้คำสั่ง `send_goal`** | คำสั่ง CLI ค่าเริ่มต้นจะแสดงเฉพาะ Final Result | เติมแฟล็ก `-f` หรือ `--feedback` ในคำสั่ง `ros2 action send_goal` |
-| 6 | **Server รับ Goal ซ้อนกันแล้วเกิด Crash** | การออกแบบ Action Server เริ่มต้นรองรับ 1 Goal ต่อครั้ง แต่มี Goal ที่สองเข้ามาขัดจังหวะโดยไม่มีนโยบายรองรับ | กำหนดนโยบายใน `goal_callback`: ยกเลิก Goal เก่า (Preempt) หรือปฏิเสธ Goal ใหม่ด้วย `GoalResponse.REJECT` |
+| 6 | **Goal ที่สองเข้ามาแล้วสองงานสั่งมอเตอร์พร้อมกัน หรือรอคิวจน Goal แรกจบ** | rclpy ไม่มีนโยบาย "หนึ่ง Goal ต่อครั้ง" ให้อัตโนมัติ (ขึ้นกับ Executor) | กำหนดนโยบายเอง: Preempt Goal เก่าด้วย `abort()` ใน `handle_accepted_callback` (แบบแล็บนี้) หรือปฏิเสธ Goal ใหม่ด้วย `GoalResponse.REJECT` ใน `goal_callback` |
+| 7 | **Cancel แล้ว Server ตอบรับช้า Goal จบเป็น SUCCEEDED และไคลเอนต์ค้าง** | `execute_callback` มี `time.sleep()` แต่โหนดหมุนด้วย `rclpy.spin()` (เธรดเดียว) คำขอ Cancel จึงค้างในคิวจนงานจบ | ใช้ `MultiThreadedExecutor` + `ReentrantCallbackGroup` และให้ไคลเอนต์รอ Result หลังส่ง Cancel แล้วจึงออกจากโปรแกรม |
 
 ---
 
@@ -328,7 +372,8 @@ user@amr-dev:~/ros$ [CHECKPOINT PASSED: 5 DDS ACTION ENDPOINTS VERIFIED & PREEMP
 9. **ตอบ:** **`goal_callback`** ซึ่งจะรับอาร์กิวเมนต์เป็น `goal_request` แล้วประเมินเงื่อนไข หากถูกต้องจะส่งคืน `GoalResponse.ACCEPT` หากข้อมูลผิดพลาดจะส่งคืน `GoalResponse.REJECT`
 10. **ตอบ:**
     - `abort()` หมายถึง เซิร์ฟเวอร์ตัดสินใจยุติงานเองเนื่องจากเกิดความล้มเหลวภายในหรือสิ่งแวดล้อมที่ไม่สามารถดำเนินการต่อได้ (เช่น มอเตอร์ติดขัด, แบตเตอรี่วิกฤต, หาเส้นทางไม่พบ)
-    - `canceled()` หมายถึง งานถูกยุติเนื่องจาก **มีคำร้องขอจากภายนอก (Client Request)** เช่น ผู้ควบคุมกดยกเลิกภารกิจ หรือมีเป้าหมายใหม่เข้ามาแทนที่
+    - `canceled()` หมายถึง งานถูกยุติเนื่องจาก **มีคำร้องขอยกเลิกจากภายนอก (Cancel Request)** เช่น ผู้ควบคุมกดยกเลิกภารกิจ
+    - ส่วนกรณี **มีเป้าหมายใหม่เข้ามาแทนที่ (Preemption)** Server ในแล็บนี้ (และ Nav2) ยุติ Goal เดิมด้วย `abort()` เพราะไม่มีใครส่ง Cancel Request สำหรับ Goal นั้น
 </details>
 
 ---

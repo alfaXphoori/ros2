@@ -120,9 +120,9 @@ $$F_{\text{friction}} \le \mu F_{\text{normal}}$$
 
 ## 🛠️ การวิเคราะห์ไฟล์ตัวอย่างในโมดูล (Code Walkthrough)
 
-### [`worlds/warehouse.sdf`](file:///mnt/sda/ros/Essential_ROS/Week_10_Gazebo_Sim_Harmonic/worlds/warehouse.sdf)
-ไฟล์โลกจำลองคลังสินค้าอัตโนมัติ:
-- **การกำหนด Physics และโหลด System Plugins ([L4-L26](file:///mnt/sda/ros/Essential_ROS/Week_10_Gazebo_Sim_Harmonic/worlds/warehouse.sdf#L4-L26)):**
+### [`worlds/warehouse.sdf`](worlds/warehouse.sdf)
+ไฟล์โลกจำลองคลังสินค้าอัตโนมัติ (ติดตั้งเป็นส่วนหนึ่งของแพ็กเกจ `amr_week10` ที่ `share/amr_week10/worlds/`):
+- **การกำหนด Physics และโหลด System Plugins (บรรทัด 4–26):**
   ```xml
   <physics name="1ms" type="ignored">
     <max_step_size>0.001</max_step_size>
@@ -134,10 +134,28 @@ $$F_{\text{friction}} \le \mu F_{\text{normal}}$$
   </plugin>
   ```
   ตั้งความละเอียดของ Physics Solver ไว้ที่ 1000 Hz และกำหนดตัวเรนเดอร์เซนเซอร์เป็น Ogre 2.x
-- **พื้นผิวโลกจำลอง (Ground Plane) ([L37-L62](file:///mnt/sda/ros/Essential_ROS/Week_10_Gazebo_Sim_Harmonic/worlds/warehouse.sdf#L37-L62)):**
+- **พื้นผิวโลกจำลอง (Ground Plane) (บรรทัด 37–62):**
   สร้างระนาบขนาด $50 \times 50\text{ m}$ พร้อมตั้งค่า `<static>true</static>` เพื่อตรึงให้พื้นผิวเป็นวัตถุอยู่นิ่ง ไม่ร่วงหล่นตามแรงโน้มถ่วง
-- **การสร้างกำแพงและสิ่งกีดขวางโกดัง ([L64-L135](file:///mnt/sda/ros/Essential_ROS/Week_10_Gazebo_Sim_Harmonic/worlds/warehouse.sdf#L64-L135)):**
-  ออกแบบกำแพง 4 ทิศรอบด้านขนาด $10 \times 10\text{ m}$ พร้อมวางกล่องสินค้า (Pallet Boxes) เป็นจุดสะท้อนลำแสงของเซนเซอร์ LiDAR สำหรับใช้ในการทำแผนที่ SLAM
+- **กำแพงและเสา/ชั้นวางสินค้า (โมเดล `warehouse_walls`, บรรทัด 64–135):**
+  กำแพง 4 ด้าน (หนา 0.2 m สูง 2 m) ล้อมพื้นที่ $10 \times 10\text{ m}$ (จุดศูนย์กลางกำแพงอยู่ที่ $\pm 5$ m ผิวด้านในจึงอยู่ที่ $\pm 4.9$ m)
+  และเสา/ชั้นวางสินค้า 2 ต้น ขนาด $1.2 \times 0.6 \times 2\text{ m}$ ที่ตำแหน่ง $(2, 2)$ และ $(-2, 2)$ ซึ่งเป็นจุดสะท้อนลำแสง LiDAR สำหรับ SLAM (สัปดาห์ที่ 12)
+  ทุก `<collision>` มี `<visual>` คู่กันเสมอ (สิ่งที่ LiDAR ชนคือสิ่งที่มองเห็น)
+
+### [`launch/warehouse_world.launch.py`](launch/warehouse_world.launch.py)
+Launch file ที่เปิดโลกนี้ผ่าน `ros_gz_sim` (สัปดาห์ที่ 11 นำไปใช้ต่อ):
+```bash
+ros2 launch amr_week10 warehouse_world.launch.py                 # GUI + server
+ros2 launch amr_week10 warehouse_world.launch.py headless:=true  # = gz sim -s -r --headless-rendering <world>
+```
+แฟล็ก `--headless-rendering` ทำให้ระบบ Sensors เรนเดอร์แบบ offscreen (EGL) ได้แม้ไม่มีจอภาพ เซนเซอร์ `gpu_lidar` จึงยังทำงานใน Docker
+
+### การ build แพ็กเกจ (colcon)
+โฟลเดอร์สัปดาห์นี้เป็นแพ็กเกจ ROS 2 ชื่อ `amr_week10` (ament_python) ติดตั้งไฟล์โลกและ launch file:
+```bash
+./docker/run_lab.sh colcon build --base-paths Essential_ROS --packages-up-to amr_week10
+./docker/run_lab.sh colcon test  --base-paths Essential_ROS --packages-select amr_week10
+```
+ชุดทดสอบ [`test/test_world.py`](test/test_world.py) ตรวจ `gz sdf -k`, รายการปลั๊กอิน, ตำแหน่งกำแพง/เสา และรัน `gz sim -s -r --headless-rendering --iterations 2000` จนจบด้วย exit code 0
 
 ---
 
@@ -145,32 +163,50 @@ $$F_{\text{friction}} \le \mu F_{\text{normal}}$$
 | คำสั่ง | คำอธิบาย | ตัวอย่างการใช้งาน |
 | :--- | :--- | :--- |
 | `gz sim <world.sdf>` | เปิดโลกจำลองพร้อมหน้าต่างแสดงผล GUI | `gz sim Essential_ROS/Week_10_Gazebo_Sim_Harmonic/worlds/warehouse.sdf` |
-| `gz sim -s -r <world.sdf>` | รันโลกจำลองแบบ Server-Only ไร้หน้าต่าง (Headless Mode) | `gz sim -s -r Essential_ROS/Week_10_Gazebo_Sim_Harmonic/worlds/warehouse.sdf` |
+| `gz sim -s -r <world.sdf>` | รันโลกจำลองแบบ Server-Only ไร้หน้าต่าง (Headless Mode) | `gz sim -s -r --headless-rendering Essential_ROS/Week_10_Gazebo_Sim_Harmonic/worlds/warehouse.sdf` |
+| `gz sim ... --iterations N` | รันฟิสิกส์ N ก้าวแล้วปิดตัวเอง (เหมาะกับการทดสอบอัตโนมัติ) | `gz sim -s -r --headless-rendering --iterations 5000 <world.sdf>` |
+| `ros2 launch amr_week10 warehouse_world.launch.py` | เปิดโลกผ่าน ROS 2 launch (`headless:=true` สำหรับ Docker) | `ros2 launch amr_week10 warehouse_world.launch.py headless:=true` |
 | `gz sdf -k <file.sdf>` | ตรวจสอบความถูกต้องของไวยากรณ์ไฟล์ SDF (Check Validity) | `gz sdf -k Essential_ROS/Week_10_Gazebo_Sim_Harmonic/worlds/warehouse.sdf` |
 | `gz topic -l` | แสดงรายชื่อ Topics ทั้งหมดที่เผยแพร่อยู่ใน Gazebo Transport | `gz topic -l` |
 | `gz topic -e -t <topic>` | ตรวจสอบและแสดงข้อมูลสตรีมสดใน Gazebo Transport | `gz topic -e -t /clock` |
-| `gz model -l` | แสดงรายชื่อโมเดลทั้งหมดที่อยู่ในโลกจำลองขณะนี้ | `gz model -l` |
+| `gz model --list` | แสดงรายชื่อโมเดลทั้งหมดที่อยู่ในโลกจำลองขณะนี้ (หมายเหตุ: `-l` คือ `--link` ไม่ใช่ list) | `gz model --list` |
 
 ---
 
-## 📸 ภาพผลการทดสอบจริงจากระบบ (Live Execution & Terminal Capture)
-ผลลัพธ์จากการรันคำสั่งและโหนดจริงในระบบ เพื่อใช้เป็นข้อมูลอ้างอิงในการตรวจสอบความถูกต้อง:
-
-![Terminal Capture: Terminal — Week 10: Gazebo Sim 8 (Harmonic) Warehouse World](images/terminal_run.png)
+## 📟 ผลการรันจริง (Real Run Output)
+บันทึกจากการรันจริงใน ros:lab-runner (ROS 2 Jazzy, Gazebo Sim 8.15.0) บน Linux 7.0 เมื่อ 2026-10-29
+(ฉบับเต็ม: [`results/warehouse_world_run.txt`](results/warehouse_world_run.txt))
 
 ```console
-user@amr-dev:~/ros$ ./docker/run_lab.sh gz sdf -k Essential_ROS/Week_10_Gazebo_Sim_Harmonic/worlds/warehouse.sdf
+$ gz sdf -k Essential_ROS/Week_10_Gazebo_Sim_Harmonic/worlds/warehouse.sdf
 Valid.
-user@amr-dev:~/ros$ ./docker/run_lab.sh gz sim -s -r Essential_ROS/Week_10_Gazebo_Sim_Harmonic/worlds/warehouse.sdf &
-[INFO] [gz-sim-physics-system]: Physics engine DART initialized with max_step_size=0.001s (1000 Hz)
-[INFO] [gz-sim-sensors-system]: Ogre2 Rendering engine ready for GPU raycast
-user@amr-dev:~/ros$ ./docker/run_lab.sh gz topic -l
-/clock
-/world/warehouse/pose/info
-/world/warehouse/dynamic_pose/info
-/stats  [Real-Time Factor: 1.00]
-user@amr-dev:~/ros$ [CHECKPOINT PASSED: HEADLESS GAZEBO HARMONIC SERVER ONLINE]
+
+$ gz sim -s -r --headless-rendering --iterations 5000 Essential_ROS/Week_10_Gazebo_Sim_Harmonic/worlds/warehouse.sdf
+(exit code 0, 7.5 s wall)
+
+$ gz model --list
+
+Requesting state for world [warehouse]...
+
+Available models:
+    - ground_plane
+    - warehouse_walls
+$ gz topic -e -t /stats -n 1
+sim_time {
+  sec: 6
+  nsec: 99000000
+}
+real_time {
+  sec: 8
+  nsec: 40241803
+}
+iterations: 6099
+real_time_factor: 0.99964612527165386
+step_size {
+  nsec: 1000000
+}
 ```
+สังเกต: `step_size` = 1 ms ตรงกับ `max_step_size` และ RTF ≈ 1.0 บนเครื่องทดสอบ (8 CPU) — 5,000 iterations = 5 วินาทีเวลาจำลอง ใช้เวลาจริง 7.5 วินาทีรวมเวลาเริ่มระบบ
 
 ---
 
@@ -178,7 +214,7 @@ user@amr-dev:~/ros$ [CHECKPOINT PASSED: HEADLESS GAZEBO HARMONIC SERVER ONLINE]
 
 | ที่ | อาการที่พบ (Symptom) | สาเหตุรากเหง้า (Root Cause) | แนวทางแก้ไข (Resolution) |
 |:---:| :--- | :--- | :--- |
-| 1 | **รัน `gz sim` ใน Docker แล้วโปรแกรมแครชทันที (GUI Initialization Error)** | คอนเทนเนอร์ไม่มี X11 Forwarding หรือไม่มี Driver กราฟิกการ์ดที่รองรับ OpenGL | รันในโหมด Headless ด้วยแฟล็ก `-s -r` เพื่อใช้งานเฉพาะ Server ฟิสิกส์ |
+| 1 | **รัน `gz sim` ใน Docker แล้วโปรแกรมแครชทันที (GUI Initialization Error)** | คอนเทนเนอร์ไม่มี X11 Forwarding หรือไม่มี Driver กราฟิกการ์ดที่รองรับ OpenGL | รันในโหมด Headless ด้วย `-s -r --headless-rendering` (เซนเซอร์ยังเรนเดอร์ได้แบบ offscreen) |
 | 2 | **เซนเซอร์ LiDAR ยิงแสงไม่ออก หรือ Topic ข้อมูลไม่อัปเดต** | ในไฟล์โลก `.sdf` ลืมระบุปลั๊กอิน `gz-sim-sensors-system` หรือลืมใส่ `<render_engine>ogre2</render_engine>` | เพิ่มบล็อกปลั๊กอิน Sensors พร้อมระบุตัวเรนเดอร์ในไฟล์ SDF |
 | 3 | **หุ่นยนต์หรือกล่องสินค้ากระตุกหรือเด้งลอยขึ้นฟ้า (Physics Explosion)** | ค่า `max_step_size` ใหญ่เกินไป หรือโมเดลมีค่าความเฉื่อย (Inertia) ใกล้ศูนย์ | ปรับ `max_step_size` เป็น `0.001` และตรวจสอบค่าใน `<inertial>` ของหุ่นยนต์ |
 | 4 | **หุ่นยนต์เคลื่อนที่แล้วเกิดการลื่นไถลอยู่กับที่ (Spinning Wheels)** | สัมประสิทธิ์แรงเสียดทาน $\mu_1$ บนล้อหรือพื้นดินต่ำเกินไป | เพิ่มค่า `<mu>` ในแท็ก `<surface><friction>` ให้มีค่า $\ge 1.0$ |

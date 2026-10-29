@@ -64,14 +64,24 @@
       </geometry>
       <material name="wheel_dark"/>
     </visual>
+    <!-- Collision is a SPHERE of the wheel radius, not the 0.04 m cylinder:
+         a cylinder touches the ground plane at its rim edges (y = 0.10 or 0.14),
+         so the effective wheel separation in Gazebo is not 0.24 m and yaw
+         odometry drifts (measured: -14 % / +20 %). A sphere touches the floor at
+         exactly one point in the wheel mid-plane (y = +/-0.12). -->
     <collision>
-      <origin xyz="0 0 0" rpy="-1.57079632679 0 0"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <cylinder radius="0.08" length="0.04"/>
+        <sphere radius="0.08"/>
       </geometry>
     </collision>
+    <!-- Inertial frame is NOT rotated: the tensor is written directly in the
+         link frame, where the spin axis is Y (joint axis 0 1 0).
+         Solid cylinder m=0.75, r=0.08, h=0.04:
+           Iyy (spin)  = 1/2  m r^2          = 0.00240
+           Ixx = Izz   = 1/12 m (3r^2 + h^2) = 0.00130 -->
     <inertial>
-      <origin xyz="0 0 0" rpy="-1.57079632679 0 0"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
       <mass value="0.75"/>
       <inertia ixx="0.00130" ixy="0.0" ixz="0.0"
                iyy="0.00240" iyz="0.0"
@@ -95,14 +105,24 @@
       </geometry>
       <material name="wheel_dark"/>
     </visual>
+    <!-- Collision is a SPHERE of the wheel radius, not the 0.04 m cylinder:
+         a cylinder touches the ground plane at its rim edges (y = 0.10 or 0.14),
+         so the effective wheel separation in Gazebo is not 0.24 m and yaw
+         odometry drifts (measured: -14 % / +20 %). A sphere touches the floor at
+         exactly one point in the wheel mid-plane (y = +/-0.12). -->
     <collision>
-      <origin xyz="0 0 0" rpy="-1.57079632679 0 0"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <cylinder radius="0.08" length="0.04"/>
+        <sphere radius="0.08"/>
       </geometry>
     </collision>
+    <!-- Inertial frame is NOT rotated: the tensor is written directly in the
+         link frame, where the spin axis is Y (joint axis 0 1 0).
+         Solid cylinder m=0.75, r=0.08, h=0.04:
+           Iyy (spin)  = 1/2  m r^2          = 0.00240
+           Ixx = Izz   = 1/12 m (3r^2 + h^2) = 0.00130 -->
     <inertial>
-      <origin xyz="0 0 0" rpy="-1.57079632679 0 0"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
       <mass value="0.75"/>
       <inertia ixx="0.00130" ixy="0.0" ixz="0.0"
                iyy="0.00240" iyz="0.0"
@@ -246,7 +266,36 @@
     <origin xyz="0 0 0" rpy="-1.57079632679 0 -1.57079632679"/>
   </joint>
 
-  <!-- 10. Gazebo Sim (Harmonic) Plugins & Sensors -->
+  <!-- 10. Gazebo Sim contact properties
+       Drive wheels: high friction + stiff contact so they do not slip.
+       Casters: frictionless ball casters. With default friction (mu = 1) the two
+       fixed caster spheres scrub sideways when the robot turns and the robot
+       under-rotates while /odom (computed from wheel joints) reports the full
+       turn (measured: 147 deg true vs 171 deg odom for 0.6 rad/s x 5 s). -->
+  <gazebo reference="left_wheel_link">
+    <mu1>1.0</mu1>
+    <mu2>1.0</mu2>
+    <kp>1000000.0</kp>
+    <kd>100.0</kd>
+    <minDepth>0.001</minDepth>
+  </gazebo>
+  <gazebo reference="right_wheel_link">
+    <mu1>1.0</mu1>
+    <mu2>1.0</mu2>
+    <kp>1000000.0</kp>
+    <kd>100.0</kd>
+    <minDepth>0.001</minDepth>
+  </gazebo>
+  <gazebo reference="front_caster_link">
+    <mu1>0.0</mu1>
+    <mu2>0.0</mu2>
+  </gazebo>
+  <gazebo reference="rear_caster_link">
+    <mu1>0.0</mu1>
+    <mu2>0.0</mu2>
+  </gazebo>
+
+  <!-- 11. Gazebo Sim (Harmonic) Plugins & Sensors -->
   <gazebo>
     <plugin filename="gz-sim-diff-drive-system" name="gz::sim::systems::DiffDrive">
       <left_joint>left_wheel_joint</left_joint>

@@ -3,7 +3,8 @@
 **เวลาสอบ:** 3 ชั่วโมงเต็ม (180 นาที)  
 **สัดส่วนคะแนน:** 20% ของคะแนนรวมทั้งภาคการศึกษา (100 คะแนนเต็ม)  
 **เอกสารข้อสอบฉบับเต็ม:** [ใบสั่งงานข้อสอบกลางภาค (Exam Task Specification)](Exam_Task.md)  
-**ไฟล์เฉลยอ้างอิง:** [โฟลเดอร์แนวทางเฉลย (Official Solution)](solution/)
+**ไฟล์เฉลยอ้างอิง:** [โฟลเดอร์แนวทางเฉลย (Official Solution)](solution/)  
+**ชุดตรวจอัตโนมัติ (Autograder):** [โฟลเดอร์ `test/`](test/) — วิธีใช้ดูหัวข้อ "คำสั่งทดสอบและตรวจให้คะแนน" ใน [Exam_Task.md](Exam_Task.md)
 
 ---
 
@@ -64,12 +65,12 @@ pie title สัดส่วนคะแนนการสอบกลางภ�
 | :--- | :---: | :--- |
 | **Velocity Publisher `/cmd_vel` (10 คะแนน)** | ส่งข้อความ `geometry_msgs/msg/Twist` ที่ความถี่ 5 Hz อย่างสม่ำเสมอ | ความถี่ไม่สม่ำเสมอหรือช้ากว่า 2 Hz (-4 คะแนน), ข้อมูลฟิลด์ความเร็วผิด (-5 คะแนน) |
 | **Dynamic Parameter Validation (15 คะแนน)** | ประกาศ `max_speed` และเขียน Callback ดักจับค่าที่อยู่นอกช่วง $[0.1, 1.5]\text{ m/s}$ ได้ถูกต้อง | ปล่อยให้ป้อนค่าเกินช่วงได้โดยไม่ปฏิเสธ (-15 คะแนน), ข้อความเหตุผลใน `reason` ว่างเปล่า (-3 คะแนน) |
-| **Temperature Monitor & Safety Throttling (15 คะแนน)** | ดักฟัง `/sensor/temperature` และสั่งชะลอความเร็วพร้อมพ่น Log สีเหลืองเมื่ออุณหภูมิ $> 65.0^\circ\text{C}$ | ไม่ตอบสนองต่ออุณหภูมิสูง (-15 คะแนน), ตรรกะการเปรียบเทียบค่าอุณหภูมิผิด (-5 คะแนน) |
+| **Temperature Monitor & Safety Throttling (15 คะแนน)** | ดักฟัง `/sensor/temperature` และลดความเร็วที่ส่งออก `/cmd_vel` เหลือ 50% พร้อมพ่น Log สีเหลืองเมื่ออุณหภูมิ $> 65.0^\circ\text{C}$ (และกลับมาปกติเมื่อ $\le 65.0^\circ\text{C}$) — การพิมพ์ Log อย่างเดียวโดยไม่ลดความเร็วถือว่าไม่ผ่าน | ไม่ตอบสนองต่ออุณหภูมิสูง (-15 คะแนน), ตรรกะการเปรียบเทียบค่าอุณหภูมิผิด (-5 คะแนน) |
 
 ### 🔹 ตอนที่ 3: การรวมระบบและการแสดงผล Launch/RViz2 (25 คะแนน)
 | ตัวชี้วัด | เกณฑ์คะแนนเต็ม | หักคะแนนกรณีมีข้อบกพร่อง |
 | :--- | :---: | :--- |
-| **ระบบ Launch System (15 คะแนน)** | เปิด `robot_state_publisher` และโหนดควบคุมพร้อมกันได้ด้วยคำสั่งเดียว | เปิดโหนดใดโหนดหนึ่งไม่ขึ้น (-7 คะแนน), พาธไฟล์ Hardcoded จนรันในเครื่องอื่นไม่ผ่าน (-5 คะแนน) |
+| **ระบบ Launch System (15 คะแนน)** | เปิด `robot_state_publisher`, `joint_state_publisher` และโหนดควบคุมพร้อมกันได้ด้วยคำสั่งเดียว (รองรับ `rviz:=false`) | เปิดโหนดใดโหนดหนึ่งไม่ขึ้น (-7 คะแนน), พาธไฟล์ Hardcoded จนรันในเครื่องอื่นไม่ผ่าน (-5 คะแนน) |
 | **การแสดงผลใน RViz2 (10 คะแนน)** | โมเดลเรนเดอร์สีสันถูกต้อง ชิ้นส่วนไม่จมพื้น แกน TF ตรงตามข้อกำหนด | ล้อจมพื้นหรือลอยเหนือพื้น (-4 คะแนน), Fixed frame ไม่ตรงทำให้โมเดลเป็นสีขาว (-4 คะแนน) |
 
 ---
@@ -139,24 +140,49 @@ pie title สัดส่วนคะแนนการสอบกลางภ�
 - [URDF Verification Tools and Tutorials](https://docs.ros.org/en/jazzy/Tutorials/Intermediate/URDF/URDF-Main.html)
 
 
-## 📸 ภาพผลการทดสอบจริงจากระบบ (Live Execution & Terminal Capture)
-ผลลัพธ์จากการรันคำสั่งและโหนดจริงในระบบ เพื่อใช้เป็นข้อมูลอ้างอิงในการตรวจสอบความถูกต้อง:
-
-![Terminal Capture: Terminal — Week 08 Midterm Exam: Hospital AMR Safety Controller](images/terminal_run.png)
-
-```console
-user@amr-dev:~/ros$ ./docker/run_lab.sh check_urdf solution/solution_urdf.urdf
-robot name is: diff_drive_robot | Successfully Parsed XML (35/35 pts)
-user@amr-dev:~/ros$ ./docker/run_lab.sh python3 solution/robot_node.py &
-[INFO] [midterm_robot_controller]: ✅ Midterm Solution Controller Running (MaxSpeed=0.6m/s)
-user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 topic pub --once /sensor/temperature std_msgs/msg/Float32 '{data: 72.5}'
-[WARN] [midterm_robot_controller]: ⚠️ High temperature detected: 72.5°C! Throttling robot.
-user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 param set /midterm_robot_controller max_speed 1.2
-[INFO] [midterm_robot_controller]: Max speed updated to: 1.2
-user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 param set /midterm_robot_controller max_speed 2.5
-Setting parameter failed: Speed out of safe limit [0.1, 1.5] (40/40 pts)
-user@amr-dev:~/ros$ [EXAM GRADE: 100/100 ALL TEST CASES PASSED]
+## 📦 แพ็กเกจ `amr_week08` (เฉลย + ระบบตรวจ)
+โฟลเดอร์นี้เป็นแพ็กเกจ `ament_python` ชื่อ `amr_week08` โดยโค้ดเฉลยอยู่ใน `solution/` (จัดวางเหมือนโฟลเดอร์ส่งงานของนักศึกษา) และติดตั้ง URDF/launch ไปที่ `share/amr_week08/`:
+```bash
+./docker/run_lab.sh bash
+colcon build --base-paths Essential_ROS --packages-up-to amr_week08
+source install/setup.bash
+ros2 launch amr_week08 hospital_bringup.launch.py            # rviz:=false เมื่อไม่มีจอ
+colcon test --base-paths Essential_ROS --packages-select amr_week08 && colcon test-result --verbose
+```
+ระบบตรวจอ่านโฟลเดอร์จากตัวแปร `EXAM_SUBMISSION_DIR` (ค่าเริ่มต้น = `solution/`) จึงใช้ชุดทดสอบเดียวกันตรวจทั้งเฉลยและงานนักศึกษา:
+```bash
+./docker/run_lab.sh bash -c 'EXAM_SUBMISSION_DIR=/workspace/submissions/6501234 \
+    python3 -m pytest -v Essential_ROS/Week_08_Midterm_Practical_Exam/test/'
 ```
 
 ---
 
+## 📟 ผลการรันจริง (Real Run Output)
+บันทึกจากการรันจริงใน ros:lab-runner (ROS 2 Jazzy, Gazebo Sim 8.15.0) บน Linux 7.0 เมื่อ 2026-10-29
+
+ระบบตรวจอัตโนมัติกับเฉลย ([`results/autograder_solution.txt`](results/autograder_solution.txt), ตัดบางบรรทัด):
+```console
+$ python3 -m pytest -v Essential_ROS/Week_08_Midterm_Practical_Exam/test/
+...
+Essential_ROS/Week_08_Midterm_Practical_Exam/test/test_grade_part1_urdf.py::test_diff_drive_plugin_consistent_if_present PASSED [ 90%]
+Essential_ROS/Week_08_Midterm_Practical_Exam/test/test_grade_part2_node.py::test_grade_part2_node PASSED [ 95%]
+Essential_ROS/Week_08_Midterm_Practical_Exam/test/test_grade_part3_launch.py::test_grade_part3_launch PASSED [100%]
+
+============================= 21 passed in 26.22s ==============================
+```
+
+การตรวจแบบ Manual ([`results/grading_session.txt`](results/grading_session.txt), ตัดบางบรรทัด):
+```console
+$ ros2 param set /midterm_robot_controller max_speed 2.0
+Setting parameter failed: max_speed 2.0 out of safe limit [0.1, 1.5] m/s
+$ ros2 topic pub -w 1 --once /sensor/temperature std_msgs/msg/Float32 "{data: 72.5}"
+...
+publishing #1: std_msgs.msg.Float32(data=72.5)
+
+$ ros2 topic echo --once /cmd_vel geometry_msgs/msg/Twist --field linear.x
+0.15
+---
+...
+[WARN] [1793242469.933094960] [midterm_robot_controller]: High temperature 72.5 C > 65.0 C: throttling speed to 0.15 m/s
+```
+เมื่อนำชุดตรวจเดียวกันไปรันกับเฉลยฉบับเก่า (ก่อนแก้ไข) ตอนที่ 1 ตก 7 ข้อ (ล้อ $y=\pm0.12$, caster 0.2 kg ที่ $\pm0.15$, LiDAR ผิดตำแหน่ง) และตอนที่ 2 ตก 2 ข้อ (`speed not reduced at 70 C`) แสดงว่าชุดตรวจจับข้อบกพร่องที่ "พิมพ์ Log อย่างเดียว" ได้จริง

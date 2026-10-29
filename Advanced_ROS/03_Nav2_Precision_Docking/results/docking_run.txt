@@ -1,0 +1,46 @@
+### Terminal 1
+$ ros2 launch amr_adv03 docking_sim.launch.py
+### Terminal 2
+$ ros2 action list
+/dock_robot
+/navigate_to_pose
+/undock_robot
+
+$ ros2 action info /dock_robot -t
+Action: /dock_robot
+Action clients: 0
+Action servers: 1
+    /docking_server [nav2_msgs/action/DockRobot]
+
+$ ros2 run amr_adv03 dock_client
+DockRobot dock_id=home_dock  start pose: x=0.000 y=-0.080 yaw=8.6 deg
+  feedback: NAV_TO_STAGING_POSE  t= 0.00 s  retries=0
+  feedback: INITIAL_PERCEPTION   t= 0.00 s  retries=0
+  feedback: CONTROLLING          t= 0.00 s  retries=0
+  feedback: WAIT_FOR_CHARGE      t= 6.75 s  retries=0
+DockRobot result: success=True error_code=0 (NONE) num_retries=0  (6.8 s)
+docked: robot x=0.9860 y=-0.0014 yaw=0.90 deg | true dock x=1.000 y=0.000 yaw=0.00 deg
+docked: error = 14.1 mm (lateral -1.4 mm, longitudinal -14.0 mm), yaw error = +0.90 deg
+UndockRobot result: success=True error_code=0 (5.8 s)
+after undock: robot x=0.3343 y=-0.0116 yaw=0.90 deg | true dock x=1.000 y=0.000 yaw=0.00 deg
+after undock: error = 665.8 mm (lateral -11.6 mm, longitudinal -665.7 mm), yaw error = +0.90 deg
+
+### Terminal 1 (docking_server log)
+[opennav_docking-6] [INFO] [1793246405.902591245] [docking_server]: 
+[opennav_docking-6] [INFO] [1793246405.902672139] [docking_server]: Creating docking_server
+[opennav_docking-6] [INFO] [1793246405.903950406] [docking_server]: Configuring docking_server
+[opennav_docking-6] [INFO] [1793246405.903973734] [docking_server]: Controller frequency set to 20.0000Hz
+[opennav_docking-6] [INFO] [1793246405.914023234] [docking_server]: Created charging dock plugin simple_charging_dock of type opennav_docking::SimpleChargingDock
+[opennav_docking-6] [INFO] [1793246405.915283259] [docking_server]: Loading docks from parameter file.
+[opennav_docking-6] [INFO] [1793246405.915372380] [docking_server]: Docking Server has 1 dock types and 1 dock instances available.
+[opennav_docking-6] [INFO] [1793246405.916293646] [docking_server]: Activating docking_server
+[opennav_docking-6] [INFO] [1793246405.919445312] [docking_server]: Creating bond (docking_server) to lifecycle manager.
+[opennav_docking-6] [INFO] [1793246420.982297297] [docking_server]: Attempting to dock robot at home_dock.
+[opennav_docking-6] [INFO] [1793246420.982477681] [docking_server]: Robot already within pre-staging pose tolerance for dock
+[opennav_docking-6] [INFO] [1793246420.982528810] [docking_server]: Successful initial dock detection
+[opennav_docking-6] [INFO] [1793246427.732675166] [docking_server]: Made contact with dock, waiting for charge to start (if applicable).
+[opennav_docking-6] [INFO] [1793246427.732720987] [docking_server]: Robot is charging!
+[opennav_docking-6] [INFO] [1793246427.734430463] [docking_server]: Attempting to undock robot of dock type simple_charging_dock.
+[opennav_docking-6] [INFO] [1793246433.484603948] [docking_server]: Robot has reached staging pose
+[opennav_docking-6] [INFO] [1793246433.484776883] [docking_server]: Robot has undocked!
+...

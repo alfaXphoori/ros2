@@ -1,21 +1,41 @@
 <!--
-  Advanced Nav2 Behavior Tree: Autonomous Docking & Auto-Charging
-  Pipeline: Check Battery -> Navigate to Staging Area -> Run Precision Docking -> Wait/Charge
+  Advanced Module 03: Dock & Charge behavior tree (BehaviorTree.CPP v4, Nav2 Jazzy).
+
+  Run inside bt_navigator as the behavior_tree of a NavigateToPose goal whose pose is the dock's
+  STAGING pose: {goal} is set by bt_navigator from that goal.
+    1. only if the battery is low (BatteryState.percentage is 0..1 -> 0.2 = 20 %)
+    2. plan + follow a path to the staging pose  (ComputePathToPose / FollowPath)
+    3. DockRobot with navigate_to_staging_pose="false": we are already at the staging pose, and
+       the docking server must NOT call NavigateToPose itself (that is the very action server
+       running this tree -> the docking request would pre-empt its own caller)
+    4. wait until the battery reports >= 95 % (checked every 10 s, at most 1 h)
+    5. undock (back to the staging pose)
+
+  bt_navigator must load the docking BT plugins: see config/bt_navigator_docking.yaml
+  (opennav_dock_action_bt_node, opennav_undock_action_bt_node are not in Nav2's default list).
+  Validate:  ros2 run amr_adv03 check_bt
 -->
-<root main_tree_to_execute="MainTree">
-  <BehaviorTree ID="MainTree">
+<root BTCPP_format="4" main_tree_to_execute="DockAndCharge">
+  <BehaviorTree ID="DockAndCharge">
     <Sequence name="DockAndChargeSequence">
-      <!-- 1. Check if Battery is low or charge task commanded -->
-      <Condition ID="IsBatteryLow" min_battery="20.0"/>
+      <IsBatteryLow min_battery="0.2" battery_topic="/battery_status" is_voltage="false"/>
 
-      <!-- 2. Navigate AMR to Docking Staging Area (0.6m in front of dock) -->
-      <Action ID="NavigateToPose" goal="{staging_pose}"/>
+      <ComputePathToPose goal="{goal}" path="{path}" planner_id="GridBased"/>
+      <FollowPath path="{path}" controller_id="FollowPath"/>
 
-      <!-- 3. Engage Nav2 Docking Server for Millimeter-level Alignment -->
-      <Action ID="DockRobot" dock_id="charging_station_01" max_staging_time="15.0"/>
+      <DockRobot dock_id="home_dock" navigate_to_staging_pose="false"
+                 success="{dock_success}" error_code_id="{dock_error_code}"/>
 
-      <!-- 4. Wait while charging to 100% -->
-      <Action ID="Wait" wait_duration="30"/>
+      <RetryUntilSuccessful num_attempts="360">
+        <Sequence name="WaitUntilCharged">
+          <Wait wait_duration="10.0"/>
+          <Inverter>
+            <IsBatteryLow min_battery="0.95" battery_topic="/battery_status" is_voltage="false"/>
+          </Inverter>
+        </Sequence>
+      </RetryUntilSuccessful>
+
+      <UndockRobot dock_type="simple_charging_dock"/>
     </Sequence>
   </BehaviorTree>
 </root>

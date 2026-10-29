@@ -1,0 +1,68 @@
+# Week 02 real run: ros:lab-runner (ROS 2 Jazzy), Linux 7.0, 2026-10-29
+# all 'terminals' run in one container (background publisher), ROS_DOMAIN_ID=11, LOCALHOST discovery
+
+$ ros2 run amr_week02 sensor_qos_publisher     # terminal 1
+
+$ ros2 run amr_week02 sensor_qos_subscriber    # terminal 3, started 2 s after the publisher (late joiner)
+[INFO] [1793242259.809630082] [sensor_qos_subscriber]: 📡 [SensorQoSSubscriber] Listening for sensor & state updates...
+[INFO] [1793242261.525578214] [sensor_qos_subscriber]: 📢 Latched Robot State Received: "SYSTEM_READY: Battery=100%, Mode=NORMAL"
+[INFO] [1793242261.813319452] [sensor_qos_subscriber]: Received Temperature: 36.50 °C
+[INFO] [1793242262.313224576] [sensor_qos_subscriber]: Received Temperature: 37.42 °C
+
+$ ros2 topic echo /sensor/temperature --once   # default QoS (Jazzy adapts to the publisher)
+data: 37.4647102355957
+---
+
+$ ros2 topic echo --qos-reliability best_effort /sensor/temperature --once
+data: 36.11299514770508
+---
+
+$ ros2 topic info -v /sensor/temperature
+Type: std_msgs/msg/Float32
+
+Publisher count: 1
+
+Node name: sensor_qos_publisher
+Node namespace: /
+Topic type: std_msgs/msg/Float32
+Topic type hash: RIHS01_7170d3d8f841f7be3172ce5f4f59f3a4d7f63b0447e8b33327601ad64d83d6e2
+Endpoint type: PUBLISHER
+GID: 01.0f.d4.bd.31.00.ce.c1.00.00.00.00.00.00.13.03
+QoS profile:
+  Reliability: BEST_EFFORT
+  History (Depth): UNKNOWN
+  Durability: VOLATILE
+  Lifespan: Infinite
+  Deadline: Infinite
+  Liveliness: AUTOMATIC
+  Liveliness lease duration: Infinite
+
+Subscription count: 0
+
+
+$ ros2 topic hz /sensor/temperature   (stopped after 6 s)
+	min: 0.500s max: 0.500s std dev: 0.00010s window: 3
+average rate: 2.000
+	min: 0.500s max: 0.500s std dev: 0.00012s window: 6
+
+$ ros2 topic echo --qos-durability transient_local /robot/state --once   # late joiner
+data: 'SYSTEM_ACTIVE: Uptime=20.0s'
+---
+
+$ ros2 topic echo --qos-durability volatile /robot/state   # late joiner, VOLATILE (3 s)
+(no output = old state not delivered)
+
+$ ros2 topic echo --qos-reliability reliable /sensor/temperature   # Lab 2.3 (4 s)
+[WARN] [1793242282.480914785] [_ros2cli_164]: New publisher discovered on topic '/sensor/temperature', offering incompatible QoS. No messages will be received from it. Last incompatible policy: RELIABILITY
+(no data printed)
+
+--- terminal 1 (publisher) output:
+[INFO] [1793242257.822980943] [sensor_qos_publisher]: 🚀 [SensorQoSPublisher] Node initialized and publishing...
+[INFO] [1793242262.813205093] [sensor_qos_publisher]: State Latched: "SYSTEM_ACTIVE: Uptime=5.0s"
+[INFO] [1793242267.813087054] [sensor_qos_publisher]: State Latched: "SYSTEM_ACTIVE: Uptime=10.0s"
+[INFO] [1793242272.813091324] [sensor_qos_publisher]: State Latched: "SYSTEM_ACTIVE: Uptime=15.0s"
+[INFO] [1793242277.813253390] [sensor_qos_publisher]: State Latched: "SYSTEM_ACTIVE: Uptime=20.0s"
+[WARN] [1793242282.396878937] [sensor_qos_publisher]: New subscription discovered on topic 'sensor/temperature', requesting incompatible QoS. No messages will be sent to it. Last incompatible policy: RELIABILITY
+[INFO] [1793242282.813336978] [sensor_qos_publisher]: State Latched: "SYSTEM_ACTIVE: Uptime=25.0s"
+[INFO] [1793242287.813038188] [sensor_qos_publisher]: State Latched: "SYSTEM_ACTIVE: Uptime=30.0s"
+[INFO] [1793242292.813862227] [sensor_qos_publisher]: State Latched: "SYSTEM_ACTIVE: Uptime=35.0s"

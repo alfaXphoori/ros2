@@ -1,0 +1,34 @@
+# DDS vs Zenoh - real run in ros:lab-runner (ROS 2 Jazzy, rmw_zenoh_cpp 0.2.11), Linux 7.0, 2026-10-29
+# Recorder note: to avoid clashing with other lab runs on the same host, the router was started with
+#   ZENOH_CONFIG_OVERRIDE='listen/endpoints=["tcp/127.0.0.1:7461"]' and every node with
+#   ZENOH_CONFIG_OVERRIDE='connect/endpoints=["tcp/127.0.0.1:7461"]' (students: use the default tcp/[::]:7447, no override), plus ZENOH_ROUTER_CHECK_ATTEMPTS=-1.
+$ export RMW_IMPLEMENTATION=rmw_zenoh_cpp
+$ ros2 run rmw_zenoh_cpp rmw_zenohd &                 # Terminal 1: the Zenoh router
+$ ros2 run demo_nodes_py talker &                     # Terminal 2
+$ ros2 run demo_nodes_py listener                     # Terminal 3 (stopped after 5 s)
+$ ros2 node list
+/listener
+/talker
+$ ros2 doctor --report | grep -A3 "RMW MIDDLEWARE"
+   RMW MIDDLEWARE
+middleware name    : rmw_zenoh_cpp
+
+   ROS 2 INFORMATION
+[INFO] [1793242946.859865132] [listener]: I heard: [Hello World: 0]
+[INFO] [1793242947.837190480] [listener]: I heard: [Hello World: 1]
+[INFO] [1793242948.837145588] [listener]: I heard: [Hello World: 2]
+[INFO] [1793242949.836942062] [listener]: I heard: [Hello World: 3]
+[INFO] [1793242950.837081003] [listener]: I heard: [Hello World: 4]
+[INFO] [1793242951.836988205] [listener]: I heard: [Hello World: 5]
+[INFO] [1793242952.837092567] [listener]: I heard: [Hello World: 6]
+[INFO] [1793242953.836947670] [listener]: I heard: [Hello World: 7]
+... (Ctrl-C traceback of demo_nodes_py trimmed: RCLError rcl_shutdown already called)
+[ros2run]: Process exited with failure 1
+# --- the same listener with the default RMW (Fast DDS) hears nothing from the Zenoh talker ---
+$ RMW_IMPLEMENTATION=rmw_fastrtps_cpp ros2 run demo_nodes_py listener   # (5 s)
+[Fast DDS listener lines containing 'I heard': 0]
+----- router log (Terminal 1) -----
+2026-10-29T03:02:23.468871Z  INFO ThreadId(02) zenoh::net::runtime: Using ZID: 5158e46a69774da168e30806e633aeab
+2026-10-29T03:02:23.478836Z  INFO ThreadId(02) zenoh::net::runtime::orchestrator: Zenoh can be reached at: tcp/127.0.0.1:7461
+Started Zenoh router with id 5158e46a69774da168e30806e633aeab
+2026-10-29T03:02:40.131287Z  INFO ThreadId(02) zenoh::api::session: close session zid=5158e46a69774da168e30806e633aeab

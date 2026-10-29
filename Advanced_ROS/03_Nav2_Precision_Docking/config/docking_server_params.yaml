@@ -1,23 +1,57 @@
+# Nav2 docking server (opennav_docking, ROS 2 Jazzy 1.3.x) for the module-03 lab.
+# Used headless by launch/docking_sim.launch.py (fake kinematic base + synthetic AprilTag camera).
+# On a Gazebo/real robot set use_sim_time accordingly and adapt frames + dock pose.
 docking_server:
   ros__parameters:
-    use_sim_time: true
-    controller_frequency: 20.0
-    initial_perception_timeout: 5.0
-    wait_charge_timeout: 10.0
-    dock_approach_timeout: 30.0
+    use_sim_time: false           # headless lab: wall clock (true when running with Gazebo /clock)
+    controller_frequency: 20.0    # Hz, docking control loop
+    initial_perception_timeout: 5.0  # s to get the first dock detection before giving up
+    wait_charge_timeout: 5.0      # s to wait for "charging" after contact
+    dock_approach_timeout: 30.0   # s for the final approach
     undock_linear_tolerance: 0.05
     undock_angular_tolerance: 0.1
     max_retries: 3
     base_frame: "base_footprint"
     fixed_frame: "odom"
+    dock_backwards: false         # camera + charging contacts at the front of the robot
+    dock_prestaging_tolerance: 0.5
 
-    # Registered Dock Types
-    dock_plugins: ['charging_dock']
-
-    charging_dock:
-      plugin: 'opennav_docking::SimpleChargingDock'
-      docking_threshold: 0.03
-      staging_x_offset: -0.6
+    # Dock *types* (plugins). The plugin name is referenced by `type` in the dock database below.
+    dock_plugins: ["simple_charging_dock"]
+    simple_charging_dock:
+      plugin: "opennav_docking::SimpleChargingDock"
+      docking_threshold: 0.015    # m: "docked" = within 1.5 cm of the detected dock pose
+      staging_x_offset: -0.7      # staging pose 0.7 m in front of the dock (along -x of the dock)
+      staging_yaw_offset: 0.0
+      use_battery_status: false   # no /battery_state in this lab -> "charging" == docked
+      use_stall_detection: false  # no wheel effort feedback in this lab
+      # Pose of the dock from an external detector: PoseStamped on `detected_dock_pose`
+      # (amr_adv02 apriltag_dock_tracker). The tag is mounted 0.40 m beyond the dock pose
+      # (robot base_footprint when docked); the rotation maps the tag frame (z out of the tag)
+      # to the dock frame (x pointing into the dock).
       use_external_detection_pose: true
-      external_detection_timeout: 2.0
-      charging_timeout: 60.0
+      external_detection_timeout: 1.0
+      external_detection_translation_x: -0.40
+      external_detection_translation_y: 0.0
+      external_detection_rotation_roll: -1.57
+      external_detection_rotation_pitch: 1.57
+      external_detection_rotation_yaw: 0.0
+      filter_coef: 0.1
+
+    # Dock database (instances). DockRobot goals use dock_id: "home_dock".
+    # pose = [x, y, yaw] in `frame`: the prior used for staging; detection refines it.
+    docks: ["home_dock"]
+    home_dock:
+      type: "simple_charging_dock"
+      frame: "odom"
+      pose: [1.0, 0.0, 0.0]
+
+    # Graceful (smooth control law) docking controller
+    controller:
+      k_phi: 3.0
+      k_delta: 2.0
+      v_linear_min: 0.05
+      v_linear_max: 0.15
+      v_angular_max: 0.75
+      slowdown_radius: 0.25
+      use_collision_detection: false  # no costmap in the headless lab

@@ -1,0 +1,66 @@
+# Real run: ros:lab-runner (ROS 2 Jazzy, Gazebo Sim 8.15.0), Linux 7.0, 2026-10-29
+# Isolation: ROS_DOMAIN_ID=13, GZ_PARTITION=agent_c, ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST
+# Lines replaced by '...' were trimmed (repetition); no values were edited.
+
+$ ros2 launch amr_week11 gazebo_world.launch.py headless:=true   # terminal 1
+$ ros2 launch amr_week14 nav2_bringup.launch.py                   # terminal 2
+$ for n in controller_server planner_server ...; do ros2 lifecycle get /$n; done
+controller_server: active [3]
+planner_server: active [3]
+behavior_server: active [3]
+bt_navigator: active [3]
+waypoint_follower: active [3]
+velocity_smoother: active [3]
+collision_monitor: active [3]
+smoother_server: active [3]
+$ ros2 run amr_week14 amcl_initial_pose --ros-args -p use_sim_time:=true
+[INFO] [1793245948.890258962] [amcl_initial_pose_publisher]: Publishing initial pose x=0.00 y=0.00 theta=0.000 rad in frame map
+[INFO] [1793245948.976965104] [amcl_initial_pose_publisher]: AMCL pose: x=-0.017 y=0.033 yaw=0.007 rad
+$ ros2 action send_goal /navigate_to_pose nav2_msgs/action/NavigateToPose {pose: {header: {frame_id: 'map'}, pose: {position: {x: 2.0, y: -2.0}, orientation: {z: -0.7071, w: 0.7071}}}}
+Waiting for an action server to become available...
+Sending goal:
+     pose:
+  header:
+    stamp:
+      sec: 0
+      nanosec: 0
+    frame_id: map
+  pose:
+    position:
+      x: 2.0
+      y: -2.0
+      z: 0.0
+    orientation:
+      x: 0.0
+      y: 0.0
+      z: -0.7071
+      w: 0.7071
+behavior_tree: ''
+
+Goal accepted with ID: f58aa5137a8e4aec9e74178de70ef217
+
+Result:
+    error_code: 0
+error_msg: ''
+
+Goal finished with status: SUCCEEDED
+(wall time 14.2 s)
+$ ros2 run amr_week11 ground_truth_pose
+diff_drive_robot ground truth: x=1.900 y=-1.927 yaw=-1.321 rad (-75.7 deg)
+
+# --- Nav2 launch log (excerpt) ---
+[amcl-2] [INFO] [1793245896.523920337] [amcl]: initialPoseReceived
+[amcl-2] [INFO] [1793245896.523978122] [amcl]: Setting pose (0.000000): 0.000 0.000 0.000
+[lifecycle_manager-3] [INFO] [1793245896.630389847] [lifecycle_manager_localization]: Managed nodes are active
+[lifecycle_manager-12] [INFO] [1793245897.716216636] [lifecycle_manager_navigation]: Activating controller_server
+[lifecycle_manager-12] [INFO] [1793245900.696371659] [lifecycle_manager_navigation]: Activating bt_navigator
+[lifecycle_manager-12] [INFO] [1793245900.995845057] [lifecycle_manager_navigation]: Managed nodes are active
+[amcl-2] [INFO] [1793245948.890744947] [amcl]: initialPoseReceived
+[amcl-2] [INFO] [1793245948.890831107] [amcl]: Setting pose (57.146000): 0.000 0.000 0.000
+[bt_navigator-10] [INFO] [1793245951.201755017] [bt_navigator]: Begin navigating from current location (-0.02, 0.03) to (2.00, -2.00)
+[controller_server-4] [INFO] [1793245951.222649272] [controller_server]: Received a goal, begin computing control effort.
+[controller_server-4] [INFO] [1793245952.272865594] [controller_server]: Passing new path to controller.
+[controller_server-4] [INFO] [1793245953.322866551] [controller_server]: Passing new path to controller.
+...
+[controller_server-4] [INFO] [1793245963.122946379] [controller_server]: Reached the goal!
+[bt_navigator-10] [INFO] [1793245963.152460725] [bt_navigator]: Goal succeeded

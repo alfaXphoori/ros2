@@ -118,6 +118,13 @@ $$I_{zz} = \frac{1}{12} m (d^2 + w^2)$$
 - สำหรับล้อขับเคลื่อนหุ่นยนต์ ล้อหมุนรอบแกน Y (Pitch) ดังนั้นแกนสมมาตรคือแกน Y:
   $$I_{yy} = \frac{1}{2} m r^2, \quad I_{xx} = I_{zz} = \frac{1}{12} m (3r^2 + h^2)$$
 
+> [!WARNING]
+> **อย่าหมุนแกนซ้ำสองครั้ง (Double Rotation Bug):** ค่า $I_{xx}, I_{yy}, I_{zz}$ ในแท็ก `<inertia>` ถูกตีความในกรอบพิกัดของ `<inertial><origin rpy="...">` เสมอ
+> ในโมเดลเวอร์ชันก่อนหน้า ล้อใช้ `<origin rpy="-1.5708 0 0">` ใน `<inertial>` (เหมือนกับ `<visual>`) **และ** ยังใส่ค่าแกนหมุน $\frac{1}{2}mr^2$ ไว้ที่ `iyy` อีก
+> ผลคือการหมุนถูกนำมาใช้ 2 ครั้ง: ค่า $0.0024$ ไปตกที่แกน Z ของล้อ ส่วนแกน Y (แกนที่ล้อหมุนจริง) ได้ค่า $0.0013$ ซึ่งผิด
+> วิธีที่ถูกเลือกได้ทางเดียว: (ก) ไม่หมุน `<inertial>` (`rpy="0 0 0"`) แล้วใส่ค่าแกนหมุนที่ `iyy` (แบบที่ไฟล์ปัจจุบันใช้) หรือ (ข) หมุน `<inertial>` เหมือน `<visual>` แล้วใส่ค่าแกนหมุนที่ `izz` (แกนสมมาตรของทรงกระบอก)
+> สำหรับล้อ $m = 0.75$ kg, $r = 0.08$ m, $h = 0.04$ m: $I_{yy} = 0.0024$, $I_{xx} = I_{zz} = 0.0013\ \text{kg}\cdot\text{m}^2$ — ตรวจสอบอัตโนมัติได้ด้วย `test/test_urdf_model.py::test_wheel_inertia_about_spin_axis`
+
 #### ค. ทรงกลมตัน (Solid Sphere สำหรับ Caster Wheel): รัศมี $r$, มวล $m$
 $$I_{xx} = I_{yy} = I_{zz} = \frac{2}{5} m r^2$$
 
@@ -149,8 +156,8 @@ flowchart LR
 
 ## 🛠️ การวิเคราะห์โค้ดตัวอย่างในโมดูล (Code Walkthrough)
 
-### 1. [`diff_drive_robot.urdf`](file:///mnt/sda/ros/Essential_ROS/Week_07_URDF_Robot_Modeling/urdf/diff_drive_robot.urdf)
-- **การกำหนด `base_footprint` และ Joint Offset ([L25-L33](file:///mnt/sda/ros/Essential_ROS/Week_07_URDF_Robot_Modeling/urdf/diff_drive_robot.urdf#L25-L33)):**
+### 1. [`diff_drive_robot.urdf`](urdf/diff_drive_robot.urdf)
+- **การกำหนด `base_footprint` และ Joint Offset ([L25-L32](urdf/diff_drive_robot.urdf#L25-L32)):**
   ```xml
   <link name="base_footprint"/>
   <joint name="base_footprint_joint" type="fixed">
@@ -160,7 +167,7 @@ flowchart LR
   </joint>
   ```
   ยกแชสซีขึ้นจากระนาบพื้น $0.08\text{ m}$ ซึ่งเท่ากับรัศมีล้อพอดี ทำให้ล้อแตะพื้นผิวโลกโดยไม่จมหรือลอย
-- **การคำนวณและวางแกนล้อขับเคลื่อน ([L58-L80](file:///mnt/sda/ros/Essential_ROS/Week_07_URDF_Robot_Modeling/urdf/diff_drive_robot.urdf#L58-L80)):**
+- **การคำนวณและวางแกนล้อขับเคลื่อน ([L58-L97](urdf/diff_drive_robot.urdf#L58-L97)):**
   ```xml
   <joint name="left_wheel_joint" type="continuous">
     <parent link="base_link"/>
@@ -170,15 +177,51 @@ flowchart LR
   </joint>
   ```
   กำหนดให้ล้อซ้ายอยู่เยื้องศูนย์กลางไปตามแกน Y $+0.12\text{ m}$ (ระยะฐานล้อรวม $L = 0.24\text{ m}$) และหมุนรอบแกน Y ด้วย `<axis xyz="0 1 0"/>`
-- **การประกอบ Caster Wheel เพื่อพยุงสมดุล ([L140-L190](file:///mnt/sda/ros/Essential_ROS/Week_07_URDF_Robot_Modeling/urdf/diff_drive_robot.urdf#L140-L190)):**
-  ใช้ทรงกลมตัน (Sphere Primitive) ขนาดรัศมี $0.04\text{ m}$ ติดตั้งทั้งด้านหน้า ($+X$) และด้านหลัง ($-X$) เพื่อให้หุ่นยนต์ 4 จุดสัมผัสทรงตัวได้อย่างสมบูรณ์
+  ค่า $L = 0.24$ m และรัศมี $r = 0.08$ m ต้องตรงกับ `<wheel_separation>` และ `<wheel_radius>` ของปลั๊กอิน `gz::sim::systems::DiffDrive` ท้ายไฟล์ มิฉะนั้น Odometry ใน Gazebo (สัปดาห์ที่ 10–11) จะคลาดเคลื่อน (มีเทสต์ตรวจให้อัตโนมัติ)
+- **การประกอบ Caster Wheel เพื่อพยุงสมดุล ([L140-L198](urdf/diff_drive_robot.urdf#L140-L198)):**
+  ใช้ทรงกลมตัน (Sphere Primitive) ขนาดรัศมี $0.03\text{ m}$ ติดตั้งทั้งด้านหน้า ($x = +0.15$) และด้านหลัง ($x = -0.15$) ที่ $z = -0.05$ m ใต้ `base_link` (ศูนย์กลางสูงจากพื้น $0.08 - 0.05 = 0.03$ m = รัศมีพอดี) เพื่อให้หุ่นยนต์ 4 จุดสัมผัสทรงตัวได้อย่างสมบูรณ์
+
+- **Collision ของล้อและค่าแรงเสียดทานสำหรับ Gazebo ([L269-L296](urdf/diff_drive_robot.urdf#L269-L296)):**
+  ```xml
+  <collision>                       <!-- ใน left/right_wheel_link -->
+    <geometry><sphere radius="0.08"/></geometry>
+  </collision>
+  <gazebo reference="front_caster_link"><mu1>0.0</mu1><mu2>0.0</mu2></gazebo>
+  <gazebo reference="left_wheel_link"><mu1>1.0</mu1><mu2>1.0</mu2><kp>1000000.0</kp><kd>100.0</kd></gazebo>
+  ```
+  `<visual>` ของล้อยังเป็นทรงกระบอก แต่ `<collision>` ใช้ **ทรงกลมรัศมีเท่าล้อ** เพราะทรงกระบอกบนพื้นราบจะสัมผัสพื้นที่ขอบล้อ (ที่ $y = 0.10$ หรือ $0.14$ m) ทำให้ระยะห่างล้อจริงในฟิสิกส์ไม่เท่ากับ $L = 0.24$ m ที่ปลั๊กอิน DiffDrive ใช้คำนวณ Odometry ส่วน Caster ต้องลื่น ($\mu = 0$) มิฉะนั้นลูกกลมจะ "ไถ" ด้านข้างตอนหมุนตัว
+  ผลวัดจริงใน Gazebo (หมุนอยู่กับที่ $\omega = 0.6$ rad/s นาน 5 s): ก่อนแก้ `/odom` บอก $165.8^\circ$ แต่หุ่นหมุนจริงเพียง $142.1^\circ$ (คลาด 14%) หลังแก้ตรงกันที่ $169.7^\circ$ — ดู [`results/gz_odometry.txt`](results/gz_odometry.txt) และเทสต์ [`test/test_gz_odometry.py`](test/test_gz_odometry.py) ซึ่งสำคัญมากต่อ SLAM (สัปดาห์ที่ 12) และ AMCL (สัปดาห์ที่ 14–16)
 
 ---
 
-### 2. [`display_urdf.launch.py`](file:///mnt/sda/ros/Essential_ROS/Week_07_URDF_Robot_Modeling/launch/display_urdf.launch.py)
+### 2. [`display_urdf.launch.py`](launch/display_urdf.launch.py)
+- หาไฟล์ URDF/RViz ผ่าน `get_package_share_directory('amr_week07')` (ไม่อ้างพาธแบบ `__file__`) เพื่อให้สัปดาห์ถัดไป (Gazebo, SLAM, Nav2) นำไปใช้ซ้ำได้
 - โหลดไฟล์ URDF เข้าสู่พารามิเตอร์ `robot_description` ของโหนด `robot_state_publisher`
 - เปิดใช้งานโหนด `joint_state_publisher_gui` เพื่อให้ผู้เรียนสามารถทดลองลาก Slider ปรับหมุนล้อได้แบบ Interactive
-- สั่งเปิดโปรแกรมแสดงผลภาพ 3 มิติ RViz2 พร้อมโหลดคอนฟิกแสดง RobotModel และ TF Frames
+- สั่งเปิดโปรแกรมแสดงผลภาพ 3 มิติ RViz2 พร้อมโหลดคอนฟิก [`rviz/robot_model.rviz`](rviz/robot_model.rviz) (RobotModel + TF, Fixed Frame = `base_footprint`)
+- Launch arguments:
+
+| อาร์กิวเมนต์ | ค่าเริ่มต้น | ความหมาย |
+| :--- | :---: | :--- |
+| `model` | `share/amr_week07/urdf/diff_drive_robot.urdf` | พาธไฟล์ URDF |
+| `use_gui` | `true` | `true` = `joint_state_publisher_gui` (Slider), `false` = `joint_state_publisher` ธรรมดา |
+| `use_jsp` | `true` | `false` = ไม่เปิด joint state publisher เลย (ใช้ตอน Gazebo ส่ง `/joint_states` เอง) |
+| `use_sim_time` | `false` | ส่งต่อให้ `robot_state_publisher`, joint state publisher และ RViz2 (ใช้ `true` เมื่อมี `/clock` จาก Gazebo) |
+| `rviz` | `true` | `false` = ไม่เปิด RViz2 (เครื่องที่ไม่มีจอ / CI) |
+
+### 3. [`inertia_calculator.py`](src/inertia_calculator.py)
+สคริปต์คำนวณเทนเซอร์ความเฉื่อยของ Box / Cylinder / Sphere และพิมพ์แท็ก `<inertia .../>` พร้อมใช้ เช่น `ros2 run amr_week07 inertia_calculator cylinder 0.75 0.08 0.04 --axis y`
+
+### 4. แพ็กเกจ `amr_week07` และการ Build
+โฟลเดอร์สัปดาห์นี้เป็นแพ็กเกจ ROS 2 แบบ `ament_python` ชื่อ `amr_week07` (`package.xml`, `setup.py`, `setup.cfg`) ซึ่งติดตั้ง `urdf/`, `launch/`, `rviz/` ไปที่ `share/amr_week07/`:
+```bash
+./docker/run_lab.sh bash
+colcon build --base-paths Essential_ROS --packages-select amr_week07
+source install/setup.bash
+ros2 launch amr_week07 display_urdf.launch.py
+colcon test --base-paths Essential_ROS --packages-select amr_week07 && colcon test-result --verbose
+```
+ชุดทดสอบใน [`test/`](test/) ตรวจ: `check_urdf` และ `gz sdf -p` ผ่าน, ระยะล้อ/รัศมีตรงกับปลั๊กอิน DiffDrive, เทนเซอร์ความเฉื่อยทุกลิงก์เป็น Positive-definite และผ่าน Triangle inequality, โมเมนต์รอบแกนหมุนล้อ $=\frac{1}{2}mr^2$, ล้อและ Caster แตะพื้นพอดี, LiDAR ตั้งตรงอยู่บนหลังคา, Quaternion ของ `camera_optical_link` $= [-0.5, 0.5, -0.5, 0.5]$ , launch test ที่ยืนยันว่า TF `base_footprint → base_link → lidar_link` และลิงก์ล้อถูกเผยแพร่จริง และเทสต์ฟิสิกส์ Gazebo แบบไม่มีจอ ([`test/test_gz_odometry.py`](test/test_gz_odometry.py) + โลกพื้นราบ [`worlds/flat_ground.sdf`](worlds/flat_ground.sdf)) ที่เทียบ `/odom` ของ DiffDrive กับตำแหน่งจริง (Ground truth) ทั้งการหมุนอยู่กับที่ การเลี้ยวโค้ง (คลาดได้ไม่เกิน 5%) และเส้นตรง (ไม่เกิน 1%)
 
 ---
 
@@ -186,19 +229,20 @@ flowchart LR
 | คำสั่ง | คำอธิบาย | ตัวอย่างการใช้งาน |
 | :--- | :--- | :--- |
 | `check_urdf <file.urdf>` | วิเคราะห์ความถูกต้องของโครงสร้าง XML และ Link-Joint Tree | `check_urdf Essential_ROS/Week_07_URDF_Robot_Modeling/urdf/diff_drive_robot.urdf` |
-| `urdf_to_graphiz <file.urdf>` | เรนเดอร์แผนผังต้นไม้ความสัมพันธ์ของหุ่นยนต์ออกมาเป็นไฟล์ PDF / Graphviz | `urdf_to_graphiz Essential_ROS/Week_07_URDF_Robot_Modeling/urdf/diff_drive_robot.urdf` |
-| `ros2 launch <pkg> <launch_file>` | รัน Launch file เพื่อเปิดดูหุ่นยนต์ใน RViz2 | `ros2 launch Essential_ROS/Week_07_URDF_Robot_Modeling/launch/display_urdf.launch.py` |
+| `urdf_to_graphviz <file.urdf>` | เรนเดอร์แผนผังต้นไม้ความสัมพันธ์ของหุ่นยนต์ออกมาเป็นไฟล์ PDF / Graphviz (ชื่อเก่า `urdf_to_graphiz` ยังใช้ได้แต่ถูก deprecate) | `urdf_to_graphviz Essential_ROS/Week_07_URDF_Robot_Modeling/urdf/diff_drive_robot.urdf` |
+| `ros2 launch <pkg> <launch_file>` | รัน Launch file เพื่อเปิดดูหุ่นยนต์ใน RViz2 | `ros2 launch amr_week07 display_urdf.launch.py` (ไม่มีจอ: `use_gui:=false rviz:=false`) |
+| `ros2 run amr_week07 inertia_calculator` | คำนวณ $I_{xx}, I_{yy}, I_{zz}$ ของรูปทรงพื้นฐาน | `ros2 run amr_week07 inertia_calculator box 1.2 0.25 0.18 0.05` |
 | `ros2 run tf2_ros tf2_echo <p> <c>` | พิมพ์ระยะห่างและมุมหมุนระหว่าง 2 ข้อต่อแบบเรียลไทม์ | `ros2 run tf2_ros tf2_echo base_footprint lidar_link` |
 
 ---
 
-## 📸 ภาพผลการทดสอบจริงจากระบบ (Live Execution & Terminal Capture)
-ผลลัพธ์จากการรันคำสั่งและโหนดจริงในระบบ เพื่อใช้เป็นข้อมูลอ้างอิงในการตรวจสอบความถูกต้อง:
+## 📟 ผลการรันจริง (Real Run Output)
+บันทึกจากการรันจริงใน ros:lab-runner (ROS 2 Jazzy, Gazebo Sim 8.15.0) บน Linux 7.0 เมื่อ 2026-10-29
 
-![Terminal Capture: Terminal — Week 07: URDF Parser & Link-Joint Tree Verification](images/terminal_run.png)
+ไฟล์ผลลัพธ์ฉบับเต็ม: [`results/check_urdf.txt`](results/check_urdf.txt), [`results/display_urdf_headless.txt`](results/display_urdf_headless.txt), [`results/inertia_calculator.txt`](results/inertia_calculator.txt), [`results/gz_odometry.txt`](results/gz_odometry.txt), [`results/colcon_test.txt`](results/colcon_test.txt)
 
 ```console
-user@amr-dev:~/ros$ ./docker/run_lab.sh check_urdf Essential_ROS/Week_07_URDF_Robot_Modeling/urdf/diff_drive_robot.urdf
+$ check_urdf Essential_ROS/Week_07_URDF_Robot_Modeling/urdf/diff_drive_robot.urdf
 robot name is: diff_drive_robot
 ---------- Successfully Parsed XML ---------------
 root Link: base_footprint has 1 child(ren)
@@ -210,7 +254,37 @@ root Link: base_footprint has 1 child(ren)
         child(4):  lidar_link
         child(5):  rear_caster_link
         child(6):  right_wheel_link
-user@amr-dev:~/ros$ [CHECKPOINT PASSED: URDF VALIDATED - INERTIA TENSOR PRECISE]
+```
+
+TF จาก `robot_state_publisher` (เปิดแบบไม่มีจอ `use_gui:=false rviz:=false`, ตัดบรรทัดที่ซ้ำ):
+```console
+$ ros2 run tf2_ros tf2_echo base_footprint lidar_link
+At time 0.0
+- Translation: [0.080, 0.000, 0.175]
+- Rotation: in Quaternion (xyzw) [0.000, 0.000, 0.000, 1.000]
+...
+$ ros2 run tf2_ros tf2_echo camera_link camera_optical_link
+At time 0.0
+- Translation: [0.000, 0.000, 0.000]
+- Rotation: in Quaternion (xyzw) [-0.500, 0.500, -0.500, 0.500]
+- Rotation: in RPY (radian) [-1.571, -0.000, -1.571]
+...
+```
+$z = 0.175$ m คือ $0.08$ (`base_footprint → base_link`) $+ 0.095$ (`base_link → lidar_link`) และ Quaternion ของกรอบ Optical ตรงกับ REP 103 พอดี
+
+Odometry ของ DiffDrive เทียบตำแหน่งจริงใน Gazebo Sim แบบไม่มีจอ (`gz sim -s` บน `worlds/flat_ground.sdf`, คำสั่ง: หมุน $\omega=0.6$ rad/s / โค้ง $v=0.2$ m/s, $\omega=0.4$ rad/s / ตรง $v=0.3$ m/s อย่างละ 5 s; ค่า dx, dy อยู่ในกรอบหัวหุ่นยนต์ตอนเริ่มท่า):
+```console
+# BEFORE (git HEAD URDF: cylinder wheel collision, casters with default friction mu=1)
+$ python3 Essential_ROS/Week_07_URDF_Robot_Modeling/test/gz_odom_probe.py before.urdf
+rotate_in_place  odom: dx=+0.000 dy=+0.000 dyaw= +165.8 deg | truth: dx=+0.000 dy=-0.000 dyaw= +142.1 deg
+arc              odom: dx=+0.467 dy=+0.678 dyaw= +110.8 deg | truth: dx=+0.689 dy=+0.380 dyaw=  +37.7 deg
+straight         odom: dx=+1.457 dy=+0.000 dyaw=   +0.0 deg | truth: dx=+1.457 dy=+0.000 dyaw=   +0.0 deg
+
+# AFTER (sphere wheel collision, wheel mu=1 kp=1e6 kd=100, frictionless casters)
+$ python3 Essential_ROS/Week_07_URDF_Robot_Modeling/test/gz_odom_probe.py
+rotate_in_place  odom: dx=+0.000 dy=+0.000 dyaw= +169.7 deg | truth: dx=+0.000 dy=+0.000 dyaw= +169.7 deg
+arc              odom: dx=+0.458 dy=+0.700 dyaw= +113.6 deg | truth: dx=+0.458 dy=+0.700 dyaw= +113.6 deg
+straight         odom: dx=+1.497 dy=-0.000 dyaw=   -0.0 deg | truth: dx=+1.497 dy=+0.000 dyaw=   +0.0 deg
 ```
 
 ---

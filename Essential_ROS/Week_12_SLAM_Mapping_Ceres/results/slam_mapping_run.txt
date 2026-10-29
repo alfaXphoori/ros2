@@ -1,0 +1,81 @@
+# Real run: ros:lab-runner (ROS 2 Jazzy, Gazebo Sim 8.15.0), Linux 7.0, 2026-10-29
+# Isolation: ROS_DOMAIN_ID=13, GZ_PARTITION=agent_c, ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST
+# Lines replaced by '...' were trimmed (repetition); no values were edited.
+
+$ ros2 launch amr_week12 slam_mapping_sim.launch.py headless:=true explore:=true
+[INFO] [gazebo-1]: process started with pid [49]
+[INFO] [robot_state_publisher-2]: process started with pid [50]
+[INFO] [create-3]: process started with pid [51]
+[INFO] [parameter_bridge-4]: process started with pid [53]
+[INFO] [async_slam_toolbox_node-5]: process started with pid [54]
+[async_slam_toolbox_node-5] [INFO] [1793243178.409094986] [slam_toolbox]: Configuring
+[async_slam_toolbox_node-5] [INFO] [1793243178.412801892] [slam_toolbox]: Using solver plugin solver_plugins::CeresSolver
+[async_slam_toolbox_node-5] [INFO] [1793243178.412930952] [slam_toolbox]: CeresSolver: Using SCHUR_JACOBI preconditioner.
+[INFO] [launch.user]: [LifecycleLaunch] Slamtoolbox node is activating.
+[async_slam_toolbox_node-5] [INFO] [1793243178.422905473] [slam_toolbox]: Activating
+[create-3] [INFO] [1793243178.609072647] [ros_gz_sim]: Entity creation successful.
+[async_slam_toolbox_node-5] Registering sensor: [Custom Described Lidar]
+[INFO] [explore_warehouse-6]: process started with pid [202]
+[explore_warehouse-6] [INFO] [1793243188.620678847] [explore_warehouse]: Exploration route with 9 steps, waiting for /odom
+[explore_warehouse-6] [INFO] [1793243188.754928559] [explore_warehouse]: [1/9] ('spin', 1.0)
+[explore_warehouse-6] [INFO] [1793243189.154897974] [explore_warehouse]: Using SLAM pose (TF map -> base_footprint)
+[explore_warehouse-6] [INFO] [1793243205.147570283] [explore_warehouse]: [2/9] (0.0, 3.3)
+[explore_warehouse-6] [INFO] [1793243219.446621848] [explore_warehouse]:     reached (0.00, 3.20)
+[explore_warehouse-6] [INFO] [1793243219.548731311] [explore_warehouse]: [3/9] ('spin', 1.0)
+[explore_warehouse-6] [INFO] [1793243236.037508410] [explore_warehouse]: [4/9] (3.5, 3.5)
+[explore_warehouse-6] [INFO] [1793243251.949975881] [explore_warehouse]:     reached (3.40, 3.49)
+[explore_warehouse-6] [INFO] [1793243252.071761296] [explore_warehouse]: [5/9] (3.5, -3.5)
+[explore_warehouse-6] [INFO] [1793243279.406821420] [explore_warehouse]:     reached (3.50, -3.40)
+[explore_warehouse-6] [INFO] [1793243279.508522980] [explore_warehouse]: [6/9] (-3.5, -3.5)
+[explore_warehouse-6] [INFO] [1793243306.903175870] [explore_warehouse]:     reached (-3.40, -3.50)
+[explore_warehouse-6] [INFO] [1793243307.003294561] [explore_warehouse]: [7/9] (-3.5, 3.5)
+[explore_warehouse-6] [INFO] [1793243334.848566819] [explore_warehouse]:     reached (-3.50, 3.41)
+[explore_warehouse-6] [INFO] [1793243334.948296272] [explore_warehouse]: [8/9] (0.0, 3.5)
+[explore_warehouse-6] [INFO] [1793243350.038680767] [explore_warehouse]:     reached (-0.10, 3.50)
+[explore_warehouse-6] [INFO] [1793243350.140552663] [explore_warehouse]: [9/9] (0.0, 0.0)
+[explore_warehouse-6] [INFO] [1793243365.785318497] [explore_warehouse]:     reached (-0.00, 0.10)
+[explore_warehouse-6] [INFO] [1793243365.895761039] [explore_warehouse]: Exploration finished: 9/9 steps completed in 171.7 s (sim time)
+
+$ ros2 run nav2_map_server map_saver_cli -f warehouse_map --ros-args -p use_sim_time:=true -p save_map_timeout:=10.0
+[INFO] [1793243370.536919471] [map_saver]: 
+	map_saver lifecycle node launched. 
+	Waiting on external lifecycle transitions to activate
+	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[INFO] [1793243370.536996139] [map_saver]: Creating
+[INFO] [1793243370.537022835] [map_saver]: Configuring
+[INFO] [1793243370.538664331] [map_saver]: Saving map from 'map' topic to '/workspace/.colcon/c/runs/warehouse_map' file
+[WARN] [1793243370.538680214] [map_saver]: Free threshold unspecified. Setting it to default value: 0.250000
+[WARN] [1793243370.538685492] [map_saver]: Occupied threshold unspecified. Setting it to default value: 0.650000
+[WARN] [1793243370.974150905] [map_io]: Image format unspecified. Setting it to: pgm
+[INFO] [1793243370.974421167] [map_io]: Received a 200 X 199 map @ 0.05 m/pix
+[INFO] [1793243371.012156455] [map_io]: Writing map occupancy data to /workspace/.colcon/c/runs/warehouse_map.pgm
+[INFO] [1793243371.012862056] [map_io]: Writing map metadata to /workspace/.colcon/c/runs/warehouse_map.yaml
+[INFO] [1793243371.012995327] [map_io]: Map saved
+[INFO] [1793243371.013004573] [map_saver]: Map saved successfully
+[INFO] [1793243371.013806244] [map_saver]: Destroying
+map_saver rc=0
+Node not found
+
+$ cat maps/warehouse_map.yaml
+image: warehouse_map.pgm
+mode: trinary
+resolution: 0.050
+origin: [-4.988, -4.970, 0]
+negate: 0
+occupied_thresh: 0.65
+free_thresh: 0.196
+
+$ ros2 run amr_week12 render_map --map maps/warehouse_map.yaml --out images/warehouse_map_real.png
+width: 200
+height: 199
+resolution: 0.05
+origin: [-4.988, -4.97]
+size_m: (10.0, 9.95)
+known_extent_m: (9.95, 9.95)
+occupied: 1741
+free: 37109
+unknown: 950
+iou_strict: 0.372
+precision_tol: 1.0
+recall_tol: 0.894
+wrote images/warehouse_map_real.png

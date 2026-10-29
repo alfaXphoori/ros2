@@ -1,0 +1,26 @@
+### Terminal 1
+$ ros2 launch amr_adv01 gz_diff_drive.launch.py      # gz sim -s -r --headless-rendering empty.sdf
+[create-4] [INFO] [1793245942.008624150] [ros_gz_sim]: Requesting list of world names.
+[create-4] [INFO] [1793245942.460867426] [ros_gz_sim]: Entity creation successful.
+[gz-1] [INFO] [1793245944.200927443] [gz_ros_control]: Loading controller_manager
+[gz-1] [INFO] [1793245945.769111564] [gz_ros_control]: Loading joint: left_wheel_joint
+[gz-1] [INFO] [1793245945.769187688] [gz_ros_control]: Loading joint: right_wheel_joint
+[spawner-5] [INFO] [1793245946.784930837] [spawner_joint_state_broadcaster]: Configured and activated joint_state_broadcaster
+[spawner-6] [INFO] [1793245948.168193460] [spawner_diff_drive_controller]: Configured and activated diff_drive_controller
+...
+
+### Terminal 2
+$ ros2 control list_controllers
+[INFO] [1793245967.611730774] [_ros2cli_171]: waiting for service /controller_manager/list_controllers to become available...
+diff_drive_controller   diff_drive_controller/DiffDriveController      active
+joint_state_broadcaster joint_state_broadcaster/JointStateBroadcaster  active
+
+$ ros2 run amr_adv01 twist_ik_check --ros-args -p use_sim_time:=true -p v:=0.5 -p omega:=1.0
+[INFO] [1793245969.992419722] [twist_ik_check]: waiting for a subscriber on /diff_drive_controller/cmd_vel ...
+[INFO] [1793245970.102995354] [twist_ik_check]: sending TwistStamped v=0.5 m/s, omega=1.0 rad/s for 3.0 s on /diff_drive_controller/cmd_vel
+IK  expected : left =   4.750 rad/s   right =   7.750 rad/s
+/joint_states: left =   4.750 rad/s   right =   7.750 rad/s
+odom twist   : v =  0.500 m/s   omega =  1.001 rad/s
+odom pose    : x =  0.147 m  y =  0.966 m  yaw =  159.90 deg
+RESULT: PASS - wheel speeds match inverse kinematics
+

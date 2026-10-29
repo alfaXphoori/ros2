@@ -1,0 +1,20 @@
+# Real run: ros:lab-runner (ROS 2 Jazzy, Gazebo Sim 8.15.0), Linux 7.0, 2026-10-29
+# Negative check: bt_navigator with a behavior tree that uses an unknown node type.
+# It fails to ACTIVATE, i.e. the default BT XML is parsed at activation time; that is why
+# test/test_patrol_launch.py treats 'bt_navigator active' as proof that our tree loaded.
+
+$ cat bad_bt.xml
+<root BTCPP_format="4" main_tree_to_execute="T"><BehaviorTree ID="T"><Sequence><NoSuchNode/></Sequence></BehaviorTree></root>
+
+$ ros2 run nav2_bt_navigator bt_navigator --ros-args --params-file <amr_week14>/config/nav2_params.yaml -p default_nav_to_pose_bt_xml:=bad_bt.xml
+[INFO] [1793247193.837339466] [bt_navigator]: Configuring
+[INFO] [1793247193.881148584] [bt_navigator]: Activating
+[ERROR] [1793247193.881685949] [bt_navigator]: Exception when loading BT: Error at line 4: -> Node not recognized: NoSuchNode
+[ERROR] [1793247193.881728576] [bt_navigator]: Error loading XML file: /workspace/.colcon/c/runs/bad_bt.xml
+[INFO] [1793247193.881733403] [bt_navigator]: Deactivating
+
+$ ros2 run nav2_lifecycle_manager lifecycle_manager --ros-args -p node_names:="['bt_navigator']" -p autostart:=true
+[INFO] [1793247193.688986082] [lifecycle_manager]: Configuring bt_navigator
+[INFO] [1793247193.881083628] [lifecycle_manager]: Activating bt_navigator
+[ERROR] [1793247193.881846596] [lifecycle_manager]: Failed to change state for node: bt_navigator
+[ERROR] [1793247193.881878178] [lifecycle_manager]: Failed to bring up all requested nodes. Aborting bringup.

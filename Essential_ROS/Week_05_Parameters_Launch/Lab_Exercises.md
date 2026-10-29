@@ -15,12 +15,13 @@
 ---
 
 ## 📋 ข้อกำหนดก่อนเริ่มปฏิบัติการ (Prerequisites & Setup)
-- เข้าสู่รูทไดเรกทอรี `/mnt/sda/ros`
-- ตรวจสอบความถูกต้องของสคริปต์ในสัปดาห์ที่ 5:
+- เข้าสู่รูทไดเรกทอรีของ repository วิชา
+- Build แพ็กเกจ `amr_week05` พร้อมแพ็กเกจที่ Launch File ต้องใช้ (`amr_week02`–`amr_week04`):
   ```bash
-  python3 -m py_compile Essential_ROS/Week_05_Parameters_Launch/src/fleet_parameters.py
-  python3 -m py_compile Essential_ROS/Week_05_Parameters_Launch/launch/core_system.launch.py
+  ./docker/run_lab.sh colcon build --base-paths Essential_ROS --packages-up-to amr_week05
+  # หรือ: make build PKG=amr_week05      ชุดทดสอบอัตโนมัติ: make test PKG=amr_week05
   ```
+- ตั้ง `ROS_DOMAIN_ID` ของตนเองและ `ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST` ก่อนเรียก `run_lab.sh` ทุก Terminal
 
 ---
 
@@ -31,7 +32,8 @@
 
 1. เปิด **Terminal 1** แล้วรันโหนดพารามิเตอร์:
    ```bash
-   ./docker/run_lab.sh python3 Essential_ROS/Week_05_Parameters_Launch/src/fleet_parameters.py
+   ./docker/run_lab.sh ros2 run amr_week05 fleet_parameters
+   # แบบไม่ build: ./docker/run_lab.sh python3 Essential_ROS/Week_05_Parameters_Launch/src/fleet_parameters.py
    ```
    **ผลลัพธ์ที่คาดหวัง:**
    ```text
@@ -42,11 +44,16 @@
    ```bash
    ./docker/run_lab.sh ros2 param list /fleet_parameters
    ```
-   *จะปรากฏ:*
-   - `enable_obstacle_stop`
-   - `fleet_id`
-   - `max_linear_speed`
-   - `safety_margin`
+   *จะปรากฏ* (ผลจริง — `start_type_description_service` และ `use_sim_time` เป็นพารามิเตอร์ที่ทุกโหนดใน Jazzy มีให้อัตโนมัติ):
+   ```text
+     enable_obstacle_stop
+     fleet_id
+     max_linear_speed
+     safety_margin
+     start_type_description_service
+     use_sim_time
+   ```
+   ดูชนิดและข้อจำกัดด้วย `ros2 param describe /fleet_parameters max_linear_speed`
 
 3. อ่านค่าความเร็วสูงสุดปัจจุบัน:
    ```bash
@@ -58,7 +65,7 @@
    ```bash
    ./docker/run_lab.sh ros2 param set /fleet_parameters max_linear_speed 1.2
    ```
-   *ผลลัพธ์:* `Set parameter successful` และใน Terminal 1 จะมี Log เตือนสีเหลืองยืนยันการเปลี่ยนค่า
+   *ผลลัพธ์:* `Set parameter successful` และใน Terminal 1 จะมี Log `[WARN] ... ⚡ max_linear_speed updated to: 1.2 m/s` (Log นี้มาจาก `add_post_set_parameters_callback` จึงพิมพ์เฉพาะเมื่อค่าถูกบันทึกจริง) — ตรวจว่าโหนดนำค่าไปใช้ด้วย `./docker/run_lab.sh ros2 topic echo --once /speed_limit` (ได้ `data: 1.2`)
 
 ---
 
@@ -77,7 +84,12 @@
    ```bash
    ./docker/run_lab.sh ros2 param set /fleet_parameters safety_margin 0.05
    ```
-   *ผลลัพธ์:* ถูกปฏิเสธพร้อมข้อความ `safety_margin cannot be smaller than 0.1 m!`
+   *ผลลัพธ์:* ถูกปฏิเสธพร้อมข้อความ `Setting parameter failed: safety_margin cannot be smaller than 0.1 m!`
+3. ทดลองส่งค่าที่เป็นจำนวนเต็ม (ไม่มีจุดทศนิยม):
+   ```bash
+   ./docker/run_lab.sh ros2 param set /fleet_parameters max_linear_speed 1
+   ```
+   *ผลลัพธ์จริง:* `Setting parameter failed: Wrong parameter type, expected 'Type.DOUBLE' got 'Type.INTEGER'` — ข้อความนี้มาจาก rclpy (ชั้นที่ 1) ไม่ใช่จาก Callback ของเรา ลองเติม `print()` ใน `validate_parameters` แล้วสังเกตว่าไม่ถูกเรียกเลย
 
    **คำถาม Checkpoint 5.2:**
    - [ ] กลไก Dynamic Parameter Callback ช่วยป้องกันอุบัติเหตุในโรงงานอย่างไร?
@@ -91,7 +103,7 @@
 1. ปิดโปรเซสเดิมทั้งหมดในทุก Terminal (กด `Ctrl+C`)
 2. รันสคริปต์ Launch ของระบบสื่อสารหลัก:
    ```bash
-   ./docker/run_lab.sh ros2 launch Essential_ROS/Week_05_Parameters_Launch/launch/core_system.launch.py
+   ./docker/run_lab.sh ros2 launch amr_week05 core_system.launch.py
    ```
 3. เปิดอีก Terminal หนึ่งแล้วตรวจสอบโหนดที่กำลังทำงาน:
    ```bash
@@ -109,13 +121,38 @@
    ./docker/run_lab.sh ros2 service list
    ./docker/run_lab.sh ros2 action list
    ```
+5. ปิด Launch แล้วรันใหม่แบบใส่ Namespace และ Fleet ID ของหุ่นยนต์:
+   ```bash
+   ./docker/run_lab.sh ros2 launch amr_week05 core_system.launch.py robot_ns:=amr_01 fleet_id:=AMR_01
+   ```
+   **ผลลัพธ์จริง** — ทุกโหนดและทุกอินเทอร์เฟซย้ายไปอยู่ใต้ `/amr_01`:
+   ```text
+   $ ros2 node list
+   /amr_01/fleet_parameters
+   /amr_01/navigate_action_server
+   /amr_01/power_service_server
+   /amr_01/sensor_qos_publisher
+
+   $ ros2 topic list
+   /amr_01/robot/state
+   /amr_01/sensor/temperature
+   /amr_01/speed_limit
+   /parameter_events
+   /rosout
+
+   $ ros2 action list
+   /amr_01/navigate_distance
+
+   $ ros2 param get /amr_01/fleet_parameters fleet_id
+   String value is: AMR_01
+   ```
 
 ---
 
 ### 🔹 Lab 5.4: การสร้างไฟล์ YAML Parameter และโหลดผ่าน Launch
 **เป้าหมาย:** จัดเก็บการตั้งค่าแบบรวมศูนย์ด้วย YAML
 
-1. สร้างไฟล์คอนฟิก `my_fleet_config.yaml` ภายในโฟลเดอร์คอนฟิกหรือรันคำสั่ง Dump:
+1. ดูไฟล์คอนฟิกตั้งต้นของแพ็กเกจ [`config/fleet_params.yaml`](config/fleet_params.yaml) (ใช้คีย์ `/**` จึงใช้ได้กับทุก Namespace) แล้วสร้างไฟล์ `my_fleet_config.yaml` ของตนเองด้วยคำสั่ง Dump:
    ```bash
    ./docker/run_lab.sh ros2 param dump /fleet_parameters
    ```
@@ -128,12 +165,17 @@
        max_linear_speed: 1.5
        safety_margin: 0.5
    ```
+3. โหลดไฟล์ผ่าน Launch Argument `params_file` (ค่า `fleet_id` จาก Launch Argument จะทับค่าในไฟล์):
+   ```bash
+   ./docker/run_lab.sh ros2 launch amr_week05 core_system.launch.py params_file:=/workspace/my_fleet_config.yaml
+   ```
+   (พาธต้องเป็นพาธภายในคอนเทนเนอร์ — repository ถูก mount ไว้ที่ `/workspace`)
 
 ---
 
 ## 🏆 โจทย์ท้าทายระดับสูง (Challenge Exercises)
-1. **Challenge 5.1:** ปรับแต่งไฟล์ `core_system.launch.py` ให้รองรับการส่งพาธของไฟล์ YAML ผ่าน Launch Argument `--params-file`
-2. **Challenge 5.2:** จำลองการเปิดหุ่นยนต์ 2 ตัวพร้อมกัน (`robot1` และ `robot2`) ใน Launch File เดียวกัน โดยใส่ `PushRosNamespace('robot1')` และ `PushRosNamespace('robot2')` เพื่อแยกการสื่อสารโดยสมบูรณ์
+1. **Challenge 5.1:** เพิ่ม Launch Argument `log_level` (ค่าปริยาย `info`) ใน `core_system.launch.py` แล้วส่งต่อให้ทุกโหนดผ่าน `ros_arguments=['--log-level', log_level]`
+2. **Challenge 5.2:** เขียน Launch File ใหม่ที่ `IncludeLaunchDescription` ไฟล์ `core_system.launch.py` สองครั้งด้วย `robot_ns:=robot1` และ `robot_ns:=robot2` (คนละ `fleet_id`) แล้วพิสูจน์ด้วย `ros2 node list` ว่าไม่มีชื่อชนกัน
 
 ---
 
@@ -160,27 +202,48 @@
 ## ⚠️ การแก้ปัญหาที่พบบ่อยในแล็บ (Troubleshooting)
 | ปัญหา | สาเหตุ | การแก้ไข |
 | :--- | :--- | :--- |
-| Launch file ปิดตัวลงทันทีหลังรัน | โหนดบางตัวเกิด Crash จาก Path ผิด | ตรวจสอบข้อความ Error สีแดงใน Terminal เพื่อดูว่าไฟล์สคริปต์ใดหายไป |
+| Launch ขึ้น `package 'amr_week02' not found` หรือ `executable ... not found` | ยังไม่ได้ build แพ็กเกจที่ Launch อ้างถึง | `./docker/run_lab.sh colcon build --base-paths Essential_ROS --packages-up-to amr_week05` |
 | Parameter ไม่ยอมอัปเดต | ส่งชื่อโหนดไม่ครบ เช่น ขาด `/` ข้างหน้า | ตรวจสอบชื่อเต็มด้วย `ros2 node list` |
 | ข้อความ SyntaxError ในไฟล์ Launch | เขียนไวยากรณ์ Python ใน Launch File ไม่ถูกต้อง | ตรวจสอบด้วย `python3 -m py_compile <launch_file>` |
+| `Node not found` เมื่อ `ros2 param get /fleet_parameters ...` หลังใส่ `robot_ns` | โหนดย้ายไปอยู่ใต้ Namespace แล้ว | ใช้ชื่อเต็ม เช่น `/amr_01/fleet_parameters` |
 
 
-## 📸 ภาพผลลัพธ์การรันจริงในระบบ (Verified Lab Execution Screenshot)
-ผู้เรียนสามารถตรวจสอบความถูกต้องของผลลัพธ์ที่ได้จากการทำแล็บ เทียบกับภาพบันทึกหน้าจอการรันจริงในระบบ:
-
-![Verified Lab Execution: Terminal — Week 05: Dynamic Parameter Validation & Reconfigure](images/terminal_run.png)
+## 📟 ผลการรันจริง (Real Run Output)
+บันทึกจากการรันจริงใน ros:lab-runner (ROS 2 Jazzy, Gazebo Sim 8.15.0) บน Linux 7.0 เมื่อ 2026-10-29 (รันด้วย `robot_ns:=amr_01`) — ไฟล์เต็ม: [`results/launch_and_params_run.txt`](results/launch_and_params_run.txt)
 
 ```console
-user@amr-dev:~/ros$ ./docker/run_lab.sh python3 Essential_ROS/Week_05_Parameters_Launch/src/fleet_parameters.py &
-[INFO] [fleet_parameters]: 🤖 [FleetParametersNode] Initialized: ID=AMR_ALPHA_01, MaxSpeed=0.8m/s, Margin=0.35m
-user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 param get /fleet_parameters max_linear_speed
-Double value is: 0.8
-user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 param set /fleet_parameters max_linear_speed 1.2
-[WARN] [fleet_parameters]: ⚡ max_linear_speed updated to: 1.2 m/s
-Set parameter successful
-user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 param set /fleet_parameters max_linear_speed 3.5
-Setting parameter failed: Speed 3.5 is outside valid safety range [0.1, 2.5] m/s!
-user@amr-dev:~/ros$ [CHECKPOINT PASSED: DYNAMIC CALLBACK REJECTED UNSAFE SPEED VALUES]
+$ ros2 param describe /amr_01/fleet_parameters max_linear_speed
+Parameter name: max_linear_speed
+  Type: double
+  Description: Speed limit [m/s]
+  Constraints:
+    Additional constraints: 0.1 <= value <= 2.5
+
+$ ros2 param set /amr_01/fleet_parameters safety_margin 0.05
+Setting parameter failed: safety_margin cannot be smaller than 0.1 m!
+
+$ ros2 param dump /amr_01/fleet_parameters
+/amr_01/fleet_parameters:
+  ros__parameters:
+    enable_obstacle_stop: true
+    fleet_id: AMR_01
+    max_linear_speed: 1.2
+    safety_margin: 0.35
+    start_type_description_service: true
+    use_sim_time: false
+
+--- terminal 1 (ros2 launch) output:
+...
+[WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+[WARNING] [launch]: user interrupted with ctrl-c (SIGINT) again, ignoring...
+[INFO] [fleet_parameters-4]: sending signal 'SIGINT' to process[fleet_parameters-4]
+[INFO] [navigate_action_server-3]: sending signal 'SIGINT' to process[navigate_action_server-3]
+[INFO] [power_service_server-2]: sending signal 'SIGINT' to process[power_service_server-2]
+[INFO] [sensor_qos_publisher-1]: sending signal 'SIGINT' to process[sensor_qos_publisher-1]
+[INFO] [fleet_parameters-4]: process has finished cleanly [pid 97]
+[INFO] [navigate_action_server-3]: process has finished cleanly [pid 96]
+[INFO] [power_service_server-2]: process has finished cleanly [pid 95]
+[INFO] [sensor_qos_publisher-1]: process has finished cleanly [pid 94]
 ```
 
 ---

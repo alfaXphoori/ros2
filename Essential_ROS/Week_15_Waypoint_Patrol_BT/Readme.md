@@ -157,72 +157,108 @@ stateDiagram-v2
 
 ## 🛠️ การวิเคราะห์โค้ดตัวอย่างในโมดูล (Code Walkthrough)
 
-### [`waypoint_patrol.py`](file:///mnt/sda/ros/Essential_ROS/Week_15_Waypoint_Patrol_BT/src/waypoint_patrol.py)
-สคริปต์ควบคุมภารกิจลาดตระเวนคลังสินค้า 5 สถานี:
-- **ตารางภารกิจลาดตระเวน ([L12-L18](file:///mnt/sda/ros/Essential_ROS/Week_15_Waypoint_Patrol_BT/src/waypoint_patrol.py#L12-L18)):**
+### 1. [`src/waypoint_patrol.py`](src/waypoint_patrol.py)
+สคริปต์ควบคุมภารกิจลาดตระเวนคลังสินค้า 5 สถานี (`ros2 run amr_week15 waypoint_patrol --ros-args -p use_sim_time:=true`):
+- **ตารางภารกิจลาดตระเวน** — ทุกสถานีอยู่ในพื้นที่ว่างของ **แผนที่จริง** และห่างสิ่งกีดขวางเกิน `inflation_radius` 0.55 m (ตรวจโดย `test/test_waypoints.py`):
   ```python
   PATROL_WAYPOINTS = [
-      {'name': 'Station 1: Receiving Dock', 'x': 2.0, 'y': 2.0, 'yaw': 0.0, 'dwell': 3.0},
+      {'name': 'Station 1: Receiving Dock', 'x': 2.0, 'y': 3.5, 'yaw': 0.0, 'dwell': 3.0},
       {'name': 'Station 2: Storage Aisle B', 'x': 2.0, 'y': -2.0, 'yaw': -1.57, 'dwell': 3.0},
       {'name': 'Station 3: Quality Check', 'x': -2.0, 'y': -2.0, 'yaw': 3.14, 'dwell': 3.0},
-      {'name': 'Station 4: Shipping Dock', 'x': -2.0, 'y': 2.0, 'yaw': 1.57, 'dwell': 3.0},
-      {'name': 'Station 5: Charging Base', 'x': 0.0, 'y': 0.0, 'yaw': 0.0, 'dwell': 2.0}
+      {'name': 'Station 4: Shipping Dock', 'x': -2.0, 'y': 3.5, 'yaw': 1.57, 'dwell': 3.0},
+      {'name': 'Station 5: Charging Base', 'x': 0.0, 'y': 0.0, 'yaw': 0.0, 'dwell': 2.0},
   ]
   ```
-  กำหนดพิกัด $(x, y)$, มุมหันเป้าหมาย (Yaw), และระยะเวลาหยุดพักปฏิบัติงาน (Dwell Time) ของแต่ละสถานี
-- **การแปลงพิกัดและส่ง Goal ([L36-L45](file:///mnt/sda/ros/Essential_ROS/Week_15_Waypoint_Patrol_BT/src/waypoint_patrol.py#L36-L45)):**
+  (เวอร์ชันเดิมวาง Station 1 และ 4 ไว้ที่ $(\pm 2, 2)$ ซึ่งเป็น **ตำแหน่งกลางเสา** ใน `warehouse.sdf` — ไปไม่ถึงแน่นอน จึงย้ายไปด้านหลังเสาที่ $y = 3.5$)
+- **การส่ง Goal:** `make_goal()` แปลงมุม Yaw เป็น Quaternion ($q_z = \sin(\psi/2)$, $q_w = \cos(\psi/2)$) แล้วส่งด้วย `send_goal_async()`
+- **การตรวจผลลัพธ์จริง:**
   ```python
-  goal_msg = NavigateToPose.Goal()
-  goal_msg.pose.header.frame_id = 'map'
-  goal_msg.pose.pose.position.x = wp['x']
-  goal_msg.pose.pose.position.y = wp['y']
-  half = wp['yaw'] * 0.5
-  goal_msg.pose.pose.orientation.z = math.sin(half)
-  goal_msg.pose.pose.orientation.w = math.cos(half)
-  send_goal_future = self._action_client.send_goal_async(goal_msg)
+  status = self.navigate(wp)          # final GoalStatus of the action
+  if status == GoalStatus.STATUS_SUCCEEDED:
+      ...  # dwell, count as arrived
+  else:
+      self.get_logger().error(f"[{idx}/{n}] {wp['name']}: {name} after {dt:.1f} s")
   ```
-  แปลงมุม Yaw ในระนาบ 2D ให้เป็น Quaternion ตามมาตรฐาน ROS 2 และส่งคำสั่งไปยัง Action Server `/navigate_to_pose`
-- **การรอผลลัพธ์และการหน่วงเวลาภารกิจ ([L53-L57](file:///mnt/sda/ros/Essential_ROS/Week_15_Waypoint_Patrol_BT/src/waypoint_patrol.py#L53-L57)):**
-  ```python
-  get_result_future = goal_handle.get_result_async()
-  rclpy.spin_until_future_complete(self, get_result_future)
-  time.sleep(wp['dwell'])
-  ```
-  รอจนกว่าหุ่นยนต์จะเดินทางถึงจุดหมายปลายทางและรายงานสถานะ `SUCCEEDED` จากนั้นจำลองการหยุดนิ่งเพื่อโหลดสินค้าตามค่า `dwell` ก่อนเริ่มเดินทางสู่สถานีถัดไป
+  เวอร์ชันเดิมรอ `get_result_async()` เสร็จแล้วพิมพ์ "Arrived" ทุกครั้ง **แม้ Nav2 จะ ABORTED** — ตอนนี้นับเฉพาะ `STATUS_SUCCEEDED`, ยกเลิก goal ที่เกิน `goal_timeout` (120 s) และ **exit code 1** ถ้ามีสถานีใดล้มเหลว
+- **รอ Nav2 พร้อมก่อน:** ถาม `/bt_navigator/get_state` จนเป็น `active` (ถ้าส่ง goal เร็วเกินไป bt_navigator จะตอบ `Action server is inactive. Rejecting the goal.`)
+- **Dwell ด้วยเวลาจำลอง:** `self.sleep()` วน `spin_once` ตามนาฬิกาของโหนด (sim time) แทน `time.sleep()` ที่บล็อก callback; พารามิเตอร์ `dwell_scale` ใช้ย่อเวลาพักในการทดสอบ
+
+### 2. [`behavior_trees/patrol_nav_to_pose.xml`](behavior_trees/patrol_nav_to_pose.xml) — Behavior Tree ของเราเอง
+ดัดแปลงจาก `navigate_to_pose_w_replanning_and_recovery.xml` ของ Nav2:
+```xml
+<RateController hz="1.0">
+  <RecoveryNode number_of_retries="1" name="ComputeAndSmoothPath">
+    <Sequence name="PlanThenSmooth">
+      <ComputePathToPose goal="{goal}" path="{raw_path}" planner_id="GridBased" .../>
+      <SmoothPath unsmoothed_path="{raw_path}" smoothed_path="{path}" smoother_id="simple_smoother" .../>
+    </Sequence>
+    <ClearEntireCostmap service_name="global_costmap/clear_entirely_global_costmap"/>
+  </RecoveryNode>
+</RateController>
+<RecoveryNode number_of_retries="1" name="FollowPath">
+  <FollowPath path="{path}" controller_id="FollowPath" .../>
+  ...
+```
+- เส้นทางจาก planner (`{raw_path}`) ถูกส่งผ่าน `smoother_server` (`SmoothPath`) ก่อน แล้ว controller ติดตาม `{path}` ที่เรียบแล้ว — ตัวอย่างการส่งข้อมูลผ่าน **Blackboard**
+- Recovery แบบ RoundRobin: ล้าง costmap → `Spin` 90° → `Wait` 3 s → `BackUp` 0.3 m (ใช้ `behavior_server` ของสัปดาห์ที่ 14)
+- โหลดผ่านพารามิเตอร์ `default_nav_to_pose_bt_xml` ของ `bt_navigator` ([`launch/patrol_system.launch.py`](launch/patrol_system.launch.py) ส่ง path ของไฟล์นี้ให้ `amr_week14/nav2_bringup.launch.py` ทางอาร์กิวเมนต์ `nav_to_pose_bt_xml`)
+- `bt_navigator` แปลง XML ตอน **activate**: ถ้า XML ผิดหรือมีโหนดที่ไม่รู้จัก โหนดจะ activate ไม่ผ่าน (ทดลองจริงไว้ใน [`results/bt_load_check.txt`](results/bt_load_check.txt): `Node not recognized: NoSuchNode` → `Failed to bring up all requested nodes`)
+
+### 3. การทดสอบอัตโนมัติ
+- [`test/test_waypoints.py`](test/test_waypoints.py): ทุกสถานีอยู่ในเซลล์ว่างของแผนที่จริงและห่างเซลล์ occupied > 0.55 m (ไม่ตกในเขต lethal/inscribed), BT XML ถูกต้องและใช้เฉพาะโหนดที่ Nav2 มี
+- [`test/test_patrol_launch.py`](test/test_patrol_launch.py): Gazebo headless + Nav2 + BT ของเรา → `bt_navigator` active ด้วยไฟล์ BT นี้, แล้วรัน `waypoint_patrol` จริง ต้องได้ `5/5 stations SUCCEEDED` (exit code 0) และหุ่นยนต์กลับถึงจุดชาร์จจริงใน Gazebo
 
 ---
 
 ## ⌨️ ตารางคำสั่ง CLI สำคัญ
 | คำสั่ง | คำอธิบาย | ตัวอย่างการใช้งาน |
 | :--- | :--- | :--- |
-| `python3 waypoint_patrol.py` | รันสคริปต์ภารกิจลาดตระเวนอัตโนมัติ 5 สถานี | `python3 Essential_ROS/Week_15_Waypoint_Patrol_BT/src/waypoint_patrol.py` |
-| `ros2 action send_goal /follow_waypoints ...` | ส่งภารกิจจุดตรวจหลายจุดพร้อมกันผ่าน Nav2 Action CLI | `ros2 action send_goal /follow_waypoints nav2_msgs/action/FollowWaypoints "{poses: [...]}"` |
+| `ros2 launch amr_week15 patrol_system.launch.py` | Simulation + Nav2 + BT ของสัปดาห์นี้ | `ros2 launch amr_week15 patrol_system.launch.py headless:=true` |
+| `ros2 run amr_week15 waypoint_patrol` | รันภารกิจลาดตระเวนอัตโนมัติ 5 สถานี | `ros2 run amr_week15 waypoint_patrol --ros-args -p use_sim_time:=true` |
+| `ros2 action send_goal /follow_waypoints ...` | ส่งภารกิจจุดตรวจหลายจุดพร้อมกันผ่าน Nav2 Action CLI (ให้บริการโดย `waypoint_follower` ที่ launch ของสัปดาห์ที่ 14 เปิดไว้) | `ros2 action send_goal /follow_waypoints nav2_msgs/action/FollowWaypoints "{poses: [{header: {frame_id: map}, pose: {position: {x: 1.0, y: -1.0}, orientation: {w: 1.0}}}, {header: {frame_id: map}, pose: {position: {x: -1.0, y: -1.0}, orientation: {w: 1.0}}}]}"` |
 | `ros2 param get /bt_navigator default_nav_to_pose_bt_xml` | ตรวจสอบไฟล์คอนฟิก XML ของ Behavior Tree ที่ระบบกำลังใช้งาน | `ros2 param get /bt_navigator default_nav_to_pose_bt_xml` |
 | `ros2 action list -t` | แสดงรายชื่อ Action Servers ทั้งหมดที่เกี่ยวกับภารกิจ | `ros2 action list -t` |
 
 ---
 
-## 📸 ภาพผลการทดสอบจริงจากระบบ (Live Execution & Terminal Capture)
-ผลลัพธ์จากการรันคำสั่งและโหนดจริงในระบบ เพื่อใช้เป็นข้อมูลอ้างอิงในการตรวจสอบความถูกต้อง:
-
-![Terminal Capture: Terminal — Week 15: Multi-Station Waypoint Patrol & Behavior Tree](images/terminal_run.png)
+## 📟 ผลการรันจริง (Real Run Output)
+บันทึกจากการรันจริงใน ros:lab-runner (ROS 2 Jazzy, Gazebo Sim 8.15.0) บน Linux 7.0 เมื่อ 2026-10-29
+(ฉบับเต็ม: [`results/waypoint_patrol_run.txt`](results/waypoint_patrol_run.txt), การตรวจการโหลด BT: [`results/bt_load_check.txt`](results/bt_load_check.txt))
 
 ```console
-user@amr-dev:~/ros$ ./docker/run_lab.sh python3 Essential_ROS/Week_15_Waypoint_Patrol_BT/src/waypoint_patrol.py
-[INFO] [waypoint_patroller]: 🤖 Nav2 Waypoint Patroller Node Initialized
-[INFO] [waypoint_patroller]: 📍 [1/5] Navigating to: Station 1: Receiving Dock (X=2.00, Y=2.00)
-[INFO] [waypoint_patroller]: ✅ Arrived at Station 1! Dwelling for 3.0s...
-[INFO] [waypoint_patroller]: 📍 [2/5] Navigating to: Station 2: Storage Aisle B (X=2.00, Y=-2.00)
-[INFO] [waypoint_patroller]: ✅ Arrived at Station 2! Dwelling for 3.0s...
-[INFO] [waypoint_patroller]: 📍 [3/5] Navigating to: Station 3: Quality Check (X=-2.00, Y=-2.00)
-[INFO] [waypoint_patroller]: ✅ Arrived at Station 3! Dwelling for 3.0s...
-[INFO] [waypoint_patroller]: 📍 [4/5] Navigating to: Station 4: Shipping Dock (X=-2.00, Y=2.00)
-[INFO] [waypoint_patroller]: ✅ Arrived at Station 4! Dwelling for 3.0s...
-[INFO] [waypoint_patroller]: 📍 [5/5] Navigating to: Station 5: Charging Base (X=0.00, Y=0.00)
-[INFO] [waypoint_patroller]: ✅ Arrived at Station 5! Dwelling for 2.0s...
-[INFO] [waypoint_patroller]: 🎉 All patrol stations visited successfully!
-user@amr-dev:~/ros$ [CHECKPOINT PASSED: AUTONOMOUS WAREHOUSE PATROL 100% COMPLETE]
+$ ros2 launch amr_week15 patrol_system.launch.py headless:=true   # terminal 1
+$ ros2 param get /bt_navigator default_nav_to_pose_bt_xml
+String value is: /workspace/.colcon/c/install/amr_week15/share/amr_week15/behavior_trees/patrol_nav_to_pose.xml
+$ ros2 run amr_week15 waypoint_patrol --ros-args -p use_sim_time:=true
+[INFO] [1793246902.779426712] [waypoint_patroller]: Waiting for Nav2 (bt_navigator active, /navigate_to_pose)...
+[INFO] [1793246904.054665454] [waypoint_patroller]: [1/5] Navigating to Station 1: Receiving Dock (x=2.00, y=3.50, yaw=0.00)
+[INFO] [1793246920.529044781] [waypoint_patroller]: [1/5] Station 1: Receiving Dock: SUCCEEDED after 16.4 s, dwelling 3.0 s
+[INFO] [1793246923.548490325] [waypoint_patroller]: [2/5] Navigating to Station 2: Storage Aisle B (x=2.00, y=-2.00, yaw=-1.57)
+[INFO] [1793246947.872586855] [waypoint_patroller]: [2/5] Station 2: Storage Aisle B: SUCCEEDED after 24.2 s, dwelling 3.0 s
+[INFO] [1793246950.899491906] [waypoint_patroller]: [3/5] Navigating to Station 3: Quality Check (x=-2.00, y=-2.00, yaw=3.14)
+[INFO] [1793246965.173777686] [waypoint_patroller]: [3/5] Station 3: Quality Check: SUCCEEDED after 14.2 s, dwelling 3.0 s
+[INFO] [1793246968.192004624] [waypoint_patroller]: [4/5] Navigating to Station 4: Shipping Dock (x=-2.00, y=3.50, yaw=1.57)
+[INFO] [1793246992.966556927] [waypoint_patroller]: [4/5] Station 4: Shipping Dock: SUCCEEDED after 24.5 s, dwelling 3.0 s
+[INFO] [1793246995.990225090] [waypoint_patroller]: [5/5] Navigating to Station 5: Charging Base (x=0.00, y=0.00, yaw=0.00)
+[INFO] [1793247014.562584142] [waypoint_patroller]: [5/5] Station 5: Charging Base: SUCCEEDED after 18.4 s, dwelling 2.0 s
+[INFO] [1793247016.588136858] [waypoint_patroller]: Patrol finished: 5/5 stations SUCCEEDED in 111.6 s (sim time)
+(exit code 0)
+$ ros2 action send_goal /follow_waypoints nav2_msgs/action/FollowWaypoints {poses: [{header: {frame_id: map}, pose: {position: {x: 1.0, y: -1.0}, orientation: {w: 1.0}}}, {header: {frame_id: map}, pose: {position: {x: -1.0, y: -1.0}, orientation: {w: 1.0}}}]}
+Waiting for an action server to become available...
+Sending goal:
+...
+Goal accepted with ID: 4660d390f5904bdb8aab2eb244025072
+
+Result:
+    missed_waypoints: []
+error_code: 0
+error_msg: ''
+
+Goal finished with status: SUCCEEDED
+$ ros2 run amr_week11 ground_truth_pose
+diff_drive_robot ground truth: x=-0.802 y=-1.064 yaw=0.243 rad (13.9 deg)
 ```
+ผลวัด: ทั้ง 5 สถานี `SUCCEEDED` ใช้เวลารวม 111.6 วินาที (เวลาจำลอง รวม dwell 14 วินาที); `/follow_waypoints` 2 จุดก็ `SUCCEEDED` และหุ่นยนต์จบที่ $(-0.80, -1.06)$ ห่างจุดสุดท้าย $(-1.0, -1.0)$ 0.21 m (ภายใน `xy_goal_tolerance` 0.25 m)
 
 ---
 
@@ -234,8 +270,10 @@ user@amr-dev:~/ros$ [CHECKPOINT PASSED: AUTONOMOUS WAREHOUSE PATROL 100% COMPLET
 | 2 | **หุ่นยนต์หมุนตัวควงสว่านอยู่กับที่เมื่อถึงจุดหมาย** | พารามิเตอร์ `yaw_goal_tolerance` ตั้งไว้ละเอียดเกินไป มอเตอร์ปรับองศาไม่ถึง | ขยายค่า `yaw_goal_tolerance` ในคอนฟิกเป็น $0.15 - 0.25\text{ rad}$ |
 | 3 | **สคริปต์ Python ค้างที่ `spin_until_future_complete`** | โหนดถูกสั่ง spin ซ้อนกันในมากกว่าหนึ่งเธรด หรือเกิด Deadlock | ตรวจสอบว่าไม่มีลูป `rclpy.spin()` อื่นรันค้างอยู่ในเธรดเดียวกัน |
 | 4 | **Behavior Tree ล่มทันทีที่เกิดสิ่งกีดขวาง** | ในไฟล์ XML ไม่มีโครงสร้าง `RecoveryNode` หรือไม่มี `ClearEntireCostmap` รองรับ | เพิ่มบล็อก Fallback และ Recovery Actions เพื่อให้ระบบมีโอกาสกู้คืนสถานการณ์ |
-| 5 | **Action Server `/navigate_to_pose` not available** | โหนด `bt_navigator` หรือสแต็ก Nav2 ยังไม่ได้เปิดทำงาน หรืออยู่ในสถานะ Unconfigured | รัน Launch file ของ Nav2 ให้เรียบร้อยและตรวจสอบด้วย `ros2 lifecycle list` |
-| 6 | **Dwell Time ทำให้การสื่อสารของ ROS ขาดหาย** | ใช้ฟังก์ชัน `time.sleep()` ธรรมดาในลูป Event-driven หลักจนบล็อก Callback | ในระบบขั้นสูงควรใช้ ROS 2 Timer หรือใช้ฟังก์ชัน Sleep ของ Simple Commander |
+| 5 | **Action Server `/navigate_to_pose` not available / goal ถูก reject** | โหนด `bt_navigator` หรือสแต็ก Nav2 ยังไม่ได้เปิดทำงาน หรือยังไม่ `active` (log: `Action server is inactive. Rejecting the goal.`) | รอ `Managed nodes are active` แล้วตรวจสอบด้วย `ros2 lifecycle get /bt_navigator` |
+| 7 | **สคริปต์พิมพ์ว่าถึงสถานีแล้ว แต่หุ่นยนต์ไม่ได้ไปถึง** | ไม่ได้ตรวจ `GoalStatus` ของผลลัพธ์ (ABORTED ก็ทำให้ future เสร็จเหมือนกัน) | ตรวจ `result.status == GoalStatus.STATUS_SUCCEEDED` เสมอ และ exit non-zero เมื่อล้มเหลว |
+| 8 | **Goal ABORTED ทันทีที่บางสถานี** | พิกัดสถานีอยู่ในสิ่งกีดขวางหรือในเขต inflation (เช่น กลางเสาที่ $(\pm 2, 2)$) | ตรวจพิกัดเทียบแผนที่จริงด้วย `test_waypoints.py` |
+| 6 | **Dwell Time ทำให้การสื่อสารของ ROS ขาดหาย** | ใช้ฟังก์ชัน `time.sleep()` ธรรมดาในลูป Event-driven หลักจนบล็อก Callback (และไม่สนใจ sim time) | วน `rclpy.spin_once()` จนถึงเวลาที่ต้องการตามนาฬิกาของโหนด (ดู `WaypointPatroller.sleep()`) หรือใช้ ROS 2 Timer |
 
 ---
 

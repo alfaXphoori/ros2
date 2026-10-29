@@ -1,0 +1,37 @@
+# Lab 4.4 - real run in ros:lab-runner (ROS 2 Jazzy, rmf_fleet_adapter_python 2.7.2), Linux 7.0, 2026-10-29
+# (packages built into a private colcon install base, hence the .colcon/e/install paths)
+$ ros2 run amr_adv04 fleet_config_check
+config   : /workspace/.colcon/e/install/amr_adv04/share/amr_adv04/config/fleet_adapter_config.yaml
+nav graph: /workspace/.colcon/e/install/amr_adv04/share/amr_adv04/config/nav_graph.yaml
+[retreat_to_charger_interval] value is not provided, default to 10 seconds
+Finishing request: park
+Fleet is configured to perform ParkRobot as finishing request
+fleet_name            : warehouse_amr_fleet
+limits linear/angular : [0.8, 0.5] / [1.2, 1.5]
+footprint / vicinity  : 0.3 m / 0.5 m
+recharge_threshold    : 0.20
+recharge_soc          : 1.00
+account_for_battery_drain: True
+responsive_wait       : True
+max_delay             : 10.0 s
+fleet state period    : 0.10 s
+nav graph             : 6 waypoints, 12 lanes
+  [0] charger_alpha  L1 ( 0.0,  0.0) charger,parking,holding
+  [1] charger_beta   L1 ( 0.0,  1.5) charger,parking,holding
+  [2] junction_a     L1 ( 2.0,  0.0) 
+  [3] junction_b     L1 ( 2.0,  1.5) holding
+  [4] pickup_bay_1   L1 ( 6.0,  0.0) holding
+  [5] dropoff_bay_2  L1 ( 6.0,  1.5) holding
+robot amr_01          : chargers=['charger_alpha']
+robot amr_02          : chargers=['charger_beta']
+OK: FleetConfiguration.from_config_files() accepted the config and all cross-checks passed
+[exit code: 0]
+
+$ git show HEAD:Advanced_ROS/04_Multi_Robot_Fleet_OpenRMF/config/fleet_adapter_config.yaml > /tmp/old_fleet.yaml   # the config before this fix
+$ ros2 run amr_adv04 fleet_config_check --config /tmp/old_fleet.yaml
+config   : /tmp/old_fleet.yaml
+nav graph: /workspace/.colcon/e/install/amr_adv04/share/amr_adv04/config/nav_graph.yaml
+Fleet [mechanical_system] information is not provided
+INVALID: rmf_fleet_adapter rejected /tmp/old_fleet.yaml (see the message printed above)
+[ros2run]: Process exited with failure 1
+[exit code: 1]

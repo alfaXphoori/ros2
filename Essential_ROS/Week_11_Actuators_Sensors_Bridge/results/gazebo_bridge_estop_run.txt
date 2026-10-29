@@ -1,0 +1,69 @@
+# Real run: ros:lab-runner (ROS 2 Jazzy, Gazebo Sim 8.15.0), Linux 7.0, 2026-10-29
+# Isolation: ROS_DOMAIN_ID=13, GZ_PARTITION=agent_c, ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST
+# Lines replaced by '...' were trimmed (repetition); no values were edited.
+
+$ ros2 launch amr_week11 gazebo_world.launch.py headless:=true estop:=true   # (terminal 1, log below)
+$ ros2 topic list
+/clock
+/cmd_vel
+/cmd_vel_in
+/joint_states
+/odom
+/parameter_events
+/robot_description
+/rosout
+/scan
+/tf
+/tf_static
+$ ros2 topic hz /scan
+WARNING: topic [/scan] does not appear to be published yet
+average rate: 9.888
+	min: 0.099s max: 0.105s std dev: 0.00173s window: 11
+average rate: 9.916
+	min: 0.090s max: 0.119s std dev: 0.00543s window: 21
+$ ros2 topic echo --once /scan sensor_msgs/msg/LaserScan --field header
+stamp:
+  sec: 19
+  nanosec: 400000000
+frame_id: lidar_link
+---
+$ ros2 run tf2_ros tf2_echo odom lidar_link
+[INFO] [1793245702.902927672] [tf2_echo]: Waiting for transform odom ->  lidar_link: Invalid frame ID "odom" passed to canTransform argument target_frame - frame does not exist
+At time 21.760000000
+- Translation: [0.080, -0.000, 0.175]
+- Rotation: in Quaternion (xyzw) [0.000, 0.000, -0.000, 1.000]
+- Rotation: in RPY (radian) [0.000, 0.000, -0.000]
+- Rotation: in RPY (degree) [0.000, 0.000, -0.000]
+- Matrix:
+  1.000  0.000  0.000  0.080
+$ ros2 run amr_week11 ground_truth_pose
+diff_drive_robot ground truth: x=-0.000 y=0.000 yaw=0.000 rad (0.0 deg)
+# drive forward at 0.3 m/s through the safety gate (/cmd_vel_in) towards the east wall (x = 4.9 m)
+sim t=  24.6s  /cmd_vel_in linear.x=0.30 -> /cmd_vel linear.x=0.30  odom x=0.00 m
+sim t=  27.9s  /cmd_vel_in linear.x=0.30 -> /cmd_vel linear.x=0.30  odom x=0.84 m
+sim t=  30.8s  /cmd_vel_in linear.x=0.30 -> /cmd_vel linear.x=0.30  odom x=1.73 m
+sim t=  33.8s  /cmd_vel_in linear.x=0.30 -> /cmd_vel linear.x=0.30  odom x=2.62 m
+sim t=  36.8s  /cmd_vel_in linear.x=0.30 -> /cmd_vel linear.x=0.30  odom x=3.51 m
+sim t=  39.8s  /cmd_vel_in linear.x=0.30 -> /cmd_vel linear.x=0.30  odom x=4.41 m
+sim t=  42.7s  /cmd_vel_in linear.x=0.30 -> /cmd_vel linear.x=0.00  odom x=4.52 m
+sim t=  45.8s  /cmd_vel_in linear.x=0.30 -> /cmd_vel linear.x=0.00  odom x=4.52 m
+sim t=  48.8s  /cmd_vel_in linear.x=0.30 -> /cmd_vel linear.x=0.00  odom x=4.52 m
+sim t=  51.7s  /cmd_vel_in linear.x=0.30 -> /cmd_vel linear.x=0.00  odom x=4.52 m
+$ ros2 run amr_week11 ground_truth_pose
+diff_drive_robot ground truth: x=4.522 y=-0.000 yaw=-0.000 rad (-0.0 deg)
+
+# --- launch log (excerpt) ---
+[INFO] [gazebo-1]: process started with pid [34]
+[INFO] [robot_state_publisher-2]: process started with pid [35]
+[INFO] [create-3]: process started with pid [37]
+[INFO] [parameter_bridge-4]: process started with pid [38]
+[INFO] [emergency_stop_node-5]: process started with pid [39]
+[emergency_stop_node-5] [INFO] [1793245680.135688811] [emergency_stop_node]: Safety gate ready: cmd_vel_in -> cmd_vel, stop distance 0.35 m, sector +-30 deg, scan timeout 0.5 s
+[create-3] [INFO] [1793245680.218295952] [ros_gz_sim]: Entity creation successful.
+[parameter_bridge-4] [INFO] [1793245680.732352188] [ros_gz_bridge]: Creating ROS->GZ Bridge: [/cmd_vel (geometry_msgs/msg/Twist) -> /cmd_vel (gz.msgs.Twist)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1793245680.734350137] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/odom (gz.msgs.Odometry) -> /odom (nav_msgs/msg/Odometry)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1793245680.736334377] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/scan (gz.msgs.LaserScan) -> /scan (sensor_msgs/msg/LaserScan)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1793245680.738257665] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/tf (gz.msgs.Pose_V) -> /tf (tf2_msgs/msg/TFMessage)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1793245680.740198050] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/joint_states (gz.msgs.Model) -> /joint_states (sensor_msgs/msg/JointState)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1793245680.741500599] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/clock (gz.msgs.Clock) -> /clock (rosgraph_msgs/msg/Clock)] (Lazy 0)
+[emergency_stop_node-5] [WARN] [1793245723.268663174] [emergency_stop_node]: Obstacle at 0.33 m (< 0.35 m) in front: forward motion BLOCKED

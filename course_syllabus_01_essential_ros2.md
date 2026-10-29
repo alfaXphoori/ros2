@@ -82,8 +82,8 @@ flowchart TD
   - Publish-Subscribe Pattern, การเลือกประเภทข้อความ (`std_msgs`, `sensor_msgs`)
   - นโยบาย Quality of Service (QoS): Reliability (`BEST_EFFORT` vs `RELIABLE`), Durability (`TRANSIENT_LOCAL` vs `VOLATILE`)
 - **ปฏิบัติการ (3 ชม.):**
-  - เขียนและรัน [`sensor_qos_publisher.py`](Essential_ROS/01_Core_Communication/src/sensor_qos_publisher.py)
-  - เขียนและรัน [`sensor_qos_subscriber.py`](Essential_ROS/01_Core_Communication/src/sensor_qos_subscriber.py)
+  - เขียนและรัน [`sensor_qos_publisher.py`](Essential_ROS/Week_02_Nodes_Topics_QoS/src/sensor_qos_publisher.py)
+  - เขียนและรัน [`sensor_qos_subscriber.py`](Essential_ROS/Week_02_Nodes_Topics_QoS/src/sensor_qos_subscriber.py)
   - ดีบั๊กข้อความผ่าน CLI (`ros2 topic echo`, `ros2 topic hz`, `rqt_graph`)
 - **การบ้าน/แบบฝึกหัด:** ออกแบบ QoS สำหรับข้อมูล IMU 100 Hz และข้อมูล Battery State
 
@@ -94,7 +94,7 @@ flowchart TD
   - Synchronous vs Asynchronous Communication, เมื่อไหร่ควรใช้ Service
   - โครงสร้างไฟล์ `.srv`, การป้องกัน Service Deadlock ด้วย Multi-threaded Executor
 - **ปฏิบัติการ (3 ชม.):**
-  - สร้างโหนด Service Server สลับโหมดประหยัดพลังงาน [`power_service_server.py`](Essential_ROS/01_Core_Communication/src/power_service_server.py)
+  - สร้างโหนด Service Server สลับโหมดประหยัดพลังงาน [`power_service_server.py`](Essential_ROS/Week_03_Services_Clients/src/power_service_server.py)
   - ทดสอบเรียก Service ผ่าน CLI `ros2 service call /robot/set_power_mode std_srvs/srv/SetBool "{data: true}"`
 - **การบ้าน/แบบฝึกหัด:** สร้าง Custom Service สำหรับรีเซ็ตระยะทางสะสมของหุ่นยนต์
 
@@ -105,7 +105,7 @@ flowchart TD
   - โครงสร้าง Action Protocol (3 Services + 2 Topics เบื้องหลัง)
   - วงจรชีวิตของ Action Goal: Goal Request -> Accept/Reject -> Feedback -> Result / Cancel
 - **ปฏิบัติการ (3 ชม.):**
-  - รันโหนด Action Server [`navigate_action_server.py`](Essential_ROS/01_Core_Communication/src/navigate_action_server.py)
+  - รันโหนด Action Server [`navigate_action_server.py`](Essential_ROS/Week_04_Actions_Preemption/src/navigate_action_server.py)
   - สั่งการ Action ผ่าน CLI พร้อมรับ Feedback แบบเรียลไทม์ และทดลองส่งคำสั่ง Cancel กลางคัน
 - **การบ้าน/แบบฝึกหัด:** เพิ่มขีดจำกัดความเร็วใน Action Server หากอุณหภูมิสูงเกินกำหนด
 
@@ -116,8 +116,8 @@ flowchart TD
   - Parameter Server ใน ROS 2, `add_on_set_parameters_callback`
   - สถาปัตยกรรม Python Launch System: `DeclareLaunchArgument`, `Node`, Grouping, Namespaces
 - **ปฏิบัติการ (3 ชม.):**
-  - รันโหนดตรวจสอบ Parameter แบบไดนามิก [`fleet_parameters.py`](Essential_ROS/01_Core_Communication/src/fleet_parameters.py)
-  - รวมโหนดทั้งหมดเป็นระบบเดียวผ่าน [`core_system.launch.py`](Essential_ROS/01_Core_Communication/launch/core_system.launch.py)
+  - รันโหนดตรวจสอบ Parameter แบบไดนามิก [`fleet_parameters.py`](Essential_ROS/Week_05_Parameters_Launch/src/fleet_parameters.py)
+  - รวมโหนดทั้งหมดเป็นระบบเดียวผ่าน [`core_system.launch.py`](Essential_ROS/Week_05_Parameters_Launch/launch/core_system.launch.py)
 - **การบ้าน/แบบฝึกหัด:** สร้างไฟล์ YAML กำหนด Parameter สำหรับหุ่นยนต์ 2 ขนาด (Small / Large)
 
 ---
@@ -140,9 +140,9 @@ flowchart TD
   - ชนิดของ Joint (`fixed`, `continuous`, `revolute`), การกำหนด Origin และ Axis
   - การคำนวณและกำหนด Moment of Inertia เพื่อป้องกันการระเบิดของ Physics Engine
 - **ปฏิบัติการ (3 ชม.):**
-  - ศึกษาและปรับแต่งโมเดลหุ่นยนต์ [`diff_drive_robot.urdf`](Essential_ROS/02_Robot_Modeling_TF2/urdf/diff_drive_robot.urdf)
+  - ศึกษาและปรับแต่งโมเดลหุ่นยนต์ [`diff_drive_robot.urdf`](Essential_ROS/Week_07_URDF_Robot_Modeling/urdf/diff_drive_robot.urdf)
   - ตรวจสอบความถูกต้องของโมเดลด้วยคำสั่ง `check_urdf`
-  - แสดงผลโมเดลบน RViz2 ผ่าน [`display_urdf.launch.py`](Essential_ROS/02_Robot_Modeling_TF2/launch/display_urdf.launch.py)
+  - แสดงผลโมเดลบน RViz2 ผ่าน [`display_urdf.launch.py`](Essential_ROS/Week_07_URDF_Robot_Modeling/launch/display_urdf.launch.py)
 - **การบ้าน/แบบฝึกหัด:** เพิ่มข้อต่อเสาอากาศและไฟเตือนบนแชสซีของหุ่นยนต์ในไฟล์ URDF
 
 ---
@@ -175,7 +175,7 @@ flowchart TD
   - การเขียนโลกจำลอง 3 มิติด้วย Simulation Description Format (SDF)
   - ค่าคุณสมบัติทางฟิสิกส์: แรงโน้มถ่วง, ค่าความเสียดทาน (mu1, mu2), พื้นผิวและแสงสว่าง
 - **ปฏิบัติการ (3 ชม.):**
-  - ปรับแต่งและตรวจสอบความถูกต้องของโลกคลังสินค้า [`warehouse.sdf`](Essential_ROS/03_Gazebo_Simulation/worlds/warehouse.sdf)
+  - ปรับแต่งและตรวจสอบความถูกต้องของโลกคลังสินค้า [`warehouse.sdf`](Essential_ROS/Week_10_Gazebo_Sim_Harmonic/worlds/warehouse.sdf)
   - ทดสอบรัน Gazebo Sim แบบ Headless และเปิด GUI
 - **การบ้าน/แบบฝึกหัด:** เพิ่มสิ่งกีดขวางทรงกระบอกและชั้นวางพาเลทเพิ่มเติมลงในโลกคลังสินค้า
 
@@ -186,8 +186,8 @@ flowchart TD
   - การทำงานของสะพานเชื่อมต่อข้อมูล `ros_gz_bridge` (Protobuf <-> ROS 2 Messages)
   - การฝัง Gazebo Plugins ใน URDF: `gz-sim-diff-drive-system`, `gpu_lidar`
 - **ปฏิบัติการ (3 ชม.):**
-  - ตั้งค่าสะพานเชื่อมต่อใน [`ros_gz_bridge.yaml`](Essential_ROS/03_Gazebo_Simulation/config/ros_gz_bridge.yaml)
-  - เปิด Launch file สปอว์นหุ่นยนต์เข้าสู่โลกจำลอง [`gazebo_world.launch.py`](Essential_ROS/03_Gazebo_Simulation/launch/gazebo_world.launch.py)
+  - ตั้งค่าสะพานเชื่อมต่อใน [`ros_gz_bridge.yaml`](Essential_ROS/Week_11_Actuators_Sensors_Bridge/config/ros_gz_bridge.yaml)
+  - เปิด Launch file สปอว์นหุ่นยนต์เข้าสู่โลกจำลอง [`gazebo_world.launch.py`](Essential_ROS/Week_11_Actuators_Sensors_Bridge/launch/gazebo_world.launch.py)
   - ขับเคลื่อนหุ่นยนต์ผ่าน `teleop_twist_keyboard` พร้อมดูข้อมูล LaserScan
 - **การบ้าน/แบบฝึกหัด:** เขียนโหนด Emergency Stop สั่งหยุดหุ่นยนต์ทันทีเมื่อ LiDAR ตรวจพบสิ่งกีดขวางใกล้กว่า 0.25 ม.
 
@@ -199,8 +199,8 @@ flowchart TD
   - Occupancy Grid Mapping (ความน่าจะเป็น 0-100 และ Unknown -1)
   - Graph-based SLAM, Scan Matching, Loop Closure Detection และ Ceres Solver
 - **ปฏิบัติการ (3 ชม.):**
-  - คอนฟิกพารามิเตอร์ใน [`slam_toolbox_params.yaml`](Essential_ROS/04_SLAM_Mapping/config/slam_toolbox_params.yaml)
-  - รัน Online Asynchronous SLAM [`online_async_slam.launch.py`](Essential_ROS/04_SLAM_Mapping/launch/online_async_slam.launch.py)
+  - คอนฟิกพารามิเตอร์ใน [`slam_toolbox_params.yaml`](Essential_ROS/Week_12_SLAM_Mapping_Ceres/config/slam_toolbox_params.yaml)
+  - รัน Online Asynchronous SLAM [`online_async_slam.launch.py`](Essential_ROS/Week_12_SLAM_Mapping_Ceres/launch/online_async_slam.launch.py)
   - ขับหุ่นยนต์สำรวจโกดังจนปิด Loop และบันทึกแผนที่เป็นไฟล์ `.yaml` และ `.pgm`
 - **การบ้าน/แบบฝึกหัด:** เปรียบเทียบผลลัพธ์ของแผนที่เมื่อขับหุ่นยนต์ด้วยความเร็วต่ำ (0.2 m/s) เทียบกับความเร็วสูง (0.8 m/s)
 
@@ -212,7 +212,7 @@ flowchart TD
   - Costmap 2D แบบหลายเลเยอร์: Static Layer, Obstacle Layer, Inflation Layer
   - การกำหนด Robot Footprint และการคำนวณ Inflation Radius / Cost Decay
 - **ปฏิบัติการ (3 ชม.):**
-  - วิเคราะห์และปรับแต่งไฟล์คอนฟิก [`nav2_params.yaml`](Essential_ROS/05_Nav2_Navigation/config/nav2_params.yaml)
+  - วิเคราะห์และปรับแต่งไฟล์คอนฟิก [`nav2_params.yaml`](Essential_ROS/Week_14_Path_Planning_AMCL/config/nav2_params.yaml)
   - สังเกต Gradient ความปลอดภัยบน RViz2 ขณะวางสิ่งกีดขวางใหม่ในโลกจำลอง
 - **การบ้าน/แบบฝึกหัด:** ปรับจูน Footprint ของหุ่นยนต์ให้ครอบคลุมส่วนที่ยื่นออกมาของเซนเซอร์ LiDAR
 
@@ -224,8 +224,8 @@ flowchart TD
   - Local Controllers: DWB (Dynamic Window Approach) vs Regulated Pure Pursuit (RPP)
   - Adaptive Monte Carlo Localization (AMCL): Particle Filter, KLD-Sampling, Particle Cloud Convergence
 - **ปฏิบัติการ (3 ชม.):**
-  - รันระบบนำทางเต็มรูปแบบ [`nav2_bringup.launch.py`](Essential_ROS/05_Nav2_Navigation/launch/nav2_bringup.launch.py)
-  - ส่งพิกัดเริ่มต้นอัตโนมัติด้วย [`amcl_initial_pose.py`](Essential_ROS/05_Nav2_Navigation/src/amcl_initial_pose.py)
+  - รันระบบนำทางเต็มรูปแบบ [`nav2_bringup.launch.py`](Essential_ROS/Week_14_Path_Planning_AMCL/launch/nav2_bringup.launch.py)
+  - ส่งพิกัดเริ่มต้นอัตโนมัติด้วย [`amcl_initial_pose.py`](Essential_ROS/Week_14_Path_Planning_AMCL/src/amcl_initial_pose.py)
   - สั่งเป้าหมาย Navigation Goal ผ่าน RViz2 และประเมินการหลบหลีกสิ่งกีดขวาง
 - **การบ้าน/แบบฝึกหัด:** ทดสอบความแม่นยำในการเข้าจอดเป้าหมายโดยวัดความคลาดเคลื่อนเชิงตำแหน่งและมุมหัน
 
@@ -237,7 +237,7 @@ flowchart TD
   - การจัดการคิวงาน (Task Queuing), การตรวจจับสถานะความล้มเหลว (Navigation Failures)
   - วงจรการกู้คืนสถานะอัตโนมัติ (Recovery Behaviors: Spin, Back-up, Wait)
 - **ปฏิบัติการ (3 ชม.):**
-  - ศึกษาและทดสอบรันสคริปต์ลาดตระเวน 4 จุดตรวจ [`waypoint_patrol.py`](Essential_ROS/05_Nav2_Navigation/src/waypoint_patrol.py)
+  - ศึกษาและทดสอบรันสคริปต์ลาดตระเวน 4 จุดตรวจ [`waypoint_patrol.py`](Essential_ROS/Week_15_Waypoint_Patrol_BT/src/waypoint_patrol.py)
   - วางสิ่งกีดขวางขวางทางเดินระหว่าง Waypoint เพื่อสังเกตพฤติกรรมการอ้อมทางใหม่
 - **การบ้าน/แบบฝึกหัด:** เพิ่มเงื่อนไขให้หุ่นยนต์หมุนตัวสแกน 360 องศาทุกครั้งที่ถึงจุดตรวจก่อนเดินทางต่อ
 

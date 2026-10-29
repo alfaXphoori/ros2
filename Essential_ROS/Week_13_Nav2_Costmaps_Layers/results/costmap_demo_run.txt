@@ -1,0 +1,40 @@
+# Real run: ros:lab-runner (ROS 2 Jazzy, Gazebo Sim 8.15.0), Linux 7.0, 2026-10-29
+# Isolation: ROS_DOMAIN_ID=13, GZ_PARTITION=agent_c, ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST
+# Lines replaced by '...' were trimmed (repetition); no values were edited.
+
+$ ros2 launch amr_week13 costmap_demo.launch.py headless:=true   # (terminal 1)
+$ ros2 param get /local_costmap/local_costmap footprint
+String value is: [ [0.20, 0.14], [0.20, -0.14], [-0.20, -0.14], [-0.20, 0.14] ]
+$ ros2 param get /local_costmap/local_costmap inflation_layer.cost_scaling_factor
+Double value is: 3.0
+$ ros2 param get /global_costmap/global_costmap inflation_layer.inflation_radius
+Double value is: 0.55
+$ ros2 topic echo --once /global_costmap/costmap nav_msgs/msg/OccupancyGrid --field info
+map_load_time:
+  sec: 0
+  nanosec: 0
+resolution: 0.05000000074505806
+width: 200
+height: 199
+origin:
+  position:
+    x: -4.988
+    y: -4.97
+    z: 0.0
+  orientation:
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+---
+$ ros2 run amr_week13 costmap_snapshot --png images/global_costmap_real.png
+/global_costmap/costmap: frame=map 200x199 cells @ 0.05 m
+  unknown(-1): 208, free(0): 26584, inflated(1..98): 8434, inscribed(99): 2705, lethal(100): 1869
+/local_costmap/costmap: frame=odom 60x60 cells @ 0.05 m
+  unknown(-1): 0, free(0): 3600, inflated(1..98): 0, inscribed(99): 0, lethal(100): 0
+/global_costmap/costmap_raw: 200x199 cells (raw 0..255)
+  free(0): 26603, inflated(1..252): 8436, inscribed(253): 2740, lethal(254): 1813, no_information(255): 208
+wrote images/global_costmap_real.png
+# cost profile below pillar 1 (python3 .colcon/c/runs/real/w13_costmap.py)
+cost profile along x=2.0 below pillar (y, OccupancyGrid value):
+  1.00:0  1.05:0  1.10:0  1.15:29  1.20:34  1.25:40  1.30:46  1.35:53  1.40:62  1.45:72  1.50:84  1.55:97  1.60:99  1.65:99  1.70:100  1.75:100

@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>amr_week07</name>
+  <version>1.0.0</version>
+  <description>Week 07: URDF model of the course differential-drive AMR (diff_drive_robot.urdf),
+    RViz2 display launch file and an inertia-tensor calculator. Reused by later weeks.</description>
+  <maintainer email="phoori.ch@ksu.ac.th">Phoori Chantima</maintainer>
+  <license>Apache-2.0</license>
+
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>ament_index_python</exec_depend>
+  <exec_depend>robot_state_publisher</exec_depend>
+  <exec_depend>joint_state_publisher</exec_depend>
+  <exec_depend>joint_state_publisher_gui</exec_depend>
+  <exec_depend>rviz2</exec_depend>
+  <exec_depend>liburdfdom-tools</exec_depend>
+
+  <test_depend>python3-pytest</test_depend>
+  <test_depend>launch_testing</test_depend>
+  <test_depend>launch_testing_ros</test_depend>
+  <test_depend>domain_coordinator</test_depend>
+  <test_depend>tf2_ros_py</test_depend>
+  <test_depend>sdformat_urdf</test_depend>
+  <test_depend>gz_tools_vendor</test_depend>
+  <test_depend>gz_sim_vendor</test_depend>
+  <test_depend>gz_transport_vendor</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

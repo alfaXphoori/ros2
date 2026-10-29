@@ -1,0 +1,233 @@
+<?xml version="1.0"?>
+<!-- Week 08 Midterm: reference solution for Exam_Task.md part 1 (hospital_amr.urdf).
+     Geometry summary (base_link frame, z up):
+       base_link origin = wheel axle, 0.08 m above ground (= wheel radius)
+       chassis box 0.50 x 0.30 x 0.15 centred at z = +0.055 -> spans z = -0.02 .. 0.13
+       wheels at y = +/-0.17 (L = 0.34 m) -> just outside the 0.30 m wide chassis
+       casters r = 0.03 at x = +/-0.18, z = -0.05 -> touch floor and chassis underside
+       LiDAR cylinder r = 0.04, h = 0.10 at (0.12, 0, 0.18) -> sits on the roof (z = 0.13) -->
+<robot name="hospital_amr">
+
+  <material name="chassis_blue">
+    <color rgba="0.05 0.2 0.6 1.0"/>
+  </material>
+  <material name="wheel_dark">
+    <color rgba="0.15 0.15 0.15 1.0"/>
+  </material>
+  <material name="caster_grey">
+    <color rgba="0.6 0.6 0.6 1.0"/>
+  </material>
+  <material name="lidar_orange">
+    <color rgba="1.0 0.45 0.0 1.0"/>
+  </material>
+
+  <!-- REP 105 ground projection -->
+  <link name="base_footprint"/>
+
+  <joint name="base_footprint_joint" type="fixed">
+    <parent link="base_footprint"/>
+    <child link="base_link"/>
+    <origin xyz="0 0 0.08" rpy="0 0 0"/>
+  </joint>
+
+  <!-- Chassis: solid box m=8.0, d=0.50 (x), w=0.30 (y), h=0.15 (z)
+       Ixx = 1/12 m (w^2+h^2) = 0.075000
+       Iyy = 1/12 m (d^2+h^2) = 0.181667
+       Izz = 1/12 m (d^2+w^2) = 0.226667 -->
+  <link name="base_link">
+    <visual>
+      <origin xyz="0 0 0.055" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.50 0.30 0.15"/>
+      </geometry>
+      <material name="chassis_blue"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.055" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.50 0.30 0.15"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0.055" rpy="0 0 0"/>
+      <mass value="8.0"/>
+      <inertia ixx="0.075000" ixy="0.0" ixz="0.0"
+               iyy="0.181667" iyz="0.0"
+               izz="0.226667"/>
+    </inertial>
+  </link>
+
+  <!-- Left drive wheel: solid cylinder m=0.80, r=0.08, h=0.04.
+       Inertial frame not rotated -> spin axis is link Y:
+       Iyy = 1/2 m r^2 = 0.002560, Ixx = Izz = 1/12 m (3r^2+h^2) = 0.001387 -->
+  <link name="left_wheel_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="-1.57079632679 0 0"/>
+      <geometry>
+        <cylinder radius="0.08" length="0.04"/>
+      </geometry>
+      <material name="wheel_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="-1.57079632679 0 0"/>
+      <geometry>
+        <cylinder radius="0.08" length="0.04"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.80"/>
+      <inertia ixx="0.001387" ixy="0.0" ixz="0.0"
+               iyy="0.002560" iyz="0.0"
+               izz="0.001387"/>
+    </inertial>
+  </link>
+
+  <joint name="left_wheel_joint" type="continuous">
+    <parent link="base_link"/>
+    <child link="left_wheel_link"/>
+    <origin xyz="0.0 0.17 0.0" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+  </joint>
+
+  <!-- Right drive wheel: solid cylinder m=0.80, r=0.08, h=0.04.
+       Inertial frame not rotated -> spin axis is link Y:
+       Iyy = 1/2 m r^2 = 0.002560, Ixx = Izz = 1/12 m (3r^2+h^2) = 0.001387 -->
+  <link name="right_wheel_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="-1.57079632679 0 0"/>
+      <geometry>
+        <cylinder radius="0.08" length="0.04"/>
+      </geometry>
+      <material name="wheel_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="-1.57079632679 0 0"/>
+      <geometry>
+        <cylinder radius="0.08" length="0.04"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.80"/>
+      <inertia ixx="0.001387" ixy="0.0" ixz="0.0"
+               iyy="0.002560" iyz="0.0"
+               izz="0.001387"/>
+    </inertial>
+  </link>
+
+  <joint name="right_wheel_joint" type="continuous">
+    <parent link="base_link"/>
+    <child link="right_wheel_link"/>
+    <origin xyz="0.0 -0.17 0.0" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+  </joint>
+
+  <!-- Front caster: solid sphere m=0.25, r=0.03, I = 2/5 m r^2 = 0.000090.
+       z = -0.05 in base_link -> centre 0.03 m above ground = radius (touches floor) -->
+  <link name="front_caster_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="0.03"/>
+      </geometry>
+      <material name="caster_grey"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="0.03"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.25"/>
+      <inertia ixx="0.000090" ixy="0.0" ixz="0.0"
+               iyy="0.000090" iyz="0.0"
+               izz="0.000090"/>
+    </inertial>
+  </link>
+
+  <joint name="front_caster_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="front_caster_link"/>
+    <origin xyz="0.18 0.0 -0.05" rpy="0 0 0"/>
+  </joint>
+
+  <!-- Rear caster: solid sphere m=0.25, r=0.03, I = 2/5 m r^2 = 0.000090.
+       z = -0.05 in base_link -> centre 0.03 m above ground = radius (touches floor) -->
+  <link name="rear_caster_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="0.03"/>
+      </geometry>
+      <material name="caster_grey"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="0.03"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.25"/>
+      <inertia ixx="0.000090" ixy="0.0" ixz="0.0"
+               iyy="0.000090" iyz="0.0"
+               izz="0.000090"/>
+    </inertial>
+  </link>
+
+  <joint name="rear_caster_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="rear_caster_link"/>
+    <origin xyz="-0.18 0.0 -0.05" rpy="0 0 0"/>
+  </joint>
+
+  <!-- 2D LiDAR: cylinder m=0.30, r=0.04, h=0.10 (sensor + mount), upright (z up, x forward)
+       Ixx = Iyy = 1/12 m (3r^2+h^2) = 0.000370, Izz = 1/2 m r^2 = 0.000240 -->
+  <link name="lidar_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.04" length="0.10"/>
+      </geometry>
+      <material name="lidar_orange"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.04" length="0.10"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.30"/>
+      <inertia ixx="0.000370" ixy="0.0" ixz="0.0"
+               iyy="0.000370" iyz="0.0"
+               izz="0.000240"/>
+    </inertial>
+  </link>
+
+  <joint name="lidar_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="lidar_link"/>
+    <origin xyz="0.12 0.0 0.18" rpy="0 0 0"/>
+  </joint>
+
+  <!-- Optional for the exam: Gazebo Sim differential drive (must match the wheel geometry) -->
+  <gazebo>
+    <plugin filename="gz-sim-diff-drive-system" name="gz::sim::systems::DiffDrive">
+      <left_joint>left_wheel_joint</left_joint>
+      <right_joint>right_wheel_joint</right_joint>
+      <wheel_separation>0.34</wheel_separation>
+      <wheel_radius>0.08</wheel_radius>
+      <topic>/cmd_vel</topic>
+      <odom_topic>/odom</odom_topic>
+      <frame_id>odom</frame_id>
+      <child_frame_id>base_footprint</child_frame_id>
+    </plugin>
+  </gazebo>
+
+</robot>

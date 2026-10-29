@@ -1,0 +1,22 @@
+$ python3 Essential_ROS/Week_09_TF2_Coordinate_Transforms/src/static_sensor_broadcaster.py   # then: kill -TERM <pid> after 3 s
+[INFO] [1793243323.526831957] [static_sensor_broadcaster]: Published static transforms: base_link->lidar_link, base_link->camera_link, camera_link->camera_optical_link
+exit code: 0
+$ python3 Essential_ROS/Week_09_TF2_Coordinate_Transforms/src/static_sensor_broadcaster.py   # then: kill -INT <pid> after 3 s
+[INFO] [1793243326.706361688] [static_sensor_broadcaster]: Published static transforms: base_link->lidar_link, base_link->camera_link, camera_link->camera_optical_link
+exit code: 0
+$ python3 Essential_ROS/Week_09_TF2_Coordinate_Transforms/src/tf_obstacle_listener.py   # then: kill -TERM <pid> after 3 s
+[INFO] [1793243329.899452450] [tf_obstacle_listener]: Listening for transforms and converting obstacle poses...
+[WARN] [1793243330.383535691] [tf_obstacle_listener]: TF lookup waiting: "base_link" passed to lookupTransform argument target_frame does not exist. 
+[WARN] [1793243330.883739247] [tf_obstacle_listener]: TF lookup waiting: "base_link" passed to lookupTransform argument target_frame does not exist. 
+[WARN] [1793243331.383467927] [tf_obstacle_listener]: TF lookup waiting: "base_link" passed to lookupTransform argument target_frame does not exist. 
+[WARN] [1793243331.883613815] [tf_obstacle_listener]: TF lookup waiting: "base_link" passed to lookupTransform argument target_frame does not exist. 
+[WARN] [1793243332.383533568] [tf_obstacle_listener]: TF lookup waiting: "base_link" passed to lookupTransform argument target_frame does not exist. 
+exit code: 0
+$ python3 Essential_ROS/Week_09_TF2_Coordinate_Transforms/src/tf_obstacle_listener.py   # then: kill -INT <pid> after 3 s
+[INFO] [1793243333.008503864] [tf_obstacle_listener]: Listening for transforms and converting obstacle poses...
+[WARN] [1793243333.495408679] [tf_obstacle_listener]: TF lookup waiting: "base_link" passed to lookupTransform argument target_frame does not exist. 
+[WARN] [1793243333.995386437] [tf_obstacle_listener]: TF lookup waiting: "base_link" passed to lookupTransform argument target_frame does not exist. 
+[WARN] [1793243334.495508284] [tf_obstacle_listener]: TF lookup waiting: "base_link" passed to lookupTransform argument target_frame does not exist. 
+[WARN] [1793243334.995357257] [tf_obstacle_listener]: TF lookup waiting: "base_link" passed to lookupTransform argument target_frame does not exist. 
+[WARN] [1793243335.495523045] [tf_obstacle_listener]: TF lookup waiting: "base_link" passed to lookupTransform argument target_frame does not exist. 
+exit code: 0

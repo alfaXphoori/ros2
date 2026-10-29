@@ -1,4 +1,9 @@
 # 📚 คู่มือการสอนฉบับสมบูรณ์: Lecture & Lab Guide (16 สัปดาห์)
+
+> ℹ️ เอกสารนี้เป็น **ภาพรวมย่อ** ของทั้ง 16 สัปดาห์ของ Advanced track เนื้อหาฉบับละเอียด คำสั่งที่ทดสอบแล้ว และ **ผลการรันจริง** อยู่ใน
+> `Readme.md` / `Lab_Exercises.md` ของแต่ละโฟลเดอร์ โมดูล `0N_*` (ดูตารางใน [`../README.md`](../README.md)) หากข้อความตรงไหน
+> ขัดกัน ให้ยึดไฟล์ของสัปดาห์นั้นเป็นหลัก คำสั่ง `ros2 run/launch amr_adv0N ...` ต้อง `make build` ก่อน
+
 ## วิชา: AMR-201 Advanced ROS 2 & Industrial Fleet Robotics
 
 คู่มือนี้ประกอบด้วยเนื้อหาการบรรยายเชิงวิศวกรรมขั้นสูง (Advanced Lecture Notes) และขั้นตอนการปฏิบัติการแล็บระดับอุตสาหกรรม (Industrial Lab Guides) ครบทั้ง 16 สัปดาห์ สำหรับผู้สอนและผู้เรียน
@@ -111,10 +116,10 @@
    - การแปลง Bounding Box เป็นพิกัด 3D เชิงเรขาคณิตโดยใช้ระยะทางจาก Depth Image
 
 #### 🛠️ 2. คู่มือปฏิบัติการ (Hands-on Lab)
-- **ไฟล์โค้ด:** [`Advanced_ROS/02_Vision_AI_Perception/src/cv_bridge_yolo_node.py`](../02_Vision_AI_Perception/src/cv_bridge_yolo_node.py)
+- **ไฟล์โค้ด:** [`Advanced_ROS/02_Vision_AI_Perception/src/object_detector_node.py`](../02_Vision_AI_Perception/src/object_detector_node.py)
 - **ขั้นตอนการทดลอง:**
   ```bash
-  ./docker/run_lab.sh python3 Advanced_ROS/02_Vision_AI_Perception/src/cv_bridge_yolo_node.py
+  ./docker/run_lab.sh ros2 run amr_adv02 object_detector
   ```
 - ตรวจสอบผลการตรวจจับวัตถุใน Topic:
   ```bash
@@ -136,9 +141,9 @@
 - **ไฟล์โค้ด:** [`Advanced_ROS/02_Vision_AI_Perception/src/apriltag_dock_tracker.py`](../02_Vision_AI_Perception/src/apriltag_dock_tracker.py)
 - **ขั้นตอนการทดลอง:**
   ```bash
-  ./docker/run_lab.sh python3 Advanced_ROS/02_Vision_AI_Perception/src/apriltag_dock_tracker.py
+  ./docker/run_lab.sh ros2 launch amr_adv02 vision_pipeline.launch.py
   ```
-- สังเกตพิกัดเป้าหมาย 3 มิติที่ส่งออกมาทาง `/docking/target_pose`
+- สังเกตพิกัดเป้าหมาย 3 มิติที่ส่งออกมาทาง `detected_dock_pose` (topic external detection ของ Nav2 docking server)
 
 ---
 
@@ -221,7 +226,7 @@
 - **ไฟล์โค้ด:** [`Advanced_ROS/04_Multi_Robot_Fleet_OpenRMF/launch/multi_robot_fleet.launch.py`](../04_Multi_Robot_Fleet_OpenRMF/launch/multi_robot_fleet.launch.py)
 - **ขั้นตอนการทดลอง:**
   ```bash
-  ./docker/run_lab.sh ros2 launch Advanced_ROS/04_Multi_Robot_Fleet_OpenRMF/launch/multi_robot_fleet.launch.py
+  ./docker/run_lab.sh ros2 launch amr_adv04 multi_robot_fleet.launch.py
   ```
 - ตรวจสอบว่ามี Topic ของหุ่นยนต์ทั้ง 2 ตัวแยกกันอย่างสมบูรณ์:
   ```bash
@@ -234,7 +239,7 @@
 
 #### 📖 1. เนื้อหาบรรยายเชิงลึก (Lecture Notes)
 1. **สถาปัตยกรรม Open-RMF (Robotics Middleware Framework):**
-   - **RMF Traffic Schedule:** ฐานข้อมูลแบบกระจายศูนย์เก็บเส้นทางและช่วงเวลา ($X, Y, t$) ของหุ่นยนต์ทุกตัว
+   - **RMF Traffic Schedule:** โหนดกลางตัวเดียว (`rmf_traffic_schedule`) เก็บเส้นทางและช่วงเวลา ($X, Y, t$) ของหุ่นยนต์ทุกตัว โดย fleet adapter แต่ละตัวถือสำเนา (schedule mirror) ไว้ตรวจความขัดแย้งในเครื่องตัวเอง — ไม่ใช่ฐานข้อมูลแบบกระจายศูนย์
    - **Traffic Deconfliction:** ตรวจจับเส้นทางขัดแย้งล่วงหน้า และสั่งให้หุ่นยนต์ตัวหนึ่งหยุดรอที่ Waypoint ก่อนทางแยก
    - **Infrastructure Interfaces:** สื่อสารกับระบบลิฟต์และประตูปิด-เปิดอัตโนมัติ
 
@@ -259,7 +264,7 @@
 - **ขั้นตอนการทดลอง:**
   1. เปิดโหนด Lifecycle:
      ```bash
-     ./docker/run_lab.sh python3 Advanced_ROS/05_Production_CI_CD_Security/src/lifecycle_laser_sensor.py
+     ./docker/run_lab.sh ros2 run amr_adv05 lifecycle_laser_sensor
      ```
   2. สั่งเปลี่ยนสถานะของโหนดผ่าน CLI:
      ```bash
@@ -281,7 +286,7 @@
    - การใช้ `launch_testing` รันหุ่นยนต์ในคอนเทนเนอร์แบบไร้หน้าจอ (Headless) เพื่อทดสอบการประกอบโหนดก่อน Deploy ขึ้นหุ่นยนต์จริง
 
 #### 🛠️ 2. คู่มือปฏิบัติการ (Hands-on Lab)
-- **ไฟล์ชุดทดสอบ:** [`Advanced_ROS/05_Production_CI_CD_Security/tests/test_amr_launch.py`](../05_Production_CI_CD_Security/tests/test_amr_launch.py)
+- **ไฟล์ชุดทดสอบ:** [`Advanced_ROS/05_Production_CI_CD_Security/tests/test_amr_launch.py`](../05_Production_CI_CD_Security/test/test_lifecycle_launch.py)
 - **การทดลอง:** รันชุดทดสอบความสมบูรณ์ของระบบผ่าน `pytest`:
   ```bash
   pytest-3 Advanced_ROS/05_Production_CI_CD_Security/tests/test_amr_launch.py
@@ -293,9 +298,10 @@
 
 #### 🏆 เกณฑ์การสอบโครงงานบูรณาการระดับอุตสาหกรรม (Final Capstone Evaluation)
 - **ไฟล์ระบบครบวงจร:** [`Advanced_ROS/06_Capstone_Project/launch/full_warehouse_system.launch.py`](../06_Capstone_Project/launch/full_warehouse_system.launch.py)
-- **เกณฑ์การประเมิน 5 มิติ:** ดูรายละเอียดใน [`rubrics.md`](../06_Capstone_Project/rubrics.md)
-  1. สถาปัตยกรรมระบบและความถูกต้องตามมาตรฐานวิศวกรรม (20%)
-  2. การควบคุมฮาร์ดแวร์จริงและการจัดการความปลอดภัยแบบ Lifecycle (20%)
-  3. ประสิทธิภาพของการนำทางอัตโนมัติและการหลบหลีกสิ่งกีดขวาง (25%)
-  4. ความแม่นยำของระบบเข้าแท่นชาร์จอัตโนมัติและการตรวจจับ Visual Marker (20%)
-  5. คุณภาพซอฟต์แวร์, การรักษาความปลอดภัย SROS 2 และชุดทดสอบอัตโนมัติ (15%)
+- **รัน:** `ros2 launch amr_adv06 full_warehouse_system.launch.py headless:=true` แล้ว `ros2 run amr_adv06 capstone_mission --ros-args -p use_sim_time:=true` (ตาราง KPI เทียบ Ground Truth, exit code 0 เมื่อผ่านทุกขั้น)
+- **เกณฑ์การประเมิน 5 มิติ (100 คะแนน = Capstone 35% ของรายวิชา; Oral Defense แยกอีก 10%):** ดูรายละเอียดใน [`rubrics.md`](../06_Capstone_Project/rubrics.md) และ [`kpi_targets.yaml`](../06_Capstone_Project/config/kpi_targets.yaml)
+  1. สถาปัตยกรรมระบบและความถูกต้องตามมาตรฐานวิศวกรรม (20 คะแนน)
+  2. การควบคุมฮาร์ดแวร์จริงและการจัดการความปลอดภัยแบบ Lifecycle (20 คะแนน)
+  3. ประสิทธิภาพของการนำทางอัตโนมัติและการหลบหลีกสิ่งกีดขวาง (25 คะแนน)
+  4. ความแม่นยำของระบบเข้าแท่นชาร์จอัตโนมัติและการตรวจจับ Visual Marker (20 คะแนน)
+  5. คุณภาพซอฟต์แวร์, การรักษาความปลอดภัย SROS 2 และชุดทดสอบอัตโนมัติ (15 คะแนน)

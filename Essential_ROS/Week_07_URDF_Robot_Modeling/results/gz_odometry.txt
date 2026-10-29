@@ -1,0 +1,11 @@
+# BEFORE (git HEAD URDF: cylinder wheel collision, casters with default friction mu=1)
+$ python3 Essential_ROS/Week_07_URDF_Robot_Modeling/test/gz_odom_probe.py before.urdf
+rotate_in_place  odom: dx=+0.000 dy=+0.000 dyaw= +165.8 deg | truth: dx=+0.000 dy=-0.000 dyaw= +142.1 deg
+arc              odom: dx=+0.467 dy=+0.678 dyaw= +110.8 deg | truth: dx=+0.689 dy=+0.380 dyaw=  +37.7 deg
+straight         odom: dx=+1.457 dy=+0.000 dyaw=   +0.0 deg | truth: dx=+1.457 dy=+0.000 dyaw=   +0.0 deg
+
+# AFTER (sphere wheel collision, wheel mu=1 kp=1e6 kd=100, frictionless casters)
+$ python3 Essential_ROS/Week_07_URDF_Robot_Modeling/test/gz_odom_probe.py
+rotate_in_place  odom: dx=+0.000 dy=+0.000 dyaw= +169.7 deg | truth: dx=+0.000 dy=+0.000 dyaw= +169.7 deg
+arc              odom: dx=+0.458 dy=+0.700 dyaw= +113.6 deg | truth: dx=+0.458 dy=+0.700 dyaw= +113.6 deg
+straight         odom: dx=+1.497 dy=-0.000 dyaw=   -0.0 deg | truth: dx=+1.497 dy=+0.000 dyaw=   +0.0 deg

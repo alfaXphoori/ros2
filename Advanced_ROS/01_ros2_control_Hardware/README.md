@@ -23,7 +23,7 @@
 ```mermaid
 flowchart TD
     subgraph ROS2_User_Space ["High-Level ROS 2 Ecosystem"]
-        Nav2["Nav2 Stack / Teleop"] -->|"/cmd_vel (Twist)"| DDC["diff_drive_controller"]
+        Nav2["Nav2 Stack / Teleop"] -->|"/diff_drive_controller/cmd_vel (TwistStamped)"| DDC["diff_drive_controller"]
         JSB["joint_state_broadcaster"] -->|"/joint_states"| RSP["robot_state_publisher"]
         RSP --> TF["TF2 (/tf)"]
     end
@@ -35,7 +35,7 @@ flowchart TD
     end
 
     subgraph Hardware_Interface ["C++ Hardware Interface Plugin (SystemInterface)"]
-        HI["DiffDriveHardwareSystem"]
+        HI["DiffDriveHardwareSystem / mock_components/GenericSystem / gz_ros2_control/GazeboSimSystem"]
         HI -->|"read(position, velocity)"| StateBuf["State Buffers"]
         CmdBuf["Command Buffers"] -->|"write(velocity)"| HI
     end
@@ -48,6 +48,43 @@ flowchart TD
     JSB <--> RM
     RM <--> HI
 ```
+
+---
+
+> [!IMPORTANT]
+> **ROS 2 Jazzy:** `diff_drive_controller` (ros2_controllers 4.x) รับคำสั่งเป็น **`geometry_msgs/msg/TwistStamped`** ที่หัวข้อ **`/diff_drive_controller/cmd_vel`** เท่านั้น (พารามิเตอร์ `use_stamped_vel` ถูกถอดออกแล้ว) การส่ง `Twist` ไปที่ `/cmd_vel` แบบเดิมจะ **ไม่มีใครรับ** — หาก Nav2 หรือ teleop ส่ง `/cmd_vel` ต้อง remap และเปิดโหมด stamped เช่น
+> `ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args -p stamped:=true -r cmd_vel:=/diff_drive_controller/cmd_vel`
+
+---
+
+## 🧩 แพ็กเกจ `amr_adv01` ในโฟลเดอร์นี้ (รันได้จริงแบบ Headless)
+
+โฟลเดอร์นี้เป็นแพ็กเกจ ROS 2 แบบ `ament_python` ชื่อ **`amr_adv01`** (ไม่ต้องมีหุ่นยนต์จริงหรือ GPU):
+
+| ไฟล์ | หน้าที่ |
+| :--- | :--- |
+| [`urdf/diff_drive_ros2_control.xacro`](urdf/diff_drive_ros2_control.xacro) | Robot description ครบชุด (links/joints, ล้อ r = 0.08 m, L = 0.24 m) + `<ros2_control>` เลือกฮาร์ดแวร์ด้วย arg `use_mock_hardware` |
+| [`config/diff_drive_controller.yaml`](config/diff_drive_controller.yaml) | `controller_manager` (50 Hz), `diff_drive_controller`, `joint_state_broadcaster` |
+| [`launch/mock_diff_drive.launch.py`](launch/mock_diff_drive.launch.py) | `ros2_control_node` + **`mock_components/GenericSystem`** (ไม่มี simulator) + spawners |
+| [`launch/gz_diff_drive.launch.py`](launch/gz_diff_drive.launch.py) | หุ่นตัวเดียวกันใน Gazebo Sim (`gz sim -s -r --headless-rendering`) ผ่าน **`gz_ros2_control/GazeboSimSystem`** (`gui:=true` เพื่อเปิดหน้าต่าง) |
+| [`src/kinematics.py`](src/kinematics.py) | สมการ IK/FK ของ Differential Drive (`ros2 run amr_adv01 diff_drive_ik 0.5 1.0`) |
+| [`src/twist_ik_check.py`](src/twist_ik_check.py) | ส่ง `TwistStamped` แล้วเทียบความเร็วล้อจาก `/joint_states` กับสมการ IK และอ่าน odometry |
+| [`test/`](test/) | unit tests (kinematics, xacro/YAML consistency) + `launch_testing` ทั้งแบบ mock และ Gazebo |
+
+```bash
+# build (ภายใน ./docker/run_lab.sh) แล้ว source workspace
+colcon build --base-paths Essential_ROS Advanced_ROS --packages-up-to amr_adv01
+source install/setup.bash
+ros2 launch amr_adv01 mock_diff_drive.launch.py          # Terminal 1
+ros2 run amr_adv01 twist_ik_check                        # Terminal 2
+colcon test --base-paths Advanced_ROS --packages-select amr_adv01 && colcon test-result --verbose
+```
+
+> [!NOTE]
+> **`mock_components/GenericSystem`** คือ Hardware Interface สำเร็จรูปของ `ros2_control` ที่ "สะท้อน" คำสั่งกลับเป็นสถานะ (command → state) เมื่อตั้ง `calculate_dynamics: true` จะอินทิเกรตความเร็วเป็นตำแหน่งล้อให้ด้วย จึงทดสอบ controller, odometry และ TF ได้ครบทั้งที่ไม่มีมอเตอร์จริง ส่วนหุ่นยนต์จริงจะเปลี่ยน `<plugin>` เป็นคลาส `SystemInterface` ที่เขียนเองด้วย C++ (อ่าน encoder/สั่งมอเตอร์ใน `read()`/`write()`) โดยไม่ต้องแก้ YAML หรือ controller แม้แต่บรรทัดเดียว
+
+> [!WARNING]
+> **ความสอดคล้องของลิมิต:** ล้อถูกจำกัดที่ ±10 rad/s (= 0.8 m/s ที่ขอบล้อ r = 0.08 m) ดังนั้นลิมิตของตัวหุ่นต้องไม่ทำให้ล้อเกินค่านี้ — กรณีแย่สุด $(v_{\max} + \omega_{\max} L/2)/r = (0.5 + 2.0 \times 0.12)/0.08 = 9.25$ rad/s ค่าเดิม `max_velocity: 1.0` m/s ต้องการ 12.5 rad/s แค่วิ่งตรง ซึ่งเกินลิมิตของมอเตอร์
 
 ---
 
@@ -73,7 +110,7 @@ sequenceDiagram
         HI-->>CM: อัปเดตตำแหน่ง (Position) และความเร็ว (Velocity) ใน State Buffer
         
         CM->>DDC: update(time, period)
-        DDC->>CM: คำนวณความเร็วล้อซ้าย-ขวาจาก /cmd_vel และเขียนใส่ Command Buffer
+        DDC->>CM: คำนวณความเร็วล้อซ้าย-ขวาจาก ~/cmd_vel (TwistStamped) และเขียนใส่ Command Buffer
         
         CM->>HI: write(time, period)
         HI->>MCU: ส่งคำสั่ง Target Velocity (rad/s) ไปยัง Motor Drivers
@@ -139,6 +176,7 @@ flowchart LR
 ```
 
 ### คำสั่งรัน micro-ROS Agent บนคอมพิวเตอร์ออนบอร์ด:
+> แพ็กเกจ `micro_ros_agent` ไม่ได้ติดตั้งใน image `ros:lab-runner` (ต้อง build จาก [micro-ROS](https://micro.ros.org/) บนเครื่องที่ต่อกับบอร์ดจริง) คำสั่งด้านล่างจึงเป็นตัวอย่างสำหรับฮาร์ดแวร์จริง
 ```bash
 # รัน Agent ผ่าน Serial พอร์ต /dev/ttyUSB0 ความเร็วสูง
 ros2 run micro_ros_agent micro_ros_agent serial --dev /dev/ttyUSB0 -b 921600
@@ -183,4 +221,53 @@ ros2 control switch_controllers --activate diff_drive_controller --deactivate ma
    - <details><summary><b>เฉลย</b></summary>เพื่อความปลอดภัยระดับหน่วยความจำ (Memory Thread-Safety) และการันตี Deterministic Execution Loop ที่ไม่มีปัญหา Data Race หรือ Deadlock ในการเข้าถึงพอร์ตฮาร์ดแวร์ชิ้นเดียวกันในระดับเรียลไทม์</details>
 
 2. **คำถาม:** หากหุ่นยนต์ AMR วิ่งด้วยความเร็ว $v = 0.5 \text{ m/s}$ และต้องการเลี้ยวด้วยความเร็วเชิงมุม $\omega = 1.0 \text{ rad/s}$ โดยมีรัศมีล้อ $r = 0.08 \text{ m}$ และระยะห่างล้อ $L = 0.24 \text{ m}$ จงคำนวณหาความเร็วเชิงมุมของล้อขวา ($\omega_R$) ในหน่วย $\text{rad/s}$
-   - <details><summary><b>เฉลย</b></summary>จากสูตร $\omega_R = \frac{v + \frac{\omega L}{2}}{r} = \frac{0.5 + \frac{1.0 \times 0.24}{2}}{0.08} = \frac{0.5 + 0.12}{0.08} = \frac{0.62}{0.08} = \mathbf{7.75 \text{ rad/s}}$</details>
+   - <details><summary><b>เฉลย</b></summary>จากสูตร $\omega_R = \frac{v + \frac{\omega L}{2}}{r} = \frac{0.5 + \frac{1.0 \times 0.24}{2}}{0.08} = \frac{0.5 + 0.12}{0.08} = \frac{0.62}{0.08} = \mathbf{7.75 \text{ rad/s}}$ (และ $\omega_L = 4.75$ rad/s) — ค่า $r$ และ $L$ ตรงกับ xacro/YAML ของแพ็กเกจ และตรงกับที่ `/joint_states` วัดได้จริงในหัวข้อ "ผลการรันจริง" ด้านล่าง</details>
+
+---
+
+## 📟 ผลการรันจริง (Real Run Output)
+บันทึกจากการรันจริงใน ros:lab-runner (ROS 2 Jazzy, Gazebo Sim 8.15.0) บน Linux 7.0 เมื่อ 2026-10-29
+
+**1) Mock hardware** — ไฟล์เต็ม: [`results/mock_ros2_control.txt`](results/mock_ros2_control.txt)
+```console
+$ ros2 control list_controllers
+diff_drive_controller   diff_drive_controller/DiffDriveController      active
+joint_state_broadcaster joint_state_broadcaster/JointStateBroadcaster  active
+
+$ ros2 topic info /diff_drive_controller/cmd_vel
+Type: geometry_msgs/msg/TwistStamped
+Publisher count: 0
+Subscription count: 1
+
+$ ros2 run amr_adv01 twist_ik_check --ros-args -p v:=0.5 -p omega:=1.0
+IK  expected : left =   4.750 rad/s   right =   7.750 rad/s
+/joint_states: left =   4.750 rad/s   right =   7.750 rad/s
+odom twist   : v =  0.500 m/s   omega =  1.000 rad/s
+odom pose    : x =  0.147 m  y =  0.966 m  yaw =  159.86 deg
+RESULT: PASS - wheel speeds match inverse kinematics
+
+$ ros2 topic info /cmd_vel
+Unknown topic '/cmd_vel'
+```
+
+**2) Gazebo Sim แบบ headless + `gz_ros2_control`** — ไฟล์เต็ม: [`results/gz_ros2_control.txt`](results/gz_ros2_control.txt)
+```console
+[gz-1] [INFO] [1793245944.200927443] [gz_ros_control]: Loading controller_manager
+[spawner-6] [INFO] [1793245948.168193460] [spawner_diff_drive_controller]: Configured and activated diff_drive_controller
+$ ros2 run amr_adv01 twist_ik_check --ros-args -p use_sim_time:=true -p v:=0.5 -p omega:=1.0
+IK  expected : left =   4.750 rad/s   right =   7.750 rad/s
+/joint_states: left =   4.750 rad/s   right =   7.750 rad/s
+odom twist   : v =  0.500 m/s   omega =  1.001 rad/s
+RESULT: PASS - wheel speeds match inverse kinematics
+```
+
+**3) Automated tests** — ไฟล์เต็ม: [`results/colcon_test.txt`](results/colcon_test.txt)
+```console
+$ colcon test --base-paths Essential_ROS Advanced_ROS --packages-select amr_adv01 --pytest-args -v --event-handlers console_direct+
+test/test_gz_control_launch.py::test_gz_control_launch PASSED            [ 50%]
+test/test_mock_control_launch.py::test_mock_control_launch PASSED        [100%]
+============================= 20 passed in 20.59s ==============================
+
+$ colcon test-result --verbose
+Summary: 20 tests, 0 errors, 0 failures, 0 skipped
+```

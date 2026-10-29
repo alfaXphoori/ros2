@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>amr_week06</name>
+  <version>1.0.0</version>
+  <description>Week 06: REP 103/105 conventions and differential-drive kinematics. Pure FK/IK and
+    odometry integrators (Euler, midpoint, exact arc) plus a node publishing odometry and the
+    odom -> base_footprint transform.</description>
+  <maintainer email="phoori.ch@ksu.ac.th">Phoori Chantima</maintainer>
+  <license>Apache-2.0</license>
+
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>nav_msgs</exec_depend>
+  <exec_depend>tf2_ros_py</exec_depend>
+
+  <test_depend>python3-pytest</test_depend>
+  <test_depend>ament_index_python</test_depend>
+  <test_depend>launch</test_depend>
+  <test_depend>launch_ros</test_depend>
+  <test_depend>launch_testing</test_depend>
+  <test_depend>launch_testing_ros</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

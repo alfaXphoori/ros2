@@ -20,7 +20,7 @@
 | :---: | :--- | :--- |
 | **00:00 - 00:15** | สุ่มจับฉลากโจทย์พิกัดและตรวจสอบความพร้อมสภาพแวดล้อมระบบ | คณะกรรมการ / นักศึกษา |
 | **00:15 - 00:45** | ปฏิบัติการเปิดระบบ One-Click Bringup และส่ง Initial Pose | นักศึกษา |
-| **00:45 - 01:45** | การรันภารกิจอัตโนมัติ 5 สถานี และการทดสอบตัดหน้ารถ (Obstacle Challenge) | นักศึกษา / กรรมการแทรกแซง |
+| **00:45 - 01:45** | การรันภารกิจขนส่งอัตโนมัติ 3 สถานี และการทดสอบตัดหน้ารถ (Obstacle Challenge) | นักศึกษา / กรรมการแทรกแซง |
 | **01:45 - 02:45** | การสอบสัมภาษณ์ปากเปล่าเชิงสถาปัตยกรรม (Oral Engineering Defense) | กรรมการซักถามทีละคน |
 | **02:45 - 03:00** | รวบรวมคะแนนและประกาศผลการประเมิน Capstone | คณะกรรมการ |
 
@@ -31,18 +31,16 @@
 ```mermaid
 flowchart TD
     subgraph LaunchSystem ["One-Click Bringup: final_amr_system.launch.py"]
-        GazeboBringup["Week 11: Gazebo World + DiffDrive + LiDAR"]
-        URDFBringup["Week 07: Robot State Publisher (TF Tree)"]
-        Nav2Bringup["Week 14: Nav2 Stack (AMCL + Costmaps + Planners)"]
+        GazeboBringup["Week 10/11: Gazebo World + DiffDrive + LiDAR + ros_gz_bridge"]
+        URDFBringup["Week 07: Robot State Publisher (TF Tree, use_sim_time)"]
+        Nav2Bringup["Week 14: Nav2 Stack (map_server + AMCL + Costmaps + Planner + DWB)<br/>Week 12 map, Week 15 behavior tree"]
     end
 
     subgraph MissionControl ["Mission Layer: final_mission_executor.py"]
         NavAPI["nav2_simple_commander (BasicNavigator)"]
-        WP1["Station 1: Receiving Dock (2.0, 2.0)"]
-        WP2["Station 2: Storage Aisle B (2.0, -2.0)"]
-        WP3["Station 3: Quality Inspection (-2.0, -2.0)"]
-        WP4["Station 4: Shipping Dock (-2.0, 2.0)"]
-        WP5["Station 5: Charging Base (0.0, 0.0)"]
+        WP1["Stage 1: Cargo Pickup Bay (1.5, 1.0, 90°)"]
+        WP2["Stage 2: Dropoff Station (-1.5, -1.0, 180°)"]
+        WP3["Stage 3: Home Charging Base (0.0, 0.0, 0°)"]
     end
 
     LaunchSystem --> MissionControl
@@ -60,50 +58,72 @@ flowchart TD
 
 ## 🛠️ การวิเคราะห์โค้ดระบบปลายภาค (Code Walkthrough)
 
-### 1. [`final_amr_system.launch.py`](file:///mnt/sda/ros/Essential_ROS/Week_16_Final_Demonstration/launch/final_amr_system.launch.py)
-ไฟล์ Launch รวมที่ทำหน้าที่เปิดระบบทั้งลำของ AMR:
-- **Gazebo Bringup ([L23-L25](file:///mnt/sda/ros/Essential_ROS/Week_16_Final_Demonstration/launch/final_amr_system.launch.py#L23-L25)):**
-  รวมการจำลองโลกโกดังสินค้า ฟิสิกส์ 1000 Hz, การ Spawn หุ่นยนต์ AMR และเปิดสะพาน `ros_gz_bridge` เพื่อเชื่อมโยง `/cmd_vel`, `/scan`, `/odom`, `/clock`
-- **Robot State Publisher ([L28-L31](file:///mnt/sda/ros/Essential_ROS/Week_16_Final_Demonstration/launch/final_amr_system.launch.py#L28-L31)):**
-  กระจายทรานส์ฟอร์ม TF ของโครงสร้างหุ่นยนต์ทั้งหมดจากไฟล์ URDF เข้าสู่ `/tf` และ `/tf_static`
-- **Nav2 Stack Bringup ([L34-L36](file:///mnt/sda/ros/Essential_ROS/Week_16_Final_Demonstration/launch/final_amr_system.launch.py#L34-L36)):**
-  เปิด Lifecycle Nodes ทั้งหมด: Map Server, AMCL, Global Planner, Local Controller, Costmap 2D และ Behavior Tree Navigator
+### 1. [`launch/final_amr_system.launch.py`](launch/final_amr_system.launch.py)
+ไฟล์ Launch รวมที่เปิดระบบทั้งลำของ AMR ด้วยคำสั่งเดียว (ทุกส่วนอ้างถึงแพ็กเกจของสัปดาห์ก่อนผ่าน `get_package_share_directory`):
+```bash
+ros2 launch amr_week16 final_amr_system.launch.py                    # Gazebo GUI
+ros2 launch amr_week16 final_amr_system.launch.py headless:=true     # Docker / ไม่มีจอ
+ros2 launch amr_week16 final_amr_system.launch.py rviz:=true         # + RViz2 (use_sim_time:=true)
+```
+- **Simulation (`amr_week11/gazebo_world.launch.py`):** โลกโกดัง (`amr_week10`), spawn หุ่นยนต์, `ros_gz_bridge` (`/cmd_vel`, `/scan`, `/odom`, `/tf`, `/joint_states`, `/clock`) และ `robot_state_publisher` ของ `amr_week07` ด้วย `use_sim_time:=true use_jsp:=false` — เวอร์ชันเดิม include `display_urdf.launch.py` ซ้ำโดยไม่มี `use_sim_time` (TF ใช้นาฬิกาจริงขัดกับเวลาจำลอง) และเปิด RViz/joint_state_publisher ซ้อนกับข้อมูลจาก Gazebo
+- **Nav2 (`amr_week14/nav2_bringup.launch.py`):** map_server (แผนที่จริงของสัปดาห์ที่ 12), AMCL, controller/planner/smoother/behavior servers, velocity_smoother, collision_monitor, bt_navigator (BT ของสัปดาห์ที่ 15), waypoint_follower
+- อาร์กิวเมนต์: `headless`, `rviz`, `map`, `bt_xml`
 
 ---
 
-### 2. `final_mission_executor.py`
-สคริปต์ควบคุมภารกิจอัตโนมัติระดับสูง:
-- เรียกใช้งาน `nav2_simple_commander.robot_navigator.BasicNavigator`
-- กำหนด Initial Pose เริ่มต้น ณ จุด $(0.0, 0.0)$ และรอจนกระทั่งระบบ Nav2 เปลี่ยนสถานะเป็น `Active` สมบูรณ์
-- สั่งเคลื่อนที่วนรอบสถานีคลังสินค้า พร้อมจำลองการหยุดนิ่งขนถ่ายสินค้า (Dwell Time):
-  1. **Station 1 (Receiving Dock):** พิกัด $(2.0, 2.0)$ Dwell 3s
-  2. **Station 2 (Storage Aisle B):** พิกัด $(2.0, -2.0)$ Dwell 3s
-  3. **Station 3 (Quality Inspection):** พิกัด $(-2.0, -2.0)$ Dwell 3s
-  4. **Station 4 (Shipping Dock):** พิกัด $(-2.0, 2.0)$ Dwell 3s
-  5. **Station 5 (Charging Base):** พิกัด $(0.0, 0.0)$ Dwell 2s เพื่อจอดเทียบแท่นชาร์จ
+### 2. [`src/final_mission_executor.py`](src/final_mission_executor.py)
+`ros2 run amr_week16 final_mission_executor --ros-args -p use_sim_time:=true`
+- ใช้ `nav2_simple_commander.robot_navigator.BasicNavigator` (ชื่อโหนด `final_mission_executor`)
+- **Stage 0:** ตั้ง Initial Pose ที่ $(0.0, 0.0, 0^\circ)$ แล้ว `waitUntilNav2Active(localizer='amcl')`
+- **Stage 1–3** (ทุกจุดอยู่ในพื้นที่ว่างของแผนที่จริง ห่างสิ่งกีดขวาง > 0.55 m — ตรวจโดย `test/test_mission_unit.py`):
+  1. **Cargo Pickup Bay:** $(1.5, 1.0, 90^\circ)$ Dwell 3 s
+  2. **Dropoff Station:** $(-1.5, -1.0, 180^\circ)$ Dwell 2 s
+  3. **Home Charging Base:** $(0.0, 0.0, 0^\circ)$ Dwell 1 s
+- ทุก stage log ผล `TaskResult`, เวลาที่ใช้ (sim time) และระยะคลาดเคลื่อนสุดท้ายจาก feedback ของ Nav2; ถ้า stage ใดไม่ `SUCCEEDED` จะหยุดภารกิจ
+- สรุปท้าย: `MISSION SUMMARY: n/3 stages SUCCEEDED (xx%), total ... s (sim time) -> PASS|FAIL` และ **exit code 0 เฉพาะ PASS** (เวอร์ชันเดิมใช้ `print()` และไม่เคยพิมพ์ข้อความ "SUCCEEDED: 100% PASS" ตามที่เอกสารเดิมอ้าง)
+- เครื่องมือเสริม: `ros2 run amr_week16 record_path path.csv` (บันทึก TF `map → base_footprint` 5 Hz) และ `ros2 run amr_week16 plot_path path.csv out.png`
+
+### 3. การทดสอบอัตโนมัติ
+- [`test/test_mission_unit.py`](test/test_mission_unit.py): ตำแหน่งสถานีเทียบแผนที่จริง, ตรรกะ PASS/FAIL, การวาดเส้นทาง
+- [`test/test_final_mission.py`](test/test_final_mission.py): เปิด `final_amr_system.launch.py headless:=true` แล้วรัน `final_mission_executor` จริง ต้องได้ `MISSION SUMMARY: 3/3 stages SUCCEEDED (100%)`, exit code 0 และตำแหน่งจริงใน Gazebo กลับมาที่ Home (< 0.45 m)
 
 ---
 
-## 📸 ภาพผลการทดสอบจริงจากระบบ (Live Execution & Terminal Capture)
-ผลลัพธ์จากการรันคำสั่งและโหนดจริงในระบบ เพื่อใช้เป็นข้อมูลอ้างอิงในการตรวจสอบความถูกต้อง:
-
-![Terminal Capture: Terminal — Week 16: Capstone Final Demonstration One-Click Bringup](images/terminal_run.png)
+## 📟 ผลการรันจริง (Real Run Output)
+บันทึกจากการรันจริงใน ros:lab-runner (ROS 2 Jazzy, Gazebo Sim 8.15.0) บน Linux 7.0 เมื่อ 2026-10-29
+(ฉบับเต็ม: [`results/final_mission_run.txt`](results/final_mission_run.txt), เส้นทางดิบ: [`results/mission_path.csv`](results/mission_path.csv))
 
 ```console
-user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 launch Essential_ROS/Week_16_Final_Demonstration/launch/final_amr_system.launch.py
-[INFO] [final_bringup]: 1. Gazebo Harmonic Warehouse World online (RTF: 1.00)
-[INFO] [final_bringup]: 2. Robot State Publisher publishing /tf and /tf_static
-[INFO] [final_bringup]: 3. ros_gz_bridge translating /cmd_vel, /scan, /odom, /clock
-[INFO] [final_bringup]: 4. Nav2 Lifecycle Manager: All 8 navigation servers ACTIVE
-user@amr-dev:~/ros$ ./docker/run_lab.sh python3 Essential_ROS/Week_16_Final_Demonstration/src/final_mission_executor.py
-[INFO] [final_mission_executor]: 🏆 Starting Capstone Autonomous Logistics Mission...
-[INFO] [final_mission_executor]: Station 1 (Pickup Bay)      -> CLEARED ✅
-[INFO] [final_mission_executor]: Dynamic Obstacle Injected  -> AVOIDED SAFELY 🛡️
-[INFO] [final_mission_executor]: Station 2 (Dropoff Station) -> CLEARED ✅
-[INFO] [final_mission_executor]: Station 3 (Charging Base)   -> DOCKED & CHARGING ⚡
-[INFO] [final_mission_executor]: 🎖️ CAPSTONE LOGISTICS MISSION SUCCEEDED: 100% PASS
-user@amr-dev:~/ros$ [ALL 16 WEEKS ESSENTIAL ROS 2 CURRICULUM VERIFIED]
+$ ros2 launch amr_week16 final_amr_system.launch.py headless:=true   # terminal 1 (log excerpt at the end)
+$ ros2 run amr_week16 final_mission_executor --ros-args -p use_sim_time:=true
+[INFO] [1793247061.753251399] [final_mission_executor]: AMR-101 final mission: initial pose (0.0, 0.0, 0 deg), waiting for Nav2
+[INFO] [1793247061.754060006] [final_mission_executor]: Publishing Initial Pose
+[INFO] [1793247063.845859152] [final_mission_executor]: Setting initial pose
+[INFO] [1793247063.846142402] [final_mission_executor]: Publishing Initial Pose
+...
+[INFO] [1793247070.074358076] [final_mission_executor]: Nav2 is ready for use!
+[INFO] [1793247070.076549884] [final_mission_executor]: Stage 0 Localization + Nav2 bringup: ACTIVE
+[INFO] [1793247070.078633782] [final_mission_executor]: Stage 1/3 -> Cargo Pickup Bay (x=1.50, y=1.00, yaw=90 deg)
+[INFO] [1793247070.080643383] [final_mission_executor]: Navigating to goal: 1.5 1.0...
+[INFO] [1793247078.156349910] [final_mission_executor]: Stage 1 Cargo Pickup Bay: SUCCEEDED in 10.1 s, final position error 0.23 m
+[INFO] [1793247081.153855467] [final_mission_executor]: Stage 2/3 -> Dropoff Station (x=-1.50, y=-1.00, yaw=180 deg)
+[INFO] [1793247081.154933043] [final_mission_executor]: Navigating to goal: -1.5 -1.0...
+[INFO] [1793247095.927730181] [final_mission_executor]: Stage 2 Dropoff Station: SUCCEEDED in 14.8 s, final position error 0.23 m
+[INFO] [1793247097.925684714] [final_mission_executor]: Stage 3/3 -> Home Charging Base (x=0.00, y=0.00, yaw=0 deg)
+[INFO] [1793247097.926695447] [final_mission_executor]: Navigating to goal: 0.0 0.0...
+[INFO] [1793247106.149652983] [final_mission_executor]: Stage 3 Home Charging Base: SUCCEEDED in 8.2 s, final position error 0.23 m
+[INFO] [1793247107.152622698] [final_mission_executor]: MISSION SUMMARY: 3/3 stages SUCCEEDED (100%), total 39.0 s (sim time) -> PASS
+(exit code 0)
+$ ros2 run amr_week11 ground_truth_pose
+diff_drive_robot ground truth: x=-0.196 y=-0.114 yaw=0.244 rad (14.0 deg)
 ```
+ผลวัด: `lifecycle_manager_localization` และ `lifecycle_manager_navigation` รายงาน `Managed nodes are active` ที่เวลา log 1793247061.7 และ 1793247067.1 ตามลำดับ (ดูท้ายไฟล์ผลลัพธ์), executor เห็น Nav2 พร้อมที่ 1793247070.1,
+ภารกิจทั้ง 3 stage `SUCCEEDED` รวม 39.0 วินาที (เวลาจำลอง รวม dwell 6 วินาที), ตำแหน่งจริงสุดท้ายใน Gazebo ห่าง Home 0.23 m
+— ระยะคลาดเคลื่อน ~0.23 m ในทุก stage มาจาก `xy_goal_tolerance: 0.25` (goal checker หยุดทันทีที่เข้าเกณฑ์) ถ้าต้องการ ≤ 0.10 m ตามเกณฑ์ "ดีเยี่ยม" ใน [Evaluation Rubric](Evaluation_Rubric.md) ต้องปรับค่านี้ (ดู Challenge 14.1)
+
+![เส้นทางของหุ่นยนต์ในภารกิจปลายภาค (รันจริง)](images/mission_path_real.png)
+
+*ภาพ: เส้นทางจริงของหุ่นยนต์ (TF `map → base_footprint` จาก AMCL, 213 จุดที่ 5 Hz) บนแผนที่ SLAM ของสัปดาห์ที่ 12 บันทึกด้วย `record_path` ระหว่างการรันข้างต้นแล้ววาดด้วย `ros2 run amr_week16 plot_path results/mission_path.csv images/mission_path_real.png`*
 
 ---
 
@@ -183,11 +203,14 @@ user@amr-dev:~/ros$ [ALL 16 WEEKS ESSENTIAL ROS 2 CURRICULUM VERIFIED]
 
 ## ⌨️ ตารางคำสั่งสำหรับวันสอบจริง
 ```bash
-# 1. รันระบบรวมทุกส่วน (Terminal 1)
-./docker/run_lab.sh ros2 launch Essential_ROS/Week_16_Final_Demonstration/launch/final_amr_system.launch.py
+# 0. build ทุกแพ็กเกจที่ใช้ (ครั้งแรกครั้งเดียว)
+./docker/run_lab.sh colcon build --base-paths Essential_ROS --packages-up-to amr_week16
 
-# 2. เริ่มต้นภารกิจนำทางอัตโนมัติ 5 สถานี (Terminal 2)
-./docker/run_lab.sh python3 Essential_ROS/Week_16_Final_Demonstration/src/final_mission_executor.py
+# 1. รันระบบรวมทุกส่วน (Terminal 1) — เพิ่ม headless:=true ถ้าไม่มีจอ, rviz:=true เพื่อเปิด RViz2
+./docker/run_lab.sh ros2 launch amr_week16 final_amr_system.launch.py
+
+# 2. เริ่มต้นภารกิจขนส่งอัตโนมัติ 3 สถานี (Terminal 2) — exit code 0 = PASS
+./docker/run_lab.sh ros2 run amr_week16 final_mission_executor --ros-args -p use_sim_time:=true
 ```
 
 ---

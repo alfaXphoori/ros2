@@ -1,4 +1,9 @@
 # 📚 คู่มือการสอนฉบับสมบูรณ์: Lecture & Lab Guide (16 สัปดาห์)
+
+> ℹ️ เอกสารนี้เป็น **ภาพรวมย่อ** ของทั้ง 16 สัปดาห์ เนื้อหาฉบับละเอียด คำสั่งที่ทดสอบแล้ว และ **ผลการรันจริง** อยู่ใน
+> `Readme.md` / `Lab_Exercises.md` ของแต่ละโฟลเดอร์ `Week_NN_*` (ดูตารางใน [`../README.md`](../README.md)) หากข้อความตรงไหน
+> ขัดกัน ให้ยึดไฟล์ของสัปดาห์นั้นเป็นหลัก คำสั่ง `ros2 run/launch amr_weekNN ...` ต้อง `make build` ก่อน
+
 ## วิชา: AMR-101 Essential ROS 2 for Autonomous Mobile Robots
 
 คู่มือนี้ประกอบด้วยเนื้อหาการบรรยายเชิงทฤษฎี (Lecture Notes) และขั้นตอนการปฏิบัติการแล็บ (Hands-on Lab Guides) อย่างละเอียดครบทั้ง 16 สัปดาห์ สำหรับผู้สอนและผู้เรียน
@@ -83,15 +88,15 @@
      Publisher และ Subscriber จะสื่อสารกันได้ก็ต่อเมื่อ **Subscriber ไม่เรียกร้องระดับบริการที่สูงกว่าที่ Publisher กำหนด** เช่น หาก Publisher เป็น `BEST_EFFORT` แต่ Subscriber ร้องขอ `RELIABLE` การเชื่อมต่อจะล้มเหลว (QoS Incompatible Warning)
 
 #### 🛠️ 2. คู่มือปฏิบัติการ (Hands-on Lab)
-- **ไฟล์โค้ด:** [`Essential_ROS/01_Core_Communication/src/sensor_qos_publisher.py`](file:///mnt/sda/ros/Essential_ROS/01_Core_Communication/src/sensor_qos_publisher.py) และ [`sensor_qos_subscriber.py`](file:///mnt/sda/ros/Essential_ROS/01_Core_Communication/src/sensor_qos_subscriber.py)
+- **ไฟล์โค้ด:** [`Essential_ROS/01_Core_Communication/src/sensor_qos_publisher.py`](../Week_02_Nodes_Topics_QoS/src/sensor_qos_publisher.py) และ [`sensor_qos_subscriber.py`](../Week_02_Nodes_Topics_QoS/src/sensor_qos_subscriber.py)
 - **ขั้นตอนการทดลอง:**
   1. สั่งรันโหนด Publisher ในโหมด QoS พิเศษ:
      ```bash
-     ./docker/run_lab.sh python3 Essential_ROS/01_Core_Communication/src/sensor_qos_publisher.py
+     ./docker/run_lab.sh ros2 run amr_week02 sensor_qos_publisher
      ```
   2. ในอีกหน้าต่างหนึ่ง รันโหนด Subscriber สังเกตว่าโหนดสามารถรับข้อความ `SYSTEM_READY` ที่ Latched ไว้ได้ทันทีแม้จะเปิดทีหลัง:
      ```bash
-     ./docker/run_lab.sh python3 Essential_ROS/01_Core_Communication/src/sensor_qos_subscriber.py
+     ./docker/run_lab.sh ros2 run amr_week02 sensor_qos_subscriber
      ```
   3. ตรวจสอบรายละเอียด QoS ของท็อปปิกด้วย CLI:
      ```bash
@@ -111,11 +116,11 @@
    - แนวทางแก้ไข: ให้ใช้ `call_async()` หรือใช้ `ReentrantCallbackGroup` ควบคู่กับ `MultiThreadedExecutor`
 
 #### 🛠️ 2. คู่มือปฏิบัติการ (Hands-on Lab)
-- **ไฟล์โค้ด:** [`Essential_ROS/01_Core_Communication/src/power_service_server.py`](file:///mnt/sda/ros/Essential_ROS/01_Core_Communication/src/power_service_server.py)
+- **ไฟล์โค้ด:** [`Essential_ROS/01_Core_Communication/src/power_service_server.py`](../Week_03_Services_Clients/src/power_service_server.py)
 - **ขั้นตอนการทดลอง:**
   1. เปิดการทำงานของ Service Server:
      ```bash
-     ./docker/run_lab.sh python3 Essential_ROS/01_Core_Communication/src/power_service_server.py
+     ./docker/run_lab.sh ros2 run amr_week03 power_service_server
      ```
   2. ตรวจสอบรายการ Service ที่พร้อมให้บริการ:
      ```bash
@@ -139,11 +144,11 @@
    หรือเมื่อทำภารกิจสำเร็จ: $\text{Executing} \rightarrow \text{Succeeded}$
 
 #### 🛠️ 2. คู่มือปฏิบัติการ (Hands-on Lab)
-- **ไฟล์โค้ด:** [`Essential_ROS/01_Core_Communication/src/navigate_action_server.py`](file:///mnt/sda/ros/Essential_ROS/01_Core_Communication/src/navigate_action_server.py)
+- **ไฟล์โค้ด:** [`Essential_ROS/01_Core_Communication/src/navigate_action_server.py`](../Week_04_Actions_Preemption/src/navigate_action_server.py)
 - **ขั้นตอนการทดลอง:**
   1. เริ่มต้น Action Server:
      ```bash
-     ./docker/run_lab.sh python3 Essential_ROS/01_Core_Communication/src/navigate_action_server.py
+     ./docker/run_lab.sh ros2 run amr_week04 navigate_action_server
      ```
   2. ส่ง Goal คำสั่งระยะทาง 8 สเต็ป พร้อมเปิดรับ Feedback แบบเรียลไทม์:
      ```bash
@@ -163,11 +168,11 @@
    - ส่งต่อค่าตัวแปรด้วย `DeclareLaunchArgument` และ `LaunchConfiguration`
 
 #### 🛠️ 2. คู่มือปฏิบัติการ (Hands-on Lab)
-- **ไฟล์โค้ด:** [`Essential_ROS/01_Core_Communication/launch/core_system.launch.py`](file:///mnt/sda/ros/Essential_ROS/01_Core_Communication/launch/core_system.launch.py)
+- **ไฟล์โค้ด:** [`Essential_ROS/01_Core_Communication/launch/core_system.launch.py`](../Week_05_Parameters_Launch/launch/core_system.launch.py)
 - **ขั้นตอนการทดลอง:**
   1. รันระบบย่อยทั้งหมดในคลิกเดียวผ่าน Launch File:
      ```bash
-     ./docker/run_lab.sh ros2 launch Essential_ROS/01_Core_Communication/launch/core_system.launch.py fleet_id:=AMR_PRO_01
+     ./docker/run_lab.sh ros2 launch amr_week05 core_system.launch.py fleet_id:=AMR_PRO_01
      ```
   2. ในอีกหน้าต่าง ทดลองเปลี่ยนค่าความเร็วของหุ่นยนต์แบบเรียลไทม์:
      ```bash
@@ -217,7 +222,7 @@
      $$I_{xx} = \frac{1}{12} m (h^2 + d^2), \quad I_{yy} = \frac{1}{12} m (w^2 + h^2), \quad I_{zz} = \frac{1}{12} m (w^2 + d^2)$$
 
 #### 🛠️ 2. คู่มือปฏิบัติการ (Hands-on Lab)
-- **ไฟล์โค้ด:** [`Essential_ROS/02_Robot_Modeling_TF2/urdf/diff_drive_robot.urdf`](file:///mnt/sda/ros/Essential_ROS/02_Robot_Modeling_TF2/urdf/diff_drive_robot.urdf)
+- **ไฟล์โค้ด:** [`Essential_ROS/02_Robot_Modeling_TF2/urdf/diff_drive_robot.urdf`](../Week_07_URDF_Robot_Modeling/urdf/diff_drive_robot.urdf)
 - **ขั้นตอนการทดลอง:**
   1. ตรวจสอบความถูกต้องของโครงสร้าง XML ด้วย `check_urdf`:
      ```bash
@@ -225,7 +230,7 @@
      ```
   2. เปิดแสดงผลโครงสร้างหุ่นยนต์บน RViz2:
      ```bash
-     ./docker/run_lab.sh ros2 launch Essential_ROS/02_Robot_Modeling_TF2/launch/display_urdf.launch.py
+     ./docker/run_lab.sh ros2 launch amr_week07 display_urdf.launch.py
      ```
 
 ---
@@ -275,7 +280,7 @@
    - ความแข็งของหน้าสัมผัส (Contact Stiffness $K_p$) และการหน่วง (Damping $K_d$)
 
 #### 🛠️ 2. คู่มือปฏิบัติการ (Hands-on Lab)
-- **ไฟล์โค้ด:** [`Essential_ROS/03_Gazebo_Simulation/worlds/warehouse.sdf`](file:///mnt/sda/ros/Essential_ROS/03_Gazebo_Simulation/worlds/warehouse.sdf)
+- **ไฟล์โค้ด:** [`Essential_ROS/03_Gazebo_Simulation/worlds/warehouse.sdf`](../Week_10_Gazebo_Sim_Harmonic/worlds/warehouse.sdf)
 - **ขั้นตอนการทดลอง:**
   1. ตรวจสอบความถูกต้องของไฟล์ World SDF:
      ```bash
@@ -303,7 +308,7 @@
 - **ขั้นตอนการทดลอง:**
   1. รัน Launch File เปิด Gazebo, Spawner และ Bridge พร้อมกัน:
      ```bash
-     ./docker/run_lab.sh ros2 launch Essential_ROS/03_Gazebo_Simulation/launch/gazebo_world.launch.py
+     ./docker/run_lab.sh ros2 launch amr_week11 gazebo_world.launch.py headless:=true
      ```
   2. ในอีกหน้าต่าง เปิดคีย์บอร์ดควบคุมหุ่นยนต์:
      ```bash
@@ -328,7 +333,7 @@
 - **ขั้นตอนการทดลอง:**
   1. เริ่มต้นระบบสร้างแผนที่แบบ Online Asynchronous SLAM:
      ```bash
-     ./docker/run_lab.sh ros2 launch Essential_ROS/04_SLAM_Mapping/launch/online_async_slam.launch.py
+     ./docker/run_lab.sh ros2 launch amr_week12 slam_mapping_sim.launch.py headless:=true explore:=true
      ```
   2. ขับหุ่นยนต์สำรวจรอบโกดังจนแผนที่เชื่อมต่อกันครบถ้วน
   3. สั่งบันทึกแผนที่ด้วย Map Saver CLI:
@@ -348,7 +353,7 @@
      $$\text{cost} = e^{-\text{cost\_scaling\_factor} \times (\text{distance} - r_{\text{inscribed}})}$$
 
 #### 🛠️ 2. คู่มือปฏิบัติการ (Hands-on Lab)
-- **ไฟล์คอนฟิก:** [`Essential_ROS/05_Nav2_Navigation/config/nav2_params.yaml`](file:///mnt/sda/ros/Essential_ROS/05_Nav2_Navigation/config/nav2_params.yaml)
+- **ไฟล์คอนฟิก:** [`Essential_ROS/05_Nav2_Navigation/config/nav2_params.yaml`](../Week_14_Path_Planning_AMCL/config/nav2_params.yaml)
 - **ขั้นตอนการทดลอง:**
   - ปรับค่า `inflation_radius` จาก 0.55 ม. เป็น 0.85 ม. และสังเกตการขยายตัวของพื้นที่สีแดง/เหลืองบน RViz2 เพื่อป้องกันไม่ให้หุ่นยนต์เข้าใกล้เสาโกดังมากเกินไป
 
@@ -367,11 +372,11 @@
 - **ขั้นตอนการทดลอง:**
   1. เปิดระบบนำทางเต็มรูปแบบ:
      ```bash
-     ./docker/run_lab.sh ros2 launch Essential_ROS/05_Nav2_Navigation/launch/nav2_bringup.launch.py
+     ./docker/run_lab.sh ros2 launch amr_week14 nav2_bringup.launch.py   # เปิด amr_week11 gazebo_world.launch.py ไว้ก่อน
      ```
   2. ระบุพิกัดเริ่มต้นของหุ่นยนต์โดยอัตโนมัติ:
      ```bash
-     ./docker/run_lab.sh python3 Essential_ROS/05_Nav2_Navigation/src/amcl_initial_pose.py
+     ./docker/run_lab.sh ros2 run amr_week14 amcl_initial_pose
      ```
   3. สั่งเป้าหมายปลายทางผ่าน RViz2 ด้วยปุ่ม **2D Goal Pose**
 
@@ -385,11 +390,11 @@
    - ฟังก์ชันสำคัญ: `goToPose()`, `followWaypoints()`, `isTaskComplete()`, `getFeedback()`
 
 #### 🛠️ 2. คู่มือปฏิบัติการ (Hands-on Lab)
-- **ไฟล์โค้ด:** [`Essential_ROS/05_Nav2_Navigation/src/waypoint_patrol.py`](file:///mnt/sda/ros/Essential_ROS/05_Nav2_Navigation/src/waypoint_patrol.py)
+- **ไฟล์โค้ด:** [`Essential_ROS/05_Nav2_Navigation/src/waypoint_patrol.py`](../Week_15_Waypoint_Patrol_BT/src/waypoint_patrol.py)
 - **ขั้นตอนการทดลอง:**
   1. ขณะที่ระบบ Nav2 กำลังทำงาน ให้สั่งรันสคริปต์ลาดตระเวน 4 จุดตรวจรอบโกดัง:
      ```bash
-     ./docker/run_lab.sh python3 Essential_ROS/05_Nav2_Navigation/src/waypoint_patrol.py
+     ./docker/run_lab.sh ros2 run amr_week15 waypoint_patrol
      ```
   2. สังเกตพฤติกรรมการเคลื่อนที่ผ่านแต่ละ Waypoint และการรายงานเปอร์เซ็นต์ความคืบหน้า
 

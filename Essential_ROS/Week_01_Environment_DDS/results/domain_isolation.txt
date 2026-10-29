@@ -1,0 +1,32 @@
+# Week 01 real run: ros:lab-runner (ROS 2 Jazzy), Linux 7.0, 2026-10-29
+# three 'terminals' started in the background of one container, stopped with SIGINT after ~11 s
+# Fleet A = domain 11, Fleet B = domain 87 (lab sheet uses 10/20; shared lab host -> 11/87)
+
+$ ROS_DOMAIN_ID=11 ros2 run demo_nodes_py talker          # terminal 1
+
+$ ROS_DOMAIN_ID=11 ros2 run demo_nodes_py listener        # terminal 2
+
+$ ROS_DOMAIN_ID=87 ros2 run demo_nodes_py listener        # terminal 3
+
+$ ROS_DOMAIN_ID=11 ros2 node list
+/listener
+/talker
+
+$ ROS_DOMAIN_ID=87 ros2 node list
+/listener
+
+--- terminal 1 (talker, domain 11):
+[INFO] [1793242111.580543446] [talker]: Publishing: "Hello World: 0"
+[INFO] [1793242112.541272574] [talker]: Publishing: "Hello World: 1"
+[INFO] [1793242113.542839141] [talker]: Publishing: "Hello World: 2"
+[INFO] [1793242114.543201655] [talker]: Publishing: "Hello World: 3"
+...
+
+--- terminal 2 (listener, domain 11):
+[INFO] [1793242111.591571080] [listener]: I heard: [Hello World: 0]
+[INFO] [1793242112.542117595] [listener]: I heard: [Hello World: 1]
+[INFO] [1793242113.545670097] [listener]: I heard: [Hello World: 2]
+[INFO] [1793242114.546463007] [listener]: I heard: [Hello World: 3]
+...
+
+--- terminal 3 (listener, domain 87): 0 messages received

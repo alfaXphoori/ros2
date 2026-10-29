@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>amr_adv03</name>
+  <version>1.0.0</version>
+  <description>Advanced module 03: headless Nav2 precision docking - opennav_docking docking_server
+    with a dock database, a kinematic fake base, the module-02 AprilTag tracker in the loop
+    (detected_dock_pose), a DockRobot/UndockRobot client that measures the true docking error, and a
+    dock-and-charge behavior tree with a validator against the installed Nav2 BT node models.</description>
+  <maintainer email="phoori.ch@ksu.ac.th">Phoori Chantima</maintainer>
+  <license>Apache-2.0</license>
+
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>nav_msgs</exec_depend>
+  <exec_depend>nav2_msgs</exec_depend>
+  <exec_depend>tf2_ros</exec_depend>
+  <exec_depend>tf2_ros_py</exec_depend>
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>ament_index_python</exec_depend>
+  <exec_depend>opennav_docking</exec_depend>
+  <exec_depend>opennav_docking_bt</exec_depend>
+  <exec_depend>nav2_lifecycle_manager</exec_depend>
+  <exec_depend>nav2_behavior_tree</exec_depend>
+  <exec_depend>amr_adv02</exec_depend>
+
+  <test_depend>python3-pytest</test_depend>
+  <test_depend>python3-yaml</test_depend>
+  <test_depend>launch_testing</test_depend>
+  <test_depend>launch_testing_ros</test_depend>
+  <test_depend>rcl_interfaces</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

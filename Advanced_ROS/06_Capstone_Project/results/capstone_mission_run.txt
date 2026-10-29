@@ -1,0 +1,84 @@
+# Real run: ros:lab-runner (ROS 2 Jazzy, Gazebo Sim 8.15.0), Linux 7.0, 2026-10-29
+# Isolation: ROS_DOMAIN_ID=16, GZ_PARTITION=agent_f, ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST
+# Lines replaced by '...' were trimmed (repetition); no values were edited.
+
+$ ros2 launch amr_adv06 full_warehouse_system.launch.py headless:=true   # terminal 1 (log excerpt at the end)
+$ ros2 run amr_adv06 capstone_mission --ros-args -p use_sim_time:=true -p path_csv:=.colcon/f/scratch/capture/capstone_path.csv   # CSV copied to results/capstone_path.csv
+[INFO] [1793252596.056305402] [capstone_mission]: Stage 0 System bringup: waiting for 11 lifecycle nodes, initial pose at Home (0.00, 0.00)
+[INFO] [1793252596.402558428] [capstone_mission]: Publishing Initial Pose
+...
+[INFO] [1793252600.429605251] [capstone_mission]: Nav2 is ready for use!
+[INFO] [1793252600.432372082] [capstone_mission]: Stage 0 System bringup: PASS in 4.4 s (sim) | 11/11 lifecycle nodes ACTIVE, ground truth x=-0.000 y=0.000
+[INFO] [1793252600.433429408] [capstone_mission]: Stage 1 -> Pick Station A (x=2.00, y=1.00, yaw=90 deg)
+[INFO] [1793252600.435714985] [capstone_mission]: Navigating to goal: 2.0 1.0...
+[INFO] [1793252610.812530028] [capstone_mission]: Stage 1 Pick Station A: PASS in 10.4 s (sim) | SUCCEEDED, true final error 0.189 m / -15.4 deg, AMCL error 0.056 m
+[INFO] [1793252612.826552358] [capstone_mission]: Stage 2 -> Drop Station B (x=-2.00, y=1.00, yaw=90 deg)
+[INFO] [1793252612.828727401] [capstone_mission]: Navigating to goal: -2.0 1.0...
+[INFO] [1793252631.059947429] [capstone_mission]: Stage 2 Drop Station B: PASS in 18.1 s (sim) | SUCCEEDED, true final error 0.192 m / +14.2 deg, AMCL error 0.089 m
+[INFO] [1793252633.069195611] [capstone_mission]: Stage 3 -> DockRobot dock_id=home_dock (true dock x=-1.00 y=-3.50 yaw=-90 deg, staging x=-1.00 y=-2.80)
+[INFO] [1793252633.069660390] [capstone_mission]: Waiting for 'DockRobot' action server
+[INFO] [1793252633.074008085] [capstone_mission]: Docking at dock ID: home_dock...
+[INFO] [1793252633.180184203] [capstone_mission]:   docking feedback: NAV_TO_STAGING_POSE (retries 0)
+[INFO] [1793252648.753586169] [capstone_mission]:   docking feedback: CONTROLLING (retries 0)
+[INFO] [1793252659.057359183] [capstone_mission]: Stage 3 Dock: PASS in 25.7 s (sim) | success=True error_code=0 (NONE) retries=0; TRUE docking error 3.8 mm (lateral -1.3 mm, longitudinal -3.6 mm), yaw +1.06 deg; robot x=-1.0013 y=-3.4964
+[INFO] [1793252659.059329965] [capstone_mission]: Stage 4 -> UndockRobot dock_type=simple_charging_dock
+[INFO] [1793252659.059718893] [capstone_mission]: Waiting for 'UndockRobot' action server
+[INFO] [1793252659.062607834] [capstone_mission]: Undocking from dock of type: simple_charging_dock...
+[INFO] [1793252667.568316778] [capstone_mission]: Stage 4 Undock: PASS in 8.4 s (sim) | SUCCEEDED, robot 0.661 m from the dock (>= 0.50 m required)
+[INFO] [1793252667.570409391] [capstone_mission]: Stage 5 -> E-stop fault injection: driving to Home, box appears 0.35 m ahead at >= 0.15 m/s
+[INFO] [1793252667.571872441] [capstone_mission]: Navigating to goal: 0.0 0.0...
+[INFO] [1793252669.667881938] [capstone_mission]:   box spawned=True at x=-0.544 y=-2.947 (face 0.35 m ahead) while v=0.223 m/s
+[INFO] [1793252671.378227447] [capstone_mission]: Canceling current task.
+[INFO] [1793252672.388487177] [capstone_mission]: Stage 5 E-stop test: PASS in 4.6 s (sim) | LiDAR saw the box at 0.190 m; scan stamp -> cmd_vel=0 88.0 ms sim (85.2 ms wall receive-to-receive); box spawn request -> cmd_vel=0 251.0 ms sim; robot stopped with 5.9 cm between bumper and box; box removed=True
+[INFO] [1793252672.389157886] [capstone_mission]: Stage 6 -> Home (x=0.00, y=0.00, yaw=0 deg)
+[INFO] [1793252672.389886289] [capstone_mission]: Navigating to goal: 0.0 0.0...
+[INFO] [1793252685.665995476] [capstone_mission]: Stage 6 Home: PASS in 13.3 s (sim) | SUCCEEDED, true final error 0.256 m / +13.3 deg, AMCL error 0.029 m
+[INFO] [1793252685.667716835] [capstone_mission]: KPI Mission stage success: 100.000 % (passing target >= 100.0 %) -> PASS
+[INFO] [1793252685.668643967] [capstone_mission]: KPI Navigation final position error (true, max): 0.256 m (passing target <= 0.35 m) -> PASS
+[INFO] [1793252685.669592190] [capstone_mission]: KPI AMCL localisation error (true, max): 0.089 m (passing target <= 0.1 m) -> PASS
+[INFO] [1793252685.669974094] [capstone_mission]: KPI Docking position error (true): 3.844 mm (passing target <= 15.0 mm) -> PASS
+[INFO] [1793252685.670673933] [capstone_mission]: KPI Docking yaw error (true): 1.058 deg (passing target <= 3.0 deg) -> PASS
+[INFO] [1793252685.671424471] [capstone_mission]: KPI E-stop processing latency (scan -> cmd_vel=0, sim time): 88.000 ms (passing target <= 150.0 ms) -> PASS
+[INFO] [1793252685.672062792] [capstone_mission]: KPI E-stop remaining bumper gap: 5.890 cm (passing target >= 2.0 cm) -> PASS
+[INFO] [1793252685.672767253] [capstone_mission]: MISSION SUMMARY: 7/7 stages PASS, 7/7 KPIs met, total 152.6 s (sim time) -> PASS
+(exit code 0)
+$ ros2 run amr_week11 ground_truth_pose
+diff_drive_robot ground truth: x=-0.063 y=-0.248 yaw=0.232 rad (13.3 deg)
+
+# --- launch log (excerpt: lifecycle managers, docking server, collision monitor, vision) ---
+[opennav_docking-20] [INFO] [1793252529.331633268] [docking_server]: 
+[opennav_docking-20] [INFO] [1793252529.331711688] [docking_server]: Creating docking_server
+[opennav_docking-20] [INFO] [1793252529.529091707] [docking_server]: Configuring docking_server
+[opennav_docking-20] [INFO] [1793252529.529133748] [docking_server]: Controller frequency set to 20.0000Hz
+[opennav_docking-20] [INFO] [1793252529.582628773] [docking_server]: Created charging dock plugin simple_charging_dock of type opennav_docking::SimpleChargingDock
+[opennav_docking-20] [INFO] [1793252529.589967609] [docking_server]: Loading docks from parameter file.
+[opennav_docking-20] [INFO] [1793252529.592119481] [docking_server]: Docking Server has 1 dock types and 1 dock instances available.
+[opennav_docking-20] [INFO] [1793252529.594566513] [docking_server]: Activating docking_server
+[opennav_docking-20] [INFO] [1793252529.603969012] [docking_server]: Creating bond (docking_server) to lifecycle manager.
+[lifecycle_manager-21] [INFO] [1793252529.710324211] [lifecycle_manager_docking]: Managed nodes are active
+[lifecycle_manager-7] [INFO] [1793252529.785758024] [lifecycle_manager_localization]: Managed nodes are active
+[create-3] [INFO] [1793252529.887701867] [ros_gz_sim]: Entity creation successful.
+[ground_truth_tf-17] [INFO] [1793252529.919928835] [ground_truth_tf]: Ground truth of model "diff_drive_robot" from gz /world/warehouse/dynamic_pose/info -> /ground_truth/pose + TF base_footprint -> sim_world
+[apriltag_dock_tracker-19] [INFO] [1793252530.027592364] [apriltag_dock_tracker]: AprilTag dock tracker: tag36h11 id=0 size=0.1 m -> detected_dock_pose
+[synthetic_tag_camera-18] [INFO] [1793252530.095646911] [synthetic_tag_camera]: Synthetic camera 640x480 fx=525.0 mode=tf tag36h11 id=0 size=0.1 m visible=True
+[lifecycle_manager-16] [INFO] [1793252535.095865912] [lifecycle_manager_navigation]: Managed nodes are active
+[opennav_docking-20] [INFO] [1793252633.074863635] [docking_server]: Attempting to dock robot at home_dock.
+[apriltag_dock_tracker-19] [INFO] [1793252639.936744756] [apriltag_dock_tracker]: tag 0: x=-0.172 y=+0.000 z=2.869 m  yaw=+14.4 deg
+...
+[opennav_docking-20] [INFO] [1793252648.746521929] [docking_server]: Successful navigation to staging pose
+[opennav_docking-20] [INFO] [1793252648.746670612] [docking_server]: Successful initial dock detection
+[apriltag_dock_tracker-19] [INFO] [1793252649.306638533] [apriltag_dock_tracker]: tag 0: x=+0.111 y=-0.000 z=1.060 m  yaw=+7.2 deg
+...
+[opennav_docking-20] [INFO] [1793252657.996797995] [docking_server]: Made contact with dock, waiting for charge to start (if applicable).
+[opennav_docking-20] [INFO] [1793252657.996840899] [docking_server]: Robot is charging!
+[apriltag_dock_tracker-19] [INFO] [1793252658.509927486] [apriltag_dock_tracker]: tag 0: x=+0.006 y=-0.000 z=0.204 m  yaw=+1.2 deg
+...
+[opennav_docking-20] [INFO] [1793252659.062925190] [docking_server]: Attempting to undock robot of dock type simple_charging_dock.
+[apriltag_dock_tracker-19] [INFO] [1793252659.525277544] [apriltag_dock_tracker]: tag 0: x=+0.006 y=-0.000 z=0.234 m  yaw=+1.1 deg
+...
+[opennav_docking-20] [INFO] [1793252667.013017496] [docking_server]: Robot has reached staging pose
+[opennav_docking-20] [INFO] [1793252667.013092563] [docking_server]: Robot has undocked!
+[apriltag_dock_tracker-19] [INFO] [1793252667.722206989] [apriltag_dock_tracker]: tag 0: x=+0.007 y=-0.000 z=0.863 m  yaw=+1.1 deg
+...
+[collision_monitor-13] [INFO] [1793252669.815766550] [collision_monitor]: Robot to stop due to StopZone polygon
+[collision_monitor-13] [INFO] [1793252671.481435259] [collision_monitor]: Robot to continue normal operation

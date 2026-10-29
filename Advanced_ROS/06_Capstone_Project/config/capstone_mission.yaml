@@ -1,0 +1,37 @@
+# Capstone mission + charger definition (read by launch/full_warehouse_system.launch.py,
+# the capstone_mission executor and the unit tests - one source of truth).
+#
+# Frames: Nav2 goals are in `map`. The robot spawns at the Gazebo world origin and the Week 12
+# SLAM map was built from that pose, so map ~= Gazebo world; the executor measures every error
+# against the Gazebo ground truth (world frame), which therefore also contains the map error.
+home: {name: "Home", x: 0.0, y: 0.0, yaw_deg: 0.0}
+
+# Navigation stations (all in free space of the real map, >= 0.55 m = inflation radius
+# from any obstacle - checked by test/test_capstone_config.py)
+stations:
+  - {name: "Pick Station A", x: 2.0, y: 1.0, yaw_deg: 90.0, dwell: 2.0}
+  - {name: "Drop Station B", x: -2.0, y: 1.0, yaw_deg: 90.0, dwell: 2.0}
+
+# Charger. pose = where base_footprint must be when docked (dock frame, x into the charger).
+# The AprilTag (36h11) is mounted `tag_beyond_dock` beyond that pose at camera height; it must
+# equal -external_detection_translation_x in amr_adv03 config/docking_server_params.yaml.
+# The docking server navigates first to the staging pose 0.7 m in front of the dock.
+dock:
+  id: "home_dock"
+  type: "simple_charging_dock"
+  x: -1.0
+  y: -3.5
+  yaw_deg: -90.0
+  tag_id: 0
+  tag_size: 0.10        # m, black border edge
+  tag_beyond_dock: 0.40 # m
+  tag_height: 0.10      # m above the floor (= camera_optical_link height in the Week 07 URDF)
+
+# Fault injection after undocking: while the robot drives home at >= trigger_speed, a box is
+# spawned in Gazebo with its near face `obstacle_face_distance` ahead of base_footprint,
+# i.e. inside the collision_monitor StopZone (bumper at +0.20 m, zone up to +0.40 m).
+estop_test:
+  enabled: true
+  trigger_speed: 0.15             # m/s
+  obstacle_face_distance: 0.35    # m from base_footprint
+  obstacle_size: [0.20, 0.40, 0.50]

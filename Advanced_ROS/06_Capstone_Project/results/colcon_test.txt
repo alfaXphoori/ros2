@@ -1,0 +1,17 @@
+# Real run: ros:lab-runner (ROS 2 Jazzy, Gazebo Sim 8.15.0), Linux 7.0, 2026-10-29
+# Isolation: ROS_DOMAIN_ID=16, GZ_PARTITION=agent_f, ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST
+# Commands (own build/install/test-result trees); colcon test output filtered with
+#   grep -E 'passed|failed|PASS|FAIL|Error|error|test_'
+$ python3 -m flake8 --max-line-length 99 --select E,F,W --ignore W503,W504 Advanced_ROS/06_Capstone_Project && echo FLAKE8_OK
+$ colcon build --base-paths Essential_ROS Advanced_ROS --packages-up-to amr_adv06 --build-base .colcon/f/build --install-base .colcon/f/install
+$ colcon test --base-paths Essential_ROS Advanced_ROS --packages-select amr_adv06 --executor sequential --build-base .colcon/f/build --install-base .colcon/f/install --test-result-base .colcon/f/test_results --event-handlers console_direct+
+$ colcon test-result --test-result-base .colcon/f/test_results --verbose
+FLAKE8_OK
+
+Summary: 10 packages finished [5.96s]
+cachedir: /workspace/.colcon/f/build/amr_adv06/.pytest_cache
+test/test_capstone_config.py .................                           [ 94%]
+test/test_capstone_mission.py .                                          [100%]
+-- generated xml file: /workspace/.colcon/f/test_results/amr_adv06/pytest.xml --
+======================== 18 passed in 101.72s (0:01:41) ========================
+Summary: 18 tests, 0 errors, 0 failures, 0 skipped

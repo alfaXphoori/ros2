@@ -81,7 +81,7 @@ flowchart TD
 | อัลกอริทึม | ลักษณะการทำงาน | จุดเด่น | กรณีการใช้งานที่เหมาะสม |
 | :--- | :--- | :--- | :--- |
 | **NavFn (Dijkstra)** | ค้นหาแบบแผ่คลื่นรอบทิศทาง | การันตีว่าพบเส้นทางที่สั้นที่สุดเสมอ | แผนที่ขนาดเล็กถึงปานกลาง |
-| **NavFn (A*)** | ใช้ฮิวริสติก Euclidean Distance | ค้นหาเร็วกว่า Dijkstra 3–5 เท่า | ทางเดินยาวในโกดังขนาดใหญ่ |
+| **NavFn (A*)** | ใช้ฮิวริสติก Euclidean Distance | ขยายโหนดน้อยกว่า Dijkstra เมื่อมีเส้นทางตรงไปยังเป้าหมาย (อัตราเร่งขึ้นกับแผนที่ ไม่มีตัวเลขคงที่ — ลองวัดเองใน Challenge 14.3) | ทางเดินยาวในโกดังขนาดใหญ่ |
 | **Smac Planner (Hybrid A*)** | ค้นหาในปริภูมิสถานะ $(x, y, \theta)$ | สร้างเส้นทางที่เลี้ยวโค้งได้อย่างนิ่มนวลตามกายภาพรถ | หุ่นยนต์เลี้ยวแบบ Ackerman หรือรถลากจูง |
 
 ---
@@ -108,72 +108,118 @@ Local Controller มีหน้าที่รับ Global Path มาแป�
 
 ## 🛠️ การวิเคราะห์โค้ดตัวอย่างในโมดูล (Code Walkthrough)
 
-### 1. [`nav2_params.yaml`](file:///mnt/sda/ros/Essential_ROS/Week_14_Path_Planning_AMCL/config/nav2_params.yaml)
-- **การปรับแต่ง AMCL ([L2-L19](file:///mnt/sda/ros/Essential_ROS/Week_14_Path_Planning_AMCL/config/nav2_params.yaml#L2-L19)):**
+### 1. [`config/nav2_params.yaml`](config/nav2_params.yaml)
+- **AMCL:**
   ```yaml
-  alpha1: 0.2
-  alpha2: 0.2
-  alpha3: 0.2
-  alpha4: 0.2
+  alpha1: 0.2   # ... alpha5: 0.2  (DifferentialMotionModel)
   min_particles: 500
   max_particles: 2000
+  laser_min_range: 0.15
+  laser_max_range: 10.0      # = ระยะสูงสุดของ LiDAR (เดิมตั้ง 12.0 เกินกว่าที่เซนเซอร์วัดได้)
+  set_initial_pose: true     # หุ่นยนต์เกิดที่ (0, 0, 0) ของแผนที่เสมอ
   ```
   กำหนดสัญญาณรบกวนของโมเดลการเคลื่อนที่ และตั้งขอบเขตจำนวนอนุภาค KLD-Sampling ไว้ที่ 500 ถึง 2,000 ตัว
-- **การตั้งค่า DWB Controller ([L51-L63](file:///mnt/sda/ros/Essential_ROS/Week_14_Path_Planning_AMCL/config/nav2_params.yaml#L51-L63)):**
+- **DWB Controller (`controller_server` → `FollowPath`):**
   ```yaml
-  max_vel_x: 0.5
+  max_vel_x: 0.3
   max_vel_theta: 1.0
-  acc_lim_x: 1.5
-  decel_lim_x: -1.5
+  acc_lim_x: 1.0
+  decel_lim_x: -1.0
+  critics: ["RotateToGoal", "Oscillation", "BaseObstacle", "GoalAlign",
+            "PathAlign", "PathDist", "GoalDist"]
+  BaseObstacle.scale: 0.02
+  PathAlign.scale: 32.0
+  PathDist.scale: 32.0
+  GoalAlign.scale: 24.0
+  GoalDist.scale: 24.0
+  RotateToGoal.scale: 32.0
   ```
-  จำกัดความเร็วสูงสุดที่ $0.5\text{ m/s}$ และความเร็วเชิงมุมที่ $1.0\text{ rad/s}$ เพื่อความปลอดภัยในอาคาร
-- **เกณฑ์ตัดสินความสำเร็จของเป้าหมาย ([L45-L50](file:///mnt/sda/ros/Essential_ROS/Week_14_Path_Planning_AMCL/config/nav2_params.yaml#L45-L50)):**
+  **DWB ต้องมีรายการ `critics` เสมอ** — คอนฟิกเดิมไม่มี ทำให้ `controller_server` configure ไม่ผ่านและ Nav2 ทั้งชุดไม่ active (ค่า scale ข้างบนเป็นค่าเริ่มต้นตามตัวอย่าง DWB ของ Nav2)
+- **Progress / Goal checker (schema ของ Jazzy):**
   ```yaml
-  xy_goal_tolerance: 0.25   # ระยะห่างปลายทางยอมรับได้ที่ 25 cm
-  yaw_goal_tolerance: 0.25  # มุมหันปลายทางยอมรับได้ที่ ~14 องศา
+  progress_checker_plugins: ["progress_checker"]   # Jazzy ใช้ list (คีย์เดิม progress_checker_plugin ไม่ถูกอ่านแล้ว)
+  goal_checker_plugins: ["general_goal_checker"]
+  general_goal_checker:
+    xy_goal_tolerance: 0.25   # ระยะห่างปลายทางยอมรับได้ที่ 25 cm
+    yaw_goal_tolerance: 0.25  # มุมหันปลายทางยอมรับได้ที่ ~14 องศา
   ```
+- **Costmaps:** เหมือนกับ [`costmap_params.yaml` สัปดาห์ที่ 13](../Week_13_Nav2_Costmaps_Layers/config/costmap_params.yaml) ทุกค่า (footprint 0.40 × 0.28 m, `inflation_radius: 0.55`, `cost_scaling_factor: 3.0`) — `test_nav2_config.py` ตรวจว่าไม่ต่างกัน
+- **Velocity chain และความปลอดภัย:** `controller_server`/`behavior_server` → `cmd_vel_nav` → `velocity_smoother` → `cmd_vel_smoothed` → **`collision_monitor`** → `cmd_vel` → bridge (collision monitor คือ safety gate ระดับ production เทียบกับ `emergency_stop_node` ในสัปดาห์ที่ 11)
 
----
+### 2. [`launch/nav2_bringup.launch.py`](launch/nav2_bringup.launch.py)
+เปิด Nav2 ครบชุดด้วย lifecycle manager 2 ตัว:
+- `lifecycle_manager_localization`: `map_server` (แผนที่จริงจาก `amr_week12`), `amcl`
+- `lifecycle_manager_navigation`: `controller_server`, `smoother_server`, `planner_server`, **`behavior_server`** (Spin/BackUp/Wait ที่ Behavior Tree ค่าเริ่มต้นเรียกใช้ — ถ้าขาด BT จะโหลดไม่ผ่าน), `velocity_smoother`, `collision_monitor`, `bt_navigator`, **`waypoint_follower`** (ให้บริการ `/follow_waypoints` ในสัปดาห์ที่ 15)
+- อาร์กิวเมนต์: `map`, `params_file`, `use_sim_time` (ค่าเริ่มต้น true), `nav_to_pose_bt_xml` (สัปดาห์ที่ 15 ส่ง BT ของตัวเองเข้ามา)
+- ไม่ใช้ `navigation_launch.py` ของ nav2_bringup โดยตรง เพราะใน Jazzy 1.3.x ไฟล์นั้นเปิด `route_server` และ `docking_server` ด้วย ซึ่งต้องมีคอนฟิกเพิ่ม (กราฟเส้นทาง, แท่นชาร์จ) ที่วิชานี้ยังไม่ใช้
 
-### 2. `amcl_initial_pose.py`
-สคริปต์ Python ส่งพิกัดเริ่มต้นเพื่อปลุกระบบ AMCL:
-- สร้าง Publisher ไปยังท็อปปิก `/initialpose` ด้วย QoS `TRANSIENT_LOCAL`
+### 3. [`src/amcl_initial_pose.py`](src/amcl_initial_pose.py)
+`ros2 run amr_week14 amcl_initial_pose --ros-args -p use_sim_time:=true -p x:=0.0 -p y:=0.0 -p theta:=0.0`
+- รอ `/clock` (เวลา stamp ต้องไม่เป็น 0) และรอจนมี subscriber บน `/initialpose`
+- ส่ง `PoseWithCovarianceStamped` ซ้ำทุก 1 วินาทีจนกว่า AMCL จะตอบกลับทาง `/amcl_pose` แล้วพิมพ์ตำแหน่งที่ AMCL ประเมินได้ (exit code 0 = สำเร็จ)
 - กำหนดค่าเมทริกซ์ความแปรปรวนร่วม (Covariance Matrix $6 \times 6$):
   ```python
-  msg.pose.covariance[0] = 0.25   # ความไม่แน่นอนในแนวแกน X (sigma = 0.5 m)
-  msg.pose.covariance[7] = 0.25   # ความไม่แน่นอนในแนวแกน Y (sigma = 0.5 m)
-  msg.pose.covariance[35] = 0.068 # ความไม่แน่นอนในมุมหมุน Yaw (sigma = ~15 องศา)
+  cov[0] = sigma_xy ** 2      # var(x)   0.25 m^2 -> sigma 0.5 m
+  cov[7] = sigma_xy ** 2      # var(y)
+  cov[35] = sigma_yaw ** 2    # var(yaw) 0.068 rad^2 -> sigma ~15 deg
   ```
   ค่าความแปรปรวนนี้จะถูก AMCL นำไปใช้สุ่มสร้างกลุ่มอนุภาคเริ่มต้นรอบๆ พิกัดนั้น
+
+### 4. การทดสอบอัตโนมัติ
+- [`test/test_nav2_config.py`](test/test_nav2_config.py): DWB มี critics, schema `progress_checker_plugins`, `laser_max_range` ≤ 10 m, behavior plugins ครบ, costmap ตรงกับสัปดาห์ที่ 13, launch มีทุก server
+- [`test/test_navigation.py`](test/test_navigation.py): Gazebo headless + Nav2 + แผนที่จริง → ตั้ง initial pose → `NavigateToPose` ไป $(2.0, -2.0, -90^\circ)$ ต้อง `SUCCEEDED` ภายใน 90 วินาที และตำแหน่ง **ground truth จาก Gazebo** ต้องห่างเป้า < 0.45 m
 
 ---
 
 ## ⌨️ ตารางคำสั่ง CLI สำคัญ
 | คำสั่ง | คำอธิบาย | ตัวอย่างการใช้งาน |
 | :--- | :--- | :--- |
-| `ros2 launch nav2_bringup.launch.py` | เปิดใช้งาน Navigation 2 Stack แบบครบวงจร | `ros2 launch Essential_ROS/Week_14_Path_Planning_AMCL/launch/nav2_bringup.launch.py` |
+| `ros2 launch amr_week14 nav2_bringup.launch.py` | เปิดใช้งาน Navigation 2 Stack แบบครบวงจร (เปิด simulation ของสัปดาห์ที่ 11 ก่อน) | `ros2 launch amr_week14 nav2_bringup.launch.py` |
+| `ros2 run amr_week14 amcl_initial_pose` | ส่ง initial pose และรอคำตอบจาก AMCL | `ros2 run amr_week14 amcl_initial_pose --ros-args -p use_sim_time:=true` |
 | `ros2 topic pub --once /initialpose ...` | ส่งพิกัดเริ่มต้นให้ AMCL ผ่านคำสั่ง CLI | `ros2 topic pub --once /initialpose geometry_msgs/msg/PoseWithCovarianceStamped "{header: {frame_id: 'map'}, pose: {pose: {position: {x: 0.0, y: 0.0}, orientation: {w: 1.0}}}}"` |
-| `ros2 action send_goal /navigate_to_pose ...` | ส่งเป้าหมายพิกัดให้ Nav2 วางแผนและขับเคลื่อนอัตโนมัติ | `ros2 action send_goal /navigate_to_pose nav2_msgs/action/NavigateToPose "{pose: {header: {frame_id: 'map'}, pose: {position: {x: 2.0, y: 1.0}, orientation: {w: 1.0}}}}"` |
-| `ros2 topic echo --once /amcl_pose` | ตรวจสอบตำแหน่งปัจจุบันที่ AMCL คำนวณได้ | `ros2 topic echo --once /amcl_pose` |
+| `ros2 action send_goal /navigate_to_pose ...` | ส่งเป้าหมายพิกัดให้ Nav2 วางแผนและขับเคลื่อนอัตโนมัติ | `ros2 action send_goal /navigate_to_pose nav2_msgs/action/NavigateToPose "{pose: {header: {frame_id: 'map'}, pose: {position: {x: 2.0, y: -2.0}, orientation: {z: -0.7071, w: 0.7071}}}}"` |
+| `ros2 topic echo --once /amcl_pose` | ตรวจสอบตำแหน่งปัจจุบันที่ AMCL คำนวณได้ | `ros2 topic echo --once /amcl_pose geometry_msgs/msg/PoseWithCovarianceStamped` |
+| `ros2 run amr_week11 ground_truth_pose` | ตำแหน่งจริงของหุ่นยนต์ใน Gazebo (ใช้ตรวจความแม่นของ AMCL/Nav2) | `ros2 run amr_week11 ground_truth_pose` |
 
 ---
 
-## 📸 ภาพผลการทดสอบจริงจากระบบ (Live Execution & Terminal Capture)
-ผลลัพธ์จากการรันคำสั่งและโหนดจริงในระบบ เพื่อใช้เป็นข้อมูลอ้างอิงในการตรวจสอบความถูกต้อง:
-
-![Terminal Capture: Terminal — Week 14: AMCL Particle Filter & Nav2 Global Planning](images/terminal_run.png)
+## 📟 ผลการรันจริง (Real Run Output)
+บันทึกจากการรันจริงใน ros:lab-runner (ROS 2 Jazzy, Gazebo Sim 8.15.0) บน Linux 7.0 เมื่อ 2026-10-29
+(ฉบับเต็มพร้อม log ของ Nav2: [`results/nav2_navigate_to_pose_run.txt`](results/nav2_navigate_to_pose_run.txt))
 
 ```console
-user@amr-dev:~/ros$ ./docker/run_lab.sh python3 Essential_ROS/Week_14_Path_Planning_AMCL/src/amcl_initial_pose.py
-[INFO] [amcl_pose_initializer]: 📍 Initial Pose sent to /initialpose: (X=0.00, Y=0.00, Yaw=0.00)
-[INFO] [amcl]: Received /initialpose with covariance matrix. Spawning 2000 particles...
-[INFO] [amcl]: Scan matching likelihood field convergence achieved. Reduced particles to 500.
-[INFO] [amcl]: Broadcasting Transform: map -> odom
-user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 action send_goal /navigate_to_pose nav2_msgs/action/NavigateToPose ...
-[INFO] [nav2_planner]: Global plan found using NavfnPlanner (Length: 4.82m)
-[INFO] [dwb_controller]: Trajectory evaluated with BaseObstacleCritic and PathAlignCritic
-user@amr-dev:~/ros$ [CHECKPOINT PASSED: GOAL REACHED WITHIN 0.25M TOLERANCE]
+$ ros2 launch amr_week11 gazebo_world.launch.py headless:=true   # terminal 1
+$ ros2 launch amr_week14 nav2_bringup.launch.py                   # terminal 2
+$ for n in controller_server planner_server ...; do ros2 lifecycle get /$n; done
+controller_server: active [3]
+planner_server: active [3]
+behavior_server: active [3]
+bt_navigator: active [3]
+waypoint_follower: active [3]
+velocity_smoother: active [3]
+collision_monitor: active [3]
+smoother_server: active [3]
+$ ros2 run amr_week14 amcl_initial_pose --ros-args -p use_sim_time:=true
+[INFO] [1793245948.890258962] [amcl_initial_pose_publisher]: Publishing initial pose x=0.00 y=0.00 theta=0.000 rad in frame map
+[INFO] [1793245948.976965104] [amcl_initial_pose_publisher]: AMCL pose: x=-0.017 y=0.033 yaw=0.007 rad
+$ ros2 action send_goal /navigate_to_pose nav2_msgs/action/NavigateToPose {pose: {header: {frame_id: 'map'}, pose: {position: {x: 2.0, y: -2.0}, orientation: {z: -0.7071, w: 0.7071}}}}
+Waiting for an action server to become available...
+Sending goal:
+...
+
+Goal accepted with ID: f58aa5137a8e4aec9e74178de70ef217
+
+Result:
+    error_code: 0
+error_msg: ''
+
+Goal finished with status: SUCCEEDED
+(wall time 14.2 s)
+$ ros2 run amr_week11 ground_truth_pose
+diff_drive_robot ground truth: x=1.900 y=-1.927 yaw=-1.321 rad (-75.7 deg)
 ```
+ผลวัด: เป้าหมาย $(2.0, -2.0, -90^\circ)$ — `SUCCEEDED` ใน 14.2 วินาที (เวลาจริง), ตำแหน่งจริงจาก Gazebo คลาดจากเป้า 0.125 m / 14.3°
+(ชุดทดสอบ `test_navigation.py` สองรอบวัดได้ 0.192 m / 12.2° ใน 11.9 s และ 0.140 m / 14.5° ใน 12.2 s)
 
 ---
 
@@ -183,7 +229,9 @@ user@amr-dev:~/ros$ [CHECKPOINT PASSED: GOAL REACHED WITHIN 0.25M TOLERANCE]
 |:---:| :--- | :--- | :--- |
 | 1 | **AMCL ไม่ยอมบรอดแคสต์ทรานส์ฟอร์ม `map -> odom`** | ยังไม่ได้รับข้อมูลพิกัดเริ่มต้นจาก `/initialpose` หรือไม่มีข้อมูล `/scan` ส่งเข้ามา | ส่งพิกัดเริ่มต้นด้วย `amcl_initial_pose.py` หรือคลิกปุ่ม 2D Pose Estimate ใน RViz2 |
 | 2 | **หุ่นยนต์หมุนวนอยู่กับที่ไม่ยอมเดินหน้า (Spinning in circles)** | ค่าน้ำหนัก `PathAlignCritic` หรือ `GoalDistCritic` ใน DWB ไม่สมดุล หรือล้อติดขอบคอสต์ | ปรับจูนค่าน้ำหนัก Scale ของ Critics ใน `nav2_params.yaml` |
-| 3 | **กลุ่มอนุภาค AMCL แตกกระจายกว้างไม่ยอมลู่เข้าหาตำแหน่งจริง** | พารามิเตอร์สัญญาณรบกวน $\alpha_1 - \alpha_4$ สูงเกินไป หรือหุ่นยนต์หมุนตัวเร็วเกินไป | ปรับลดค่า $\alpha$ ลงให้อยู่ในช่วง $[0.05, 0.2]$ |
+| 3 | **กลุ่มอนุภาค AMCL แตกกระจายกว้างไม่ยอมลู่เข้าหาตำแหน่งจริง** | พารามิเตอร์สัญญาณรบกวน $\alpha_1 - \alpha_4$ สูงเกินไป หรือหุ่นยนต์หมุนตัวเร็วเกินไป | ปรับลดค่า $\alpha$ ลงให้อยู่ในช่วง $[0.05, 0.2]$ — แต่ถ้า odometry ของหุ่นยนต์มี drift จริง (ตรวจด้วย `ground_truth_pose`) ต้อง *เพิ่ม* α ตัวที่เกี่ยวข้องแทน |
+| 7 | **Nav2 ไม่ active: `controller_server` configure ล้มเหลว** | DWB ไม่มี `critics` หรือใช้คีย์ `progress_checker_plugin` แบบเก่า | ใช้คอนฟิกของแพ็กเกจนี้ ตรวจด้วย `ros2 lifecycle get /controller_server` |
+| 8 | **`bt_navigator` activate ไม่ผ่านเพราะโหลด BT ไม่ได้** | ไม่มี `behavior_server` (BT ค่าเริ่มต้นใช้ Spin/BackUp/Wait) | ใช้ `nav2_bringup.launch.py` ของแพ็กเกจนี้ซึ่งเปิด `behavior_server` แล้ว |
 | 4 | **Planner ไม่ยอมวางเส้นทาง แจ้งเตือน: `Failed to create plan`** | จุดเริ่มต้นหรือจุดหมายปลายทางตั้งอยู่ในเขตเซลล์ที่มี Cost 254 (Lethal) หรือ 255 | เลือกจุดเป้าหมายให้อยู่ในพื้นที่ว่างโล่ง (Cost 0) ห่างจากกำแพงอย่างน้อยเท่ากับรัศมีหุ่นยนต์ |
 | 5 | **หุ่นยนต์หยุดก่อนถึงเป้าหมายเล็กน้อยแล้วขึ้น Failed** | ค่า `xy_goal_tolerance` ตั้งไว้เข้มงวดเกินไป (เช่น 0.02 m) จนมอเตอร์ไม่สามารถทำได้ | ขยาย `xy_goal_tolerance` เป็น $0.15 - 0.25\text{ m}$ |
 | 6 | **Nav2 หลุดเข้าสู่ Recovery Spin ต่อเนื่อง** | Progress Checker ตรวจพบว่าหุ่นยนต์ไม่เคลื่อนที่เกินระยะที่กำหนดภายใน 10 วินาที | ตรวจสอบว่าหุ่นยนต์ติดสิ่งกีดขวางหรือไม่ และเพิ่ม `movement_time_allowance` |

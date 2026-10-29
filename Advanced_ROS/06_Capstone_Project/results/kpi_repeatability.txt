@@ -1,0 +1,105 @@
+# Repeatability: 5 independent headless runs (fresh launch each time) of
+#   ros2 launch amr_adv06 full_warehouse_system.launch.py headless:=true
+#   ros2 run amr_adv06 capstone_mission --ros-args -p use_sim_time:=true -p path_csv:=<scratch>.csv
+# ros:lab-runner (ROS 2 Jazzy, Gazebo Sim 8.15.0), Linux 7.0, 2026-10-29.
+# Lines below are copied from each run log (only stage, KPI and summary lines; the
+# "[timestamp] [capstone_mission]:" prefix removed, values unchanged).
+
+## run 1
+[INFO] Stage 0 System bringup: PASS in 4.4 s (sim) | 11/11 lifecycle nodes ACTIVE, ground truth x=-0.000 y=0.000
+[INFO] Stage 1 Pick Station A: PASS in 10.4 s (sim) | SUCCEEDED, true final error 0.189 m / -15.4 deg, AMCL error 0.056 m
+[INFO] Stage 2 Drop Station B: PASS in 18.1 s (sim) | SUCCEEDED, true final error 0.192 m / +14.2 deg, AMCL error 0.089 m
+[INFO] Stage 3 Dock: PASS in 25.7 s (sim) | success=True error_code=0 (NONE) retries=0; TRUE docking error 3.8 mm (lateral -1.3 mm, longitudinal -3.6 mm), yaw +1.06 deg; robot x=-1.0013 y=-3.4964
+[INFO] Stage 4 Undock: PASS in 8.4 s (sim) | SUCCEEDED, robot 0.661 m from the dock (>= 0.50 m required)
+[INFO] Stage 5 E-stop test: PASS in 4.6 s (sim) | LiDAR saw the box at 0.190 m; scan stamp -> cmd_vel=0 88.0 ms sim (85.2 ms wall receive-to-receive); box spawn request -> cmd_vel=0 251.0 ms sim; robot stopped with 5.9 cm between bumper and box; box removed=True
+[INFO] Stage 6 Home: PASS in 13.3 s (sim) | SUCCEEDED, true final error 0.256 m / +13.3 deg, AMCL error 0.029 m
+[INFO] KPI Mission stage success: 100.000 % (passing target >= 100.0 %) -> PASS
+[INFO] KPI Navigation final position error (true, max): 0.256 m (passing target <= 0.35 m) -> PASS
+[INFO] KPI AMCL localisation error (true, max): 0.089 m (passing target <= 0.1 m) -> PASS
+[INFO] KPI Docking position error (true): 3.844 mm (passing target <= 15.0 mm) -> PASS
+[INFO] KPI Docking yaw error (true): 1.058 deg (passing target <= 3.0 deg) -> PASS
+[INFO] KPI E-stop processing latency (scan -> cmd_vel=0, sim time): 88.000 ms (passing target <= 150.0 ms) -> PASS
+[INFO] KPI E-stop remaining bumper gap: 5.890 cm (passing target >= 2.0 cm) -> PASS
+[INFO] MISSION SUMMARY: 7/7 stages PASS, 7/7 KPIs met, total 152.6 s (sim time) -> PASS
+(exit code 0)
+
+## run 2
+[INFO] Stage 0 System bringup: PASS in 4.3 s (sim) | 11/11 lifecycle nodes ACTIVE, ground truth x=-0.000 y=0.000
+[INFO] Stage 1 Pick Station A: PASS in 10.4 s (sim) | SUCCEEDED, true final error 0.264 m / -15.7 deg, AMCL error 0.054 m
+[INFO] Stage 2 Drop Station B: PASS in 18.0 s (sim) | SUCCEEDED, true final error 0.193 m / +12.8 deg, AMCL error 0.056 m
+[INFO] Stage 3 Dock: PASS in 25.5 s (sim) | success=True error_code=0 (NONE) retries=0; TRUE docking error 4.5 mm (lateral -1.2 mm, longitudinal -4.3 mm), yaw +0.99 deg; robot x=-1.0012 y=-3.4957
+[INFO] Stage 4 Undock: PASS in 8.4 s (sim) | SUCCEEDED, robot 0.659 m from the dock (>= 0.50 m required)
+[INFO] Stage 5 E-stop test: PASS in 4.5 s (sim) | LiDAR saw the box at 0.201 m; scan stamp -> cmd_vel=0 77.0 ms sim (69.2 ms wall receive-to-receive); box spawn request -> cmd_vel=0 282.0 ms sim; robot stopped with 6.5 cm between bumper and box; box removed=True
+[INFO] Stage 6 Home: PASS in 13.5 s (sim) | SUCCEEDED, true final error 0.246 m / +14.3 deg, AMCL error 0.046 m
+[INFO] KPI Mission stage success: 100.000 % (passing target >= 100.0 %) -> PASS
+[INFO] KPI Navigation final position error (true, max): 0.264 m (passing target <= 0.35 m) -> PASS
+[INFO] KPI AMCL localisation error (true, max): 0.056 m (passing target <= 0.1 m) -> PASS
+[INFO] KPI Docking position error (true): 4.498 mm (passing target <= 15.0 mm) -> PASS
+[INFO] KPI Docking yaw error (true): 0.990 deg (passing target <= 3.0 deg) -> PASS
+[INFO] KPI E-stop processing latency (scan -> cmd_vel=0, sim time): 77.000 ms (passing target <= 150.0 ms) -> PASS
+[INFO] KPI E-stop remaining bumper gap: 6.484 cm (passing target >= 2.0 cm) -> PASS
+[INFO] MISSION SUMMARY: 7/7 stages PASS, 7/7 KPIs met, total 93.1 s (sim time) -> PASS
+mission exit code 0
+
+## run 3
+[INFO] Stage 0 System bringup: PASS in 4.3 s (sim) | 11/11 lifecycle nodes ACTIVE, ground truth x=-0.000 y=0.000
+[INFO] Stage 1 Pick Station A: PASS in 10.4 s (sim) | SUCCEEDED, true final error 0.198 m / -15.1 deg, AMCL error 0.016 m
+[INFO] Stage 2 Drop Station B: PASS in 20.9 s (sim) | SUCCEEDED, true final error 0.205 m / +12.2 deg, AMCL error 0.042 m
+[INFO] Stage 3 Dock: PASS in 26.1 s (sim) | success=True error_code=0 (NONE) retries=0; TRUE docking error 2.2 mm (lateral -1.9 mm, longitudinal -1.0 mm), yaw +1.40 deg; robot x=-1.0019 y=-3.4990
+[INFO] Stage 4 Undock: PASS in 8.4 s (sim) | SUCCEEDED, robot 0.658 m from the dock (>= 0.50 m required)
+[INFO] Stage 5 E-stop test: PASS in 4.7 s (sim) | LiDAR saw the box at 0.185 m; scan stamp -> cmd_vel=0 77.0 ms sim (66.9 ms wall receive-to-receive); box spawn request -> cmd_vel=0 326.0 ms sim; robot stopped with 5.6 cm between bumper and box; box removed=True
+[INFO] Stage 6 Home: PASS in 13.3 s (sim) | SUCCEEDED, true final error 0.255 m / +13.6 deg, AMCL error 0.050 m
+[INFO] KPI Mission stage success: 100.000 % (passing target >= 100.0 %) -> PASS
+[INFO] KPI Navigation final position error (true, max): 0.255 m (passing target <= 0.35 m) -> PASS
+[INFO] KPI AMCL localisation error (true, max): 0.050 m (passing target <= 0.1 m) -> PASS
+[INFO] KPI Docking position error (true): 2.153 mm (passing target <= 15.0 mm) -> PASS
+[INFO] KPI Docking yaw error (true): 1.396 deg (passing target <= 3.0 deg) -> PASS
+[INFO] KPI E-stop processing latency (scan -> cmd_vel=0, sim time): 77.000 ms (passing target <= 150.0 ms) -> PASS
+[INFO] KPI E-stop remaining bumper gap: 5.641 cm (passing target >= 2.0 cm) -> PASS
+[INFO] MISSION SUMMARY: 7/7 stages PASS, 7/7 KPIs met, total 96.0 s (sim time) -> PASS
+mission exit code 0
+
+## run 4
+[INFO] Stage 0 System bringup: PASS in 4.1 s (sim) | 11/11 lifecycle nodes ACTIVE, ground truth x=-0.000 y=0.000
+[INFO] Stage 1 Pick Station A: PASS in 10.4 s (sim) | SUCCEEDED, true final error 0.215 m / -13.7 deg, AMCL error 0.046 m
+[INFO] Stage 2 Drop Station B: PASS in 17.7 s (sim) | SUCCEEDED, true final error 0.249 m / +14.8 deg, AMCL error 0.045 m
+[INFO] Stage 3 Dock: PASS in 25.7 s (sim) | success=True error_code=0 (NONE) retries=0; TRUE docking error 2.2 mm (lateral -2.0 mm, longitudinal -0.8 mm), yaw +1.79 deg; robot x=-1.0020 y=-3.4992
+[INFO] Stage 4 Undock: PASS in 8.4 s (sim) | SUCCEEDED, robot 0.656 m from the dock (>= 0.50 m required)
+[INFO] Stage 5 E-stop test: PASS in 4.7 s (sim) | LiDAR saw the box at 0.184 m; scan stamp -> cmd_vel=0 104.0 ms sim (99.6 ms wall receive-to-receive); box spawn request -> cmd_vel=0 330.0 ms sim; robot stopped with 5.7 cm between bumper and box; box removed=True
+[INFO] Stage 6 Home: PASS in 13.6 s (sim) | SUCCEEDED, true final error 0.228 m / +13.0 deg, AMCL error 0.011 m
+[INFO] KPI Mission stage success: 100.000 % (passing target >= 100.0 %) -> PASS
+[INFO] KPI Navigation final position error (true, max): 0.249 m (passing target <= 0.35 m) -> PASS
+[INFO] KPI AMCL localisation error (true, max): 0.046 m (passing target <= 0.1 m) -> PASS
+[INFO] KPI Docking position error (true): 2.179 mm (passing target <= 15.0 mm) -> PASS
+[INFO] KPI Docking yaw error (true): 1.790 deg (passing target <= 3.0 deg) -> PASS
+[INFO] KPI E-stop processing latency (scan -> cmd_vel=0, sim time): 104.000 ms (passing target <= 150.0 ms) -> PASS
+[INFO] KPI E-stop remaining bumper gap: 5.722 cm (passing target >= 2.0 cm) -> PASS
+[INFO] MISSION SUMMARY: 7/7 stages PASS, 7/7 KPIs met, total 92.8 s (sim time) -> PASS
+mission exit code 0
+
+## run 5
+[INFO] Stage 0 System bringup: PASS in 4.2 s (sim) | 11/11 lifecycle nodes ACTIVE, ground truth x=-0.000 y=0.000
+[INFO] Stage 1 Pick Station A: PASS in 10.3 s (sim) | SUCCEEDED, true final error 0.224 m / -15.3 deg, AMCL error 0.034 m
+[INFO] Stage 2 Drop Station B: PASS in 20.2 s (sim) | SUCCEEDED, true final error 0.170 m / +12.6 deg, AMCL error 0.066 m
+[INFO] Stage 3 Dock: PASS in 25.7 s (sim) | success=True error_code=0 (NONE) retries=0; TRUE docking error 2.9 mm (lateral -2.0 mm, longitudinal -2.2 mm), yaw +1.76 deg; robot x=-1.0020 y=-3.4978
+[INFO] Stage 4 Undock: PASS in 8.3 s (sim) | SUCCEEDED, robot 0.658 m from the dock (>= 0.50 m required)
+[INFO] Stage 5 E-stop test: PASS in 4.5 s (sim) | LiDAR saw the box at 0.199 m; scan stamp -> cmd_vel=0 48.0 ms sim (39.4 ms wall receive-to-receive); box spawn request -> cmd_vel=0 266.0 ms sim; robot stopped with 7.4 cm between bumper and box; box removed=True
+[INFO] Stage 6 Home: PASS in 13.4 s (sim) | SUCCEEDED, true final error 0.248 m / +14.0 deg, AMCL error 0.032 m
+[INFO] KPI Mission stage success: 100.000 % (passing target >= 100.0 %) -> PASS
+[INFO] KPI Navigation final position error (true, max): 0.248 m (passing target <= 0.35 m) -> PASS
+[INFO] KPI AMCL localisation error (true, max): 0.066 m (passing target <= 0.1 m) -> PASS
+[INFO] KPI Docking position error (true): 2.930 mm (passing target <= 15.0 mm) -> PASS
+[INFO] KPI Docking yaw error (true): 1.761 deg (passing target <= 3.0 deg) -> PASS
+[INFO] KPI E-stop processing latency (scan -> cmd_vel=0, sim time): 48.000 ms (passing target <= 150.0 ms) -> PASS
+[INFO] KPI E-stop remaining bumper gap: 7.441 cm (passing target >= 2.0 cm) -> PASS
+[INFO] MISSION SUMMARY: 7/7 stages PASS, 7/7 KPIs met, total 94.5 s (sim time) -> PASS
+mission exit code 0
+
+## min / max over the runs (computed from the lines above)
+mission_success_pct      min   100.000  max   100.000  (n=5)
+nav_final_error_m        min     0.248  max     0.264  (n=5)
+amcl_error_m             min     0.046  max     0.089  (n=5)
+docking_error_mm         min     2.153  max     4.498  (n=5)
+docking_yaw_error_deg    min     0.990  max     1.790  (n=5)
+estop_processing_ms      min    48.000  max   104.000  (n=5)
+estop_gap_cm             min     5.641  max     7.441  (n=5)

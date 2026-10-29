@@ -15,12 +15,13 @@
 ---
 
 ## 📋 ข้อกำหนดก่อนเริ่มปฏิบัติการ (Prerequisites & Setup)
-- เข้าสู่รูทไดเรกทอรี `/mnt/sda/ros`
-- ตรวจสอบความถูกต้องของสคริปต์ในสัปดาห์ที่ 2:
+- เข้าสู่รูทไดเรกทอรีของ repository วิชา
+- Build แพ็กเกจ `amr_week02` (ament_python) — หลัง build แล้ว `run_lab.sh` จะ source `install/setup.bash` ให้อัตโนมัติ:
   ```bash
-  python3 -m py_compile Essential_ROS/Week_02_Nodes_Topics_QoS/src/sensor_qos_publisher.py
-  python3 -m py_compile Essential_ROS/Week_02_Nodes_Topics_QoS/src/sensor_qos_subscriber.py
+  ./docker/run_lab.sh colcon build --base-paths Essential_ROS --packages-select amr_week02
+  # หรือ: make build PKG=amr_week02      ชุดทดสอบอัตโนมัติ: make test PKG=amr_week02
   ```
+- ห้องแล็บใช้เครือข่ายร่วมกัน: ตั้ง `ROS_DOMAIN_ID` ของตนเองและ `ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST` ก่อนเรียก `run_lab.sh` ทุก Terminal
 
 ---
 
@@ -31,7 +32,8 @@
 
 1. เปิด **Terminal 1** แล้วรันโหนด Publisher:
    ```bash
-   ./docker/run_lab.sh python3 Essential_ROS/Week_02_Nodes_Topics_QoS/src/sensor_qos_publisher.py
+   ./docker/run_lab.sh ros2 run amr_week02 sensor_qos_publisher
+   # แบบไม่ build: ./docker/run_lab.sh python3 Essential_ROS/Week_02_Nodes_Topics_QoS/src/sensor_qos_publisher.py
    ```
    **ผลลัพธ์ที่คาดหวัง:** โหนดแสดงสถานะ `[INFO] [sensor_qos_publisher]: 🚀 [SensorQoSPublisher] Node initialized and publishing...`
 
@@ -39,13 +41,13 @@
    ```bash
    ./docker/run_lab.sh ros2 topic echo /sensor/temperature
    ```
-   *สังเกต:* อาจไม่มีข้อมูลปรากฏ หรือมีคำเตือนเรื่อง QoS incompatibility เนื่องจาก `ros2 topic echo` ใช้ Reliable เป็นค่าปริยาย
+   *สังเกต:* ใน ROS 2 Jazzy ข้อมูลจะแสดงได้ตามปกติ เพราะ `ros2 topic echo` ที่ไม่ระบุ QoS จะเลือก Reliability/Durability ให้ตรงกับ Publisher ที่ค้นพบเอง (ผลจริง: `data: 37.4647102355957`) — แต่ Subscriber ที่เราเขียนเองในโค้ด **ไม่มี** กลไกนี้ ต้องตั้ง QoS ให้เข้ากันได้เอง (ดู Lab 2.3)
 
 3. ทดสอบใส่แฟล็ก QoS ให้ตรงกับ Publisher:
    ```bash
    ./docker/run_lab.sh ros2 topic echo --qos-reliability best_effort /sensor/temperature
    ```
-   *ผลลัพธ์:* ข้อมูลอุณหภูมิจะไหลเข้ามาอย่างต่อเนื่อง เช่น `data: 37.12`
+   *ผลลัพธ์:* ข้อมูลอุณหภูมิจะไหลเข้ามาอย่างต่อเนื่อง (ผลจริง: `data: 36.11299514770508`) — ค่าที่ส่งเป็น `float32` จึงแสดงทศนิยมยาวเมื่อแปลงเป็น `float` ของ Python
 
 4. ตรวจสอบข้อมูลเชิงลึกของท็อปปิก:
    ```bash
@@ -65,16 +67,17 @@
    ```bash
    ./docker/run_lab.sh ros2 topic echo --qos-durability transient_local /robot/state
    ```
-3. สังเกตว่าทันทีที่กด Enter แม้ Publisher จะยังไม่วนรอบส่งรอบใหม่ หน้าจอจะแสดงผลสถานะระบบที่ถูกแคชไว้ทันที เช่น:
+3. สังเกตว่าทันทีที่กด Enter แม้ Publisher จะยังไม่วนรอบส่งรอบใหม่ หน้าจอจะแสดงสถานะ **ล่าสุด** ที่ถูกแคชไว้ทันที — ถ้าเปิดภายใน 5 วินาทีแรกจะได้ `SYSTEM_READY: Battery=100%, Mode=NORMAL` ถ้าเปิดทีหลังจะได้ค่าที่อัปเดตล่าสุด (ผลจริงเมื่อเปิดหลัง Publisher ~20 วินาที):
    ```text
-   data: 'SYSTEM_READY: Battery=100%, Mode=NORMAL'
+   data: 'SYSTEM_ACTIVE: Uptime=20.0s'
    ---
    ```
-4. ทดสอบรัน `sensor_qos_subscriber.py` ใน **Terminal 3**:
+   ลองเปลี่ยนเป็น `--qos-durability volatile` จะไม่ได้ข้อความเก่าเลย (ต้องรอรอบอัปเดตถัดไปทุก 5 วินาที)
+4. ทดสอบรัน `sensor_qos_subscriber` ใน **Terminal 3**:
    ```bash
-   ./docker/run_lab.sh python3 Essential_ROS/Week_02_Nodes_Topics_QoS/src/sensor_qos_subscriber.py
+   ./docker/run_lab.sh ros2 run amr_week02 sensor_qos_subscriber
    ```
-   สังเกตข้อความ `📢 Latched Robot State Received` ที่ปรากฏขึ้นทันทีตั้งแต่บรรทัดแรก
+   สังเกตข้อความ `📢 Latched Robot State Received` ที่ปรากฏขึ้นทันทีที่จับคู่สำเร็จ ก่อนรอบอัปเดตถัดไปของ Publisher
 
 ---
 
@@ -87,7 +90,11 @@
    # ลองบังคับให้ CLI รับแบบ RELIABLE
    ./docker/run_lab.sh ros2 topic echo --qos-reliability reliable /sensor/temperature
    ```
-2. สังเกตผลลัพธ์: จะไม่มีข้อมูลถูกพิมพ์ออกมาบนหน้าจอแม้แต่ข้อความเดียว
+2. สังเกตผลลัพธ์: จะไม่มีข้อมูลถูกพิมพ์ออกมาแม้แต่ข้อความเดียว มีเพียงคำเตือนจริงจาก ROS 2:
+   ```text
+   [WARN] [...] [_ros2cli_164]: New publisher discovered on topic '/sensor/temperature', offering incompatible QoS. No messages will be received from it. Last incompatible policy: RELIABILITY
+   ```
+   และฝั่ง Publisher (Terminal 1) จะเตือน `New subscription discovered on topic 'sensor/temperature', requesting incompatible QoS. No messages will be sent to it.`
 3. วินิจฉัยด้วยคำสั่ง `ros2 topic info -v`:
    ```bash
    ./docker/run_lab.sh ros2 topic info -v /sensor/temperature
@@ -101,13 +108,13 @@
 **เป้าหมาย:** เพิ่มท็อปปิก `/sensor/battery` บนโหนด `sensor_qos_publisher.py`
 
 ให้นักศึกษาแก้ไขไฟล์ `Essential_ROS/Week_02_Nodes_Topics_QoS/src/sensor_qos_publisher.py` เพื่อเพิ่ม:
-1. Publisher ชื่อ `pub_battery` ส่งข้อความชนิด `std_msgs/msg/Float32` ไปยังท็อปปิก `/sensor/battery`
+1. Publisher ชื่อ `pub_battery` ส่งข้อความชนิด `std_msgs/msg/Float32` ไปยังท็อปปิก `sensor/battery` (ชื่อแบบ Relative → `/sensor/battery` เมื่อไม่มี Namespace)
 2. กำหนด QoS Profile เป็น:
    - `ReliabilityPolicy.BEST_EFFORT`
    - `DurabilityPolicy.VOLATILE`
    - `HistoryPolicy.KEEP_LAST` พร้อม `depth=1`
 3. ใน `timer_callback` ให้คำนวณระดับแบตเตอรี่จำลองลดลงทีละ $0.05\%$ ในแต่ละรอบ (เริ่มต้นที่ $100.0\%$)
-4. ทดสอบความถูกต้องด้วยคำสั่ง:
+4. Build ใหม่ (`colcon build ... --packages-select amr_week02`) แล้วทดสอบความถูกต้องด้วยคำสั่ง:
    ```bash
    ./docker/run_lab.sh ros2 topic echo --qos-reliability best_effort /sensor/battery
    ```
@@ -146,26 +153,47 @@
 | :--- | :--- | :--- |
 | `AttributeError: 'Node' object has no attribute 'pub_battery'` | ลืมประกาศ `self.pub_battery = self.create_publisher(...)` ใน `__init__` | ตรวจสอบการประกาศตัวแปร Publisher ในคอนสตรักเตอร์ |
 | `ModuleNotFoundError: No module named 'rclpy'` | รันคำสั่งบน Host โดยตรงแทนที่จะรันผ่านคอนเทนเนอร์ | นำหน้าคำสั่งด้วย `./docker/run_lab.sh` เสมอ |
+| `Package 'amr_week02' not found` | ยังไม่ได้ `colcon build` หรือ build ไว้แต่แก้โค้ดแล้วยังไม่ build ใหม่ | รัน `./docker/run_lab.sh colcon build --base-paths Essential_ROS --packages-select amr_week02` |
+| `WARNING: topic [...] does not appear to be published yet` | คำสั่ง CLI เปิดเร็วเกินไป Discovery ยังไม่เสร็จ | รอ 1–2 วินาทีแล้วรันใหม่ หรือ `ros2 daemon start` ไว้ก่อน |
 | ค่าตัวเลขแบตเตอรี่ไม่ยอมลด | ประกาศตัวแปรระดับแบตเตอรี่เป็น Local Variable ในฟังก์ชัน Callback | ให้เก็บค่าใน Instance Variable เช่น `self.battery_level` |
 
 
-## 📸 ภาพผลลัพธ์การรันจริงในระบบ (Verified Lab Execution Screenshot)
-ผู้เรียนสามารถตรวจสอบความถูกต้องของผลลัพธ์ที่ได้จากการทำแล็บ เทียบกับภาพบันทึกหน้าจอการรันจริงในระบบ:
-
-![Verified Lab Execution: Terminal — Week 02: Sensor QoS Publisher & Subscriber](images/terminal_run.png)
+## 📟 ผลการรันจริง (Real Run Output)
+บันทึกจากการรันจริงใน ros:lab-runner (ROS 2 Jazzy, Gazebo Sim 8.15.0) บน Linux 7.0 เมื่อ 2026-10-29 — ไฟล์เต็ม: [`results/qos_lab_run.txt`](results/qos_lab_run.txt)
 
 ```console
-user@amr-dev:~/ros$ ./docker/run_lab.sh python3 Essential_ROS/Week_02_Nodes_Topics_QoS/src/sensor_qos_publisher.py &
-[INFO] [sensor_qos_publisher]: 🚀 [SensorQoSPublisher] Node initialized and publishing...
-user@amr-dev:~/ros$ ./docker/run_lab.sh python3 Essential_ROS/Week_02_Nodes_Topics_QoS/src/sensor_qos_subscriber.py
-[INFO] [sensor_qos_subscriber]: 📡 [SensorQoSSubscriber] Listening for sensor & state updates...
-[INFO] [sensor_qos_subscriber]: Received Temperature: 36.58 °C
-[INFO] [sensor_qos_subscriber]: 📢 Latched Robot State Received: 'SYSTEM_READY: Battery=100%, Mode=NORMAL'
-[INFO] [sensor_qos_subscriber]: Received Temperature: 36.02 °C
-[INFO] [sensor_qos_subscriber]: Received Temperature: 37.35 °C
-[INFO] [sensor_qos_publisher]: State Latched: 'SYSTEM_ACTIVE: Uptime=5.0s'
-[INFO] [sensor_qos_subscriber]: 📢 Latched Robot State Received: 'SYSTEM_ACTIVE: Uptime=5.0s'
-user@amr-dev:~/ros$ [CHECKPOINT PASSED: TRANSIENT_LOCAL LATCHING & SENSOR STREAM OK]
+$ ros2 run amr_week02 sensor_qos_publisher     # terminal 1
+$ ros2 run amr_week02 sensor_qos_subscriber    # terminal 3, started 2 s after the publisher (late joiner)
+[INFO] [1793242259.809630082] [sensor_qos_subscriber]: 📡 [SensorQoSSubscriber] Listening for sensor & state updates...
+[INFO] [1793242261.525578214] [sensor_qos_subscriber]: 📢 Latched Robot State Received: "SYSTEM_READY: Battery=100%, Mode=NORMAL"
+[INFO] [1793242261.813319452] [sensor_qos_subscriber]: Received Temperature: 36.50 °C
+...
+$ ros2 topic info -v /sensor/temperature
+Type: std_msgs/msg/Float32
+
+Publisher count: 1
+
+Node name: sensor_qos_publisher
+Node namespace: /
+Topic type: std_msgs/msg/Float32
+...
+Endpoint type: PUBLISHER
+...
+QoS profile:
+  Reliability: BEST_EFFORT
+  History (Depth): UNKNOWN
+  Durability: VOLATILE
+  Lifespan: Infinite
+  Deadline: Infinite
+  Liveliness: AUTOMATIC
+  Liveliness lease duration: Infinite
+
+Subscription count: 0
+
+$ ros2 topic hz /sensor/temperature   (stopped after 6 s)
+	min: 0.500s max: 0.500s std dev: 0.00010s window: 3
+average rate: 2.000
+	min: 0.500s max: 0.500s std dev: 0.00012s window: 6
 ```
 
 ---

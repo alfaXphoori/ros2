@@ -1,0 +1,71 @@
+$ ros2 launch amr_week07 display_urdf.launch.py use_gui:=false rviz:=false
+[INFO] [launch]: All log files can be found below /tmp/home/.ros/log/2026-10-29-02-45-04-721872-ce-desk-32
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [robot_state_publisher-1]: process started with pid [36]
+[INFO] [joint_state_publisher-2]: process started with pid [37]
+[robot_state_publisher-1] [INFO] [1793241904.803392785] [robot_state_publisher]: Robot initialized
+[joint_state_publisher-2] [INFO] [1793241905.124373156] [joint_state_publisher]: Waiting for robot_description to be published on the robot_description topic...
+[joint_state_publisher-2] [INFO] [1793241905.353598010] [joint_state_publisher]: Got description, configuring robot
+$ ros2 run tf2_ros tf2_echo base_footprint lidar_link
+[INFO] [1793241910.656073933] [tf2_echo]: Waiting for transform base_footprint ->  lidar_link: Invalid frame ID "base_footprint" passed to canTransform argument target_frame - frame does not exist
+At time 0.0
+- Translation: [0.080, 0.000, 0.175]
+- Rotation: in Quaternion (xyzw) [0.000, 0.000, 0.000, 1.000]
+- Rotation: in RPY (radian) [0.000, -0.000, 0.000]
+- Rotation: in RPY (degree) [0.000, -0.000, 0.000]
+- Matrix:
+  1.000  0.000  0.000  0.080
+  0.000  1.000  0.000  0.000
+  0.000  0.000  1.000  0.175
+  0.000  0.000  0.000  1.000
+...
+[INFO] [1793241916.471897523] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+$ ros2 run tf2_ros tf2_echo camera_link camera_optical_link
+[INFO] [1793241916.848551797] [tf2_echo]: Waiting for transform camera_link ->  camera_optical_link: Invalid frame ID "camera_link" passed to canTransform argument target_frame - frame does not exist
+At time 0.0
+- Translation: [0.000, 0.000, 0.000]
+- Rotation: in Quaternion (xyzw) [-0.500, 0.500, -0.500, 0.500]
+- Rotation: in RPY (radian) [-1.571, -0.000, -1.571]
+- Rotation: in RPY (degree) [-90.000, -0.000, -90.000]
+- Matrix:
+  0.000  0.000  1.000  0.000
+ -1.000  0.000  0.000  0.000
+  0.000 -1.000  0.000  0.000
+  0.000  0.000  0.000  1.000
+...
+[INFO] [1793241922.672085278] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+$ ros2 topic echo --once /joint_states
+header:
+  stamp:
+    sec: 1793241923
+    nanosec: 828569167
+  frame_id: ''
+name:
+- left_wheel_joint
+- right_wheel_joint
+position:
+- 0.0
+- 0.0
+velocity: []
+effort: []
+---
+[WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+[INFO] [joint_state_publisher-2]: sending signal 'SIGINT' to process[joint_state_publisher-2]
+[INFO] [robot_state_publisher-1]: sending signal 'SIGINT' to process[robot_state_publisher-1]
+[robot_state_publisher-1] [INFO] [1793241934.470927291] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[joint_state_publisher-2] Traceback (most recent call last):
+[joint_state_publisher-2]   File "/opt/ros/jazzy/lib/joint_state_publisher/joint_state_publisher", line 33, in <module>
+[joint_state_publisher-2]     sys.exit(load_entry_point('joint-state-publisher==2.4.3', 'console_scripts', 'joint_state_publisher')())
+[joint_state_publisher-2]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[joint_state_publisher-2]   File "/opt/ros/jazzy/lib/python3.12/site-packages/joint_state_publisher/joint_state_publisher.py", line 571, in main
+[robot_state_publisher-1] [INFO] [1793241934.472611881] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[joint_state_publisher-2]     jsp.destroy_node()
+[joint_state_publisher-2]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/node.py", line 1962, in destroy_node
+[joint_state_publisher-2]     self.destroy_service(self._services[0])
+[joint_state_publisher-2]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/node.py", line 1886, in destroy_service
+[joint_state_publisher-2]     service.destroy()
+[joint_state_publisher-2]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/service.py", line 123, in destroy
+[joint_state_publisher-2]     self.__service.destroy_when_not_in_use()
+[joint_state_publisher-2] KeyboardInterrupt
+[ERROR] [joint_state_publisher-2]: process has died [pid 37, exit code -2, cmd '/opt/ros/jazzy/lib/joint_state_publisher/joint_state_publisher --ros-args -r __node:=joint_state_publisher --params-file /tmp/launch_params_t4ju1kr3'].
+[INFO] [robot_state_publisher-1]: process has finished cleanly [pid 36]

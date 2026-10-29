@@ -16,11 +16,12 @@
 
 ## 📋 ข้อกำหนดก่อนเริ่มปฏิบัติการ (Prerequisites & Setup)
 - เข้าสู่รูทไดเรกทอรี `/mnt/sda/ros`
-- ตรวจสอบความถูกต้องของสคริปต์ในสัปดาห์ที่ 9:
+- Build แพ็กเกจ `amr_week09` (และ `amr_week07` ที่มี URDF):
   ```bash
-  python3 -m py_compile Essential_ROS/Week_09_TF2_Coordinate_Transforms/src/static_sensor_broadcaster.py
-  python3 -m py_compile Essential_ROS/Week_09_TF2_Coordinate_Transforms/src/tf_obstacle_listener.py
+  ./docker/run_lab.sh colcon build --base-paths Essential_ROS --packages-up-to amr_week09
   ```
+  *(`./docker/run_lab.sh` จะ source `install/setup.bash` ให้อัตโนมัติ คำสั่ง `ros2 run amr_week09 ...` จึงใช้ได้ทันที)*
+- **กฎสำคัญ:** เฟรม `lidar_link`/`camera_link`/`camera_optical_link` ต้องมี **ผู้ส่งเพียงรายเดียว** — ในแล็บนี้ใช้ `static_sensor_broadcaster` **แทน** `robot_state_publisher` (ห้ามเปิด `display_urdf.launch.py` ของสัปดาห์ที่ 7 ค้างไว้พร้อมกัน)
 
 ---
 
@@ -31,29 +32,30 @@
 
 1. เปิด **Terminal 1** แล้วรันโหนด Static Broadcaster:
    ```bash
-   ./docker/run_lab.sh python3 Essential_ROS/Week_09_TF2_Coordinate_Transforms/src/static_sensor_broadcaster.py
+   ./docker/run_lab.sh ros2 run amr_week09 static_sensor_broadcaster
+   # หรือ ./docker/run_lab.sh python3 Essential_ROS/Week_09_TF2_Coordinate_Transforms/src/static_sensor_broadcaster.py
    ```
-   **ผลลัพธ์ที่คาดหวัง:**
+   **ผลลัพธ์ที่คาดหวัง (จากการรันจริง):**
    ```text
-   [INFO] [static_sensor_broadcaster]: 📡 [StaticSensorBroadcaster] Published static transforms for LiDAR, Camera, and Optical Frame.
+   [INFO] [1793243323.526831957] [static_sensor_broadcaster]: Published static transforms: base_link->lidar_link, base_link->camera_link, camera_link->camera_optical_link
    ```
 
 2. เปิด **Terminal 2** แล้วใช้คำสั่ง `tf2_echo` ตรวจสอบทรานส์ฟอร์มระหว่าง `base_link` และ `lidar_link`:
    ```bash
    ./docker/run_lab.sh ros2 run tf2_ros tf2_echo base_link lidar_link
    ```
-   **ผลลัพธ์ที่คาดหวัง:**
+   **ผลลัพธ์ที่คาดหวัง (จากการรันจริง; Static transform มีเวลา 0.0):**
    ```text
-   At time 172935...
+   At time 0.0
    - Translation: [0.080, 0.000, 0.095]
-   - Rotation: in Quaternion [0.000, 0.000, 0.000, 1.000]
+   - Rotation: in Quaternion (xyzw) [0.000, 0.000, 0.000, 1.000]
    ```
 
 3. ตรวจสอบทรานส์ฟอร์มของกล้อง `camera_optical_link`:
    ```bash
    ./docker/run_lab.sh ros2 run tf2_ros tf2_echo camera_link camera_optical_link
    ```
-   *สังเกต:* ค่า Rotation Quaternion จะสะท้อนการหมุน $-90^\circ$ รอบแกน Roll และ Yaw
+   *สังเกต:* ค่า Rotation Quaternion จะสะท้อนการหมุน $-90^\circ$ รอบแกน Roll และ Yaw: `Rotation: in Quaternion (xyzw) [-0.500, 0.500, -0.500, 0.500]`
 
 ---
 
@@ -63,13 +65,15 @@
 1. ให้ Terminal 1 (Broadcaster) รันอยู่ต่อเนื่อง
 2. ใน **Terminal 2** รันโหนด Listener:
    ```bash
-   ./docker/run_lab.sh python3 Essential_ROS/Week_09_TF2_Coordinate_Transforms/src/tf_obstacle_listener.py
+   ./docker/run_lab.sh ros2 run amr_week09 tf_obstacle_listener
    ```
-   **ผลลัพธ์ที่คาดหวัง:**
+   **ผลลัพธ์ที่คาดหวัง (จากการรันจริง):**
    ```text
-   [INFO] [tf_obstacle_listener]: 🔍 [TfObstacleListener] Listening for transforms...
-   [INFO] [tf_obstacle_listener]: 🎯 Obstacle transformed from camera to base_link: X=1.40m, Y=0.30m
+   [INFO] [...] [tf_obstacle_listener]: Listening for transforms and converting obstacle poses...
+   [INFO] [...] [tf_obstacle_listener]: Obstacle transformed from camera_link to base_link: X=1.40m, Y=0.30m, Z=0.02m
    ```
+   หรือเปิดทั้งสองโหนดด้วยคำสั่งเดียว: `./docker/run_lab.sh ros2 launch amr_week09 tf_lab.launch.py`
+3. ทดลองเปลี่ยนแหล่ง TF เป็น URDF ของสัปดาห์ที่ 7 (ปิด Broadcaster ก่อน): `./docker/run_lab.sh ros2 launch amr_week09 tf_lab.launch.py tf_source:=urdf` แล้วสังเกตว่าได้ $(1.40, 0.30)$ เท่าเดิม
 
    **คำถาม Checkpoint 9.2:**
    - [ ] จุดเริ่มต้นในเฟรมกล้องอยู่ที่ $X=1.20$ m แต่ทำไมเมื่อแปลงเป็น `base_link` จึงได้ $X=1.40$ m?
@@ -80,13 +84,16 @@
 ### 🔹 Lab 9.3: การสร้างแผนผัง TF Tree ด้วย `view_frames`
 **เป้าหมาย:** บันทึกโครงสร้างต้นไม้พิกัดออกเป็นเอกสาร PDF
 
-1. ให้ทั้งสองโหนดเปิดทำงานอยู่
+1. ให้ทั้งสองโหนดเปิดทำงานอยู่ (หรือ `tf_lab.launch.py tf_source:=urdf` เพื่อเห็นต้นไม้ทั้งตัวหุ่นยนต์)
 2. ใน **Terminal 3** รันคำสั่งสร้างแผนภาพ:
    ```bash
    ./docker/run_lab.sh ros2 run tf2_tools view_frames
    ```
-3. คำสั่งจะสร้างไฟล์ `frames.pdf` ขึ้นมาในโฟลเดอร์ปัจจุบัน
-4. แปลงหรือเปิดดูไฟล์เพื่อตรวจสอบว่ามีกิ่งก้าน:
+3. คำสั่งจะฟัง TF 5 วินาทีแล้วสร้างไฟล์ `frames_<วันเวลา>.pdf` และ `frames_<วันเวลา>.gv` ในโฟลเดอร์ปัจจุบัน แปลงเป็นภาพ PNG ด้วย Graphviz:
+   ```bash
+   ./docker/run_lab.sh bash -c 'dot -Tpng frames_*.gv -o tf_tree.png'
+   ```
+4. เปิดดูไฟล์เพื่อตรวจสอบว่ามีกิ่งก้าน (ตัวอย่างจริง: [`images/view_frames_tf_tree.png`](images/view_frames_tf_tree.png)):
    `base_link` $\rightarrow$ `lidar_link`  
    `base_link` $\rightarrow$ `camera_link` $\rightarrow$ `camera_optical_link`
 
@@ -128,10 +135,10 @@
 
 ## 📊 เกณฑ์การประเมินผล (Lab Grading Rubric - 100 คะแนน)
 | รายการประเมิน | รายละเอียดการให้คะแนน | คะแนนเต็ม |
-| :--- | :--- | :--- :
+| :--- | :--- | :---: |
 | **การตรวจสอบทรานส์ฟอร์มผ่าน CLI** | รัน `static_sensor_broadcaster` และใช้ `tf2_echo` อ่านค่าได้ถูกต้อง | 20 |
 | **ความแม่นยำของการแปลงพิกัด Listener** | อธิบายและแสดงผลการคำนวณตำแหน่งสิ่งกีดขวางใน `base_link` ได้ถูกต้อง | 25 |
-| **การสร้างและวิเคราะห์ TF Tree** | สร้างไฟล์ `frames.pdf` ได้สำเร็จ โครงสร้าง Parent-Child ถูกต้อง | 20 |
+| **การสร้างและวิเคราะห์ TF Tree** | สร้างไฟล์ `frames_*.pdf` ได้สำเร็จ โครงสร้าง Parent-Child ถูกต้อง | 20 |
 | **การพัฒนาเพิ่มเซนเซอร์ Sonar ใน Lab 9.4** | เขียนทรานส์ฟอร์มมุมเอียง $\pm 30^\circ$ ถูกต้องตามหลัก Quaternion | 25 |
 | **ความเรียบร้อยของรายงานและโจทย์ท้าทาย** | รายงานสมบูรณ์ ภาพประกอบและวิธีทำชัดเจน | 10 |
 | **รวม** | | **100** |
@@ -146,22 +153,19 @@
 | การคำนวณมุมหมุน Sonar คลาดเคลื่อน | ใส่หน่วยเป็นองศาแทนเรเดียน | แปลงมุมเป็นเรเดียนเสมอด้วย `math.radians(30)` |
 
 
-## 📸 ภาพผลลัพธ์การรันจริงในระบบ (Verified Lab Execution Screenshot)
-ผู้เรียนสามารถตรวจสอบความถูกต้องของผลลัพธ์ที่ได้จากการทำแล็บ เทียบกับภาพบันทึกหน้าจอการรันจริงในระบบ:
-
-![Verified Lab Execution: Terminal — Week 09: TF2 Static Broadcaster & Obstacle Listener](images/terminal_run.png)
+## 📟 ผลการรันจริง (Real Run Output)
+บันทึกจากการรันจริงใน ros:lab-runner (ROS 2 Jazzy, Gazebo Sim 8.15.0) บน Linux 7.0 เมื่อ 2026-10-29
+(ฉบับเต็ม: [`results/`](results/), ภาพ TF Tree: [`images/view_frames_tf_tree.png`](images/view_frames_tf_tree.png))
 
 ```console
-user@amr-dev:~/ros$ ./docker/run_lab.sh python3 Essential_ROS/Week_09_TF2_Coordinate_Transforms/src/static_sensor_broadcaster.py &
-[INFO] [static_sensor_broadcaster]: 📡 Published static transforms for LiDAR, Camera, and Optical Frame.
-user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 run tf2_ros tf2_echo base_link lidar_link
-At time 0.0 - Translation: [0.080, 0.000, 0.095]  Rotation: [0.000, 0.000, 0.000, 1.000]
-user@amr-dev:~/ros$ ./docker/run_lab.sh python3 Essential_ROS/Week_09_TF2_Coordinate_Transforms/src/tf_obstacle_listener.py
-[INFO] [tf_obstacle_listener]: 🔍 Listening for transforms and converting obstacle poses...
-[INFO] [tf_obstacle_listener]: 🎯 Obstacle transformed from camera to base_link: X=1.40m, Y=0.30m
-[INFO] [tf_obstacle_listener]: 🎯 Obstacle transformed from camera to base_link: X=1.40m, Y=0.30m
-user@amr-dev:~/ros$ [CHECKPOINT PASSED: REP 103 CAMERA OPTICAL FRAME CONVERSION OK]
+$ ros2 launch amr_week09 tf_lab.launch.py tf_source:=broadcaster
+...
+[static_sensor_broadcaster-1] [INFO] [1793243288.280573459] [static_sensor_broadcaster]: Published static transforms: base_link->lidar_link, base_link->camera_link, camera_link->camera_optical_link
+[tf_obstacle_listener-2] [INFO] [1793243288.768318273] [tf_obstacle_listener]: Obstacle transformed from camera_link to base_link: X=1.40m, Y=0.30m, Z=0.02m
+...
+$ python3 Essential_ROS/Week_09_TF2_Coordinate_Transforms/src/static_sensor_broadcaster.py   # then: kill -TERM <pid> after 3 s
+[INFO] [1793243323.526831957] [static_sensor_broadcaster]: Published static transforms: base_link->lidar_link, base_link->camera_link, camera_link->camera_optical_link
+exit code: 0
 ```
 
 ---
-

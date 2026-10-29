@@ -1,6 +1,8 @@
+# ros2_control configuration for the module-01 AMR (ROS 2 Jazzy, ros2_controllers 4.x)
+# Used by both the mock-hardware launch (ros2_control_node) and Gazebo (gz_ros2_control plugin).
 controller_manager:
   ros__parameters:
-    update_rate: 50  # Hz
+    update_rate: 50  # Hz -> control period 20 ms
 
     diff_drive_controller:
       type: diff_drive_controller/DiffDriveController
@@ -13,6 +15,7 @@ diff_drive_controller:
     left_wheel_names: ["left_wheel_joint"]
     right_wheel_names: ["right_wheel_joint"]
 
+    # Must match urdf/diff_drive_ros2_control.xacro (wheel joints at y = +/-0.12 m, radius 0.08 m)
     wheel_separation: 0.24
     wheel_radius: 0.08
 
@@ -23,24 +26,27 @@ diff_drive_controller:
     publish_rate: 50.0
     odom_frame_id: odom
     base_frame_id: base_footprint
-    pose_covariance_diagonal: [0.001, 0.001, 0.0, 0.0, 0.0, 0.01]
-    twist_covariance_diagonal: [0.001, 0.0, 0.0, 0.0, 0.0, 0.01]
+    pose_covariance_diagonal: [0.001, 0.001, 0.001, 0.001, 0.001, 0.01]
+    twist_covariance_diagonal: [0.001, 0.001, 0.001, 0.001, 0.001, 0.01]
 
-    open_loop: false
-    enable_odom_tf: true
+    open_loop: false          # odometry from wheel feedback (state interfaces)
+    position_feedback: true   # integrate odometry from wheel *position* states
+    enable_odom_tf: true      # publish odom -> base_footprint on /tf
 
-    cmd_vel_timeout: 0.5
-    use_stamped_vel: false
+    # Jazzy: the controller subscribes ONLY to geometry_msgs/TwistStamped on
+    # ~/cmd_vel  (= /diff_drive_controller/cmd_vel). use_stamped_vel was removed.
+    cmd_vel_timeout: 0.5      # s; wheels stop if no command arrives for 0.5 s
 
-    # Velocity limits
-    linear.x.has_velocity_limits: true
-    linear.x.has_acceleration_limits: true
-    linear.x.max_velocity: 1.0
+    # Velocity / acceleration limits (a limit set to NaN or left out is disabled;
+    # the old has_*_limits flags are deprecated in Jazzy).
+    # Worst case wheel speed: (0.5 + 2.0 * 0.24 / 2) / 0.08 = 9.25 rad/s,
+    # inside the +/-10 rad/s command limit of the wheel joints in the xacro.
+    linear.x.max_velocity: 0.5
     linear.x.min_velocity: -0.5
     linear.x.max_acceleration: 1.0
+    linear.x.max_deceleration: -1.0
 
-    angular.z.has_velocity_limits: true
-    angular.z.has_acceleration_limits: true
     angular.z.max_velocity: 2.0
     angular.z.min_velocity: -2.0
     angular.z.max_acceleration: 2.5
+    angular.z.max_deceleration: -2.5

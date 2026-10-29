@@ -1,0 +1,131 @@
+# Lab 4.1-4.3 - real run in ros:lab-runner (ROS 2 Jazzy), Linux 7.0, 2026-10-29
+# Recorded in one container: ros2 launch in the background (Terminal 1), CLI in the foreground (Terminal 2).
+# Long-running tools (tf2_echo) were stopped with Ctrl-C (SIGINT) after 5 s.
+$ ros2 launch amr_adv04 multi_robot_fleet.launch.py &
+# ---------------- Lab 4.1 ----------------
+$ ros2 node list
+/amr_01/fake_diff_drive
+/amr_01/map_to_odom
+/amr_01/robot_state_publisher
+/amr_02/fake_diff_drive
+/amr_02/map_to_odom
+/amr_02/robot_state_publisher
+$ ros2 topic list
+/amr_01/cmd_vel
+/amr_01/joint_states
+/amr_01/odom
+/amr_01/robot_description
+/amr_02/cmd_vel
+/amr_02/joint_states
+/amr_02/odom
+/amr_02/robot_description
+/parameter_events
+/rosout
+/tf
+/tf_static
+# ---------------- Lab 4.2 ----------------
+$ ros2 run tf2_ros tf2_echo amr_01/base_link amr_01/left_wheel_link   # (5 s)
+[INFO] [1793242866.923942867] [tf2_echo]: Waiting for transform amr_01/base_link ->  amr_01/left_wheel_link: Invalid frame ID "amr_01/base_link" passed to canTransform argument target_frame - frame does not exist
+At time 1793242867.901315999
+- Translation: [0.000, 0.120, 0.000]
+- Rotation: in Quaternion (xyzw) [0.000, 0.000, 0.000, 1.000]
+- Rotation: in RPY (radian) [0.000, -0.000, 0.000]
+- Rotation: in RPY (degree) [0.000, -0.000, 0.000]
+- Matrix:
+  1.000  0.000  0.000  0.000
+  0.000  1.000  0.000  0.120
+  0.000  0.000  1.000  0.000
+  0.000  0.000  0.000  1.000
+At time 1793242868.901219676
+$ ros2 run tf2_ros tf2_echo map amr_02/base_footprint   # (5 s)
+[INFO] [1793242872.123789473] [tf2_echo]: Waiting for transform map ->  amr_02/base_footprint: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+At time 1793242873.94448174
+- Translation: [0.000, 1.500, 0.000]
+- Rotation: in Quaternion (xyzw) [0.000, 0.000, 0.000, 1.000]
+- Rotation: in RPY (radian) [0.000, -0.000, 0.000]
+- Rotation: in RPY (degree) [0.000, -0.000, 0.000]
+- Matrix:
+  1.000  0.000  0.000  0.000
+  0.000  1.000  0.000  1.500
+  0.000  0.000  1.000  0.000
+  0.000  0.000  0.000  1.000
+At time 1793242874.94625140
+$ ros2 topic info -v /amr_01/joint_states | grep -E "Node name|Node namespace|Endpoint type"
+Node name: fake_diff_drive
+Node namespace: /amr_01
+Endpoint type: PUBLISHER
+Node name: robot_state_publisher
+Node namespace: /amr_01
+Endpoint type: SUBSCRIPTION
+$ ros2 topic info /tf
+Type: tf2_msgs/msg/TFMessage
+Publisher count: 4
+Subscription count: 0
+# ---------------- Lab 4.3 ----------------
+$ ros2 topic pub --times 20 --rate 10 /amr_01/cmd_vel geometry_msgs/msg/Twist {linear: {x: 0.5}}
+publisher: beginning loop
+publishing #1: geometry_msgs.msg.Twist(linear=geometry_msgs.msg.Vector3(x=0.5, y=0.0, z=0.0), angular=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.0))
+
+...
+publishing #20: geometry_msgs.msg.Twist(linear=geometry_msgs.msg.Vector3(x=0.5, y=0.0, z=0.0), angular=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.0))
+
+$ ros2 topic echo --once /amr_01/odom nav_msgs/msg/Odometry --field pose.pose.position
+x: 1.1999999999999997
+y: 0.0
+z: 0.0
+---
+$ ros2 topic echo --once /amr_02/odom nav_msgs/msg/Odometry --field pose.pose.position
+x: 0.0
+y: 0.0
+z: 0.0
+---
+$ ros2 run tf2_ros tf2_echo map amr_01/base_footprint   # (5 s)
+[INFO] [1793242884.876239083] [tf2_echo]: Waiting for transform map ->  amr_01/base_footprint: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[INFO] [1793242886.862414810] [tf2_echo]: Waiting for transform map ->  amr_01/base_footprint: Could not find a connection between 'map' and 'amr_01/base_footprint' because they are not part of the same tree.Tf has two or more unconnected trees.
+At time 1793242888.851077502
+- Translation: [1.200, 0.000, 0.000]
+- Rotation: in Quaternion (xyzw) [0.000, 0.000, 0.000, 1.000]
+- Rotation: in RPY (radian) [0.000, -0.000, 0.000]
+$ cd /tmp && ros2 run tf2_tools view_frames
+[INFO] [1793242895.451866207] [view_frames]: Generating graph...
+[INFO] [1793242895.453480200] [view_frames]: Result: ... (frame_yaml trimmed; graph rendered in images/tf_tree_two_robots.png)
+[INFO] [1793242895.459672312] [view_frames]: Exporting graph in frames_2026-10-29_03.01.35.pdf file...
+/tmp/frames_2026-10-29_03.01.35.gv
+----- launch log (Terminal 1) -----
+[INFO] [launch]: All log files can be found below /tmp/home/.ros/log/2026-10-29-03-01-00-254041-ce-desk-47
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [robot_state_publisher-1]: process started with pid [51]
+[INFO] [fake_diff_drive-2]: process started with pid [52]
+[INFO] [static_transform_publisher-3]: process started with pid [53]
+[INFO] [robot_state_publisher-4]: process started with pid [54]
+[INFO] [fake_diff_drive-5]: process started with pid [55]
+[INFO] [static_transform_publisher-6]: process started with pid [56]
+[static_transform_publisher-3] [INFO] [1793242860.380053921] [amr_01.map_to_odom]: Spinning until stopped - publishing transform
+[static_transform_publisher-3] translation: ('0.000000', '0.000000', '0.000000')
+[static_transform_publisher-3] rotation: ('0.000000', '0.000000', '0.000000', '1.000000')
+[static_transform_publisher-3] from 'map' to 'amr_01/odom'
+[robot_state_publisher-4] [INFO] [1793242860.401170277] [amr_02.robot_state_publisher]: Robot initialized
+[static_transform_publisher-6] [INFO] [1793242860.402221231] [amr_02.map_to_odom]: Spinning until stopped - publishing transform
+[static_transform_publisher-6] translation: ('0.000000', '1.500000', '0.000000')
+[static_transform_publisher-6] rotation: ('0.000000', '0.000000', '0.000000', '1.000000')
+[static_transform_publisher-6] from 'map' to 'amr_02/odom'
+[robot_state_publisher-1] [INFO] [1793242860.410665767] [amr_01.robot_state_publisher]: Robot initialized
+[fake_diff_drive-5] [INFO] [1793242860.860439658] [amr_02.fake_diff_drive]: fake_diff_drive in namespace "/amr_02": amr_02/odom -> amr_02/base_footprint
+[fake_diff_drive-2] [INFO] [1793242860.866184400] [amr_01.fake_diff_drive]: fake_diff_drive in namespace "/amr_01": amr_01/odom -> amr_01/base_footprint
+[WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+[INFO] [static_transform_publisher-6]: sending signal 'SIGINT' to process[static_transform_publisher-6]
+[INFO] [fake_diff_drive-5]: sending signal 'SIGINT' to process[fake_diff_drive-5]
+[INFO] [robot_state_publisher-4]: sending signal 'SIGINT' to process[robot_state_publisher-4]
+[INFO] [static_transform_publisher-3]: sending signal 'SIGINT' to process[static_transform_publisher-3]
+[INFO] [fake_diff_drive-2]: sending signal 'SIGINT' to process[fake_diff_drive-2]
+[INFO] [robot_state_publisher-1]: sending signal 'SIGINT' to process[robot_state_publisher-1]
+[static_transform_publisher-6] [INFO] [1793242895.652124328] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[robot_state_publisher-4] [INFO] [1793242895.653052850] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[static_transform_publisher-3] [INFO] [1793242895.653450007] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[robot_state_publisher-1] [INFO] [1793242895.654725950] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[INFO] [static_transform_publisher-6]: process has finished cleanly [pid 56]
+[INFO] [static_transform_publisher-3]: process has finished cleanly [pid 53]
+[INFO] [robot_state_publisher-1]: process has finished cleanly [pid 51]
+[INFO] [robot_state_publisher-4]: process has finished cleanly [pid 54]
+[INFO] [fake_diff_drive-5]: process has finished cleanly [pid 55]
+[INFO] [fake_diff_drive-2]: process has finished cleanly [pid 52]

@@ -1,0 +1,22 @@
+$ colcon test --base-paths Essential_ROS Advanced_ROS --packages-select amr_adv02 --pytest-args -v --event-handlers console_direct+
+test/test_no_tag_launch.py::test_no_tag_launch PASSED                    [  6%]
+test/test_vision_launch.py::test_vision_launch PASSED                    [ 13%]
+test/test_vision_utils.py::test_pose_error_below_1cm_and_2deg[t0-15.0] PASSED [ 20%]
+test/test_vision_utils.py::test_pose_error_below_1cm_and_2deg[t1-20.0] PASSED [ 26%]
+test/test_vision_utils.py::test_pose_error_below_1cm_and_2deg[t2--30.0] PASSED [ 33%]
+test/test_vision_utils.py::test_pose_error_below_1cm_and_2deg[t3-35.0] PASSED [ 40%]
+test/test_vision_utils.py::test_pose_error_below_1cm_and_2deg[t4--25.0] PASSED [ 46%]
+test/test_vision_utils.py::test_no_tag_no_detection PASSED               [ 53%]
+test/test_vision_utils.py::test_tag_behind_camera_is_not_drawn PASSED    [ 60%]
+test/test_vision_utils.py::test_other_tag_id_is_reported_as_such PASSED  [ 66%]
+test/test_vision_utils.py::test_quaternion_round_trip PASSED             [ 73%]
+test/test_vision_utils.py::test_color_detector_finds_scene_objects PASSED [ 80%]
+test/test_vision_utils.py::test_detection_array_conversion PASSED        [ 86%]
+test/test_vision_utils.py::test_fronto_parallel_corners_give_finite_pose PASSED [ 93%]
+test/test_vision_utils.py::test_random_near_frontal_poses_always_solved PASSED [100%]
+============================== 15 passed in 7.86s ==============================
+Finished <<< amr_adv02 [8.38s]
+Summary: 1 package finished [8.51s]
+
+$ colcon test-result --verbose
+Summary: 15 tests, 0 errors, 0 failures, 0 skipped

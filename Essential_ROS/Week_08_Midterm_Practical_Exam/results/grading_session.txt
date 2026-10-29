@@ -1,0 +1,46 @@
+$ ros2 topic hz /cmd_vel   (5 s)
+...
+	min: 0.199s max: 0.202s std dev: 0.00076s window: 12
+average rate: 5.001
+	min: 0.198s max: 0.202s std dev: 0.00107s window: 18
+$ ros2 topic echo --once /cmd_vel geometry_msgs/msg/Twist --field linear.x
+0.3
+---
+$ ros2 param set /midterm_robot_controller max_speed 1.0
+Set parameter successful
+$ ros2 param set /midterm_robot_controller max_speed 2.5
+Setting parameter failed: max_speed 2.5 out of safe limit [0.1, 1.5] m/s
+$ ros2 param set /midterm_robot_controller max_speed 2.0
+Setting parameter failed: max_speed 2.0 out of safe limit [0.1, 1.5] m/s
+$ ros2 param set /midterm_robot_controller max_speed 0.2
+Set parameter successful
+$ ros2 topic echo --once /cmd_vel geometry_msgs/msg/Twist --field linear.x
+0.2
+---
+$ ros2 param set /midterm_robot_controller max_speed 0.6
+Set parameter successful
+$ ros2 topic pub -w 1 --once /sensor/temperature std_msgs/msg/Float32 "{data: 72.5}"
+Waiting for at least 1 matching subscription(s)...
+Waiting for at least 1 matching subscription(s)...
+publisher: beginning loop
+publishing #1: std_msgs.msg.Float32(data=72.5)
+
+$ ros2 topic echo --once /cmd_vel geometry_msgs/msg/Twist --field linear.x
+0.15
+---
+$ ros2 topic pub -w 1 --once /sensor/temperature std_msgs/msg/Float32 "{data: 50.0}"
+Waiting for at least 1 matching subscription(s)...
+Waiting for at least 1 matching subscription(s)...
+publisher: beginning loop
+publishing #1: std_msgs.msg.Float32(data=50.0)
+
+$ ros2 topic echo --once /cmd_vel geometry_msgs/msg/Twist --field linear.x
+0.3
+---
+--- node output: ros2 run amr_week08 hospital_robot_node ---
+[INFO] [1793242436.244599146] [midterm_robot_controller]: Midterm controller running (max_speed=0.6 m/s)
+[INFO] [1793242452.029338489] [midterm_robot_controller]: max_speed updated to 1.0 m/s
+[INFO] [1793242461.030573290] [midterm_robot_controller]: max_speed updated to 0.2 m/s
+[INFO] [1793242466.969326355] [midterm_robot_controller]: max_speed updated to 0.6 m/s
+[WARN] [1793242469.933094960] [midterm_robot_controller]: High temperature 72.5 C > 65.0 C: throttling speed to 0.15 m/s
+[INFO] [1793242475.914081376] [midterm_robot_controller]: Temperature back to 50.0 C: normal speed

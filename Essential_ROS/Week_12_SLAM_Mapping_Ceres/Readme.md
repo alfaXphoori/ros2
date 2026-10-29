@@ -11,7 +11,7 @@
 2. **พิสูจน์คณิตศาสตร์แบบจำลองแผนที่กริด (2D Occupancy Grid Map)** และการปรับปรุงสถานะเซลล์ด้วยสมการ Log-Odds Formulation
 3. **วิเคราะห์โครงสร้าง Pose Graph Optimization** ซึ่งประกอบด้วยโหนดพิกัด (Pose Nodes), เส้นเชื่อม Odometry, และเส้นเชื่อม Loop Closure
 4. **ทำความเข้าใจกลไกการแก้ระบบสมการไม่เป็นเชิงเส้น (Non-linear Least Squares)** ด้วยไลบรารี Ceres Solver โดยใช้อัลกอริทึม Levenberg-Marquardt
-5. **ปรับแต่งพารามิเตอร์การทำงานของ SLAM Toolbox** (`async_slam_toolbox_node`) และบันทึกแผนที่ด้วย `nav2_map_server` (`.pgm` และ `.yaml`)
+5. **ปรับแต่งพารามิเตอร์การทำงานของ SLAM Toolbox** (executable `async_slam_toolbox_node`, ชื่อโหนด `slam_toolbox`) และบันทึกแผนที่ด้วย `nav2_map_server` (`.pgm` และ `.yaml`)
 
 ---
 
@@ -119,63 +119,132 @@ $$\mathbf{e}_{ij}(\mathbf{x}_i, \mathbf{x}_j) = \mathbf{R}_i^T (\mathbf{t}_j - \
 2. **ไฟล์เมทาดาตา (`.yaml`):**
    ```yaml
    image: warehouse_map.pgm
-   resolution: 0.05             # ขนาดเซลล์ (0.05 เมตรต่อ 1 พิกเซล)
-   origin: [-7.5, -7.5, 0.0]    # พิกัดโลกจริง (X, Y, Yaw) ของพิกเซลซ้ายล่างสุด (0, 0)
+   mode: trinary
+   resolution: 0.050            # ขนาดเซลล์ (0.05 เมตรต่อ 1 พิกเซล)
+   origin: [-4.988, -4.970, 0]  # พิกัดโลกจริง (X, Y, Yaw) ของพิกเซลซ้ายล่างสุด (0, 0)
    negate: 0                    # สีขาวเป็น Free, สีดำเป็น Occupied
    occupied_thresh: 0.65        # พิกเซลที่มีค่าความน่าจะเป็น >= 65% ถือเป็นสิ่งกีดขวาง
-   free_thresh: 0.25            # พิกเซลที่มีค่าความน่าจะเป็น <= 25% ถือเป็นทางโล่ง
+   free_thresh: 0.196           # พิกเซลที่มีค่าความน่าจะเป็น <= 19.6% ถือเป็นทางโล่ง
    ```
+   (ค่าข้างบนคือไฟล์ [`maps/warehouse_map.yaml`](maps/warehouse_map.yaml) ที่ `map_saver_cli` เขียนออกมาจริง ส่วน `occupied_thresh`/`negate` อยู่บรรทัดอื่นในไฟล์เดียวกัน)
 
 ---
 
 ## 🛠️ การวิเคราะห์โค้ดตัวอย่างในโมดูล (Code Walkthrough)
 
-### 1. [`slam_toolbox_params.yaml`](file:///mnt/sda/ros/Essential_ROS/Week_12_SLAM_Mapping_Ceres/config/slam_toolbox_params.yaml)
-- **การกำหนดตัวแก้สมการ Ceres ([L5-L10](file:///mnt/sda/ros/Essential_ROS/Week_12_SLAM_Mapping_Ceres/config/slam_toolbox_params.yaml#L5-L10)):**
+### 1. [`config/slam_toolbox_params.yaml`](config/slam_toolbox_params.yaml)
+- **คีย์บนสุดต้องตรงกับชื่อโหนด:** ไฟล์ขึ้นต้นด้วย `slam_toolbox:` เพราะ launch ของ slam_toolbox ตั้งชื่อโหนดว่า `slam_toolbox`
+  ถ้าเขียนเป็น `async_slam_toolbox_node:` (ชื่อ executable) ROS 2 จะ **ไม่นำพารามิเตอร์ใดๆ ไปใช้เลยโดยไม่มีคำเตือน** และโหนดจะทำงานด้วยค่าเริ่มต้น (เช่น `max_laser_range` = 20.0, `map_update_interval` = 5.0) — ชุดทดสอบ `test_slam_launch.py` ตรวจค่าจริงด้วย service `get_parameters`
+- **การกำหนดตัวแก้สมการ Ceres:**
   ```yaml
   solver_plugin: solver_plugins::CeresSolver
   ceres_linear_solver: SPARSE_NORMAL_CHOLESKY
   ceres_trust_strategy: LEVENBERG_MARQUARDT
   ```
-  ใช้ Ceres Solver ร่วมกับอัลกอริทึม Levenberg-Marquardt ซึ่งเป็นวิธีที่มีความเสถียรสูงสุดในการคำนวณ Sparse Matrix ขนาดใหญ่
-- **การตั้งค่าพิกัดอ้างอิง ([L13-L18](file:///mnt/sda/ros/Essential_ROS/Week_12_SLAM_Mapping_Ceres/config/slam_toolbox_params.yaml#L13-L18)):**
-  กำหนด `odom_frame: odom`, `map_frame: map`, และ `base_frame: base_footprint` ตามมาตรฐาน REP 105
-- **เกณฑ์กระตุ้นการเพิ่มโหนดใหม่ ([L28-L29](file:///mnt/sda/ros/Essential_ROS/Week_12_SLAM_Mapping_Ceres/config/slam_toolbox_params.yaml#L28-L29)):**
+  ใช้ Ceres Solver ร่วมกับอัลกอริทึม Levenberg-Marquardt ในการแก้ Sparse Least-Squares ของ Pose Graph
+- **การตั้งค่าพิกัดอ้างอิง:** `odom_frame: odom`, `map_frame: map`, `base_frame: base_footprint` ตามมาตรฐาน REP 105
+- **ช่วงระยะของเลเซอร์:** `max_laser_range: 10.0` เท่ากับระยะสูงสุดของ LiDAR ใน URDF (`<max>10.0</max>`) — ตั้งเกินกว่าที่เซนเซอร์วัดได้ไม่มีประโยชน์ (ไฟล์เดิมตั้ง 12.0 และประกาศซ้ำสองครั้ง)
+- **เกณฑ์กระตุ้นการเพิ่มโหนดใหม่:**
   ```yaml
   minimum_travel_distance: 0.15  # ต้องเคลื่อนที่อย่างน้อย 15 cm
   minimum_travel_heading: 0.15   # หรือหมุนตัวอย่างน้อย 0.15 rad (~8.6 องศา)
   ```
   ป้องกันการสร้างโหนดใน Pose Graph ซ้ำซ้อนเมื่อหุ่นยนต์จอดนิ่ง
-- **พารามิเตอร์ Loop Closing ([L37-L41](file:///mnt/sda/ros/Essential_ROS/Week_12_SLAM_Mapping_Ceres/config/slam_toolbox_params.yaml#L37-L41)):**
-  ค้นหาการวนซ้ำในรัศมี $5.0\text{ m}$ โดยต้องมีคะแนนความสอดคล้องของ Scan Matching ขั้นต่ำ $0.35$
+- **พารามิเตอร์ Loop Closing:** ค้นหาการวนซ้ำในรัศมี $5.0\text{ m}$ (`loop_search_maximum_distance`) โดยต้องมีคะแนน Scan Matching ขั้นต่ำ $0.35$ (coarse) และ $0.45$ (fine)
+
+### 2. [`launch/online_async_slam.launch.py`](launch/online_async_slam.launch.py)
+SLAM Toolbox 2.8 (Jazzy) เป็น **Lifecycle Node** — ถ้าเปิดด้วย `launch_ros.actions.Node` ธรรมดา โหนดจะค้างอยู่สถานะ `unconfigured` และไม่มี `/map` เลย
+launch file นี้จึง include `online_async_launch.py` ของ slam_toolbox (ซึ่งใช้ `LifecycleNode` แล้วสั่ง configure → activate อัตโนมัติ) พร้อมส่ง `slam_params_file` และ `use_sim_time`:
+```bash
+ros2 launch amr_week12 online_async_slam.launch.py
+ros2 lifecycle get /slam_toolbox        # ต้องได้ active [3]
+```
+
+### 3. [`launch/slam_mapping_sim.launch.py`](launch/slam_mapping_sim.launch.py) และ [`src/explore_warehouse.py`](src/explore_warehouse.py)
+รวม simulation (สัปดาห์ที่ 11) + SLAM ในคำสั่งเดียว และ (เมื่อ `explore:=true`) สคริปต์ขับสำรวจอัตโนมัติ `explore_warehouse` ที่ขับตามเส้นทางตายตัว 9 ขั้น: หมุนรอบตัว → ไปหลังเสา $(0, 3.3)$ → มุมทั้ง 4 ของโกดัง → กลับจุดเริ่ม (ปิดวงรอบเพื่อ Loop Closure)
+- ใช้ตำแหน่งจาก TF `map → base_footprint` (ตำแหน่งที่ SLAM แก้แล้ว) เป็น feedback แทน `/odom` ดิบ
+- หยุดรอเมื่อ LiDAR เห็นสิ่งกีดขวางด้านหน้าใกล้กว่า 0.30 m, exit code 0 เมื่อทำครบทุกขั้น
+
+### 4. [`maps/warehouse_map.pgm`](maps/warehouse_map.pgm) / [`.yaml`](maps/warehouse_map.yaml) — แผนที่จริง
+แผนที่นี้ **สร้างจากการรันจริง** (headless Gazebo + SLAM Toolbox + `explore_warehouse`) แล้วบันทึกด้วย `map_saver_cli` — สัปดาห์ที่ 13–16 ใช้แผนที่นี้ทั้งหมด
+(ไฟล์เดิมเป็นภาพวาดมือขนาด 15 × 15 m ที่ไม่ตรงกับ `warehouse.sdf`: กำแพงที่ ±7 m แทน ±5 m และมีชั้นวางแทนเสา 2 ต้น)
+
+![แผนที่ SLAM จริงของโกดัง](images/warehouse_map_real.png)
+
+*ภาพ: `maps/warehouse_map.pgm` จากการรันจริง วาดด้วย `ros2 run amr_week12 render_map --map maps/warehouse_map.yaml --out images/warehouse_map_real.png` (matplotlib) เส้นประสีแดงคือกล่อง collision ใน `warehouse.sdf` (ground truth) สีดำ = occupied, ขาว = free, เทา = unknown*
+
+ค่าที่วัดได้ ([`results/slam_mapping_run.txt`](results/slam_mapping_run.txt)): 200 × 199 เซลล์ @ 0.05 m (10.0 × 9.95 m), origin $(-4.988, -4.970)$, free 37,109 / occupied 1,741 / unknown 950 เซลล์;
+เซลล์ occupied ทุกเซลล์อยู่ห่างผิว collision ใน SDF ไม่เกิน 2 เซลล์ (precision 1.0) และผิวกำแพง/เสา 89.4 % ถูกพบในแผนที่ (recall)
+
+### 5. [`src/map_tools.py`](src/map_tools.py) และการทดสอบ
+ฟังก์ชันอ่าน `.pgm/.yaml`, แปลง `warehouse.sdf` เป็นกริด และคำนวณความครอบคลุม — [`test/test_map_and_config.py`](test/test_map_and_config.py) ใช้ตรวจว่าแผนที่ที่ commit ครอบคลุม 10 × 10 m, ตรงกับ SDF, มีเสาทั้งสองต้น และพื้นที่รอบจุดเริ่มต้นว่าง;
+[`test/test_slam_launch.py`](test/test_slam_launch.py) เปิด sim + SLAM แบบ headless แล้วตรวจว่าโหนด `active`, ใช้ค่าจากไฟล์พารามิเตอร์จริง และ `/map` ครอบคลุม > 9 m
 
 ---
 
 ## ⌨️ ตารางคำสั่ง CLI สำคัญ
 | คำสั่ง | คำอธิบาย | ตัวอย่างการใช้งาน |
 | :--- | :--- | :--- |
-| `ros2 launch online_async_slam.launch.py` | เริ่มต้นกระบวนการสร้างแผนที่ SLAM ออนไลน์ | `ros2 launch Essential_ROS/Week_12_SLAM_Mapping_Ceres/launch/online_async_slam.launch.py` |
-| `ros2 run nav2_map_server map_saver_cli -f <path>` | บันทึกแผนที่ปัจจุบันออกมาเป็นไฟล์ `.yaml` และ `.pgm` | `ros2 run nav2_map_server map_saver_cli -f Essential_ROS/Week_12_SLAM_Mapping_Ceres/maps/warehouse_map` |
-| `ros2 topic echo --once /map --field info` | ตรวจสอบข้อมูล Resolution และขนาดกว้างยาวของแผนที่ | `ros2 topic echo --once /map --field info` |
-| `ros2 topic hz /map` | วัดความถี่ในการอัปเดตแผนที่ของ SLAM (ปกติ 0.5–2 Hz) | `ros2 topic hz /map` |
+| `ros2 launch amr_week12 online_async_slam.launch.py` | เริ่มต้นกระบวนการสร้างแผนที่ SLAM ออนไลน์ (ต้องเปิด simulation ไว้ก่อน) | `ros2 launch amr_week12 online_async_slam.launch.py` |
+| `ros2 launch amr_week12 slam_mapping_sim.launch.py` | Simulation + SLAM (+ สคริปต์ขับสำรวจ) ในคำสั่งเดียว | `ros2 launch amr_week12 slam_mapping_sim.launch.py headless:=true explore:=true` |
+| `ros2 lifecycle get /slam_toolbox` | ตรวจสถานะ Lifecycle ของ SLAM Toolbox | ต้องได้ `active [3]` |
+| `ros2 run nav2_map_server map_saver_cli -f <path>` | บันทึกแผนที่ปัจจุบันออกมาเป็นไฟล์ `.yaml` และ `.pgm` | `ros2 run nav2_map_server map_saver_cli -f my_warehouse_map --ros-args -p use_sim_time:=true -p save_map_timeout:=10.0` |
+| `ros2 run amr_week12 render_map --map <yaml> --out <png>` | วาดแผนที่เป็น PNG เทียบกับ `warehouse.sdf` และพิมพ์สถิติ | `ros2 run amr_week12 render_map --map my_warehouse_map.yaml --out my_map.png` |
+| `ros2 topic echo --once /map --field info` | ตรวจสอบข้อมูล Resolution และขนาดกว้างยาวของแผนที่ | `ros2 topic echo --once /map nav_msgs/msg/OccupancyGrid --field info` |
+| `ros2 topic hz /map` | วัดความถี่ในการอัปเดตแผนที่ของ SLAM (`map_update_interval: 2.0` → ประมาณ 0.5 Hz) | `ros2 topic hz /map` |
 
 ---
 
-## 📸 ภาพผลการทดสอบจริงจากระบบ (Live Execution & Terminal Capture)
-ผลลัพธ์จากการรันคำสั่งและโหนดจริงในระบบ เพื่อใช้เป็นข้อมูลอ้างอิงในการตรวจสอบความถูกต้อง:
-
-![Terminal Capture: Terminal — Week 12: SLAM Toolbox Ceres Optimizer & Map Saver](images/terminal_run.png)
+## 📟 ผลการรันจริง (Real Run Output)
+บันทึกจากการรันจริงใน ros:lab-runner (ROS 2 Jazzy, Gazebo Sim 8.15.0) บน Linux 7.0 เมื่อ 2026-10-29
+(ฉบับเต็ม: [`results/slam_mapping_run.txt`](results/slam_mapping_run.txt))
 
 ```console
-user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 launch Essential_ROS/Week_12_SLAM_Mapping_Ceres/launch/online_async_slam.launch.py &
-[INFO] [async_slam_toolbox_node]: CeresSolver: LEVENBERG_MARQUARDT with SPARSE_NORMAL_CHOLESKY
-[INFO] [async_slam_toolbox_node]: Loop Closure Triggered: Residuals reduced by 94.2%
-user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 run nav2_map_server map_saver_cli -f warehouse_map
-[INFO] [map_saver]: Saving map from /map topic to warehouse_map
-[INFO] [map_saver]: Map saved successfully! Resolution: 0.05m, Size: 400x300, Format: PGM/YAML
-user@amr-dev:~/ros$ cat Essential_ROS/Week_12_SLAM_Mapping_Ceres/maps/warehouse_map.yaml
-image: warehouse_map.pgm, resolution: 0.05, origin: [-7.5, -7.5, 0.0], occupied_thresh: 0.65
-user@amr-dev:~/ros$ [CHECKPOINT PASSED: OCCUPANCY GRID MAP EXPORTED CLEANLY]
+$ ros2 launch amr_week12 slam_mapping_sim.launch.py headless:=true explore:=true
+[async_slam_toolbox_node-5] [INFO] [1793243178.409094986] [slam_toolbox]: Configuring
+[async_slam_toolbox_node-5] [INFO] [1793243178.412801892] [slam_toolbox]: Using solver plugin solver_plugins::CeresSolver
+[async_slam_toolbox_node-5] [INFO] [1793243178.422905473] [slam_toolbox]: Activating
+[async_slam_toolbox_node-5] Registering sensor: [Custom Described Lidar]
+[explore_warehouse-6] [INFO] [1793243188.754928559] [explore_warehouse]: [1/9] ('spin', 1.0)
+[explore_warehouse-6] [INFO] [1793243205.147570283] [explore_warehouse]: [2/9] (0.0, 3.3)
+[explore_warehouse-6] [INFO] [1793243219.446621848] [explore_warehouse]:     reached (0.00, 3.20)
+[explore_warehouse-6] [INFO] [1793243219.548731311] [explore_warehouse]: [3/9] ('spin', 1.0)
+[explore_warehouse-6] [INFO] [1793243236.037508410] [explore_warehouse]: [4/9] (3.5, 3.5)
+[explore_warehouse-6] [INFO] [1793243251.949975881] [explore_warehouse]:     reached (3.40, 3.49)
+[explore_warehouse-6] [INFO] [1793243252.071761296] [explore_warehouse]: [5/9] (3.5, -3.5)
+[explore_warehouse-6] [INFO] [1793243279.406821420] [explore_warehouse]:     reached (3.50, -3.40)
+[explore_warehouse-6] [INFO] [1793243279.508522980] [explore_warehouse]: [6/9] (-3.5, -3.5)
+[explore_warehouse-6] [INFO] [1793243306.903175870] [explore_warehouse]:     reached (-3.40, -3.50)
+[explore_warehouse-6] [INFO] [1793243307.003294561] [explore_warehouse]: [7/9] (-3.5, 3.5)
+[explore_warehouse-6] [INFO] [1793243334.848566819] [explore_warehouse]:     reached (-3.50, 3.41)
+[explore_warehouse-6] [INFO] [1793243334.948296272] [explore_warehouse]: [8/9] (0.0, 3.5)
+[explore_warehouse-6] [INFO] [1793243350.038680767] [explore_warehouse]:     reached (-0.10, 3.50)
+[explore_warehouse-6] [INFO] [1793243350.140552663] [explore_warehouse]: [9/9] (0.0, 0.0)
+[explore_warehouse-6] [INFO] [1793243365.785318497] [explore_warehouse]:     reached (-0.00, 0.10)
+[explore_warehouse-6] [INFO] [1793243365.895761039] [explore_warehouse]: Exploration finished: 9/9 steps completed in 171.7 s (sim time)
+$ ros2 run nav2_map_server map_saver_cli -f warehouse_map --ros-args -p use_sim_time:=true -p save_map_timeout:=10.0
+[INFO] [1793243370.974421167] [map_io]: Received a 200 X 199 map @ 0.05 m/pix
+[INFO] [1793243371.013004573] [map_saver]: Map saved successfully
+$ cat maps/warehouse_map.yaml
+image: warehouse_map.pgm
+mode: trinary
+resolution: 0.050
+origin: [-4.988, -4.970, 0]
+negate: 0
+occupied_thresh: 0.65
+free_thresh: 0.196
+$ ros2 run amr_week12 render_map --map maps/warehouse_map.yaml --out images/warehouse_map_real.png
+width: 200
+height: 199
+resolution: 0.05
+origin: [-4.988, -4.97]
+size_m: (10.0, 9.95)
+known_extent_m: (9.95, 9.95)
+occupied: 1741
+free: 37109
+unknown: 950
+precision_tol: 1.0
+recall_tol: 0.894
 ```
 
 ---
@@ -184,9 +253,11 @@ user@amr-dev:~/ros$ [CHECKPOINT PASSED: OCCUPANCY GRID MAP EXPORTED CLEANLY]
 
 | ที่ | อาการที่พบ (Symptom) | สาเหตุรากเหง้า (Root Cause) | แนวทางแก้ไข (Resolution) |
 |:---:| :--- | :--- | :--- |
-| 1 | **แผนที่เกิดภาพซ้อน ผนังกำแพงเอียงหรือเบิ้ลสองชั้น (Ghosting)** | หุ่นยนต์เคลื่อนที่เร็วเกินไป หรือล้อลื่นไถลทำให้ Odometry คลาดเคลื่อนรุนแรง | ควบคุมความเร็วหุ่นยนต์ให้ช้าลง ($\le 0.3\text{ m/s}$) และหมุนเลี้ยวอย่างนิ่มนวล |
+| 1 | **แผนที่เกิดภาพซ้อน ผนังกำแพงเอียงหรือเบิ้ลสองชั้น (Ghosting)** | หุ่นยนต์เคลื่อนที่เร็วเกินไป หรือล้อลื่นไถลทำให้ Odometry คลาดเคลื่อนรุนแรง (ระหว่างเตรียมแล็บนี้ URDF รุ่นเก่าที่ลูกล้อประคองมีแรงเสียดทาน ทำให้ odometry หมุนผิดไป ~15 % และแผนที่ที่ได้บิดซ้อนจนใช้ไม่ได้) | ควบคุมความเร็วหุ่นยนต์ให้ช้าลง ($\le 0.3\text{ m/s}$), ตรวจ Odometry เทียบ ground truth (`ros2 run amr_week11 ground_truth_pose`) และแก้ฟิสิกส์ของล้อ/ลูกล้อประคองใน URDF |
 | 2 | **SLAM ฟ้องเตือน: `Waiting for transform odom -> base_footprint`** | โหนด Odometry หรือปลั๊กอิน DiffDrive ยังไม่ได้รัน ทำให้ TF Tree ขาดช่วง | ตรวจสอบว่ามีข้อมูลใน `/odom` และข้อความบรอดแคสต์ใน `/tf` ครบถ้วน |
-| 3 | **คำสั่ง `map_saver_cli` ค้างและ Time Out** | โหนด SLAM ยังไม่เคยปล่อยข้อความออกมาทางท็อปปิก `/map` | ตรวจสอบว่าโหนด SLAM รับข้อมูล `/scan` ได้แล้วหรือไม่ และรอจนกว่าจะมีการสร้างแผนที่เริ่มต้น |
+| 3 | **คำสั่ง `map_saver_cli` แจ้ง `Failed to spin map subscription`** | ไม่ได้รับ `/map` ภายใน `save_map_timeout` (ค่าเริ่มต้น 2 s) — เกิดได้เมื่อ simulation ช้า หรือ SLAM ยังไม่ active | ตรวจ `ros2 lifecycle get /slam_toolbox` แล้วสั่งใหม่พร้อม `--ros-args -p use_sim_time:=true -p save_map_timeout:=10.0` (เกิดขึ้นจริงระหว่างการเตรียมแล็บนี้) |
+| 7 | **ไม่มี `/map` เลย และ `ros2 lifecycle get /slam_toolbox` ได้ `unconfigured`** | เปิด slam_toolbox ด้วย `Node` ธรรมดา (เป็น Lifecycle Node ตั้งแต่ Jazzy) | ใช้ `online_async_slam.launch.py` ของแพ็กเกจนี้ (include `online_async_launch.py` ของ slam_toolbox) |
+| 8 | **พารามิเตอร์ใน YAML ไม่มีผล** | คีย์บนสุดของไฟล์ไม่ตรงกับชื่อโหนด (`async_slam_toolbox_node` ≠ `slam_toolbox`) | ใช้คีย์ `slam_toolbox:` และตรวจด้วย `ros2 param get /slam_toolbox max_laser_range` |
 | 4 | **Loop Closure ไม่ยอมทำงาน แม้หุ่นยนต์จะขับวนกลับมาจุดเดิมแล้ว** | ค่า `loop_search_maximum_distance` สั้นเกินไป หรือเกณฑ์ Correlation สูงเกินไป | ปรับเพิ่มระยะค้นหา Loop Search Distance ในไฟล์ YAML ให้ครอบคลุมรัศมีทางเดิน |
 | 5 | **แผนที่มีจุดดำกระจายสกปรกเต็มทางเดินโล่ง (Salt-and-Pepper Noise)** | ลำแสงเลเซอร์ LiDAR มี Noise สูง หรือมีเศษฝุ่นสะท้อน | ปรับเพิ่มค่า `minimum_distance_penalty` หรือฟิลเตอร์กรอง Range ของเลเซอร์ |
 | 6 | **ไฟล์แผนที่ถูกตัดขอบขาดหายไปบางส่วน** | พื้นที่โกดังใหญ่เกินกว่าพิกัด Bounding Box ตั้งต้น | SLAM Toolbox จะขยายแผนที่ให้อัตโนมัติ (Dynamic Resizing) แต่ต้องขับหุ่นยนต์สำรวจให้ทั่ว |
@@ -203,7 +274,7 @@ user@amr-dev:~/ros$ [CHECKPOINT PASSED: OCCUPANCY GRID MAP EXPORTED CLEANLY]
 6. **คำถาม:** ปรากฏการณ์ Loop Closure มีบทบาทอย่างไรในการสร้างแผนที่คลังสินค้าขนาดใหญ่?
 7. **คำถาม:** ตัวแก้สมการ Ceres Solver พัฒนาขึ้นโดยองค์กรใด และมีหน้าที่อะไรใน SLAM Toolbox?
 8. **คำถาม:** หากไฟล์ `warehouse_map.yaml` ระบุ `resolution: 0.05` ภาพบิตแมปขนาด $400 \times 300$ พิกเซล จะครอบคลุมพื้นที่โลกจริงกว้างยาวกี่เมตร?
-9. **คำถาม:** พิกัด `origin: [-7.5, -7.5, 0.0]` ในไฟล์แผนที่ YAML หมายถึงพิกัดโลกจริงของส่วนใดในภาพแผนที่?
+9. **คำถาม:** พิกัด `origin: [-4.988, -4.970, 0]` ในไฟล์แผนที่ YAML หมายถึงพิกัดโลกจริงของส่วนใดในภาพแผนที่?
 10. **คำถาม:** คำสั่ง CLI ใดที่ใช้ในการบันทึกแผนที่จากท็อปปิก `/map` ออกมาเป็นไฟล์ภาพและ YAML?
 
 <details>

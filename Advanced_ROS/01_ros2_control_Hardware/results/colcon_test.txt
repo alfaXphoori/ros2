@@ -1,0 +1,27 @@
+$ colcon test --base-paths Essential_ROS Advanced_ROS --packages-select amr_adv01 --pytest-args -v --event-handlers console_direct+
+test/test_description.py::test_mock_hardware_selected_by_default PASSED  [  5%]
+test/test_description.py::test_gazebo_hardware_and_plugin PASSED         [ 10%]
+test/test_description.py::test_complete_robot_with_wheel_joints[True] PASSED [ 15%]
+test/test_description.py::test_complete_robot_with_wheel_joints[False] PASSED [ 20%]
+test/test_description.py::test_check_urdf PASSED                         [ 25%]
+test/test_description.py::test_geometry_matches_controller_yaml PASSED   [ 30%]
+test/test_description.py::test_body_limits_fit_wheel_command_limits PASSED [ 35%]
+test/test_description.py::test_no_removed_or_deprecated_parameters PASSED [ 40%]
+test/test_description.py::test_controller_manager_section PASSED         [ 45%]
+test/test_gz_control_launch.py::test_gz_control_launch PASSED            [ 50%]
+test/test_kinematics.py::test_quiz_answer_right_wheel PASSED             [ 55%]
+test/test_kinematics.py::test_straight_and_spin_in_place PASSED          [ 60%]
+test/test_kinematics.py::test_forward_is_inverse_of_inverse[0.5-1.0] PASSED [ 65%]
+test/test_kinematics.py::test_forward_is_inverse_of_inverse[-0.2-0.7] PASSED [ 70%]
+test/test_kinematics.py::test_forward_is_inverse_of_inverse[0.0--2.0] PASSED [ 75%]
+test/test_kinematics.py::test_forward_is_inverse_of_inverse[0.31-0.0] PASSED [ 80%]
+test/test_kinematics.py::test_limits_are_consistent PASSED               [ 85%]
+test/test_kinematics.py::test_invalid_geometry PASSED                    [ 90%]
+test/test_kinematics.py::test_cli_prints_values PASSED                   [ 95%]
+test/test_mock_control_launch.py::test_mock_control_launch PASSED        [100%]
+============================= 20 passed in 20.59s ==============================
+Finished <<< amr_adv01 [21.1s]
+Summary: 1 package finished [21.3s]
+
+$ colcon test-result --verbose
+Summary: 20 tests, 0 errors, 0 failures, 0 skipped

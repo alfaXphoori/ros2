@@ -34,30 +34,46 @@
 
 ## ⚡ Quick Start: คำสั่งรันแล็บแต่ละสัปดาห์
 
+แต่ละโฟลเดอร์ `Week_NN_*` เป็น ROS 2 package ชนิด `ament_python` ชื่อ `amr_weekNN` (โค้ดอยู่ใน `src/`, launch/config/urdf
+ติดตั้งลง `share/amr_weekNN`) ให้ build ทั้งหมดครั้งเดียวด้วย `make build` จากนั้น `run_lab.sh` จะ source
+`install/setup.bash` ให้อัตโนมัติ คำสั่งทั้งหมดรันในคอนเทนเนอร์ `ros:lab-runner` (ROS 2 Jazzy + Gazebo Harmonic)
+
 ```bash
-cd /mnt/sda/ros
+# จาก root ของ repo
+make build                       # colcon build ทุกแพ็กเกจ (Essential + Advanced)
+make test PKG=amr_week04         # รันชุดทดสอบอัตโนมัติของสัปดาห์ที่ 4
 
-# สัปดาห์ที่ 1: ตรวจสอบ DDS
-./docker/run_lab.sh bash Essential_ROS/Week_01_Environment_DDS/src/domain_check.sh
-
-# สัปดาห์ที่ 2: รัน QoS Publisher
-./docker/run_lab.sh python3 Essential_ROS/Week_02_Nodes_Topics_QoS/src/sensor_qos_publisher.py
-
-# สัปดาห์ที่ 5: รัน Core Launch System
-./docker/run_lab.sh ros2 launch Essential_ROS/Week_05_Parameters_Launch/launch/core_system.launch.py
-
-# สัปดาห์ที่ 7: ตรวจสอบ URDF
+# สัปดาห์ที่ 1: คำนวณพอร์ต DDS / ตรวจ Domain
+./docker/run_lab.sh ros2 run amr_week01 domain_check.sh
+# สัปดาห์ที่ 2: QoS Publisher / Subscriber
+./docker/run_lab.sh ros2 run amr_week02 sensor_qos_publisher
+# สัปดาห์ที่ 4: Action Server (ยกเลิก/preempt goal ได้)
+./docker/run_lab.sh ros2 run amr_week04 navigate_action_server
+# สัปดาห์ที่ 5: Launch + namespace + parameters
+./docker/run_lab.sh ros2 launch amr_week05 core_system.launch.py robot_ns:=amr_01
+# สัปดาห์ที่ 7: ตรวจ URDF และแสดง TF แบบไม่เปิด RViz
 ./docker/run_lab.sh check_urdf Essential_ROS/Week_07_URDF_Robot_Modeling/urdf/diff_drive_robot.urdf
-
-# สัปดาห์ที่ 11: เปิด Gazebo Sim พร้อม Bridge
-./docker/run_lab.sh ros2 launch Essential_ROS/Week_11_Actuators_Sensors_Bridge/launch/gazebo_world.launch.py
-
-# สัปดาห์ที่ 12: รัน SLAM ทำแผนที่
-./docker/run_lab.sh ros2 launch Essential_ROS/Week_12_SLAM_Mapping_Ceres/launch/online_async_slam.launch.py
-
-# สัปดาห์ที่ 14: รัน Nav2 Bringup
-./docker/run_lab.sh ros2 launch Essential_ROS/Week_14_Path_Planning_AMCL/launch/nav2_bringup.launch.py
-
-# สัปดาห์ที่ 16: รัน Final Demonstration
-./docker/run_lab.sh ros2 launch Essential_ROS/Week_16_Final_Demonstration/launch/final_amr_system.launch.py
+./docker/run_lab.sh ros2 launch amr_week07 display_urdf.launch.py rviz:=false
+# สัปดาห์ที่ 9: TF2 lab (broadcaster หรือ URDF เป็นแหล่ง TF เพียงแหล่งเดียว)
+./docker/run_lab.sh ros2 launch amr_week09 tf_lab.launch.py tf_source:=broadcaster
+# สัปดาห์ที่ 11: Gazebo Sim + Bridge + robot_state_publisher (headless:=true เมื่อไม่มีจอ)
+./docker/run_lab.sh ros2 launch amr_week11 gazebo_world.launch.py headless:=true
+# สัปดาห์ที่ 12: SLAM พร้อม sim และสคริปต์สำรวจอัตโนมัติ
+./docker/run_lab.sh ros2 launch amr_week12 slam_mapping_sim.launch.py headless:=true explore:=true
+# สัปดาห์ที่ 13: Global/Local costmap บนแผนที่จริง
+./docker/run_lab.sh ros2 launch amr_week13 costmap_demo.launch.py headless:=true
+# สัปดาห์ที่ 14: Nav2 Bringup (AMCL + planner + controller + behavior server) — เปิด sim ของสัปดาห์ที่ 11 ไว้ก่อน (คนละเทอร์มินัล)
+./docker/run_lab.sh ros2 launch amr_week11 gazebo_world.launch.py headless:=true
+./docker/run_lab.sh ros2 launch amr_week14 nav2_bringup.launch.py
+# สัปดาห์ที่ 15: Waypoint patrol + custom Behavior Tree
+./docker/run_lab.sh ros2 launch amr_week15 patrol_system.launch.py headless:=true
+# สัปดาห์ที่ 16: Final Demonstration (คนละเทอร์มินัล)
+./docker/run_lab.sh ros2 launch amr_week16 final_amr_system.launch.py headless:=true
+./docker/run_lab.sh ros2 run amr_week16 final_mission_executor --ros-args -p use_sim_time:=true
 ```
+
+อาร์กิวเมนต์และขั้นตอนละเอียดของแต่ละคำสั่งอยู่ใน `Readme.md` / `Lab_Exercises.md` ของสัปดาห์นั้น และทุกสัปดาห์มีหัวข้อ
+**📟 ผลการรันจริง (Real Run Output)** พร้อมไฟล์ log ดิบในโฟลเดอร์ `results/`
+
+> ℹ️ โฟลเดอร์ `01_Core_Communication` … `05_Nav2_Navigation` เป็นโครงสร้างโมดูลรุ่นเก่า ปัจจุบันเหลือเพียง `Readme.md`
+> ที่ชี้ไปยังโฟลเดอร์สัปดาห์ที่เกี่ยวข้อง (โค้ดชุดเก่ายังดูได้จากประวัติ git)

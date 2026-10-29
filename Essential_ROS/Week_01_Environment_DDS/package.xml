@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>amr_week01</name>
+  <version>1.0.0</version>
+  <description>Week 01: ROS 2 environment and DDS/RTPS diagnostics. Installs domain_check.sh,
+    which prints the RTPS discovery/user ports for a ROS_DOMAIN_ID and checks the ROS 2 setup.</description>
+  <maintainer email="phoori.ch@ksu.ac.th">Phoori Chantima</maintainer>
+  <license>Apache-2.0</license>
+
+  <exec_depend>ros2cli</exec_depend>
+  <exec_depend>ros2doctor</exec_depend>
+  <exec_depend>ros2multicast</exec_depend>
+  <exec_depend>demo_nodes_py</exec_depend>
+
+  <test_depend>python3-pytest</test_depend>
+  <test_depend>ros2doctor</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

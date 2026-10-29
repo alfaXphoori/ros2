@@ -1,0 +1,97 @@
+# Real run: ros:lab-runner (ROS 2 Jazzy, Gazebo Sim 8.15.0), Linux 7.0, 2026-10-29
+# Isolation: ROS_DOMAIN_ID=13, GZ_PARTITION=agent_c, ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST
+# Lines replaced by '...' were trimmed (repetition); no values were edited.
+
+$ gz sdf -k Essential_ROS/Week_10_Gazebo_Sim_Harmonic/worlds/warehouse.sdf
+Valid.
+
+$ gz sim -s -r --headless-rendering --iterations 5000 Essential_ROS/Week_10_Gazebo_Sim_Harmonic/worlds/warehouse.sdf
+(exit code 0, 7.5 s wall)
+
+$ gz sim -s -r --headless-rendering Essential_ROS/Week_10_Gazebo_Sim_Harmonic/worlds/warehouse.sdf &
+$ gz model --list
+
+Requesting state for world [warehouse]...
+
+Available models:
+    - ground_plane
+    - warehouse_walls
+$ gz topic -l
+/clock
+/gazebo/resource_paths
+/stats
+/world/warehouse/clock
+/world/warehouse/dynamic_pose/info
+/world/warehouse/pose/info
+/world/warehouse/scene/deletion
+/world/warehouse/scene/info
+/world/warehouse/state
+/world/warehouse/stats
+/world/warehouse/light_config
+/world/warehouse/material_color
+$ gz topic -e -t /clock -n 1
+system {
+  sec: 1793245593
+  nsec: 706508758
+}
+real {
+  sec: 8
+  nsec: 283392842
+}
+sim {
+  sec: 6
+  nsec: 211000000
+}
+
+$ gz topic -e -t /stats -n 1
+sim_time {
+  sec: 6
+  nsec: 328000000
+}
+real_time {
+  sec: 8
+  nsec: 400431303
+}
+iterations: 6328
+real_time_factor: 1.030608027818172
+step_size {
+  nsec: 1000000
+}
+
+sim_time {
+  sec: 6
+  nsec: 329000000
+}
+real_time {
+  sec: 8
+  nsec: 401392727
+}
+iterations: 6329
+real_time_factor: 1.0401238163390969
+step_size {
+  nsec: 1000000
+}
+
+$ gz model -m warehouse_walls
+
+Requesting state for world [warehouse]...
+
+Model: [8]
+  - Name: warehouse_walls
+  - Pose [ XYZ (m) ] [ RPY (rad) ]:
+    [0.000000 0.000000 0.000000]
+    [0.000000 -0.000000 0.000000]
+  - Link [9]
+    - Name: walls
+    - Parent: warehouse_walls [8]
+    - Mass (kg): 1.000000
+    - Inertial Pose [ XYZ (m) ] [ RPY (rad) ]:
+      [0.000000 0.000000 0.000000]
+      [0.000000 -0.000000 0.000000]
+    - Inertial Matrix (kg.m^2):
+      [1.000000 0.000000 0.000000]
+      [0.000000 1.000000 0.000000]
+      [0.000000 0.000000 1.000000]
+    - Pose [ XYZ (m) ] [ RPY (rad) ]:
+      [0.000000 0.000000 0.000000]
+...

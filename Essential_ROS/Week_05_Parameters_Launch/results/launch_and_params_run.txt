@@ -1,0 +1,107 @@
+# Week 05 real run: ros:lab-runner (ROS 2 Jazzy), Linux 7.0, 2026-10-29; ROS_DOMAIN_ID=11, LOCALHOST discovery
+# terminal 1 = ros2 launch in the background, stopped with SIGINT to its process group (like Ctrl+C)
+
+$ ros2 launch amr_week05 core_system.launch.py robot_ns:=amr_01 fleet_id:=AMR_01     # terminal 1
+
+$ ros2 node list
+/amr_01/fleet_parameters
+/amr_01/navigate_action_server
+/amr_01/power_service_server
+/amr_01/sensor_qos_publisher
+
+$ ros2 topic list
+/amr_01/robot/state
+/amr_01/sensor/temperature
+/amr_01/speed_limit
+/parameter_events
+/rosout
+
+$ ros2 service list | grep -v parameter
+/amr_01/navigate_action_server/get_type_description
+/amr_01/power_service_server/get_type_description
+/amr_01/robot/set_power_mode
+/amr_01/sensor_qos_publisher/get_type_description
+
+$ ros2 action list
+/amr_01/navigate_distance
+
+$ ros2 param list /amr_01/fleet_parameters
+  enable_obstacle_stop
+  fleet_id
+  max_linear_speed
+  safety_margin
+  start_type_description_service
+  use_sim_time
+
+$ ros2 param get /amr_01/fleet_parameters fleet_id
+String value is: AMR_01
+
+$ ros2 param get /amr_01/fleet_parameters max_linear_speed
+Double value is: 0.8
+
+$ ros2 param describe /amr_01/fleet_parameters max_linear_speed
+Parameter name: max_linear_speed
+  Type: double
+  Description: Speed limit [m/s]
+  Constraints:
+    Additional constraints: 0.1 <= value <= 2.5
+
+$ ros2 param set /amr_01/fleet_parameters max_linear_speed 1.2
+Set parameter successful
+
+$ ros2 topic echo --once /amr_01/speed_limit
+data: 1.2
+---
+
+$ ros2 param set /amr_01/fleet_parameters max_linear_speed 3.5
+Setting parameter failed: Speed 3.5 is outside valid safety range [0.1, 2.5] m/s!
+
+$ ros2 param set /amr_01/fleet_parameters max_linear_speed 1     # integer, not 1.0
+Setting parameter failed: Wrong parameter type, expected 'Type.DOUBLE' got 'Type.INTEGER'
+
+$ ros2 param set /amr_01/fleet_parameters safety_margin 0.05
+Setting parameter failed: safety_margin cannot be smaller than 0.1 m!
+
+$ ros2 param get /amr_01/fleet_parameters max_linear_speed
+Double value is: 1.2
+
+$ ros2 param dump /amr_01/fleet_parameters
+/amr_01/fleet_parameters:
+  ros__parameters:
+    enable_obstacle_stop: true
+    fleet_id: AMR_01
+    max_linear_speed: 1.2
+    safety_margin: 0.35
+    start_type_description_service: true
+    use_sim_time: false
+
+
+--- terminal 1 (ros2 launch) output:
+[INFO] [launch]: All log files can be found below /tmp/home/.ros/log/2026-10-29-03-05-30-771365-ce-desk-91
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [sensor_qos_publisher-1]: process started with pid [94]
+[INFO] [power_service_server-2]: process started with pid [95]
+[INFO] [navigate_action_server-3]: process started with pid [96]
+[INFO] [fleet_parameters-4]: process started with pid [97]
+[power_service_server-2] [INFO] [1793243131.299555696] [amr_01.power_service_server]: ⚡ [PowerServiceServer] Service /amr_01/robot/set_power_mode ready.
+[fleet_parameters-4] [INFO] [1793243131.315024157] [amr_01.fleet_parameters]: 🤖 [FleetParametersNode] Initialized: ID=AMR_01, MaxSpeed=0.8m/s, Margin=0.35m
+[sensor_qos_publisher-1] [INFO] [1793243131.320207000] [amr_01.sensor_qos_publisher]: 🚀 [SensorQoSPublisher] Node initialized and publishing...
+[navigate_action_server-3] [INFO] [1793243131.331815764] [amr_01.navigate_action_server]: 🏁 [NavigateActionServer] Ready to receive navigation distance goals.
+[sensor_qos_publisher-1] [INFO] [1793243136.307546932] [amr_01.sensor_qos_publisher]: State Latched: "SYSTEM_ACTIVE: Uptime=5.0s"
+[sensor_qos_publisher-1] [INFO] [1793243141.308025386] [amr_01.sensor_qos_publisher]: State Latched: "SYSTEM_ACTIVE: Uptime=10.0s"
+[sensor_qos_publisher-1] [INFO] [1793243146.307487108] [amr_01.sensor_qos_publisher]: State Latched: "SYSTEM_ACTIVE: Uptime=15.0s"
+[fleet_parameters-4] [WARN] [1793243150.134548813] [amr_01.fleet_parameters]: ⚡ max_linear_speed updated to: 1.2 m/s
+[sensor_qos_publisher-1] [INFO] [1793243151.307504592] [amr_01.sensor_qos_publisher]: State Latched: "SYSTEM_ACTIVE: Uptime=20.0s"
+[sensor_qos_publisher-1] [INFO] [1793243156.307468545] [amr_01.sensor_qos_publisher]: State Latched: "SYSTEM_ACTIVE: Uptime=25.0s"
+[sensor_qos_publisher-1] [INFO] [1793243161.307937826] [amr_01.sensor_qos_publisher]: State Latched: "SYSTEM_ACTIVE: Uptime=30.0s"
+[sensor_qos_publisher-1] [INFO] [1793243166.307687336] [amr_01.sensor_qos_publisher]: State Latched: "SYSTEM_ACTIVE: Uptime=35.0s"
+[WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+[WARNING] [launch]: user interrupted with ctrl-c (SIGINT) again, ignoring...
+[INFO] [fleet_parameters-4]: sending signal 'SIGINT' to process[fleet_parameters-4]
+[INFO] [navigate_action_server-3]: sending signal 'SIGINT' to process[navigate_action_server-3]
+[INFO] [power_service_server-2]: sending signal 'SIGINT' to process[power_service_server-2]
+[INFO] [sensor_qos_publisher-1]: sending signal 'SIGINT' to process[sensor_qos_publisher-1]
+[INFO] [fleet_parameters-4]: process has finished cleanly [pid 97]
+[INFO] [navigate_action_server-3]: process has finished cleanly [pid 96]
+[INFO] [power_service_server-2]: process has finished cleanly [pid 95]
+[INFO] [sensor_qos_publisher-1]: process has finished cleanly [pid 94]

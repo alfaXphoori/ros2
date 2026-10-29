@@ -13,7 +13,7 @@
 3. **วิเคราะห์สถาปัตยกรรม Publish-Subscribe:** ออกแบบไปป์ไลน์การส่งข้อมูลทางเดียวแบบอะซิงโครนัส (Asynchronous Many-to-Many Data Stream) ด้วยข้อความมาตรฐาน ROS 2 Interfaces
 4. **เจาะลึกนโยบาย Quality of Service (QoS) ทั้ง 4 มิติ:** วิเคราะห์ผลกระทบของ Reliability, Durability, History/Depth, และ Liveliness ต่อการทำงานของเซนเซอร์หุ่นยนต์จริง
 5. **แก้ปัญหาความเข้ากันไม่ได้ของ QoS (QoS Incompatibility / Mismatch):** ใช้สมการกฎความเข้ากันได้ ($QoS_{Rx} \le QoS_{Tx}$) ในการวิเคราะห์และแก้ไขปัญหาโหนดไม่สามารถรับส่งข้อมูลกันได้ด้วยเครื่องมือ CLI เชิงลึก
-6. **เลือกใช้ Standard QoS Profiles ในงานอุตสาหกรรม:** เลือกใช้โปรไฟล์มาตรฐาน เช่น `SensorDataQoS`, `SystemDefaultsQoS`, และ `ParametersQoS` ได้เหมาะสมกับแบนด์วิดท์และข้อจำกัดของฮาร์ดแวร์
+6. **เลือกใช้ Standard QoS Profiles ในงานอุตสาหกรรม:** เลือกใช้โปรไฟล์มาตรฐานของ `rclpy` เช่น `qos_profile_sensor_data`, `qos_profile_system_default`, และ `qos_profile_parameters` (หรือ `QoSPresetProfiles.SENSOR_DATA`) ได้เหมาะสมกับแบนด์วิดท์และข้อจำกัดของฮาร์ดแวร์ (ชื่อแบบคลาส `rclcpp::SensorDataQoS()` เป็นของ C++)
 
 ---
 
@@ -117,7 +117,7 @@ DDS นำแนวคิด QoS มาควบคุมพฤติกรร�
   - หากมีข้อความใหม่เข้ามาจนล้นคิว ระบบจะทิ้งข้อความที่เก่าที่สุดออกไป (**Drop Oldest**)
 - **`KEEP_ALL`:**
   - สั่งให้เก็บข้อความทุกข้อความไว้จนกว่าจะส่งมอบสำเร็จ
-  - **ข้อควรระวัง:** หากใช้ร่วมกับ `RELIABLE` ในเครือข่ายที่เชื่อมต่อไม่เสถียร หน่วยความจำ RAM ของหุ่นยนต์จะถูกกินจนหมดอย่างรวดเร็ว (Out of Memory - OOM Crash)
+  - **ข้อควรระวัง:** หากใช้ร่วมกับ `RELIABLE` ในเครือข่ายที่ไม่เสถียร (หรือมี Subscriber ที่รับไม่ทัน) Publisher ต้องเก็บทุกข้อความที่ยังไม่ได้รับ ACK ไว้ คิวจึงโตขึ้นเรื่อยๆ จนชนขีดจำกัด `resource_limits` ของ DDS Vendor (เช่น `max_samples`) เมื่อคิวเต็ม `publish()` จะถูกบล็อกรอ (ไม่เกิน `max_blocking_time`) แล้วล้มเหลว — ผลที่เห็นคือหน่วยความจำสูง ความหน่วงสะสม และลูปควบคุมสะดุด ไม่ใช่การ "OOM Crash" ทันทีเสมอไป (จะถึง OOM ได้ก็ต่อเมื่อตั้ง resource limits ไว้ไม่จำกัดและข้อความมีขนาดใหญ่)
 
 ---
 
@@ -159,14 +159,15 @@ TRANSIENT_LOCAL          -->    TRANSIENT_LOCAL            ===>  ✅ สำเ�
 ---
 
 ### 5. โปรไฟล์ QoS มาตรฐานอุตสาหกรรมใน ROS 2 (Standard Built-in Profiles)
-แทนที่จะต้องตั้งค่าตัวแปรทีละตัว `rclpy` ได้จัดเตรียมพรีเซ็ตสำเร็จรูปที่ปรับแต่งค่ามาอย่างเหมาะสมสำหรับงานแต่ละประเภท:
-1. **`rclpy.qos.SensorDataQoS()`:**
+แทนที่จะต้องตั้งค่าตัวแปรทีละตัว `rclpy` ได้จัดเตรียมพรีเซ็ตสำเร็จรูปเป็น **อ็อบเจกต์ระดับโมดูล** (ไม่ใช่คลาสที่ต้องเรียกด้วย `()` แบบ `rclcpp::SensorDataQoS()` ใน C++) หรือเลือกผ่าน enum `rclpy.qos.QoSPresetProfiles`:
+1. **`rclpy.qos.qos_profile_sensor_data`** (หรือ `QoSPresetProfiles.SENSOR_DATA.value`):
    - Reliability: `BEST_EFFORT`
    - Durability: `VOLATILE`
    - History: `KEEP_LAST`, Depth: `5`
    - *เหมาะสำหรับ:* สตรีมข้อมูลจากเซนเซอร์ทุกชนิด (LiDAR, Camera, IMU, Encoders)
-2. **`rclpy.qos.SystemDefaultsQoS()`:**
+2. **`rclpy.qos.qos_profile_system_default`** (`QoSPresetProfiles.SYSTEM_DEFAULT`):
    - ใช้ค่ามาตรฐานของ RMW Vendor นั้นๆ (โดยทั่วไปคือ `RELIABLE` + `VOLATILE`)
+   - ส่วน `rclpy.qos.qos_profile_parameters` (`QoSPresetProfiles.PARAMETERS`) คือ `RELIABLE` + `KEEP_LAST(1000)` ที่ใช้กับบริการพารามิเตอร์
 3. **โปรไฟล์สำหรับ Latched State (สร้างด้วยตนเอง):**
    - Reliability: `RELIABLE`
    - Durability: `TRANSIENT_LOCAL`
@@ -177,96 +178,76 @@ TRANSIENT_LOCAL          -->    TRANSIENT_LOCAL            ===>  ✅ สำเ�
 
 ## 🛠️ การวิเคราะห์โค้ดตัวอย่างในโมดูลอย่างละเอียด (Line-by-Line Code Walkthrough)
 
-### 1. ไฟล์ `sensor_qos_publisher.py`
+โค้ดทั้งสองไฟล์อยู่ในแพ็กเกจ `amr_week02` (ament_python, `package_dir={'amr_week02': 'src'}`) build และรันได้ด้วย:
+```bash
+./docker/run_lab.sh colcon build --base-paths Essential_ROS --packages-select amr_week02   # หรือ make build PKG=amr_week02
+./docker/run_lab.sh ros2 run amr_week02 sensor_qos_publisher
+./docker/run_lab.sh ros2 run amr_week02 sensor_qos_subscriber
+# ยังรันตรงจากไฟล์ได้: ./docker/run_lab.sh python3 Essential_ROS/Week_02_Nodes_Topics_QoS/src/sensor_qos_publisher.py
+```
+
+### 1. ไฟล์ [`sensor_qos_publisher.py`](src/sensor_qos_publisher.py)
 ```python
-#!/usr/bin/env python3
-import rclpy
-from rclpy.node import Node
-from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPolicy
-from std_msgs.msg import String, Float32
-import random
+from rclpy.executors import ExternalShutdownException
+from rclpy.qos import (DurabilityPolicy, HistoryPolicy, QoSProfile, ReliabilityPolicy,
+                       qos_profile_sensor_data)
+
+# Critical robot state: guaranteed delivery + keep the last value for late-joining subscribers
+STATE_QOS = QoSProfile(
+    reliability=ReliabilityPolicy.RELIABLE,
+    durability=DurabilityPolicy.TRANSIENT_LOCAL,
+    history=HistoryPolicy.KEEP_LAST,
+    depth=1,
+)
 
 class SensorQoSPublisher(Node):
     def __init__(self):
         super().__init__('sensor_qos_publisher')
-
-        # 1. กำหนด QoS Profile สำหรับสตรีมข้อมูลอุณหภูมิเซนเซอร์ความถี่สูง
-        sensor_qos = QoSProfile(
-            reliability=ReliabilityPolicy.BEST_EFFORT, # ยอมรับข้อมูลตกหล่นได้ เน้นความเร็ว
-            history=HistoryPolicy.KEEP_LAST,          # เก็บเฉพาะข้อความล่าสุด
-            depth=5                                    # บัฟเฟอร์ขนาด 5 ข้อความ
-        )
-
-        # 2. กำหนด QoS Profile สำหรับสถานะหุ่นยนต์ (ข้อมูลสำคัญ มีระบบแคชสำหรับ Late-joiners)
-        state_qos = QoSProfile(
-            reliability=ReliabilityPolicy.RELIABLE,           # ต้องส่งมอบสำเร็จ 100%
-            durability=DurabilityPolicy.TRANSIENT_LOCAL,      # บันทึกแคชข้อความล่าสุดไว้ให้ผู้รับที่เปิดทีหลัง
-            history=HistoryPolicy.KEEP_LAST,
-            depth=1
-        )
-
-        # 3. สร้าง Publishers
-        self.pub_sensor = self.create_publisher(Float32, '/sensor/temperature', sensor_qos)
-        self.pub_state = self.create_publisher(String, '/robot/state', state_qos)
-
-        # 4. สร้าง Timer ทำงานที่ความถี่ 2 Hz (ทุก 0.5 วินาที)
-        self.timer = self.create_timer(0.5, self.timer_callback)
-        self.counter = 0
-
-        # 5. เผยแพร่สถานะเริ่มต้นทันทีที่โหนดเริ่มทำงาน (Latching Test)
+        # qos_profile_sensor_data = BEST_EFFORT, VOLATILE, KEEP_LAST(5)
+        self.pub_sensor = self.create_publisher(Float32, 'sensor/temperature',
+                                                qos_profile_sensor_data)
+        self.pub_state = self.create_publisher(String, 'robot/state', STATE_QOS)
+        self.timer = self.create_timer(0.5, self.timer_callback)   # 2 Hz
+        ...
         initial_state = String()
         initial_state.data = 'SYSTEM_READY: Battery=100%, Mode=NORMAL'
-        self.pub_state.publish(initial_state)
-
-        self.get_logger().info('🚀 [SensorQoSPublisher] Node initialized and publishing...')
-
-    def timer_callback(self):
-        self.counter += 1
-        
-        # ส่งข้อมูลอุณหภูมิจำลอง
-        temp_msg = Float32()
-        temp_msg.data = 36.5 + random.uniform(-0.5, 1.2)
-        self.pub_sensor.publish(temp_msg)
-
-        # ทุกๆ 5 วินาที (10 ticks) ส่งอัปเดตสถานะหุ่นยนต์
-        if self.counter % 10 == 0:
-            state_msg = String()
-            state_msg.data = f'SYSTEM_ACTIVE: Uptime={self.counter * 0.5:.1f}s'
-            self.pub_state.publish(state_msg)
-            self.get_logger().info(f'State Latched: "{state_msg.data}"')
+        self.pub_state.publish(initial_state)   # cached by TRANSIENT_LOCAL
 ```
-- **บรรทัดที่ 16-23:** สร้างอ็อบเจกต์ `QoSProfile` สำหรับเซนเซอร์ โดยเจาะจงใช้ `BEST_EFFORT` ร่วมกับ `KEEP_LAST(5)` เพื่อให้ข้อมูลไหลลื่นที่สุด
-- **บรรทัดที่ 26-31:** สร้างอ็อบเจกต์ `QoSProfile` สำหรับสถานะหุ่นยนต์ โดยกำหนด `TRANSIENT_LOCAL` เพื่อเปิดฟังก์ชัน Latching
-- **บรรทัดที่ 41-43:** ทำการ Publish ค่า `initial_state` ตั้งแต่อยู่ใน Constructor ซึ่งเป็นจุดสำคัญที่สุด: หากโหนด Subscriber เปิดทำงานหลังจากนี้ 10 นาที Subscriber ตัวนั้นจะยังคงได้รับข้อความนี้ทันทีตั้งแต่เสี้ยววินาทีแรกที่เชื่อมต่อสำเร็จ
+- **`qos_profile_sensor_data`:** โปรไฟล์สำเร็จรูปของ rclpy (`BEST_EFFORT` + `KEEP_LAST(5)` + `VOLATILE`) สำหรับสตรีมเซนเซอร์ ไม่ต้องสร้าง `QoSProfile` เอง
+- **`STATE_QOS`:** `RELIABLE` + `TRANSIENT_LOCAL` + `depth=1` คือ "Latched Topic" — Publisher เก็บข้อความล่าสุด 1 ข้อความไว้ส่งให้ Subscriber ที่มาทีหลัง
+- **ชื่อท็อปปิกแบบ Relative (`'sensor/temperature'` ไม่มี `/` นำหน้า):** ถ้าไม่มี Namespace จะได้ `/sensor/temperature` เหมือนเดิม แต่เมื่อ Launch ใส่ Namespace (สัปดาห์ที่ 5) จะกลายเป็น `/amr_01/sensor/temperature` อัตโนมัติ ส่วนชื่อที่ขึ้นต้นด้วย `/` จะไม่ถูกใส่ Namespace
+- **Publish ใน Constructor:** หาก Subscriber เปิดทำงานหลังจากนี้ (และขอ `TRANSIENT_LOCAL` เช่นกัน) จะได้รับข้อความนี้ทันทีที่จับคู่สำเร็จ — ผลรันจริงด้านล่างแสดง Subscriber ที่เปิดช้ากว่า 2 วินาทีได้รับ `SYSTEM_READY` เป็นข้อความแรก
 
-### 2. ไฟล์ `sensor_qos_subscriber.py`
+### 2. ไฟล์ [`sensor_qos_subscriber.py`](src/sensor_qos_subscriber.py)
 ```python
-class SensorQoSSubscriber(Node):
-    def __init__(self):
-        super().__init__('sensor_qos_subscriber')
-
-        sensor_qos = QoSProfile(
-            reliability=ReliabilityPolicy.BEST_EFFORT, # ต้องตรงกันหรือต่ำกว่า Publisher
-            history=HistoryPolicy.KEEP_LAST,
-            depth=5
-        )
-
-        state_qos = QoSProfile(
-            reliability=ReliabilityPolicy.RELIABLE,
-            durability=DurabilityPolicy.TRANSIENT_LOCAL, # ต้องร้องขอแบบ TRANSIENT_LOCAL จึงจะได้ข้อมูลแคช
-            history=HistoryPolicy.KEEP_LAST,
-            depth=1
-        )
-
-        self.sub_sensor = self.create_subscription(
-            Float32, '/sensor/temperature', self.sensor_callback, sensor_qos
-        )
-        self.sub_state = self.create_subscription(
-            String, '/robot/state', self.state_callback, state_qos
-        )
+self.sub_sensor = self.create_subscription(
+    Float32, 'sensor/temperature', self.sensor_callback, qos_profile_sensor_data
+)
+self.sub_state = self.create_subscription(
+    String, 'robot/state', self.state_callback, STATE_QOS
+)
 ```
-- **บรรทัดที่ 18:** ร้องขอ Reliability แบบ `BEST_EFFORT` จึงจับคู่กับ Publisher ที่ส่งแบบ `BEST_EFFORT` ได้อย่างถูกต้อง (หากบรรทัดนี้ใส่เป็น `RELIABLE` จะเกิดข้อผิดพลาด QoS Mismatch ทันที)
-- **บรรทัดที่ 25:** ร้องขอ Durability แบบ `TRANSIENT_LOCAL` ทำให้ Subscriber ได้รับสถานะล่าสุดของหุ่นยนต์ทันทีที่เริ่มต้นทำงาน
+- **`qos_profile_sensor_data`:** ร้องขอ `BEST_EFFORT` จึงจับคู่กับ Publisher แบบ `BEST_EFFORT` ได้ (ถ้าเปลี่ยนเป็น `RELIABLE` จะเกิด QoS Incompatibility และไม่ได้ข้อมูลเลย — ดู Lab 2.3)
+- **`STATE_QOS`:** ต้องร้องขอ `TRANSIENT_LOCAL` ด้วย จึงจะได้รับข้อความที่แคชไว้
+
+### 3. การปิดโหนดอย่างถูกวิธี (Clean Shutdown)
+```python
+def main(args=None):
+    rclpy.init(args=args)
+    node = SensorQoSPublisher()
+    try:
+        rclpy.spin(node)
+    except (KeyboardInterrupt, ExternalShutdownException):
+        pass                         # Ctrl+C (SIGINT) or SIGTERM
+    finally:
+        ignore_further_sigint()      # 2nd Ctrl+C from `ros2 launch` must not break cleanup
+        node.destroy_node()
+        rclpy.try_shutdown()         # no 'rcl_shutdown already called' traceback
+```
+- rclpy ติดตั้ง Signal Handler ของตัวเองสำหรับ `SIGINT` และ `SIGTERM`: เมื่อได้รับสัญญาณ จะ **shutdown context ให้ก่อนแล้ว** `spin()` จึงจบด้วย `KeyboardInterrupt` (Ctrl+C) หรือ `ExternalShutdownException` (เช่น `docker stop`/`kill` ส่ง SIGTERM)
+- ถ้าเรียก `rclpy.shutdown()` ซ้ำจะเกิด `RCLError: rcl_shutdown already called` ให้ใช้ `rclpy.try_shutdown()` แทน
+- เมื่อกด Ctrl+C ที่ `ros2 launch` โหนดลูกจะได้ SIGINT **สองครั้ง** (จาก Terminal ทั้ง Process Group และจาก launch ที่ส่งต่อให้) ครั้งที่สองอาจมาระหว่าง `destroy_node()` แล้วทำให้เกิด Traceback — `ignore_further_sigint()` จึงตั้ง `SIGINT` เป็น `SIG_IGN` ก่อนเริ่มเก็บกวาด
+- [`test/test_processes.py`](test/test_processes.py) ทดสอบทั้งกรณี SIGTERM และ SIGINT สองครั้งติดกัน (exit code ต้องเป็น 0 และไม่มี Traceback)
 
 ---
 
@@ -274,12 +255,12 @@ class SensorQoSSubscriber(Node):
 | คำสั่ง CLI | วัตถุประสงค์การใช้งาน | ตัวอย่างคำสั่งจริง | ตัวอย่างผลลัพธ์ที่คาดหวัง |
 | :--- | :--- | :--- | :--- |
 | `ros2 topic list -t` | แสดงรายชื่อท็อปปิกทั้งหมดพร้อมชนิดของข้อความ (Message Type) | `ros2 topic list -t` | `/sensor/temperature [std_msgs/msg/Float32]`<br>`/robot/state [std_msgs/msg/String]` |
-| `ros2 topic echo <topic>` | แสดงข้อมูลสดที่กำลังส่งผ่านท็อปปิกด้วย Default QoS | `ros2 topic echo /robot/state` | `data: 'SYSTEM_READY...'` |
-| `ros2 topic echo --qos-reliability <policy> <topic>` | สั่ง echo โดยระบุค่า Reliability ให้ตรงกับ Publisher | `ros2 topic echo --qos-reliability best_effort /sensor/temperature` | `data: 36.85` |
-| `ros2 topic echo --qos-durability <policy> <topic>` | สั่ง echo เพื่อดึงข้อมูล Latched Topic ที่ส่งไปแล้วในอดีต | `ros2 topic echo --qos-durability transient_local /robot/state` | `data: 'SYSTEM_ACTIVE...'` |
+| `ros2 topic echo <topic>` | แสดงข้อมูลสด — ใน Jazzy ถ้าไม่ระบุ QoS คำสั่งจะเลือก Reliability/Durability ให้ตรงกับ Publisher ที่พบอัตโนมัติ | `ros2 topic echo /sensor/temperature --once` | `data: 37.4647102355957` |
+| `ros2 topic echo --qos-reliability <policy> <topic>` | บังคับค่า Reliability เอง (ใช้จำลอง QoS Mismatch ได้) | `ros2 topic echo --qos-reliability best_effort /sensor/temperature` | `data: 36.11299514770508` |
+| `ros2 topic echo --qos-durability <policy> <topic>` | สั่ง echo เพื่อดึงข้อมูล Latched Topic ที่ส่งไปแล้วในอดีต | `ros2 topic echo --qos-durability transient_local /robot/state --once` | `data: 'SYSTEM_ACTIVE: Uptime=20.0s'` |
 | `ros2 topic info -v <topic>` | ตรวจสอบข้อมูลเชิงลึก แสดง Endpoint Info และ QoS Profiles ทุกโหนด | `ros2 topic info -v /sensor/temperature` | แสดง Publisher/Subscription count, Reliability, Durability รายละเอียดครบ |
-| `ros2 topic hz <topic>` | วัดความถี่เฉลี่ย (Hertz) ในการ Publish ข้อมูล | `ros2 topic hz /sensor/temperature` | `average rate: 2.001 min: 0.499s max: 0.501s` |
-| `ros2 topic bw <topic>` | วัดปริมาณแบนด์วิดท์ (Bandwidth / Throughput) ของเครือข่าย | `ros2 topic bw /sensor/temperature` | `80 B/s available` |
+| `ros2 topic hz <topic>` | วัดความถี่เฉลี่ย (Hertz) ในการ Publish ข้อมูล | `ros2 topic hz /sensor/temperature` | `average rate: 2.000`<br>`min: 0.500s max: 0.500s std dev: 0.00012s window: 6` |
+| `ros2 topic bw <topic>` | วัดปริมาณแบนด์วิดท์ (Bandwidth / Throughput) ของท็อปปิก | `ros2 topic bw /sensor/temperature` | อัตราเฉลี่ยเป็น B/s พร้อมขนาดข้อความเฉลี่ย (ทำใน Challenge 2.2) |
 | `ros2 topic pub <topic> <type> <args>` | จำลองการส่งข้อมูลเข้าไปยังท็อปปิกผ่านเทอร์มินัล | `ros2 topic pub --once /robot/state std_msgs/msg/String "data: 'EMERGENCY_STOP'"` | `publishing #1: std_msgs.msg.String(data='EMERGENCY_STOP')` |
 
 ---
@@ -288,32 +269,38 @@ class SensorQoSSubscriber(Node):
 
 | ปัญหาและอาการ (Symptom) | สาเหตุที่เป็นไปได้ (Root Cause) | วิธีแก้ไขที่เป็นมาตรฐานวิศวกรรม (Engineering Solution) |
 | :--- | :--- | :--- |
-| **1. รัน `ros2 topic echo` แล้วไม่มีข้อมูลปรากฏ ทั้งที่ Publisher รันอยู่** | ท็อปปิกนั้นเผยแพร่ด้วย QoS `BEST_EFFORT` แต่คำสั่ง `ros2 topic echo` ใช้ `RELIABLE` เป็นค่าเริ่มต้น ทำให้เกิด **QoS Mismatch** | เพิ่มแฟล็ก QoS ในคำสั่ง CLI:<br>`ros2 topic echo --qos-reliability best_effort /topic_name` |
+| **1. Subscriber (หรือ `ros2 topic echo --qos-reliability reliable`) ไม่ได้รับข้อมูลเลย ทั้งที่ Publisher รันอยู่** | Publisher ส่งแบบ `BEST_EFFORT` แต่ฝั่งรับร้องขอ `RELIABLE` → **QoS Incompatibility** (ROS 2 จะพิมพ์ `[WARN] ... offering incompatible QoS ... Last incompatible policy: RELIABILITY`) หมายเหตุ: `ros2 topic echo` ใน Jazzy ที่ไม่ระบุ QoS จะปรับให้ตรงกับ Publisher เอง | ใช้ `qos_profile_sensor_data` ในโค้ด Subscriber หรือระบุ `--qos-reliability best_effort` และตรวจด้วย `ros2 topic info -v` |
 | **2. Subscriber เปิดทีหลังไม่ได้รับข้อมูลสถานะของหุ่นยนต์** | Publisher หรือ Subscriber ตั้งค่า Durability เป็น `VOLATILE` ทำให้ข้อมูลในอดีตถูกทำลายทิ้งทันที | ปรับทั้งสองฝั่งให้เป็น `DurabilityPolicy.TRANSIENT_LOCAL` |
-| **3. ข้อมูลเซนเซอร์มีความหน่วงสะสม (High Latency) และกินแรมสูง** | ตั้งค่า QoS History เป็น `KEEP_ALL` ร่วมกับ `RELIABLE` ในเครือข่ายที่มีการตกหล่น | เปลี่ยนมาใช้ `SensorDataQoS()` หรือตั้ง `KEEP_LAST` ร่วมกับ `depth = 1` หรือ `5` |
+| **3. ข้อมูลเซนเซอร์มีความหน่วงสะสม (High Latency) กินแรมสูง หรือ `publish()` ค้าง** | ตั้งค่า QoS History เป็น `KEEP_ALL` ร่วมกับ `RELIABLE` ในเครือข่ายที่มีการตกหล่น คิวโตจนชน resource limits แล้ว Publisher ถูกบล็อก | เปลี่ยนมาใช้ `qos_profile_sensor_data` หรือตั้ง `KEEP_LAST` ร่วมกับ `depth = 1` หรือ `5` |
 | **4. ข้อมูลกล้องหรือภาพสั่นกระตุก ขาดช่วง (Frame Dropping)** | ส่งภาพความละเอียดสูงผ่านเครือข่าย Wi-Fi โดยใช้ `RELIABLE` ทำให้ DDS รอส่งซ้ำแพ็กเก็ตที่หายไป | บังคับใช้ `BEST_EFFORT` สำหรับภาพวิดีโอ หรือใช้การบีบอัดภาพด้วย `image_transport` |
 | **5. โหนดค้างและหยุดตอบสนองต่อ Topic อื่นๆ ทั้งหมด** | มีการใช้คำสั่ง `time.sleep()` หรือลูปประมวลผลทางคณิตศาสตร์ที่ยาวนานใน Callback | หลีกเลี่ยงการบล็อกเธรด หรือเปลี่ยนไปใช้ `MultiThreadedExecutor` ร่วมกับ `ReentrantCallbackGroup` |
+| **6. ปิดโหนดแล้วขึ้น `RCLError: ... rcl_shutdown already called`** | rclpy shutdown context ให้แล้วเมื่อได้ SIGINT/SIGTERM แต่โค้ดเรียก `rclpy.shutdown()` ซ้ำใน `finally` | ดักจับ `ExternalShutdownException` และใช้ `rclpy.try_shutdown()` (ดูหัวข้อ Clean Shutdown) |
 
 ---
 
-## 📸 ภาพผลการทดสอบจริงจากระบบ (Live Execution & Terminal Capture)
-ผลลัพธ์จากการรันคำสั่งและโหนดจริงในระบบ เพื่อใช้เป็นข้อมูลอ้างอิงในการตรวจสอบความถูกต้อง:
-
-![Terminal Capture: Terminal — Week 02: Sensor QoS Publisher & Subscriber](images/terminal_run.png)
+## 📟 ผลการรันจริง (Real Run Output)
+บันทึกจากการรันจริงใน ros:lab-runner (ROS 2 Jazzy, Gazebo Sim 8.15.0) บน Linux 7.0 เมื่อ 2026-10-29 — ไฟล์เต็ม: [`results/qos_lab_run.txt`](results/qos_lab_run.txt)
 
 ```console
-user@amr-dev:~/ros$ ./docker/run_lab.sh python3 Essential_ROS/Week_02_Nodes_Topics_QoS/src/sensor_qos_publisher.py &
-[INFO] [sensor_qos_publisher]: 🚀 [SensorQoSPublisher] Node initialized and publishing...
-user@amr-dev:~/ros$ ./docker/run_lab.sh python3 Essential_ROS/Week_02_Nodes_Topics_QoS/src/sensor_qos_subscriber.py
-[INFO] [sensor_qos_subscriber]: 📡 [SensorQoSSubscriber] Listening for sensor & state updates...
-[INFO] [sensor_qos_subscriber]: Received Temperature: 36.58 °C
-[INFO] [sensor_qos_subscriber]: 📢 Latched Robot State Received: 'SYSTEM_READY: Battery=100%, Mode=NORMAL'
-[INFO] [sensor_qos_subscriber]: Received Temperature: 36.02 °C
-[INFO] [sensor_qos_subscriber]: Received Temperature: 37.35 °C
-[INFO] [sensor_qos_publisher]: State Latched: 'SYSTEM_ACTIVE: Uptime=5.0s'
-[INFO] [sensor_qos_subscriber]: 📢 Latched Robot State Received: 'SYSTEM_ACTIVE: Uptime=5.0s'
-user@amr-dev:~/ros$ [CHECKPOINT PASSED: TRANSIENT_LOCAL LATCHING & SENSOR STREAM OK]
+$ ros2 run amr_week02 sensor_qos_publisher     # terminal 1
+$ ros2 run amr_week02 sensor_qos_subscriber    # terminal 3, started 2 s after the publisher (late joiner)
+[INFO] [1793242259.809630082] [sensor_qos_subscriber]: 📡 [SensorQoSSubscriber] Listening for sensor & state updates...
+[INFO] [1793242261.525578214] [sensor_qos_subscriber]: 📢 Latched Robot State Received: "SYSTEM_READY: Battery=100%, Mode=NORMAL"
+[INFO] [1793242261.813319452] [sensor_qos_subscriber]: Received Temperature: 36.50 °C
+...
+$ ros2 topic echo --qos-durability transient_local /robot/state --once   # late joiner
+data: 'SYSTEM_ACTIVE: Uptime=20.0s'
+---
+
+$ ros2 topic echo --qos-durability volatile /robot/state   # late joiner, VOLATILE (3 s)
+(no output = old state not delivered)
+
+$ ros2 topic echo --qos-reliability reliable /sensor/temperature   # Lab 2.3 (4 s)
+[WARN] [1793242282.480914785] [_ros2cli_164]: New publisher discovered on topic '/sensor/temperature', offering incompatible QoS. No messages will be received from it. Last incompatible policy: RELIABILITY
+(no data printed)
 ```
+
+พฤติกรรมเดียวกันนี้ถูกตรวจอัตโนมัติใน [`test/test_qos_launch.py`](test/test_qos_launch.py) (Late-joiner ได้ข้อความ Latched, ข้อความอุณหภูมิมาถึง, Subscriber แบบ `RELIABLE` ได้ 0 ข้อความพร้อม Incompatible-QoS Event ชนิด `RELIABILITY`)
 
 ---
 
@@ -324,10 +311,10 @@ user@amr-dev:~/ros$ [CHECKPOINT PASSED: TRANSIENT_LOCAL LATCHING & SENSOR STREAM
 3. **คำถาม:** หากโหนด Publisher ส่งข้อมูลด้วยนโยบาย `ReliabilityPolicy.BEST_EFFORT` แต่โหนด Subscriber ร้องขอด้วยนโยบาย `ReliabilityPolicy.RELIABLE` ผลลัพธ์ของการเชื่อมต่อตามมาตรฐาน DDS จะเป็นอย่างไร?
 4. **คำถาม:** จงอธิบายความแตกต่างระหว่างนโยบาย Durability แบบ `VOLATILE` และ `TRANSIENT_LOCAL` พร้อมยกตัวอย่างท็อปปิกในหุ่นยนต์ AMR ที่เหมาะสมกับแต่ละแบบ?
 5. **คำถาม:** พารามิเตอร์ `depth = 10` ใน `HistoryPolicy.KEEP_LAST` มีความหมายและการจัดการหน่วยความจำอย่างไรเมื่อมีข้อความใหม่เข้ามาถึงเป็นข้อความที่ 11?
-6. **คำถาม:** เพราะเหตุใดข้อมูลจากเซนเซอร์ LiDAR ความถี่สูง (เช่น 20 Hz) จึงควรใช้โปรไฟล์ QoS แบบ `SensorDataQoS` แทนที่จะเป็น Default Reliable QoS?
+6. **คำถาม:** เพราะเหตุใดข้อมูลจากเซนเซอร์ LiDAR ความถี่สูง (เช่น 20 Hz) จึงควรใช้โปรไฟล์ QoS `qos_profile_sensor_data` แทนที่จะเป็น Default Reliable QoS?
 7. **คำถาม:** หากต้องการตรวจสอบว่าเหตุใด Subscriber ถึงไม่ได้รับข้อมูลจากท็อปปิก `/scan` จะใช้คำสั่ง CLI ใดในการตรวจสอบนโยบาย QoS ของทุก Endpoint ที่เชื่อมต่อกับท็อปปิกนั้น?
 8. **คำถาม:** ในระบบฝูงหุ่นยนต์ (Fleet of Robots) หากหุ่นยนต์ต้องการบรอดแคสต์ข้อมูลแบตเตอรี่ฉุกเฉินที่มีผลต่อความปลอดภัย ควรเลือกใช้ Reliability และ Durability แบบใด?
-9. **คำถาม:** ปรากฏการณ์ Out-of-Memory (OOM) Crash จาก QoS มักมีสาเหตุมาจากการตั้งค่านโยบาย History และ Reliability ร่วมกันอย่างไร?
+9. **คำถาม:** การตั้ง History เป็น `KEEP_ALL` ร่วมกับ `RELIABLE` ในเครือข่ายที่ไม่เสถียร ส่งผลต่อหน่วยความจำและพฤติกรรมของ Publisher อย่างไร?
 10. **คำถาม:** หากต้องการจำลองส่งข้อมูล String `"STOP"` ไปยังท็อปปิก `/robot/state` เพียงครั้งเดียวผ่าน Command Line โดยระบุ QoS ให้เป็น `TRANSIENT_LOCAL` สามารถเขียนคำสั่งได้อย่างไร?
 
 ---
@@ -342,10 +329,10 @@ user@amr-dev:~/ros$ [CHECKPOINT PASSED: TRANSIENT_LOCAL LATCHING & SENSOR STREAM
    - `VOLATILE`: ข้อมูลจะไม่ถูกบันทึกไว้ ผู้รับที่เปิดทีหลังจะไม่ได้รับข้อมูลในอดีต เหมาะกับข้อมูลสตรีมมิงต่อเนื่อง เช่น `/cmd_vel` หรือ `/sensor/temperature`
    - `TRANSIENT_LOCAL`: ฝั่ง Publisher จะแคชข้อความล่าสุดไว้ และส่งต่อให้โหนด Subscriber ที่เพิ่งเปิดตัวขึ้นมาเชื่อมต่อทีหลัง (Late-joiner) ทันที เหมาะกับข้อมูลสถานะหุ่นยนต์ เช่น `/robot/state`, แผนที่คงที่ `/map`, และการแปลงพิกัดโครงสร้าง `/tf_static`
 5. **เฉลยข้อ 5:** ระบบจะทำการลบข้อความที่เก่าที่สุด (ข้อความที่ 1) ออกจากคิวบัฟเฟอร์ เพื่อเปิดพื้นที่ว่างให้กับข้อความใหม่ที่ 11 เข้ามาแทนที่ (**Drop Oldest Policy**) ทำให้คิวคงขนาดไว้ที่ไม่เกิน 10 ข้อความล่าสุดเสมอ
-6. **เฉลยข้อ 6:** เพราะข้อมูล LiDAR ส่งที่ความถี่สูงและมีขนาดใหญ่ หากใช้ Reliable เมื่อเกิดสัญญาณ Wi-Fi ตกหล่น DDS จะพยายามส่งซ้ำแพ็กเก็ตเก่า ทำให้เกิดความหน่วงเวลาสะสม (Latency Spikes) จนระบบประมวลผล SLAM ไม่ทัน ในขณะที่การใช้ `SensorDataQoS` (`BEST_EFFORT`) จะปล่อยให้แพ็กเก็ตที่หายไปผ่านเลยไป แล้วประมวลผลแพ็กเก็ตถัดไปที่สดใหม่กว่าทันที ซึ่งปลอดภัยต่อการหลบหลีกสิ่งกีดขวางของหุ่นยนต์มากกว่า
+6. **เฉลยข้อ 6:** เพราะข้อมูล LiDAR ส่งที่ความถี่สูงและมีขนาดใหญ่ หากใช้ Reliable เมื่อเกิดสัญญาณ Wi-Fi ตกหล่น DDS จะพยายามส่งซ้ำแพ็กเก็ตเก่า ทำให้เกิดความหน่วงเวลาสะสม (Latency Spikes) จนระบบประมวลผล SLAM ไม่ทัน ในขณะที่การใช้ `qos_profile_sensor_data` (`BEST_EFFORT`) จะปล่อยให้แพ็กเก็ตที่หายไปผ่านเลยไป แล้วประมวลผลแพ็กเก็ตถัดไปที่สดใหม่กว่าทันที ซึ่งปลอดภัยต่อการหลบหลีกสิ่งกีดขวางของหุ่นยนต์มากกว่า
 7. **เฉลยข้อ 7:** ใช้คำสั่ง `ros2 topic info -v /scan` ซึ่งจะแสดงรายละเอียดเชิงลึกของทุก Publisher และ Subscription ที่เกาะอยู่กับท็อปปิกนั้น รวมถึงแสดงค่า QoS ทั้ง Reliability และ Durability ของแต่ละตัว ทำให้เห็นได้อย่างชัดเจนว่ามี Endpoint ใดที่มี QoS ขัดแย้งกันอยู่
 8. **เฉลยข้อ 8:** ควรเลือกใช้ `ReliabilityPolicy.RELIABLE` (เพื่อรับประกันว่าคำสั่งเตือนภัยไม่สูญหาย) ร่วมกับ `DurabilityPolicy.TRANSIENT_LOCAL` (เพื่อให้โหนดเฝ้าระวังหรือระบบ Fleet Manager ที่เพิ่งเชื่อมต่อเข้ามาใหม่สามารถรับทราบสถานะวิกฤตนี้ได้ทันที)
-9. **เฉลยข้อ 9:** เกิดจากการตั้งค่า `HistoryPolicy.KEEP_ALL` ร่วมกับ `ReliabilityPolicy.RELIABLE` ในสภาพแวดล้อมที่การเชื่อมต่อเครือข่ายหลุดหรือไม่เสถียร ทำให้โหนด Publisher พยายามเก็บสะสมข้อความทุกข้อความไว้ในหน่วยความจำ RAM เพื่อรอส่งซ้ำอย่างไม่มีที่สิ้นสุด จนในที่สุดระบบปฏิบัติการต้องสั่ง Kill โปรเซสทิ้งเนื่องจากหน่วยความจำเต็ม
+9. **เฉลยข้อ 9:** Publisher ต้องเก็บทุกข้อความที่ Subscriber ยังไม่ ACK ไว้เพื่อส่งซ้ำ คิวจึงโตขึ้นเรื่อยๆ (ใช้ RAM มากขึ้นและความหน่วงสะสม) จนชนขีดจำกัด `resource_limits` ของ DDS (เช่น `max_samples`) จากนั้น `publish()` จะถูกบล็อกรอได้ไม่เกิน `max_blocking_time` แล้วล้มเหลว ทำให้ลูปควบคุมที่เรียก publish สะดุด การจะไปถึง OOM จริงเกิดได้เมื่อ resource limits ไม่จำกัดและข้อความใหญ่ — ทางแก้คือใช้ `KEEP_LAST` กับ depth ที่เหมาะสม
 10. **เฉลยข้อ 10:** 
    `ros2 topic pub --once --qos-durability transient_local /robot/state std_msgs/msg/String "data: 'STOP'"`
 </details>

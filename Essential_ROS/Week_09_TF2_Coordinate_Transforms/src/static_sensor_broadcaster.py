@@ -1,18 +1,34 @@
 #!/usr/bin/env python3
 """
 Week 09 Lab: Static Transform Broadcaster
-Broadcasts static coordinate transforms for LiDAR and Camera relative to base_link.
-Follows REP 105 coordinate tree: base_link -> lidar_link, base_link -> camera_link.
+Broadcasts the static sensor transforms of the course robot on /tf_static:
+  base_link -> lidar_link, base_link -> camera_link -> camera_optical_link
+
+The values are identical to Week 07's diff_drive_robot.urdf. Use EITHER this node
+OR robot_state_publisher with that URDF, never both: two publishers for the same
+child frame break TF's "one source per transform" rule. tf_lab.launch.py
+(tf_source:=broadcaster|urdf) starts exactly one of them.
 """
 
 import math
+
 import rclpy
-from rclpy.node import Node
 from geometry_msgs.msg import TransformStamped
+from rclpy.executors import ExternalShutdownException
+from rclpy.node import Node
 from tf2_ros.static_transform_broadcaster import StaticTransformBroadcaster
+
+# (parent, child, xyz, rpy) -- same numbers as amr_week07/urdf/diff_drive_robot.urdf
+SENSOR_FRAMES = [
+    ('base_link', 'lidar_link', (0.08, 0.0, 0.095), (0.0, 0.0, 0.0)),
+    ('base_link', 'camera_link', (0.20, 0.0, 0.02), (0.0, 0.0, 0.0)),
+    # REP 103 optical frame: z forward, x right, y down
+    ('camera_link', 'camera_optical_link', (0.0, 0.0, 0.0), (-math.pi / 2, 0.0, -math.pi / 2)),
+]
 
 
 def euler_to_quaternion(roll, pitch, yaw):
+    """Fixed-axis roll/pitch/yaw (URDF/tf convention) -> (x, y, z, w)."""
     r, p, y = roll * 0.5, pitch * 0.5, yaw * 0.5
     cr, sr = math.cos(r), math.sin(r)
     cp, sp = math.cos(p), math.sin(p)
@@ -25,49 +41,40 @@ def euler_to_quaternion(roll, pitch, yaw):
     )
 
 
+def make_transform(stamp, parent, child, xyz, rpy):
+    t = TransformStamped()
+    t.header.stamp = stamp
+    t.header.frame_id = parent
+    t.child_frame_id = child
+    t.transform.translation.x, t.transform.translation.y, t.transform.translation.z = xyz
+    q = euler_to_quaternion(*rpy)
+    (t.transform.rotation.x, t.transform.rotation.y,
+     t.transform.rotation.z, t.transform.rotation.w) = q
+    return t
+
+
 class StaticSensorBroadcaster(Node):
     def __init__(self):
         super().__init__('static_sensor_broadcaster')
         self._tf_publisher = StaticTransformBroadcaster(self)
 
-        transforms = []
-
-        # 1. LiDAR Transform: 0.08m forward, 0.095m up
-        t_lidar = TransformStamped()
-        t_lidar.header.stamp = self.get_clock().now().to_msg()
-        t_lidar.header.frame_id = 'base_link'
-        t_lidar.child_frame_id = 'lidar_link'
-        t_lidar.transform.translation.x = 0.08
-        t_lidar.transform.translation.y = 0.0
-        t_lidar.transform.translation.z = 0.095
-        t_lidar.transform.rotation.w = 1.0
-        transforms.append(t_lidar)
-
-        # 2. Camera Transform: 0.20m forward, 0.02m up
-        t_camera = TransformStamped()
-        t_camera.header.stamp = self.get_clock().now().to_msg()
-        t_camera.header.frame_id = 'base_link'
-        t_camera.child_frame_id = 'camera_link'
-        t_camera.transform.translation.x = 0.20
-        t_camera.transform.translation.y = 0.0
-        t_camera.transform.translation.z = 0.02
-        t_camera.transform.rotation.w = 1.0
-        transforms.append(t_camera)
-
-        # 3. Camera Optical Link (REP 103: X Right, Y Down, Z Forward)
-        t_optical = TransformStamped()
-        t_optical.header.stamp = self.get_clock().now().to_msg()
-        t_optical.header.frame_id = 'camera_link'
-        t_optical.child_frame_id = 'camera_optical_link'
-        q = euler_to_quaternion(-math.pi/2, 0.0, -math.pi/2)
-        t_optical.transform.rotation.x = q[0]
-        t_optical.transform.rotation.y = q[1]
-        t_optical.transform.rotation.z = q[2]
-        t_optical.transform.rotation.w = q[3]
-        transforms.append(t_optical)
-
+        stamp = self.get_clock().now().to_msg()
+        transforms = [make_transform(stamp, *frame) for frame in SENSOR_FRAMES]
+        # One call -> one latched (TRANSIENT_LOCAL) /tf_static message with all frames
         self._tf_publisher.sendTransform(transforms)
-        self.get_logger().info('📡 [StaticSensorBroadcaster] Published static transforms for LiDAR, Camera, and Optical Frame.')
+        self.get_logger().info(
+            'Published static transforms: '
+            + ', '.join(f'{p}->{c}' for p, c, _, _ in SENSOR_FRAMES))
+
+        # Discovery takes a moment, so check once after 3 s for a conflicting source
+        self._check_timer = self.create_timer(3.0, self._check_single_source)
+
+    def _check_single_source(self):
+        self._check_timer.cancel()
+        if self.count_publishers('/robot_description') > 0:
+            self.get_logger().error(
+                'robot_state_publisher is running and already publishes these frames from '
+                'the URDF. Stop one of the two sources (see tf_lab.launch.py tf_source:=...).')
 
 
 def main(args=None):
@@ -75,11 +82,15 @@ def main(args=None):
     node = StaticSensorBroadcaster()
     try:
         rclpy.spin(node)
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, ExternalShutdownException):
+        # Ctrl+C (SIGINT) or SIGTERM: rclpy's signal handler already shut the context down
         pass
     finally:
-        node.destroy_node()
-        rclpy.shutdown()
+        try:
+            node.destroy_node()
+            rclpy.try_shutdown()   # no "rcl_shutdown already called" if already shut down
+        except KeyboardInterrupt:
+            pass  # a second SIGINT (Ctrl+C + ros2 launch forwarding) during cleanup
 
 
 if __name__ == '__main__':

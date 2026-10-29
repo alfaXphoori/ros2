@@ -158,37 +158,36 @@ flowchart TD
 ```
 
 - **`MutuallyExclusiveCallbackGroup` (ค่าปริยาย):** ในกลุ่มเดียวกัน Callbacks จะถูกรันทีละตัวเท่านั้น ห้ามรันซ้อนกัน (Thread-safe อัตโนมัติ)
-- **`ReentrantCallbackGroup`:** อนุญาตให้ Callbacks ในกลุ่มเดียวกัน สามารถถูกหยิบไปประมวลผลพร้อมกันในหลายเธรดคู่ขนานได้ ป้องกันปัญหา Deadlock อย่างเด็ดขาด
+- **`ReentrantCallbackGroup`:** อนุญาตให้ Callbacks ในกลุ่มเดียวกัน สามารถถูกหยิบไปประมวลผลพร้อมกันในหลายเธรดคู่ขนานได้ เมื่อใช้คู่กับ `MultiThreadedExecutor` (มีอย่างน้อย 2 เธรด) Response จึงถูกรับได้แม้ Callback อื่นกำลังบล็อกอยู่ — ถ้าใช้ Reentrant แต่ยังหมุนด้วย `SingleThreadedExecutor` ก็ยัง Deadlock เหมือนเดิม
+
+> 🧪 **พิสูจน์ด้วยการรันจริง:** `ros2 run amr_week03 deadlock_demo --mode deadlock` เรียก `cli.call(req, timeout_sec=3.0)` ใน Timer Callback บน `SingleThreadedExecutor` → Server ตอบกลับแล้ว (เห็น Log ฝั่ง Server) แต่ Client ไม่ได้รับจนหมดเวลา 3 วินาที ส่วน `--mode fixed` (MultiThreadedExecutor + ReentrantCallbackGroup) ได้คำตอบใน 0.001 วินาที — ดูผลใน [ผลการรันจริง](#-ผลการรันจริง-real-run-output)
 
 ---
 
 ## 🛠️ การวิเคราะห์โค้ดตัวอย่างในโมดูลอย่างละเอียด (Line-by-Line Code Walkthrough)
 
-### 1. ไฟล์ `power_service_server.py`
-```python
-#!/usr/bin/env python3
-import rclpy
-from rclpy.node import Node
-from std_srvs.srv import SetBool
+โค้ดทั้งหมดอยู่ในแพ็กเกจ `amr_week03` (ament_python):
+```bash
+./docker/run_lab.sh colcon build --base-paths Essential_ROS --packages-select amr_week03   # หรือ make build PKG=amr_week03
+./docker/run_lab.sh ros2 run amr_week03 power_service_server
+./docker/run_lab.sh ros2 run amr_week03 power_service_client false
+./docker/run_lab.sh ros2 run amr_week03 deadlock_demo --mode deadlock     # หรือ --mode fixed
+```
 
+### 1. ไฟล์ [`power_service_server.py`](src/power_service_server.py)
+```python
 class PowerServiceServer(Node):
     def __init__(self):
         super().__init__('power_service_server')
         self.eco_mode = False
-        
-        # สร้าง Service Server
-        # อาร์กิวเมนต์: 1. Service Type, 2. Service Name, 3. Callback Function
+        # Relative name -> /robot/set_power_mode, or /<ns>/robot/set_power_mode when namespaced
         self.srv = self.create_service(
-            SetBool, '/robot/set_power_mode', self.handle_set_power_mode
+            SetBool, 'robot/set_power_mode', self.handle_set_power_mode
         )
-        self.get_logger().info('⚡ [PowerServiceServer] Service /robot/set_power_mode ready.')
 
     def handle_set_power_mode(self, request, response):
-        # 1. ดึงข้อมูลที่ Client ส่งมา
-        self.eco_mode = request.data
-        
-        # 2. ประมวลผลตรรกะทางวิศวกรรม
-        if self.eco_mode:
+        self.eco_mode = request.data            # 1. ข้อมูลที่ Client ส่งมา
+        if self.eco_mode:                       # 2. ตรรกะทางวิศวกรรม
             response.success = True
             response.message = 'Power saving mode ENABLED: Max speed capped at 0.3 m/s, sensors throttled.'
             self.get_logger().warn(response.message)
@@ -196,37 +195,57 @@ class PowerServiceServer(Node):
             response.success = True
             response.message = 'Normal power mode RESTORED: Full speed 0.8 m/s enabled.'
             self.get_logger().info(response.message)
-            
-        # 3. ต้องส่งคืนอ็อบเจกต์ response เสมอ
-        return response
+        return response                         # 3. ต้องส่งคืน response เสมอ
 ```
-- **บรรทัดที่ 14-17:** ฟังก์ชัน `create_service` ลงทะเบียนบริการเข้าสู่ระบบ DDS เมื่อมี Request เข้ามา ตัวระบบจะเรียก `handle_set_power_mode` อัตโนมัติ
-- **บรรทัดที่ 20-30:** ฟังก์ชัน Callback รับ 2 พารามิเตอร์คือ `request` (ข้อมูลนำเข้า) และ `response` (อ็อบเจกต์เปล่าที่ต้องเติมข้อมูลผลลัพธ์)
-- **บรรทัดที่ 31:** **ต้อง return `response` เสมอ** หากลืม return ไคลเอนต์ฝั่งตรงข้ามจะเกิด Timeout ทันที
+- **`create_service(SetBool, 'robot/set_power_mode', callback)`:** ลงทะเบียนบริการ ชื่อแบบ Relative จึงถูกใส่ Namespace ได้เมื่อรันผ่าน Launch (สัปดาห์ที่ 5: `/amr_01/robot/set_power_mode`)
+- **Callback รับ `request` และ `response`:** `response` คืออ็อบเจกต์เปล่าที่ต้องเติมผลลัพธ์แล้ว **return เสมอ**
+- `main()` ใช้รูปแบบ Clean Shutdown เดียวกับสัปดาห์ที่ 2 (`ExternalShutdownException` + `rclpy.try_shutdown()`)
 
-### 2. ไฟล์ `power_service_client.py`
+### 2. ไฟล์ [`power_service_client.py`](src/power_service_client.py)
 ```python
-class PowerServiceClient(Node):
-    def __init__(self):
-        super().__init__('power_service_client')
-        self.cli = self.create_client(SetBool, '/robot/set_power_mode')
+from rclpy.utilities import remove_ros_args
 
-        # วนลูปตรวจสอบว่าเซิร์ฟเวอร์เปิดทำงานหรือยัง (Timeout 1 วินาทีต่อรอบ)
-        while not self.cli.wait_for_service(timeout_sec=1.0):
-            self.get_logger().info('⏳ Service /robot/set_power_mode not available, waiting...')
-
-        self.get_logger().info('✅ Service /robot/set_power_mode is online!')
-
-    def send_request(self, enable_eco: bool):
-        req = SetBool.Request()
-        req.data = enable_eco
-        # ส่งคำขอแบบ Asynchronous
-        future = self.cli.call_async(req)
-        return future
+def main(args=None):
+    rclpy.init(args=args)
+    # Strip --ros-args ... so they are not mistaken for the mode argument
+    cli_args = parse_args(remove_ros_args(args=sys.argv)[1:])
+    client = PowerServiceClient()
+    ...
+        if not client.wait_for_server(cli_args.wait):        # give up after --wait seconds
+            client.get_logger().error(...)
+        else:
+            future = client.send_request(cli_args.enable_eco)   # cli.call_async(req)
+            rclpy.spin_until_future_complete(client, future, timeout_sec=10.0)
+            response = future.result()
 ```
-- **บรรทัดที่ 7-9:** การใช้ `self.cli.wait_for_service(timeout_sec=1.0)` เป็นแนวปฏิบัติที่ดีที่สุดในระบบหุ่นยนต์ เพื่อป้องกันไม่ให้โปรแกรมพัง (Crash) หากฝั่งเซิร์ฟเวอร์ยังเปิดไม่เสร็จ
-- **บรรทัดที่ 16:** การเรียก `self.cli.call_async(req)` ปลอดภัย 100% ต่อการเกิด Deadlock
-- ในฟังก์ชัน `main()`: มีการใช้คำสั่ง `rclpy.spin_until_future_complete(client, future)` ซึ่งจะหมุน Event Loop เฉพาะเท่าที่จำเป็นจนกว่าจะได้ Response กลับมา แล้วจึงส่งคืนผลลัพธ์อย่างสวยงาม
+- **`remove_ros_args(sys.argv)`:** `ros2 run`/`ros2 launch` ต่อท้ายอาร์กิวเมนต์ `--ros-args -r __node:=...` ให้โปรแกรม ถ้าอ่าน `sys.argv[1]` ตรงๆ จะอ่านผิดตัว ฟังก์ชันนี้ตัดส่วนของ ROS ออกก่อนส่งให้ `argparse`
+- **`wait_for_service(timeout_sec=1.0)` ในลูปที่มีขีดจำกัด (`--wait`, ค่าปริยาย 10 วินาที):** ไม่ส่งคำขอก่อน Server พร้อม และไม่รอตลอดกาลหาก Server ไม่มีอยู่ (จบด้วย exit code 1)
+- **`call_async()` + `spin_until_future_complete()`:** ส่งคำขอแบบไม่บล็อก แล้วหมุน Event Loop เท่าที่จำเป็นจนได้ Response — ปลอดภัยเพราะ `main()` ไม่ได้อยู่ใน Callback ของ Executor
+
+### 3. ไฟล์ [`deadlock_demo.py`](src/deadlock_demo.py) — กับดัก Deadlock แบบจงใจ
+```python
+class DeadlockDemo(Node):
+    def __init__(self, reentrant: bool, call_timeout: float = 3.0):
+        super().__init__('deadlock_demo')
+        group = ReentrantCallbackGroup() if reentrant else None
+        self.cli = self.create_client(SetBool, 'robot/set_power_mode', callback_group=group)
+        self.timer = self.create_timer(0.5, self.timer_callback, callback_group=group)
+
+    def timer_callback(self):
+        ...
+        response = self.cli.call(req, timeout_sec=self.call_timeout)  # blocks this thread
+        if response is None:
+            self.outcome = 'timeout'   # 💥 DEADLOCK
+
+def run(mode: str, call_timeout: float = 3.0) -> str:
+    reentrant = mode == 'fixed'
+    node = DeadlockDemo(reentrant=reentrant, call_timeout=call_timeout)
+    executor = MultiThreadedExecutor(num_threads=2) if reentrant else SingleThreadedExecutor()
+```
+- **`--mode deadlock`:** Timer และ Client อยู่ใน Callback Group ปริยาย (Mutually Exclusive) และหมุนด้วย `SingleThreadedExecutor` → `cli.call()` บล็อกเธรดเดียวที่มี Response จึงไม่มีใครส่งมอบ หมดเวลาแล้วได้ `None`
+- **`--mode fixed`:** ย้าย Timer และ Client ไป `ReentrantCallbackGroup` และใช้ `MultiThreadedExecutor(num_threads=2)` → เธรดที่สองรับ Response มาปลดล็อกเธรดแรก
+- `timeout_sec` ของ `Client.call()` (มีใน rclpy Jazzy) ทำให้เดโมจบเองได้ ในโค้ดจริงถ้าไม่มี timeout โปรแกรมจะค้างตลอดกาล
+- [`test/test_power_service.py`](test/test_power_service.py) ตรวจทั้งสองโหมด (`'timeout'` และ `'success'`) พร้อมทดสอบ SetBool true/false และการรัน Client ที่มี `--ros-args`
 
 ---
 
@@ -237,7 +256,7 @@ class PowerServiceClient(Node):
 | `ros2 service type <srv>` | ตรวจสอบประเภท Message Interface ของ Service | `ros2 service type /robot/set_power_mode` | `std_srvs/srv/SetBool` |
 | `ros2 service find <type>` | ค้นหาว่ามี Service ใดบ้างที่ใช้อินเตอร์เฟซชนิดนี้ | `ros2 service find std_srvs/srv/SetBool` | `/robot/set_power_mode` |
 | `ros2 interface show <type>` | ดูโครงสร้างข้อมูล Request และ Response ภายในไฟล์ `.srv` | `ros2 interface show std_srvs/srv/SetBool` | `bool data`<br>`---`<br>`bool success`<br>`string message` |
-| `ros2 service call <srv> <type> <args>` | สั่งเรียกใช้งานและส่งคำขอไปยัง Service ผ่าน CLI ทันที | `ros2 service call /robot/set_power_mode std_srvs/srv/SetBool "{data: true}"` | `response:`<br>`std_srvs.srv.SetBool_Response(success=True, ...)` |
+| `ros2 service call <srv> <type> <args>` | สั่งเรียกใช้งานและส่งคำขอไปยัง Service ผ่าน CLI ทันที | `ros2 service call /robot/set_power_mode std_srvs/srv/SetBool "{data: true}"` | `requester: making request: std_srvs.srv.SetBool_Request(data=True)`<br>`response:`<br>`std_srvs.srv.SetBool_Response(success=True, message='Power saving mode ENABLED: ...')` |
 
 ---
 
@@ -246,29 +265,36 @@ class PowerServiceClient(Node):
 | ปัญหาและอาการ (Symptom) | สาเหตุที่เป็นไปได้ (Root Cause) | วิธีแก้ไขที่เป็นมาตรฐานวิศวกรรม (Engineering Solution) |
 | :--- | :--- | :--- |
 | **1. โปรแกรมค้างนิ่ง (Freeze) เมื่อสั่งเรียก Service** | เกิดสภาวะ Deadlock จากการใช้ Synchronous call (`cli.call()`) ใน Callback ของโหนดที่รันด้วย `SingleThreadedExecutor` | 1. เปลี่ยนไปใช้ `cli.call_async()` ร่วมกับ `future.add_done_callback()`<br>2. หรือใช้ `MultiThreadedExecutor` ร่วมกับ `ReentrantCallbackGroup` |
-| **2. Client ขึ้นเตือน `Service not available, waiting...` ไม่หยุด** | - ฝั่ง Server ยังไม่ได้เปิดทำงาน<br>- ชื่อ Service ไม่ตรงกัน (เช่น ขาด `/` ข้างหน้า หรือพิมพ์สะกดผิด)<br>- ทั้งสองโหนดอยู่คนละ `ROS_DOMAIN_ID` | 1. ตรวจสอบด้วย `ros2 service list`<br>2. ตรวจสอบ `echo $ROS_DOMAIN_ID` ของทั้งสองหน้าต่าง |
+| **2. Client ขึ้นเตือน `Service ... not available, waiting...` แล้วจบด้วย `not available after 10 s`** | - ฝั่ง Server ยังไม่ได้เปิดทำงาน<br>- ชื่อ Service ไม่ตรงกัน (เช่น ขาด `/` ข้างหน้า หรือพิมพ์สะกดผิด)<br>- ทั้งสองโหนดอยู่คนละ `ROS_DOMAIN_ID` | 1. ตรวจสอบด้วย `ros2 service list`<br>2. ตรวจสอบ `echo $ROS_DOMAIN_ID` ของทั้งสองหน้าต่าง |
 | **3. CLI ขึ้นข้อความ `Failed to parse YAML` ตอนเรียก Service** | ไวยากรณ์ Argument ไม่ถูกต้อง (เช่น ลืมใส่เครื่องหมายคำพูดรอบ Dictionary หรือเว้นวรรคผิด) | ใช้รูปแบบ YAML ที่ถูกต้องเสมอ เช่น:<br>`"{data: true}"` (ต้องมีเว้นวรรคหลังเครื่องหมายโคลอน `: `) |
 | **4. Server ทำงานเสร็จแล้วแต่ Client แจ้ง `Future timed out`** | ฟังก์ชัน `handle_service` ใน Server ลืมเขียนคำสั่ง `return response` | เพิ่มบรรทัด `return response` ที่ตอนท้ายของฟังก์ชัน Callback เสมอ |
 | **5. Service ล่มเมื่อมีการเรียกใช้งานพร้อมกันหลาย Client** | เกิดสภาวะ Race Condition จากการเข้าถึงตัวแปรโกลบอลโดยไม่มีการล็อก | ใช้งาน `threading.Lock()` หรือใช้ `MutuallyExclusiveCallbackGroup` ในการควบคุม |
 
 ---
 
-## 📸 ภาพผลการทดสอบจริงจากระบบ (Live Execution & Terminal Capture)
-ผลลัพธ์จากการรันคำสั่งและโหนดจริงในระบบ เพื่อใช้เป็นข้อมูลอ้างอิงในการตรวจสอบความถูกต้อง:
-
-![Terminal Capture: Terminal — Week 03: Power Management Service & Deadlock Prevention](images/terminal_run.png)
+## 📟 ผลการรันจริง (Real Run Output)
+บันทึกจากการรันจริงใน ros:lab-runner (ROS 2 Jazzy, Gazebo Sim 8.15.0) บน Linux 7.0 เมื่อ 2026-10-29 — ไฟล์เต็ม: [`results/service_lab_run.txt`](results/service_lab_run.txt)
 
 ```console
-user@amr-dev:~/ros$ ./docker/run_lab.sh python3 Essential_ROS/Week_03_Services_Clients/src/power_service_server.py &
-[INFO] [power_service_server]: ⚡ [PowerServiceServer] Service /robot/set_power_mode ready.
-user@amr-dev:~/ros$ ./docker/run_lab.sh python3 Essential_ROS/Week_03_Services_Clients/src/power_service_client.py 15 25
-[INFO] [power_service_client]: ⏳ Connecting to /robot/set_power_mode service...
-[INFO] [power_service_client]: ✅ Service /robot/set_power_mode is online!
-[WARN] [power_service_server]: Power saving mode ENABLED: Max speed capped at 0.3 m/s, sensors throttled.
-[INFO] [power_service_client]: 🎉 Service Response: success=True
-[INFO] [power_service_client]: message='Power saving mode ENABLED: Max speed capped at 0.3 m/s, sensors throttled.'
-user@amr-dev:~/ros$ [CHECKPOINT PASSED: ASYNC SERVICE CALL COMPLETED WITHOUT DEADLOCK]
+$ ros2 run amr_week03 power_service_client false --ros-args --log-level info
+[INFO] [1793242473.548491220] [power_service_client]: ⏳ Service /robot/set_power_mode not available, waiting...
+[INFO] [1793242474.550771893] [power_service_client]: ✅ Service /robot/set_power_mode is online!
+[INFO] [1793242474.556238641] [power_service_client]: 🎉 Service Response: success=True, message="Normal power mode RESTORED: Full speed 0.8 m/s enabled."
+(exit 0)
+
+$ ros2 run amr_week03 deadlock_demo --mode deadlock
+[INFO] [1793242477.681160219] [deadlock_demo]: Calling /robot/set_power_mode synchronously (client.call) from inside a timer callback...
+[ERROR] [1793242480.681728307] [deadlock_demo]: 💥 DEADLOCK: no response after 3.0 s - the executor thread was blocked inside this callback and could not deliver the reply
+outcome: timeout
+(exit 0)
+
+$ ros2 run amr_week03 deadlock_demo --mode fixed
+[INFO] [1793242483.539736758] [deadlock_demo]: Calling /robot/set_power_mode synchronously (client.call) from inside a timer callback...
+[INFO] [1793242483.541472468] [deadlock_demo]: ✅ Response after 0.001 s: success=True (another executor thread delivered it)
+outcome: success
+(exit 0)
 ```
+ใน Log ของ Server (ไฟล์เต็ม) จะเห็นว่าในโหมด `deadlock` Server **ตอบกลับทันที** (`Power saving mode ENABLED` ที่เวลาเดียวกับคำขอ) — คำตอบมาถึงโปรเซสแล้ว แต่ไม่มีเธรดว่างมาส่งมอบให้ `call()`
 
 ---
 

@@ -1,0 +1,52 @@
+# Lab 4.4 - real run of the RMF traffic schedule node in ros:lab-runner (ROS 2 Jazzy, rmf_traffic_ros2 2.7.2), Linux 7.0, 2026-10-29
+$ ros2 run rmf_traffic_ros2 rmf_traffic_schedule &
+$ ros2 node list
+/rmf_traffic_schedule_node_032db625_f554_4f5f_bfe9_920617ccac68
+$ ros2 topic list -t | grep rmf_traffic
+/rmf_traffic/heartbeat [rmf_traffic_msgs/msg/Heartbeat]
+/rmf_traffic/itinerary_clear [rmf_traffic_msgs/msg/ItineraryClear]
+/rmf_traffic/itinerary_delay [rmf_traffic_msgs/msg/ItineraryDelay]
+/rmf_traffic/itinerary_extend [rmf_traffic_msgs/msg/ItineraryExtend]
+/rmf_traffic/itinerary_reached [rmf_traffic_msgs/msg/ItineraryReached]
+/rmf_traffic/itinerary_set [rmf_traffic_msgs/msg/ItinerarySet]
+/rmf_traffic/negotiation_ack [rmf_traffic_msgs/msg/NegotiationAck]
+/rmf_traffic/negotiation_conclusion [rmf_traffic_msgs/msg/NegotiationConclusion]
+/rmf_traffic/negotiation_forfeit [rmf_traffic_msgs/msg/NegotiationForfeit]
+/rmf_traffic/negotiation_notice [rmf_traffic_msgs/msg/NegotiationNotice]
+/rmf_traffic/negotiation_proposal [rmf_traffic_msgs/msg/NegotiationProposal]
+/rmf_traffic/negotiation_refusal [rmf_traffic_msgs/msg/NegotiationRefusal]
+/rmf_traffic/negotiation_rejection [rmf_traffic_msgs/msg/NegotiationRejection]
+/rmf_traffic/negotiation_states [rmf_traffic_msgs/msg/NegotiationStates]
+/rmf_traffic/negotiation_statuses [rmf_traffic_msgs/msg/NegotiationStatuses]
+/rmf_traffic/participants [rmf_traffic_msgs/msg/Participants]
+/rmf_traffic/registered_queries [rmf_traffic_msgs/msg/ScheduleQueries]
+/rmf_traffic/schedule_inconsistency [rmf_traffic_msgs/msg/ScheduleInconsistency]
+/rmf_traffic/schedule_startup [rmf_traffic_msgs/msg/ScheduleIdentity]
+$ ros2 service list -t | grep rmf_traffic
+/rmf_traffic/register_participant [rmf_traffic_msgs/srv/RegisterParticipant]
+/rmf_traffic/register_query [rmf_traffic_msgs/srv/RegisterQuery]
+/rmf_traffic/request_changes [rmf_traffic_msgs/srv/RequestChanges]
+/rmf_traffic/unregister_participant [rmf_traffic_msgs/srv/UnregisterParticipant]
+/rmf_traffic_schedule_node_032db625_f554_4f5f_bfe9_920617ccac68/describe_parameters [rcl_interfaces/srv/DescribeParameters]
+/rmf_traffic_schedule_node_032db625_f554_4f5f_bfe9_920617ccac68/get_parameter_types [rcl_interfaces/srv/GetParameterTypes]
+/rmf_traffic_schedule_node_032db625_f554_4f5f_bfe9_920617ccac68/get_parameters [rcl_interfaces/srv/GetParameters]
+/rmf_traffic_schedule_node_032db625_f554_4f5f_bfe9_920617ccac68/get_type_description [type_description_interfaces/srv/GetTypeDescription]
+/rmf_traffic_schedule_node_032db625_f554_4f5f_bfe9_920617ccac68/list_parameters [rcl_interfaces/srv/ListParameters]
+/rmf_traffic_schedule_node_032db625_f554_4f5f_bfe9_920617ccac68/set_parameters [rcl_interfaces/srv/SetParameters]
+/rmf_traffic_schedule_node_032db625_f554_4f5f_bfe9_920617ccac68/set_parameters_atomically [rcl_interfaces/srv/SetParametersAtomically]
+$ ros2 topic echo --once /rmf_traffic/participants
+node_id:
+  node_uuid: 032db625-f554-4f5f-bfe9-920617ccac68
+  timestamp:
+    sec: 1793242481
+    nanosec: 98126015
+participants: []
+---
+$ ros2 topic list | grep -c "^/rmf_traffic/schedule$"   # the topic the old README told you to echo
+0
+----- rmf_traffic_schedule log -----
+[INFO] [1793242481.108217250] [rmf_traffic_schedule_node_032db625_f554_4f5f_bfe9_920617ccac68]: Successfully loaded logfile .rmf_schedule_node.yaml 
+[INFO] [1793242481.110105023] [rmf_traffic_schedule_node_032db625_f554_4f5f_bfe9_920617ccac68]: Set up heartbeat on /rmf_traffic/heartbeat with liveliness lease duration of 10000 ms and deadline of 10000 ms
+[INFO] [1793242481.116074641] [rmf_traffic_schedule_node_032db625_f554_4f5f_bfe9_920617ccac68]: Beginning traffic schedule node
+[INFO] [1793242491.389074667] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[INFO] [1793242491.389279606] [rmf_traffic_schedule_node_032db625_f554_4f5f_bfe9_920617ccac68]: Closing down traffic schedule node

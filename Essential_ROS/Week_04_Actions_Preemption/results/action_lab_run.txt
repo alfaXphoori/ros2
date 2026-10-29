@@ -1,0 +1,160 @@
+# Week 04 # real run: ros:lab-runner (ROS 2 Jazzy), Linux 7.0, 2026-10-29; ROS_DOMAIN_ID=11, LOCALHOST discovery; server runs in the background of the same container
+
+$ ros2 run amr_week04 navigate_action_server     # terminal 1
+
+$ ros2 action list -t
+/navigate_distance [example_interfaces/action/Fibonacci]
+
+$ ros2 action info /navigate_distance
+Action: /navigate_distance
+Action clients: 0
+Action servers: 1
+    /navigate_action_server
+
+$ ros2 action send_goal -f /navigate_distance example_interfaces/action/Fibonacci "{order: 6}"
+Waiting for an action server to become available...
+Sending goal:
+     order: 6
+
+Goal accepted with ID: e1c29fa196924e44b277d032e47c3313
+
+Feedback:
+    sequence:
+- 0
+- 1
+- 1
+
+Feedback:
+    sequence:
+- 0
+- 1
+- 1
+- 2
+
+Feedback:
+    sequence:
+- 0
+- 1
+- 1
+- 2
+- 3
+
+Feedback:
+    sequence:
+- 0
+- 1
+- 1
+- 2
+- 3
+- 5
+
+Feedback:
+    sequence:
+- 0
+- 1
+- 1
+- 2
+- 3
+- 5
+- 8
+
+Result:
+    sequence:
+- 0
+- 1
+- 1
+- 2
+- 3
+- 5
+- 8
+
+Goal finished with status: SUCCEEDED
+
+$ ros2 run amr_week04 navigate_action_client
+[INFO] [1793242442.697342103] [navigate_action_client]: ⏳ Waiting for navigate_distance action server...
+[INFO] [1793242445.449600242] [navigate_action_client]: 🚀 Sending goal with order=6...
+[INFO] [1793242445.454683575] [navigate_action_client]: ✅ Goal accepted (id=518e10d5...) Executing...
+[INFO] [1793242445.460612350] [navigate_action_client]: 📊 Feedback received: sequence=[0, 1, 1]
+[INFO] [1793242445.959403152] [navigate_action_client]: 📊 Feedback received: sequence=[0, 1, 1, 2]
+[INFO] [1793242446.459976885] [navigate_action_client]: 📊 Feedback received: sequence=[0, 1, 1, 2, 3]
+[INFO] [1793242446.961430594] [navigate_action_client]: 📊 Feedback received: sequence=[0, 1, 1, 2, 3, 5]
+[INFO] [1793242447.461573889] [navigate_action_client]: 📊 Feedback received: sequence=[0, 1, 1, 2, 3, 5, 8]
+[INFO] [1793242447.962659189] [navigate_action_client]: 🏁 Goal finished: status=SUCCEEDED, sequence=[0, 1, 1, 2, 3, 5, 8]
+(exit 0)
+
+$ ros2 run amr_week04 navigate_action_client cancel      # cancel after 1.5 s
+[INFO] [1793242448.569637315] [navigate_action_client]: ⏳ Waiting for navigate_distance action server...
+[INFO] [1793242448.820180528] [navigate_action_client]: 🚀 Sending goal with order=6...
+[INFO] [1793242448.821784104] [navigate_action_client]: ✅ Goal accepted (id=0d1c6395...) Executing...
+[INFO] [1793242448.822987237] [navigate_action_client]: 📊 Feedback received: sequence=[0, 1, 1]
+[INFO] [1793242449.324273212] [navigate_action_client]: 📊 Feedback received: sequence=[0, 1, 1, 2]
+[INFO] [1793242449.824384242] [navigate_action_client]: 📊 Feedback received: sequence=[0, 1, 1, 2, 3]
+[WARN] [1793242450.322448677] [navigate_action_client]: 🛑 Sending cancel request now...
+[WARN] [1793242450.324227506] [navigate_action_client]: 🛑 Cancel request accepted by server.
+[INFO] [1793242450.325729869] [navigate_action_client]: 🏁 Goal finished: status=CANCELED, sequence=[0, 1, 1, 2, 3]
+(exit 0)
+
+$ ros2 run amr_week04 navigate_action_client preempt --order 10
+[INFO] [1793242450.929344479] [navigate_action_client]: ⏳ Waiting for navigate_distance action server...
+[INFO] [1793242451.429942504] [navigate_action_client]: 🚀 Sending goal with order=10...
+[INFO] [1793242451.431535508] [navigate_action_client]: ✅ Goal accepted (id=f5c871be...) Executing...
+[INFO] [1793242451.432863520] [navigate_action_client]: 📊 Feedback received: sequence=[0, 1, 1]
+[INFO] [1793242451.933546453] [navigate_action_client]: 📊 Feedback received: sequence=[0, 1, 1, 2]
+[INFO] [1793242452.434379187] [navigate_action_client]: 📊 Feedback received: sequence=[0, 1, 1, 2, 3]
+[WARN] [1793242452.932233308] [navigate_action_client]: 🔀 Sending a NEW goal (order=4) to preempt the running one...
+[INFO] [1793242452.932459004] [navigate_action_client]: 🚀 Sending goal with order=4...
+[INFO] [1793242452.933897809] [navigate_action_client]: ✅ Goal accepted (id=7bf81765...) Executing...
+[INFO] [1793242452.936188053] [navigate_action_client]: 📊 Feedback received: sequence=[0, 1, 1]
+[INFO] [1793242453.436769535] [navigate_action_client]: 📊 Feedback received: sequence=[0, 1, 1, 2]
+[INFO] [1793242453.937313306] [navigate_action_client]: 📊 Feedback received: sequence=[0, 1, 1, 2, 3]
+[INFO] [1793242454.439636033] [navigate_action_client]: 🎯 Second goal finished: status=SUCCEEDED, sequence=[0, 1, 1, 2, 3]
+[INFO] [1793242454.439961172] [navigate_action_client]: 🏁 Goal finished: status=ABORTED, sequence=[0, 1, 1, 2, 3]
+(exit 0)
+
+$ ros2 action send_goal /navigate_distance example_interfaces/action/Fibonacci "{order: -5}"
+Waiting for an action server to become available...
+Sending goal:
+     order: -5
+
+Goal was rejected.
+
+--- terminal 1 (server) output:
+[INFO] [1793242432.697196791] [navigate_action_server]: 🏁 [NavigateActionServer] Ready to receive navigation distance goals.
+[INFO] [1793242439.579117487] [navigate_action_server]: Received goal request with order/distance steps: 6
+[INFO] [1793242439.580244304] [navigate_action_server]: Executing navigation distance steps...
+[INFO] [1793242439.580517481] [navigate_action_server]: Step 1/6 progress: [0, 1, 1]
+[INFO] [1793242440.082824317] [navigate_action_server]: Step 2/6 progress: [0, 1, 1, 2]
+[INFO] [1793242440.585189453] [navigate_action_server]: Step 3/6 progress: [0, 1, 1, 2, 3]
+[INFO] [1793242441.087303215] [navigate_action_server]: Step 4/6 progress: [0, 1, 1, 2, 3, 5]
+[INFO] [1793242441.589713083] [navigate_action_server]: Step 5/6 progress: [0, 1, 1, 2, 3, 5, 8]
+[INFO] [1793242442.090766225] [navigate_action_server]: Navigation sequence succeeded with result: [0, 1, 1, 2, 3, 5, 8]
+[INFO] [1793242445.452577453] [navigate_action_server]: Received goal request with order/distance steps: 6
+[INFO] [1793242445.457313823] [navigate_action_server]: Executing navigation distance steps...
+[INFO] [1793242445.458281168] [navigate_action_server]: Step 1/6 progress: [0, 1, 1]
+[INFO] [1793242445.958835270] [navigate_action_server]: Step 2/6 progress: [0, 1, 1, 2]
+[INFO] [1793242446.459363780] [navigate_action_server]: Step 3/6 progress: [0, 1, 1, 2, 3]
+[INFO] [1793242446.960251463] [navigate_action_server]: Step 4/6 progress: [0, 1, 1, 2, 3, 5]
+[INFO] [1793242447.460941983] [navigate_action_server]: Step 5/6 progress: [0, 1, 1, 2, 3, 5, 8]
+[INFO] [1793242447.961838868] [navigate_action_server]: Navigation sequence succeeded with result: [0, 1, 1, 2, 3, 5, 8]
+[INFO] [1793242448.821095473] [navigate_action_server]: Received goal request with order/distance steps: 6
+[INFO] [1793242448.821879859] [navigate_action_server]: Executing navigation distance steps...
+[INFO] [1793242448.822596950] [navigate_action_server]: Step 1/6 progress: [0, 1, 1]
+[INFO] [1793242449.323240036] [navigate_action_server]: Step 2/6 progress: [0, 1, 1, 2]
+[INFO] [1793242449.823819194] [navigate_action_server]: Step 3/6 progress: [0, 1, 1, 2, 3]
+[WARN] [1793242450.323478451] [navigate_action_server]: Received request to cancel goal execution!
+[WARN] [1793242450.324825201] [navigate_action_server]: Goal canceled by client request.
+[INFO] [1793242451.430915227] [navigate_action_server]: Received goal request with order/distance steps: 10
+[INFO] [1793242451.432215318] [navigate_action_server]: Executing navigation distance steps...
+[INFO] [1793242451.432474429] [navigate_action_server]: Step 1/10 progress: [0, 1, 1]
+[INFO] [1793242451.932975441] [navigate_action_server]: Step 2/10 progress: [0, 1, 1, 2]
+[INFO] [1793242452.433670837] [navigate_action_server]: Step 3/10 progress: [0, 1, 1, 2, 3]
+[INFO] [1793242452.933326890] [navigate_action_server]: Received goal request with order/distance steps: 4
+[WARN] [1793242452.933768893] [navigate_action_server]: ⚠️ New goal accepted -> preempting (aborting) the current goal.
+[INFO] [1793242452.935077565] [navigate_action_server]: Executing navigation distance steps...
+[WARN] [1793242452.935158262] [navigate_action_server]: Goal preempted by a newer goal.
+[INFO] [1793242452.935737701] [navigate_action_server]: Step 1/4 progress: [0, 1, 1]
+[INFO] [1793242453.436214886] [navigate_action_server]: Step 2/4 progress: [0, 1, 1, 2]
+[INFO] [1793242453.936734319] [navigate_action_server]: Step 3/4 progress: [0, 1, 1, 2, 3]
+[INFO] [1793242454.438645633] [navigate_action_server]: Navigation sequence succeeded with result: [0, 1, 1, 2, 3]
+[INFO] [1793242457.457958095] [navigate_action_server]: Received goal request with order/distance steps: -5
+[ERROR] [1793242457.458195664] [navigate_action_server]: Rejecting negative distance step goal.

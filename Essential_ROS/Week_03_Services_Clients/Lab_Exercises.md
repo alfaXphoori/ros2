@@ -15,12 +15,13 @@
 ---
 
 ## 📋 ข้อกำหนดก่อนเริ่มปฏิบัติการ (Prerequisites & Setup)
-- เข้าสู่รูทไดเรกทอรี `/mnt/sda/ros`
-- ตรวจสอบไวยากรณ์สคริปต์ในสัปดาห์ที่ 3:
+- เข้าสู่รูทไดเรกทอรีของ repository วิชา
+- Build แพ็กเกจ `amr_week03` (ament_python) — หลัง build แล้ว `run_lab.sh` จะ source `install/setup.bash` ให้อัตโนมัติ:
   ```bash
-  python3 -m py_compile Essential_ROS/Week_03_Services_Clients/src/power_service_server.py
-  python3 -m py_compile Essential_ROS/Week_03_Services_Clients/src/power_service_client.py
+  ./docker/run_lab.sh colcon build --base-paths Essential_ROS --packages-select amr_week03
+  # หรือ: make build PKG=amr_week03      ชุดทดสอบอัตโนมัติ: make test PKG=amr_week03
   ```
+- ตั้ง `ROS_DOMAIN_ID` ของตนเองและ `ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST` ก่อนเรียก `run_lab.sh` ทุก Terminal
 
 ---
 
@@ -31,7 +32,8 @@
 
 1. เปิด **Terminal 1** แล้วรันโหนดเซิร์ฟเวอร์:
    ```bash
-   ./docker/run_lab.sh python3 Essential_ROS/Week_03_Services_Clients/src/power_service_server.py
+   ./docker/run_lab.sh ros2 run amr_week03 power_service_server
+   # แบบไม่ build: ./docker/run_lab.sh python3 Essential_ROS/Week_03_Services_Clients/src/power_service_server.py
    ```
    **ผลลัพธ์ที่คาดหวัง:** โชว์ข้อความ `⚡ [PowerServiceServer] Service /robot/set_power_mode ready.`
 
@@ -45,8 +47,9 @@
    ```bash
    ./docker/run_lab.sh ros2 service call /robot/set_power_mode std_srvs/srv/SetBool "{data: true}"
    ```
-   **ผลลัพธ์ที่คาดหวัง:**
+   **ผลลัพธ์จริง:**
    ```text
+   waiting for service to become available...
    requester: making request: std_srvs.srv.SetBool_Request(data=True)
 
    response:
@@ -66,33 +69,45 @@
 1. ให้ Terminal 1 (Server) รันอยู่ต่อเนื่อง
 2. ใน **Terminal 2** รันไคลเอนต์เพื่อสั่งเปิด Eco Mode:
    ```bash
-   ./docker/run_lab.sh python3 Essential_ROS/Week_03_Services_Clients/src/power_service_client.py true
+   ./docker/run_lab.sh ros2 run amr_week03 power_service_client true
    ```
-   **ผลลัพธ์ที่คาดหวัง:**
+   **ผลลัพธ์จริง:**
    ```text
-   [INFO] [power_service_client]: ✅ Service /robot/set_power_mode is online!
-   [INFO] [power_service_client]: 🎉 Service Response: success=True, message="Power saving mode ENABLED: ..."
+   [INFO] [1793242470.096880256] [power_service_client]: ⏳ Service /robot/set_power_mode not available, waiting...
+   [INFO] [1793242471.098164656] [power_service_client]: ⏳ Service /robot/set_power_mode not available, waiting...
+   [INFO] [1793242471.598807733] [power_service_client]: ✅ Service /robot/set_power_mode is online!
+   [INFO] [1793242471.937008353] [power_service_client]: 🎉 Service Response: success=True, message="Power saving mode ENABLED: Max speed capped at 0.3 m/s, sensors throttled."
+   (exit 0)
+   ```
+   บรรทัด `not available, waiting...` 1–2 ครั้งแรกเกิดขึ้นแม้ Server รันอยู่ เพราะโปรเซสใหม่ต้องใช้เวลา DDS Discovery ประมาณ 1–2 วินาทีก่อนจะเห็น Service
+
+3. ทดสอบสั่งปิด Eco Mode — อาร์กิวเมนต์ของ ROS (`--ros-args ...`) ต่อท้ายได้โดยไม่รบกวนค่า `false` เพราะโค้ดใช้ `rclpy.utilities.remove_ros_args()`:
+   ```bash
+   ./docker/run_lab.sh ros2 run amr_week03 power_service_client false --ros-args --log-level info
    ```
 
-3. ทดสอบสั่งปิด Eco Mode:
+4. ปิด Terminal 1 (กด `Ctrl+C` ที่ Server) แล้วลองรัน Client อีกครั้งใน Terminal 2 (ให้รอไม่เกิน 3 วินาที):
    ```bash
-   ./docker/run_lab.sh python3 Essential_ROS/Week_03_Services_Clients/src/power_service_client.py false
+   ./docker/run_lab.sh ros2 run amr_week03 power_service_client true --wait 3
    ```
-
-4. ปิด Terminal 1 (กด `Ctrl+C` ที่ Server) แล้วลองรัน Client อีกครั้งใน Terminal 2:
-   ```bash
-   ./docker/run_lab.sh python3 Essential_ROS/Week_03_Services_Clients/src/power_service_client.py true
+   **ผลลัพธ์จริง:**
+   ```text
+   [INFO] [1793242485.479840564] [power_service_client]: ⏳ Service /robot/set_power_mode not available, waiting...
+   [INFO] [1793242486.482134171] [power_service_client]: ⏳ Service /robot/set_power_mode not available, waiting...
+   [ERROR] [1793242487.484014711] [power_service_client]: ❌ Service /robot/set_power_mode not available after 3 s
+   [ros2run]: Process exited with failure 1
+   (exit 1)
    ```
    **คำถาม Checkpoint 3.2:**
    - [ ] เกิดอะไรขึ้นกับโปรแกรม Client เมื่อ Server ปิดตัวลง?
-   - [ ] ฟังก์ชันใดที่ทำหน้าที่ป้องกันไม่ให้ Client แคชหลุดตั้งแต่ต้น? (`wait_for_service`)
+   - [ ] ฟังก์ชันใดที่ทำหน้าที่ตรวจว่า Server พร้อมก่อนส่งคำขอ และเหตุใดจึงควรมีเวลารอสูงสุด (`--wait`) แทนการรอไม่รู้จบ? (`wait_for_service`)
 
 ---
 
 ### 🔹 Lab 3.3: การทดลองจำลองและวิเคราะห์ Deadlock
 **เป้าหมาย:** สังเกตพฤติกรรมเมื่อโหนดเกิดสภาวะ Deadlock จากการเรียก synchronous call
 
-1. พิจารณาโค้ดตัวอย่างที่ผิดพลาดต่อไปนี้ (อย่าเพิ่งรัน):
+1. พิจารณาโค้ดตัวอย่างที่ผิดพลาดต่อไปนี้:
    ```python
    # โค้ดที่มีข้อผิดพลาด: การเรียก synchronous call ใน timer_callback
    def timer_callback(self):
@@ -102,12 +117,31 @@
        response = self.cli.call(req)  # <-- ค้างตรงนี้ตลอดกาล!
        self.get_logger().info(f'Done: {response.success}')
    ```
-2. อธิบายในรายงาน: ทำไมการใช้ `self.cli.call_async(req)` พร้อม `future.add_done_callback(...)` จึงไม่เกิดปัญหานี้?
+2. ให้ Server (Terminal 1) รันอยู่ แล้วรันเดโมที่จำลองโค้ดข้างต้นจริง ([`src/deadlock_demo.py`](src/deadlock_demo.py) ใส่ `timeout_sec=3.0` ไว้เพื่อให้จบเองได้):
+   ```bash
+   ./docker/run_lab.sh ros2 run amr_week03 deadlock_demo --mode deadlock
+   ./docker/run_lab.sh ros2 run amr_week03 deadlock_demo --mode fixed
+   ```
+   **ผลลัพธ์จริง:**
+   ```text
+   $ ros2 run amr_week03 deadlock_demo --mode deadlock
+   [INFO] [1793242477.681160219] [deadlock_demo]: Calling /robot/set_power_mode synchronously (client.call) from inside a timer callback...
+   [ERROR] [1793242480.681728307] [deadlock_demo]: 💥 DEADLOCK: no response after 3.0 s - the executor thread was blocked inside this callback and could not deliver the reply
+   outcome: timeout
+   (exit 0)
+   
+   $ ros2 run amr_week03 deadlock_demo --mode fixed
+   [INFO] [1793242483.539736758] [deadlock_demo]: Calling /robot/set_power_mode synchronously (client.call) from inside a timer callback...
+   [INFO] [1793242483.541472468] [deadlock_demo]: ✅ Response after 0.001 s: success=True (another executor thread delivered it)
+   outcome: success
+   (exit 0)
+   ```
+3. สังเกต Log ของ Server ใน Terminal 1: ในโหมด `deadlock` Server ตอบกลับทันที แต่ Client ยังได้ `None` — อธิบายในรายงานว่าเหตุใด และทำไม `--mode fixed` (`MultiThreadedExecutor` + `ReentrantCallbackGroup`) หรือการใช้ `self.cli.call_async(req)` พร้อม `future.add_done_callback(...)` จึงไม่เกิดปัญหานี้
 
 ---
 
 ### 🔹 Lab 3.4: พัฒนาโหนดบริการหยุดฉุกเฉิน Emergency Stop (Hands-on Task)
-**เป้าหมาย:** สร้างไฟล์สคริปต์ใหม่ชื่อ `emergency_stop_service.py` ภายในโฟลเดอร์ `src/`
+**เป้าหมาย:** สร้างไฟล์สคริปต์ใหม่ชื่อ `emergency_stop_service.py` ภายในโฟลเดอร์ `src/` แล้วเพิ่ม `'emergency_stop_service = amr_week03.emergency_stop_service:main'` ใน `entry_points` ของ [`setup.py`](setup.py) และ build ใหม่ เพื่อให้รันด้วย `ros2 run amr_week03 emergency_stop_service` ได้
 
 **ข้อกำหนดทางวิศวกรรม:**
 1. สร้าง Service Server ชื่อ `/robot/emergency_stop` โดยใช้อินเตอร์เฟซ `std_srvs/srv/Trigger`
@@ -158,23 +192,28 @@
 | `TypeError: 'Request' object is not callable` | ประกาศตัวแปรคำขอผิด เช่น ใส่ `SetBool.Request(...)` โดยไม่ได้นำเข้าคลาส | ตรวจสอบ `from std_srvs.srv import SetBool` |
 | CLI ขึ้น error: `Invalid YAML` | ไม่ได้ใส่เครื่องหมายคำพูดรอบ dictionary หรือเว้นวรรคผิด | ใช้รูปแบบ: `"{data: true}"` หรือ `"{}"` สำหรับ Trigger |
 | Client รันแล้วจบการทำงานทันทีโดยไม่ได้คำตอบ | ลืมสั่ง `rclpy.spin_until_future_complete(client, future)` | ตรวจสอบว่ามีคำสั่ง spin รอ future ครบถ้วน |
+| `error: argument mode: invalid choice` หรืออ่านค่าผิดเมื่อรันผ่าน `ros2 launch` | อ่าน `sys.argv[1]` ตรงๆ ซึ่งอาจเป็น `--ros-args` | ใช้ `rclpy.utilities.remove_ros_args(sys.argv)` ก่อน parse อาร์กิวเมนต์ |
 
 
-## 📸 ภาพผลลัพธ์การรันจริงในระบบ (Verified Lab Execution Screenshot)
-ผู้เรียนสามารถตรวจสอบความถูกต้องของผลลัพธ์ที่ได้จากการทำแล็บ เทียบกับภาพบันทึกหน้าจอการรันจริงในระบบ:
-
-![Verified Lab Execution: Terminal — Week 03: Power Management Service & Deadlock Prevention](images/terminal_run.png)
+## 📟 ผลการรันจริง (Real Run Output)
+บันทึกจากการรันจริงใน ros:lab-runner (ROS 2 Jazzy, Gazebo Sim 8.15.0) บน Linux 7.0 เมื่อ 2026-10-29 — ไฟล์เต็ม: [`results/service_lab_run.txt`](results/service_lab_run.txt)
 
 ```console
-user@amr-dev:~/ros$ ./docker/run_lab.sh python3 Essential_ROS/Week_03_Services_Clients/src/power_service_server.py &
-[INFO] [power_service_server]: ⚡ [PowerServiceServer] Service /robot/set_power_mode ready.
-user@amr-dev:~/ros$ ./docker/run_lab.sh python3 Essential_ROS/Week_03_Services_Clients/src/power_service_client.py 15 25
-[INFO] [power_service_client]: ⏳ Connecting to /robot/set_power_mode service...
-[INFO] [power_service_client]: ✅ Service /robot/set_power_mode is online!
-[WARN] [power_service_server]: Power saving mode ENABLED: Max speed capped at 0.3 m/s, sensors throttled.
-[INFO] [power_service_client]: 🎉 Service Response: success=True
-[INFO] [power_service_client]: message='Power saving mode ENABLED: Max speed capped at 0.3 m/s, sensors throttled.'
-user@amr-dev:~/ros$ [CHECKPOINT PASSED: ASYNC SERVICE CALL COMPLETED WITHOUT DEADLOCK]
+$ ros2 run amr_week03 power_service_server     # terminal 1
+
+$ ros2 service list | grep power_mode
+/robot/set_power_mode
+
+$ ros2 service call /robot/set_power_mode std_srvs/srv/SetBool "{data: false}"
+waiting for service to become available...
+requester: making request: std_srvs.srv.SetBool_Request(data=False)
+
+--- terminal 1 (server) output:
+[INFO] [1793242458.786830702] [power_service_server]: ⚡ [PowerServiceServer] Service /robot/set_power_mode ready.
+[WARN] [1793242465.522718787] [power_service_server]: Power saving mode ENABLED: Max speed capped at 0.3 m/s, sensors throttled.
+[INFO] [1793242468.525688456] [power_service_server]: Normal power mode RESTORED: Full speed 0.8 m/s enabled.
+[WARN] [1793242471.933810309] [power_service_server]: Power saving mode ENABLED: Max speed capped at 0.3 m/s, sensors throttled.
+...
 ```
 
 ---

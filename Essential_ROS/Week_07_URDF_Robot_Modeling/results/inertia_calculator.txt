@@ -1,0 +1,9 @@
+$ ros2 run amr_week07 inertia_calculator box 1.2 0.25 0.18 0.05
+box: Ixx=0.003490 Iyy=0.006500 Izz=0.009490 kg*m^2
+<inertia ixx="0.003490" ixy="0.0" ixz="0.0" iyy="0.006500" iyz="0.0" izz="0.009490"/>
+$ ros2 run amr_week07 inertia_calculator cylinder 0.75 0.08 0.04 --axis y
+cylinder: Ixx=0.001300 Iyy=0.002400 Izz=0.001300 kg*m^2
+<inertia ixx="0.001300" ixy="0.0" ixz="0.0" iyy="0.002400" iyz="0.0" izz="0.001300"/>
+$ ros2 run amr_week07 inertia_calculator sphere 0.2 0.03
+sphere: Ixx=0.000072 Iyy=0.000072 Izz=0.000072 kg*m^2
+<inertia ixx="0.000072" ixy="0.0" ixz="0.0" iyy="0.000072" iyz="0.0" izz="0.000072"/>

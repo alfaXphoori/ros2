@@ -1,0 +1,66 @@
+# Week 03 # real run: ros:lab-runner (ROS 2 Jazzy), Linux 7.0, 2026-10-29; ROS_DOMAIN_ID=11, LOCALHOST discovery; server runs in the background of the same container
+
+$ ros2 run amr_week03 power_service_server     # terminal 1
+
+$ ros2 service list | grep power_mode
+/robot/set_power_mode
+
+$ ros2 service type /robot/set_power_mode
+std_srvs/srv/SetBool
+
+$ ros2 service call /robot/set_power_mode std_srvs/srv/SetBool "{data: true}"
+waiting for service to become available...
+requester: making request: std_srvs.srv.SetBool_Request(data=True)
+
+response:
+std_srvs.srv.SetBool_Response(success=True, message='Power saving mode ENABLED: Max speed capped at 0.3 m/s, sensors throttled.')
+
+
+$ ros2 service call /robot/set_power_mode std_srvs/srv/SetBool "{data: false}"
+waiting for service to become available...
+requester: making request: std_srvs.srv.SetBool_Request(data=False)
+
+response:
+std_srvs.srv.SetBool_Response(success=True, message='Normal power mode RESTORED: Full speed 0.8 m/s enabled.')
+
+
+$ ros2 run amr_week03 power_service_client true
+[INFO] [1793242470.096880256] [power_service_client]: ⏳ Service /robot/set_power_mode not available, waiting...
+[INFO] [1793242471.098164656] [power_service_client]: ⏳ Service /robot/set_power_mode not available, waiting...
+[INFO] [1793242471.598807733] [power_service_client]: ✅ Service /robot/set_power_mode is online!
+[INFO] [1793242471.937008353] [power_service_client]: 🎉 Service Response: success=True, message="Power saving mode ENABLED: Max speed capped at 0.3 m/s, sensors throttled."
+(exit 0)
+
+$ ros2 run amr_week03 power_service_client false --ros-args --log-level info
+[INFO] [1793242473.548491220] [power_service_client]: ⏳ Service /robot/set_power_mode not available, waiting...
+[INFO] [1793242474.550771893] [power_service_client]: ✅ Service /robot/set_power_mode is online!
+[INFO] [1793242474.556238641] [power_service_client]: 🎉 Service Response: success=True, message="Normal power mode RESTORED: Full speed 0.8 m/s enabled."
+(exit 0)
+
+$ ros2 run amr_week03 deadlock_demo --mode deadlock
+[INFO] [1793242477.681160219] [deadlock_demo]: Calling /robot/set_power_mode synchronously (client.call) from inside a timer callback...
+[ERROR] [1793242480.681728307] [deadlock_demo]: 💥 DEADLOCK: no response after 3.0 s - the executor thread was blocked inside this callback and could not deliver the reply
+outcome: timeout
+(exit 0)
+
+$ ros2 run amr_week03 deadlock_demo --mode fixed
+[INFO] [1793242483.539736758] [deadlock_demo]: Calling /robot/set_power_mode synchronously (client.call) from inside a timer callback...
+[INFO] [1793242483.541472468] [deadlock_demo]: ✅ Response after 0.001 s: success=True (another executor thread delivered it)
+outcome: success
+(exit 0)
+
+--- terminal 1 (server) output:
+[INFO] [1793242458.786830702] [power_service_server]: ⚡ [PowerServiceServer] Service /robot/set_power_mode ready.
+[WARN] [1793242465.522718787] [power_service_server]: Power saving mode ENABLED: Max speed capped at 0.3 m/s, sensors throttled.
+[INFO] [1793242468.525688456] [power_service_server]: Normal power mode RESTORED: Full speed 0.8 m/s enabled.
+[WARN] [1793242471.933810309] [power_service_server]: Power saving mode ENABLED: Max speed capped at 0.3 m/s, sensors throttled.
+[INFO] [1793242474.553345771] [power_service_server]: Normal power mode RESTORED: Full speed 0.8 m/s enabled.
+[WARN] [1793242477.681762424] [power_service_server]: Power saving mode ENABLED: Max speed capped at 0.3 m/s, sensors throttled.
+[WARN] [1793242483.540459940] [power_service_server]: Power saving mode ENABLED: Max speed capped at 0.3 m/s, sensors throttled.
+
+$ ros2 run amr_week03 power_service_client true --wait 3     # server stopped
+[INFO] [1793242485.479840564] [power_service_client]: ⏳ Service /robot/set_power_mode not available, waiting...
+[INFO] [1793242486.482134171] [power_service_client]: ⏳ Service /robot/set_power_mode not available, waiting...
+[ERROR] [1793242487.484014711] [power_service_client]: ❌ Service /robot/set_power_mode not available after 3 s
+[ros2run]: Process exited with failure 1
+(exit 1)

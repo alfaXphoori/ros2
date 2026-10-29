@@ -22,7 +22,7 @@ Visual Studio Code เป็น IDE ยอดนิยมสูงสุดส�
 ### 🔌 Extensions สำคัญที่แนะนำให้ติดตั้ง
 | Extension Name | Extension ID | หน้าที่ |
 | :--- | :--- | :--- |
-| **ROS** | `ms-iot.vscode-ros` | ช่วยจัดการ ROS Workspace, Build task, และรันโหนด |
+| **ROS** | `ranch-hand-robotics.rde-ros-2` | ช่วยจัดการ ROS 2 Workspace, Build task, และรันโหนด (เป็นตัวที่พัฒนาต่อจาก `ms-iot.vscode-ros` ซึ่ง Microsoft เลิกดูแลแล้ว ให้ตรวจชื่อใน Marketplace อีกครั้งก่อนติดตั้ง) |
 | **Python** | `ms-python.python` | Intellisense, Linting, Debugging สำหรับ rclpy |
 | **C/C++** | `ms-vscode.cpptools` | การจัดการ Header, Auto-complete C++ และ rclcpp |
 | **CMake Tools** | `ms-vscode.cmake-tools` | อำนวยความสะดวกในการจัดทำ `CMakeLists.txt` |
@@ -32,15 +32,15 @@ Visual Studio Code เป็น IDE ยอดนิยมสูงสุดส�
 ### ⚙️ ตัวอย่างการคอนฟิก `.vscode/settings.json` ใน Workspace
 สร้างโฟลเดอร์ `.vscode` ที่ Root ของ Workspace และใส่ไฟล์ `settings.json`:
 
+> colcon ใช้ layout แบบ isolated เป็นค่าเริ่มต้น แต่ละแพ็กเกจจึงอยู่ใน `install/<ชื่อแพ็กเกจ>/lib/python3.12/site-packages`
+> (ไม่ใช่ `install/lib/...`) ให้เพิ่มหนึ่งบรรทัดต่อแพ็กเกจที่ต้องการ auto-complete ส่วน `python.autoComplete.extraPaths`
+> เป็นค่าที่เลิกใช้แล้ว ให้ใช้ `python.analysis.extraPaths` (Pylance) แทน
+
 ```json
 {
-  "python.autoComplete.extraPaths": [
-    "/opt/ros/jazzy/lib/python3.12/site-packages",
-    "${workspaceFolder}/install/lib/python3.12/site-packages"
-  ],
   "python.analysis.extraPaths": [
     "/opt/ros/jazzy/lib/python3.12/site-packages",
-    "${workspaceFolder}/install/lib/python3.12/site-packages"
+    "${workspaceFolder}/install/amr_week02/lib/python3.12/site-packages"
   ],
   "files.associations": {
     "*.launch.py": "python",
@@ -81,7 +81,7 @@ flowchart TD
 
 | คำสั่ง (Command) | ประโยชน์และการใช้งาน |
 | :--- | :--- |
-| `colcon build --symlink-install` | **แนะนำสูงสุดสำหรับ Python:** สร้าง Symbolic Link สคริปต์ Python ใน `install/` ตรงไปยังโฟลเดอร์ `src/` ทำให้เมื่อแก้โค้ด Python แล้ว สามารถรันได้ทันทีโดยไม่ต้องคอมไพล์ใหม่ |
+| `colcon build --symlink-install` | สำหรับแพ็กเกจ Python มาตรฐาน (โค้ดอยู่ในโฟลเดอร์ชื่อเดียวกับแพ็กเกจ): สร้าง Symbolic Link ใน `install/` ไปยังซอร์ส แก้โค้ดแล้วรันได้ทันที **ข้อยกเว้น:** แพ็กเกจรายสัปดาห์ของวิชานี้ใช้ `package_dir={'amr_weekNN': 'src'}` เพื่อคงโครงสร้างโฟลเดอร์เดิม คำสั่งนี้ยัง build ผ่าน แต่ colcon จะ *คัดลอก* ไฟล์จาก `src/` ไปไว้ใน `build/<pkg>/<pkg>/` (ทดสอบแล้ว: ไม่ใช่ symlink) จึงต้อง build ใหม่ทุกครั้งที่แก้โค้ด เหมือน `colcon build` ธรรมดา (`make build`) |
 | `colcon build --packages-select <pkg_name>` | คอมไพล์เฉพาะแพ็กเกจที่ระบุ ช่วยลดเวลาจากหลายนาทีเหลือเพียงไม่กี่วินาที |
 | `colcon build --packages-up-to <pkg_name>` | คอมไพล์แพ็กเกจที่ระบุพร้อมกับ Dependencies ทั้งหมดที่แพ็กเกจนั้นต้องใช้ |
 | `colcon build --parallel-workers 4` | จำกัดจำนวน CPU Cores ที่ใช้คอมไพล์ ป้องกันไม่ให้ RAM หมด (Out-Of-Memory) |
@@ -180,7 +180,7 @@ rqt_graph
 สร้างแผนผัง PDF แสดงลำดับพิกัดของหุ่นยนต์ตั้งแต่ `map` -> `odom` -> `base_footprint` -> `base_link` -> `laser_frame`:
 ```bash
 ros2 run tf2_tools view_frames
-# คำสั่งจะสร้างไฟล์ frames.pdf ขึ้นมา ให้เปิดดูได้ทันที
+# คำสั่งจะสร้างไฟล์ frames_<วันเวลา>.pdf (และ .gv) ในโฟลเดอร์ปัจจุบัน
 ```
 
 ### 3. การมอนิเตอร์สถานะพิกัดแบบสด (Live TF Echo)

@@ -1,50 +1,13 @@
-# 🚀 โมดูล 5: ระบบนำทางอัตโนมัติ Navigation 2 (Nav2)
-## (Module 5: Autonomous Mobile Robot Navigation with Nav2 Stack)
+# 🧭 โมดูล 5: ระบบนำทางอัตโนมัติ Nav2 — ย้ายแล้ว
 
----
+> **โฟลเดอร์นี้เป็นโครงสร้างหลักสูตรเดิม (แบบโมดูล)** เนื้อหาทั้งหมดถูกย้ายและปรับปรุงไปอยู่ในหลักสูตรรายสัปดาห์แล้ว
+> คอนฟิก Nav2 เดิมในโฟลเดอร์นี้ (DWB ไม่มี `critics`, ไม่มี `behavior_server`) ทำให้ Nav2 ไม่สามารถ Active ได้ จึงถูกลบออก
 
-## 🎯 วัตถุประสงค์การเรียนรู้
-1. เข้าใจสถาปัตยกรรมของ Nav2: Global Planner, Local Controller, 2D Costmaps, และ Recovery Behaviors
-2. ศึกษาหลักการระบุตำแหน่งหุ่นยนต์ด้วยความน่าจะเป็น (Adaptive Monte Carlo Localization: AMCL)
-3. ปรับแต่งพารามิเตอร์เลเยอร์ Costmap (Static, Obstacle, Inflation) เพื่อความปลอดภัยในการเคลื่อนที่
-4. กำหนดจุดเป้าหมาย (2D Goal Pose) ผ่าน RViz2 และติดตามการสร้างเส้นทางหลบหลีกแบบ Dynamic
-5. พัฒนาสคริปต์ลาดตระเวนหลายจุดตรวจ (Multi-Waypoint Patrol) แบบอัตโนมัติด้วยภาษา Python
+| หัวข้อเดิมในโมดูล 5 | อ่านต่อที่ |
+| :--- | :--- |
+| Costmap 2D: Static / Obstacle / Inflation Layer, Footprint | [สัปดาห์ที่ 13: Nav2 Costmaps & Layers](../Week_13_Nav2_Costmaps_Layers/Readme.md) · [ใบงาน](../Week_13_Nav2_Costmaps_Layers/Lab_Exercises.md) |
+| AMCL, Global Planner (NavFn), DWB Controller, `nav2_bringup.launch.py` | [สัปดาห์ที่ 14: Path Planning & AMCL](../Week_14_Path_Planning_AMCL/Readme.md) · [ใบงาน](../Week_14_Path_Planning_AMCL/Lab_Exercises.md) |
+| Waypoint Patrol, Behavior Tree, `/follow_waypoints` | [สัปดาห์ที่ 15: Waypoint Patrol & BT](../Week_15_Waypoint_Patrol_BT/Readme.md) · [ใบงาน](../Week_15_Waypoint_Patrol_BT/Lab_Exercises.md) |
+| ระบบรวมและภารกิจปลายภาค | [สัปดาห์ที่ 16: Final Demonstration](../Week_16_Final_Demonstration/Readme.md) · [ใบงาน](../Week_16_Final_Demonstration/Lab_Exercises.md) |
 
----
-
-## 🏛️ สถาปัตยกรรมของ Nav2 Stack
-
-```
-Goal Input:
-  • RViz2 /goal_pose
-  • Python Waypoint Script
-            │
-            ▼
-┌────────────────────────────────────────────────────────┐
-│                      bt_navigator                      │
-│            (Behavior Tree Decision Engine)             │
-└───────────┬────────────────────────────────┬───────────┘
-            │                                │
-            ▼                                ▼
-┌───────────────────────┐        ┌───────────────────────┐
-│    planner_server     │        │   controller_server   │
-│  (Global Path: NavFn) │        │  (Trajectory: DWB)    │
-│   • global_costmap    │        │   • local_costmap     │
-└───────────────────────┘        └───────────┬───────────┘
-                                             │
-                                             ▼
-                                      Topic: /cmd_vel
-                                             │
-                                             ▼
-                                        Gazebo Sim
-```
-
----
-
-## 📑 สารบัญเอกสารและปฏิบัติการ
-- [ใบงานปฏิบัติการโมดูล 5 (Lab_Exercises.md)](Lab_Exercises.md)
-  - **Lab 5.1:** การรัน Map Server และ AMCL Localization
-  - **Lab 5.2:** การตั้งค่า Initial Pose อัตโนมัติด้วย Python
-  - **Lab 5.3:** การรัน Nav2 Bringup Stack เต็มรูปแบบ
-  - **Lab 5.4:** การสั่งนำทางผ่าน RViz2 และปรับแต่ง Costmap Inflation
-  - **Lab 5.5:** ภารกิจลาดตระเวน Multi-Waypoint Patrol ในคลังสินค้า
+แพ็กเกจ ROS 2 ที่ใช้แทน: `amr_week13`, `amr_week14`, `amr_week15`, `amr_week16`

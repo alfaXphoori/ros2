@@ -20,10 +20,13 @@
   ```bash
   xhost +local:docker
   ```
-- ทดสอบการคอมไพล์ Launch File:
+- Build แพ็กเกจ `amr_week07` (ติดตั้ง URDF, launch และ RViz config ไปที่ `install/amr_week07/share/amr_week07/`):
   ```bash
-  python3 -m py_compile Essential_ROS/Week_07_URDF_Robot_Modeling/launch/display_urdf.launch.py
+  ./docker/run_lab.sh bash
+  colcon build --base-paths Essential_ROS --packages-select amr_week07
+  source install/setup.bash
   ```
+  *(คำสั่ง `ros2 ...` ด้านล่างให้รันในเชลล์นี้ หรือผ่าน `./docker/run_lab.sh` ซึ่งจะ source `install/setup.bash` ให้อัตโนมัติ)*
 
 ---
 
@@ -62,8 +65,14 @@
 
 1. เปิด Launch File สำหรับการแสดงผล URDF:
    ```bash
-   ./docker/run_lab.sh ros2 launch Essential_ROS/Week_07_URDF_Robot_Modeling/launch/display_urdf.launch.py
+   ./docker/run_lab.sh ros2 launch amr_week07 display_urdf.launch.py
    ```
+   หากเครื่องไม่มีจอ (SSH / CI) ให้ปิด GUI ทั้งหมด แล้วตรวจ TF ด้วย `tf2_echo` แทน:
+   ```bash
+   ./docker/run_lab.sh ros2 launch amr_week07 display_urdf.launch.py use_gui:=false rviz:=false
+   ./docker/run_lab.sh ros2 run tf2_ros tf2_echo base_footprint lidar_link   # อีกเทอร์มินัล
+   ```
+   ค่าที่ได้จริงคือ `Translation: [0.080, 0.000, 0.175]` (ดู [`results/display_urdf_headless.txt`](results/display_urdf_headless.txt))
 2. สังเกตหน้าต่าง RViz2 ที่เปิดขึ้นมา:
    - ตรวจสอบว่าโมเดลตัวถังมีสีน้ำเงิน ล้อสีดำ เซนเซอร์ LiDAR สีส้ม และกล้องสีแดง
    - ตรวจสอบว่าไม่มีเครื่องหมายตกใจสีแดง (Error) ในแถบ RobotModel
@@ -85,7 +94,7 @@
 1. คำนวณ $I_{xx} = \frac{1}{12} m (w^2 + h^2)$
 2. คำนวณ $I_{yy} = \frac{1}{12} m (d^2 + h^2)$
 3. คำนวณ $I_{zz} = \frac{1}{12} m (d^2 + w^2)$
-*(บันทึกตัวเลขทศนิยม 6 ตำแหน่งลงในรายงาน)*
+*(บันทึกตัวเลขทศนิยม 6 ตำแหน่งลงในรายงาน แล้วตรวจคำตอบด้วย `ros2 run amr_week07 inertia_calculator box 1.2 0.25 0.18 0.05`)*
 
 ---
 
@@ -97,7 +106,8 @@
 3. เพิ่มแท็ก `<joint name="payload_tray_joint" type="fixed">`:
    - Parent: `base_link`
    - Child: `payload_tray_link`
-   - Origin: ติดตั้งบนหลังคาตัวถังที่พิกัด $(x = 0.0, y = 0.0, z = 0.08)$
+   - Origin: ติดตั้งบนหลังคาตัวถังด้านหลัง LiDAR ที่พิกัด $(x = -0.08, y = 0.0, z = 0.095)$
+     *(หลังคาตัวถังอยู่ที่ $z = 0.02 + 0.10/2 = 0.07$ m ใน `base_link` ถาดหนา $0.05$ m จึงต้องวางศูนย์กลางที่ $0.07 + 0.025 = 0.095$ m; ขอบหน้าถาดอยู่ที่ $x = -0.08 + 0.125 = 0.045$ m ไม่ชน LiDAR ซึ่งเริ่มที่ $x = 0.08 - 0.04 = 0.04$ m)*
 4. ตรวจสอบความถูกต้องด้วย `check_urdf` และเปิดดูใน RViz2:
    ```bash
    ./docker/run_lab.sh check_urdf Essential_ROS/Week_07_URDF_Robot_Modeling/urdf/diff_drive_robot.urdf
@@ -107,7 +117,8 @@
 
 ## 🏆 โจทย์ท้าทายระดับสูง (Challenge Exercises)
 1. **Challenge 7.1:** เพิ่มเสาไฟสัญญาณแจ้งเตือน (Status Beacon / Tower Light) สีเขียวทรงกระบอกขึ้นมาบนหลังคาหุ่นยนต์ พร้อมคำนวณ Inertia แบบทรงกระบอก
-2. **Challenge 7.2:** แปลงโครงสร้าง URDF ออกมาเป็นแผนผังไฟล์ PDF โดยใช้คำสั่ง `urdf_to_graphiz` แล้วตรวจสอบโครงสร้างความสัมพันธ์
+2. **Challenge 7.2:** แปลงโครงสร้าง URDF ออกมาเป็นแผนผังไฟล์ PDF โดยใช้คำสั่ง `urdf_to_graphviz` แล้วตรวจสอบโครงสร้างความสัมพันธ์
+3. **Challenge 7.3:** รันชุดทดสอบอัตโนมัติ `colcon test --packages-select amr_week07` หลังเพิ่ม Payload Tray แล้วตรวจว่า `test_inertia_physically_valid` ยังผ่าน (เพิ่มชื่อ `payload_tray_link` ในรายการ parametrize ของ [`test/test_urdf_model.py`](test/test_urdf_model.py))
 
 ---
 
@@ -140,13 +151,12 @@
 | Inertia Tensor เป็นค่าลบหรือศูนย์ทั้งหมด | ใส่ค่า 0 ในระนาบความเฉื่อยหลัก | $I_{xx}, I_{yy}, I_{zz}$ ของวัตถุที่มีมวลต้องมีค่าเป็นบวกเสมอ |
 
 
-## 📸 ภาพผลลัพธ์การรันจริงในระบบ (Verified Lab Execution Screenshot)
-ผู้เรียนสามารถตรวจสอบความถูกต้องของผลลัพธ์ที่ได้จากการทำแล็บ เทียบกับภาพบันทึกหน้าจอการรันจริงในระบบ:
-
-![Verified Lab Execution: Terminal — Week 07: URDF Parser & Link-Joint Tree Verification](images/terminal_run.png)
+## 📟 ผลการรันจริง (Real Run Output)
+บันทึกจากการรันจริงใน ros:lab-runner (ROS 2 Jazzy, Gazebo Sim 8.15.0) บน Linux 7.0 เมื่อ 2026-10-29
+(ฉบับเต็ม: [`results/`](results/))
 
 ```console
-user@amr-dev:~/ros$ ./docker/run_lab.sh check_urdf Essential_ROS/Week_07_URDF_Robot_Modeling/urdf/diff_drive_robot.urdf
+$ check_urdf Essential_ROS/Week_07_URDF_Robot_Modeling/urdf/diff_drive_robot.urdf
 robot name is: diff_drive_robot
 ---------- Successfully Parsed XML ---------------
 root Link: base_footprint has 1 child(ren)
@@ -158,8 +168,10 @@ root Link: base_footprint has 1 child(ren)
         child(4):  lidar_link
         child(5):  rear_caster_link
         child(6):  right_wheel_link
-user@amr-dev:~/ros$ [CHECKPOINT PASSED: URDF VALIDATED - INERTIA TENSOR PRECISE]
+$ ros2 run amr_week07 inertia_calculator cylinder 0.75 0.08 0.04 --axis y
+cylinder: Ixx=0.001300 Iyy=0.002400 Izz=0.001300 kg*m^2
+<inertia ixx="0.001300" ixy="0.0" ixz="0.0" iyy="0.002400" iyz="0.0" izz="0.001300"/>
 ```
+*(ค่าล้อขับเคลื่อนของโมเดลนี้ — คำตอบของ Payload Tray ใน Lab 7.3 อยู่ใน [`results/inertia_calculator.txt`](results/inertia_calculator.txt) ให้ตรวจหลังคำนวณเองเสร็จ)*
 
 ---
-

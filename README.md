@@ -38,7 +38,7 @@ flowchart TD
         A3["03: Precision Docking"]
         A4["04: Multi-Robot Open-RMF"]
         A5["05: Production & SROS2"]
-        A6["06: Capstone Warehouse AMR"]
+        A6["06: Capstone Warehouse AMR<br>(Nav2 + Docking + E-stop KPIs)"]
     end
 
     Essential --> E_Path
@@ -52,14 +52,27 @@ flowchart TD
 
 👉 **เข้าสู่หน้าหลักของ Track:** [`Essential_ROS/README.md`](Essential_ROS/README.md) (ประกอบด้วยโฟลเดอร์บทเรียนและแล็บรายสัปดาห์ครบทั้ง 16 สัปดาห์: `Week_01` ถึง `Week_16`)
 
-| โมดูลหลัก | หัวข้อการเรียนรู้ | เอกสารคู่มือ | ใบงานแล็บ |
-| :--- | :--- | :--- | :--- |
-| **01** | **Core Communication** (W1-W5) | [`01_Core_Communication/Readme.md`](Essential_ROS/01_Core_Communication/Readme.md) | [`Lab_Exercises.md`](Essential_ROS/01_Core_Communication/Lab_Exercises.md) |
-| **02** | **Robot Modeling & TF2** (W6-W9) | [`02_Robot_Modeling_TF2/Readme.md`](Essential_ROS/02_Robot_Modeling_TF2/Readme.md) | [`Lab_Exercises.md`](Essential_ROS/02_Robot_Modeling_TF2/Lab_Exercises.md) |
-| **03** | **Gazebo Simulation** (W10-W11) | [`03_Gazebo_Simulation/Readme.md`](Essential_ROS/03_Gazebo_Simulation/Readme.md) | [`Lab_Exercises.md`](Essential_ROS/03_Gazebo_Simulation/Lab_Exercises.md) |
-| **04** | **SLAM Mapping** (W12) | [`04_SLAM_Mapping/Readme.md`](Essential_ROS/04_SLAM_Mapping/Readme.md) | [`Lab_Exercises.md`](Essential_ROS/04_SLAM_Mapping/Lab_Exercises.md) |
-| **05** | **Nav2 Navigation** (W13-W16) | [`05_Nav2_Navigation/Readme.md`](Essential_ROS/05_Nav2_Navigation/Readme.md) | [`Lab_Exercises.md`](Essential_ROS/05_Nav2_Navigation/Lab_Exercises.md) |
-| **W01-16** | **16-Week Dedicated Labs** | [**ตารางครบ 16 สัปดาห์**](Essential_ROS/README.md#🗺️-ตารางบทเรียนและแล็บปฏิบัติการครบ-16-สัปดาห์-weeks-01---16) | [**คู่มือปฏิบัติการละเอียด**](Essential_ROS/docs/weekly_lectures_and_labs.md) |
+| สัปดาห์ | หัวข้อ | แพ็กเกจ | คู่มือ | ใบงานแล็บ | ผลรันจริง |
+| :---: | :--- | :--- | :--- | :--- | :--- |
+| **01** | **Environment & DDS Network** | `amr_week01` | [`Readme.md`](Essential_ROS/Week_01_Environment_DDS/Readme.md) | [`Lab_Exercises.md`](Essential_ROS/Week_01_Environment_DDS/Lab_Exercises.md) | [`results/`](Essential_ROS/Week_01_Environment_DDS/results/) |
+| **02** | **Nodes, Topics & QoS** | `amr_week02` | [`Readme.md`](Essential_ROS/Week_02_Nodes_Topics_QoS/Readme.md) | [`Lab_Exercises.md`](Essential_ROS/Week_02_Nodes_Topics_QoS/Lab_Exercises.md) | [`results/`](Essential_ROS/Week_02_Nodes_Topics_QoS/results/) |
+| **03** | **Services & Clients** | `amr_week03` | [`Readme.md`](Essential_ROS/Week_03_Services_Clients/Readme.md) | [`Lab_Exercises.md`](Essential_ROS/Week_03_Services_Clients/Lab_Exercises.md) | [`results/`](Essential_ROS/Week_03_Services_Clients/results/) |
+| **04** | **Actions, Cancel & Preemption** | `amr_week04` | [`Readme.md`](Essential_ROS/Week_04_Actions_Preemption/Readme.md) | [`Lab_Exercises.md`](Essential_ROS/Week_04_Actions_Preemption/Lab_Exercises.md) | [`results/`](Essential_ROS/Week_04_Actions_Preemption/results/) |
+| **05** | **Parameters & Launch** | `amr_week05` | [`Readme.md`](Essential_ROS/Week_05_Parameters_Launch/Readme.md) | [`Lab_Exercises.md`](Essential_ROS/Week_05_Parameters_Launch/Lab_Exercises.md) | [`results/`](Essential_ROS/Week_05_Parameters_Launch/results/) |
+| **06** | **Kinematics & REP Standards** | `amr_week06` | [`Readme.md`](Essential_ROS/Week_06_Kinematics_REP_Standards/Readme.md) | [`Lab_Exercises.md`](Essential_ROS/Week_06_Kinematics_REP_Standards/Lab_Exercises.md) | [`results/`](Essential_ROS/Week_06_Kinematics_REP_Standards/results/) |
+| **07** | **URDF Robot Modeling** | `amr_week07` | [`Readme.md`](Essential_ROS/Week_07_URDF_Robot_Modeling/Readme.md) | [`Lab_Exercises.md`](Essential_ROS/Week_07_URDF_Robot_Modeling/Lab_Exercises.md) | [`results/`](Essential_ROS/Week_07_URDF_Robot_Modeling/results/) |
+| **08** | **🔴 Midterm Practical Exam (+ autograder)** | `amr_week08` | [`Readme.md`](Essential_ROS/Week_08_Midterm_Practical_Exam/Readme.md) | [`Exam_Task.md`](Essential_ROS/Week_08_Midterm_Practical_Exam/Exam_Task.md) | [`results/`](Essential_ROS/Week_08_Midterm_Practical_Exam/results/) |
+| **09** | **TF2 Coordinate Transforms** | `amr_week09` | [`Readme.md`](Essential_ROS/Week_09_TF2_Coordinate_Transforms/Readme.md) | [`Lab_Exercises.md`](Essential_ROS/Week_09_TF2_Coordinate_Transforms/Lab_Exercises.md) | [`results/`](Essential_ROS/Week_09_TF2_Coordinate_Transforms/results/) |
+| **10** | **Gazebo Sim World (SDF)** | `amr_week10` | [`Readme.md`](Essential_ROS/Week_10_Gazebo_Sim_Harmonic/Readme.md) | [`Lab_Exercises.md`](Essential_ROS/Week_10_Gazebo_Sim_Harmonic/Lab_Exercises.md) | [`results/`](Essential_ROS/Week_10_Gazebo_Sim_Harmonic/results/) |
+| **11** | **Actuators, Sensors & Bridge** | `amr_week11` | [`Readme.md`](Essential_ROS/Week_11_Actuators_Sensors_Bridge/Readme.md) | [`Lab_Exercises.md`](Essential_ROS/Week_11_Actuators_Sensors_Bridge/Lab_Exercises.md) | [`results/`](Essential_ROS/Week_11_Actuators_Sensors_Bridge/results/) |
+| **12** | **SLAM Mapping** | `amr_week12` | [`Readme.md`](Essential_ROS/Week_12_SLAM_Mapping_Ceres/Readme.md) | [`Lab_Exercises.md`](Essential_ROS/Week_12_SLAM_Mapping_Ceres/Lab_Exercises.md) | [`results/`](Essential_ROS/Week_12_SLAM_Mapping_Ceres/results/) |
+| **13** | **Nav2 Costmaps & Layers** | `amr_week13` | [`Readme.md`](Essential_ROS/Week_13_Nav2_Costmaps_Layers/Readme.md) | [`Lab_Exercises.md`](Essential_ROS/Week_13_Nav2_Costmaps_Layers/Lab_Exercises.md) | [`results/`](Essential_ROS/Week_13_Nav2_Costmaps_Layers/results/) |
+| **14** | **Path Planning & AMCL** | `amr_week14` | [`Readme.md`](Essential_ROS/Week_14_Path_Planning_AMCL/Readme.md) | [`Lab_Exercises.md`](Essential_ROS/Week_14_Path_Planning_AMCL/Lab_Exercises.md) | [`results/`](Essential_ROS/Week_14_Path_Planning_AMCL/results/) |
+| **15** | **Waypoint Patrol & Behavior Tree** | `amr_week15` | [`Readme.md`](Essential_ROS/Week_15_Waypoint_Patrol_BT/Readme.md) | [`Lab_Exercises.md`](Essential_ROS/Week_15_Waypoint_Patrol_BT/Lab_Exercises.md) | [`results/`](Essential_ROS/Week_15_Waypoint_Patrol_BT/results/) |
+| **16** | **🏆 Final Demonstration** | `amr_week16` | [`Readme.md`](Essential_ROS/Week_16_Final_Demonstration/Readme.md) | [`Lab_Exercises.md`](Essential_ROS/Week_16_Final_Demonstration/Lab_Exercises.md) | [`results/`](Essential_ROS/Week_16_Final_Demonstration/results/) |
+
+> โฟลเดอร์ `Essential_ROS/01_…05_` เป็นโมดูลรุ่นเก่า ปัจจุบันเป็นเพียงหน้าชี้ทาง (redirect) ไปยังสัปดาห์ที่เกี่ยวข้อง
+
 
 ---
 
@@ -68,42 +81,61 @@ flowchart TD
 
 👉 **เข้าสู่หน้าหลักของ Track:** [`Advanced_ROS/README.md`](Advanced_ROS/README.md)
 
-| โมดูล | หัวข้อการเรียนรู้ | เอกสารคู่มือ | ใบงานแล็บ | โค้ดตัวอย่างสำคัญ |
+| โมดูล (แพ็กเกจ) | หัวข้อการเรียนรู้ | เอกสารคู่มือ | ใบงานแล็บ | โค้ดตัวอย่างสำคัญ |
 | :---: | :--- | :--- | :--- | :--- |
-| **01** | **`ros2_control` & Hardware** | [`01_ros2_control/README.md`](Advanced_ROS/01_ros2_control_Hardware/README.md) | [`Lab_01.md`](Advanced_ROS/01_ros2_control_Hardware/Lab_Exercises.md) | [`diff_drive_controller.yaml`](Advanced_ROS/01_ros2_control_Hardware/config/diff_drive_controller.yaml) |
-| **02** | **Vision & AI Perception** | [`02_Vision_AI/README.md`](Advanced_ROS/02_Vision_AI_Perception/README.md) | [`Lab_02.md`](Advanced_ROS/02_Vision_AI_Perception/Lab_Exercises.md) | [`cv_bridge_yolo_node.py`](Advanced_ROS/02_Vision_AI_Perception/src/cv_bridge_yolo_node.py) |
-| **03** | **Nav2 Precision Docking** | [`03_Precision_Docking/README.md`](Advanced_ROS/03_Nav2_Precision_Docking/README.md) | [`Lab_03.md`](Advanced_ROS/03_Nav2_Precision_Docking/Lab_Exercises.md) | [`dock_and_charge_bt.xml`](Advanced_ROS/03_Nav2_Precision_Docking/behavior_trees/dock_and_charge_bt.xml) |
-| **04** | **Multi-Robot Fleet & Open-RMF** | [`04_Multi_Robot/README.md`](Advanced_ROS/04_Multi_Robot_Fleet_OpenRMF/README.md) | [`Lab_04.md`](Advanced_ROS/04_Multi_Robot_Fleet_OpenRMF/Lab_Exercises.md) | [`multi_robot_fleet.launch.py`](Advanced_ROS/04_Multi_Robot_Fleet_OpenRMF/launch/multi_robot_fleet.launch.py) |
-| **05** | **Production, CI/CD & Security** | [`05_Production/README.md`](Advanced_ROS/05_Production_CI_CD_Security/README.md) | [`Lab_05.md`](Advanced_ROS/05_Production_CI_CD_Security/Lab_Exercises.md) | [`lifecycle_laser_sensor.py`](Advanced_ROS/05_Production_CI_CD_Security/src/lifecycle_laser_sensor.py) |
-| **06** | **Capstone AMR Project** | [`06_Capstone/Readme.md`](Advanced_ROS/06_Capstone_Project/Readme.md) | [`Lab_06.md`](Advanced_ROS/06_Capstone_Project/Lab_Exercises.md) | [`full_warehouse_system.launch.py`](Advanced_ROS/06_Capstone_Project/launch/full_warehouse_system.launch.py) |
+| **01**<br>`amr_adv01` | **`ros2_control` & Hardware** | [`README.md`](Advanced_ROS/01_ros2_control_Hardware/README.md) | [`Lab_Exercises.md`](Advanced_ROS/01_ros2_control_Hardware/Lab_Exercises.md) | [`diff_drive_controller.yaml`](Advanced_ROS/01_ros2_control_Hardware/config/diff_drive_controller.yaml) |
+| **02**<br>`amr_adv02` | **Vision & AI Perception** | [`README.md`](Advanced_ROS/02_Vision_AI_Perception/README.md) | [`Lab_Exercises.md`](Advanced_ROS/02_Vision_AI_Perception/Lab_Exercises.md) | [`object_detector_node.py`](Advanced_ROS/02_Vision_AI_Perception/src/object_detector_node.py) |
+| **03**<br>`amr_adv03` | **Nav2 Precision Docking** | [`README.md`](Advanced_ROS/03_Nav2_Precision_Docking/README.md) | [`Lab_Exercises.md`](Advanced_ROS/03_Nav2_Precision_Docking/Lab_Exercises.md) | [`dock_and_charge_bt.xml`](Advanced_ROS/03_Nav2_Precision_Docking/behavior_trees/dock_and_charge_bt.xml) |
+| **04**<br>`amr_adv04` | **Multi-Robot Fleet & Open-RMF** | [`README.md`](Advanced_ROS/04_Multi_Robot_Fleet_OpenRMF/README.md) | [`Lab_Exercises.md`](Advanced_ROS/04_Multi_Robot_Fleet_OpenRMF/Lab_Exercises.md) | [`multi_robot_fleet.launch.py`](Advanced_ROS/04_Multi_Robot_Fleet_OpenRMF/launch/multi_robot_fleet.launch.py) |
+| **05**<br>`amr_adv05` | **Production, CI/CD & Security** | [`README.md`](Advanced_ROS/05_Production_CI_CD_Security/README.md) | [`Lab_Exercises.md`](Advanced_ROS/05_Production_CI_CD_Security/Lab_Exercises.md) | [`lifecycle_laser_sensor.py`](Advanced_ROS/05_Production_CI_CD_Security/src/lifecycle_laser_sensor.py) |
+| **06**<br>`amr_adv06` | **Capstone AMR Project** | [`Readme.md`](Advanced_ROS/06_Capstone_Project/Readme.md) | [`Lab_Exercises.md`](Advanced_ROS/06_Capstone_Project/Lab_Exercises.md) | [`full_warehouse_system.launch.py`](Advanced_ROS/06_Capstone_Project/launch/full_warehouse_system.launch.py) |
 
 ---
 
 ## ⚡ Quick Start: รันสภาพแวดล้อมด้วย Docker
 
-ทุกโมดูลได้รับการตั้งค่าให้รันผ่าน Docker Image `ros:lab-runner` ที่ติดตั้ง **ROS 2 Jazzy**, **Gazebo Harmonic**, **Nav2**, **SLAM Toolbox** และเครื่องมือจำเป็นทั้งหมด
+ทุกแล็บรันผ่าน Docker Image `ros:lab-runner` ([`docker/Dockerfile`](docker/Dockerfile): ROS 2 **Jazzy**, Gazebo Sim **Harmonic 8.15**,
+Nav2, SLAM Toolbox, ros2_control, opennav_docking, Open-RMF fleet adapter, rmw_zenoh, launch_testing) เครื่องที่เป็น
+Ubuntu 26.04 ไม่มีแพ็กเกจ Jazzy ให้ติดตั้งตรง ๆ จึงต้องใช้วิธีนี้ (ดู[คู่มือติดตั้ง](docs/ros2_installation_guide.md))
+
+แต่ละโฟลเดอร์แล็บเป็น ROS 2 package (`amr_week01`…`amr_week16`, `amr_adv01`…`amr_adv06`) จึง build/test ได้ด้วย colcon:
 
 ```bash
-cd /mnt/sda/ros
+git clone https://github.com/alfaXphoori/ros2.git && cd ros2
+make image                 # build ros:lab-runner (ครั้งแรกเท่านั้น)
+make build                 # colcon build ทุกแพ็กเกจ
+make test                  # colcon test ทุกแพ็กเกจ (รันทีละแพ็กเกจ, headless, ไม่ต้องใช้ GPU)
+make test PKG=amr_week14   # เฉพาะแพ็กเกจเดียว
+make lint                  # yamllint / xmllint / check_urdf / ตรวจลิงก์ markdown
 
-# 1. รัน Core Communication Launch
-./docker/run_lab.sh ros2 launch Essential_ROS/01_Core_Communication/launch/core_system.launch.py
-
-# 2. ตรวจสอบ URDF Model และเปิดดูใน RViz2
-./docker/run_lab.sh check_urdf Essential_ROS/02_Robot_Modeling_TF2/urdf/diff_drive_robot.urdf
-
-# 3. เปิด Gazebo Sim โกดังสินค้า 3D
-./docker/run_lab.sh ros2 launch Essential_ROS/03_Gazebo_Simulation/launch/gazebo_world.launch.py
-
-# 4. ทำแผนที่ด้วย SLAM Toolbox
-./docker/run_lab.sh ros2 launch Essential_ROS/04_SLAM_Mapping/launch/online_async_slam.launch.py
-
-# 5. รันระบบนำทาง Nav2 Stack เต็มรูปแบบ
-./docker/run_lab.sh ros2 launch Essential_ROS/05_Nav2_Navigation/launch/nav2_bringup.launch.py
-
-# 6. รัน Capstone Warehouse Full System (Gazebo + Nav2)
-./docker/run_lab.sh ros2 launch Advanced_ROS/06_Capstone_Project/launch/full_warehouse_system.launch.py
+# ตัวอย่างการรันแล็บ (headless:=true เมื่อไม่มีจอ; เปิด GUI ได้เมื่อตั้ง DISPLAY + xhost +local:)
+./docker/run_lab.sh ros2 launch amr_week05 core_system.launch.py robot_ns:=amr_01
+./docker/run_lab.sh ros2 launch amr_week11 gazebo_world.launch.py headless:=true
+./docker/run_lab.sh ros2 launch amr_week12 slam_mapping_sim.launch.py headless:=true explore:=true
+./docker/run_lab.sh ros2 launch amr_week16 final_amr_system.launch.py headless:=true
+./docker/run_lab.sh ros2 launch amr_adv01 mock_diff_drive.launch.py
+./docker/run_lab.sh ros2 launch amr_adv03 docking_sim.launch.py
+./docker/run_lab.sh ros2 launch amr_adv06 full_warehouse_system.launch.py headless:=true
 ```
+
+### 📟 ผลการรันจริง (Real Run Output)
+ทุกสัปดาห์/โมดูลมีหัวข้อ **ผลการรันจริง** ใน Readme และไฟล์ log ดิบในโฟลเดอร์ `results/` ซึ่งบันทึกจากการรันจริงใน
+`ros:lab-runner` บนโฮสต์ Ubuntu 26.04 / Linux 7.0 (2026-10-29) ภาพทุกภาพสร้างจากข้อมูลจริง (แผนที่ SLAM, costmap,
+เส้นทางหุ่นยนต์, TF tree, เฟรมกล้อง) ตัวอย่างตัวเลขที่วัดได้:
+
+| แล็บ | ผลที่วัดได้จริง |
+| :--- | :--- |
+| W07 Odometry ใน Gazebo | หมุน 169.7° (odom) เทียบกับ 169.7° (ground truth) หลังแก้ฟิสิกส์ล้อ (ก่อนแก้ 165.8° vs 142.1°) |
+| W12 SLAM | แผนที่ 200×199 cells @ 0.05 m, ผนัง/เสาจริงปรากฏในแผนที่ 89.4% |
+| W14 Nav2 | NavigateToPose สำเร็จใน 14.2 s, ปลายทางคลาด 0.125 m / 14.3° จาก ground truth |
+| W15 Patrol | 5/5 สถานี SUCCEEDED ใน 111.6 s (sim time) |
+| Adv 01 ros2_control | ล้อขวา 7.75 rad/s ที่ v=0.5, ω=1.0 ตรงกับ IK |
+| Adv 02 AprilTag | ความคลาดเคลื่อนตำแหน่ง 0.99 mm / 0.23° ที่ระยะ 0.8 m |
+| Adv 03 Docking | คลาด 11.4–14.5 mm เมื่อใช้กล้อง (48.9 mm เมื่อปิดกล้อง) |
+| Adv 06 Capstone | 5/5 รอบผ่านครบ 7/7 ขั้น (pick → drop → dock → undock → e-stop → home), docking คลาด 2.2–4.5 mm / 0.99–1.79°, e-stop 48–104 ms (sim) เหลือระยะกันชน 5.6–7.4 cm |
+
+> ภาพหน้าจอ "terminal" ชุดเดิมของ repo (ก่อน 2026-10-29) ถูกวาดจากข้อความที่เขียนขึ้นเอง ไม่ใช่ผลการรัน จึงถูกลบออกทั้งหมด
+> และแทนที่ด้วยผลรันจริงข้างต้น
 
 ---
 

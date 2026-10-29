@@ -1,0 +1,44 @@
+$ python3 -m pytest -v Essential_ROS/Week_08_Midterm_Practical_Exam/test/
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-7.4.4, pluggy-1.4.0 -- /usr/bin/python3
+rootdir: /workspace/Essential_ROS/Week_08_Midterm_Practical_Exam
+plugins: ament-copyright-0.17.5, ament-pep257-0.17.5, ament-xmllint-0.17.5, ament-flake8-0.17.5, ament-lint-0.17.5, launch-testing-ros-0.26.13, launch-testing-3.4.12, colcon-core-0.21.3, typeguard-4.1.5
+collecting ... collected 21 items
+
+Essential_ROS/Week_08_Midterm_Practical_Exam/test/test_grade_part1_urdf.py::test_check_urdf_passes PASSED [  4%]
+Essential_ROS/Week_08_Midterm_Practical_Exam/test/test_grade_part1_urdf.py::test_link_joint_tree PASSED [  9%]
+Essential_ROS/Week_08_Midterm_Practical_Exam/test/test_grade_part1_urdf.py::test_chassis_box_mass_inertia PASSED [ 14%]
+Essential_ROS/Week_08_Midterm_Practical_Exam/test/test_grade_part1_urdf.py::test_drive_wheel[left_wheel_link] PASSED [ 19%]
+Essential_ROS/Week_08_Midterm_Practical_Exam/test/test_grade_part1_urdf.py::test_drive_wheel[right_wheel_link] PASSED [ 23%]
+Essential_ROS/Week_08_Midterm_Practical_Exam/test/test_grade_part1_urdf.py::test_wheel_cylinder_aligned_with_axis[left_wheel_link] PASSED [ 28%]
+Essential_ROS/Week_08_Midterm_Practical_Exam/test/test_grade_part1_urdf.py::test_wheel_cylinder_aligned_with_axis[right_wheel_link] PASSED [ 33%]
+Essential_ROS/Week_08_Midterm_Practical_Exam/test/test_grade_part1_urdf.py::test_caster[front_caster_link] PASSED [ 38%]
+Essential_ROS/Week_08_Midterm_Practical_Exam/test/test_grade_part1_urdf.py::test_caster[rear_caster_link] PASSED [ 42%]
+Essential_ROS/Week_08_Midterm_Practical_Exam/test/test_grade_part1_urdf.py::test_wheels_touch_ground_and_clear_chassis PASSED [ 47%]
+Essential_ROS/Week_08_Midterm_Practical_Exam/test/test_grade_part1_urdf.py::test_chassis_above_ground PASSED [ 52%]
+Essential_ROS/Week_08_Midterm_Practical_Exam/test/test_grade_part1_urdf.py::test_lidar_position_on_roof PASSED [ 57%]
+Essential_ROS/Week_08_Midterm_Practical_Exam/test/test_grade_part1_urdf.py::test_inertia_positive_definite[base_link] PASSED [ 61%]
+Essential_ROS/Week_08_Midterm_Practical_Exam/test/test_grade_part1_urdf.py::test_inertia_positive_definite[left_wheel_link] PASSED [ 66%]
+Essential_ROS/Week_08_Midterm_Practical_Exam/test/test_grade_part1_urdf.py::test_inertia_positive_definite[right_wheel_link] PASSED [ 71%]
+Essential_ROS/Week_08_Midterm_Practical_Exam/test/test_grade_part1_urdf.py::test_inertia_positive_definite[front_caster_link] PASSED [ 76%]
+Essential_ROS/Week_08_Midterm_Practical_Exam/test/test_grade_part1_urdf.py::test_inertia_positive_definite[rear_caster_link] PASSED [ 80%]
+Essential_ROS/Week_08_Midterm_Practical_Exam/test/test_grade_part1_urdf.py::test_inertia_positive_definite[lidar_link] PASSED [ 85%]
+Essential_ROS/Week_08_Midterm_Practical_Exam/test/test_grade_part1_urdf.py::test_diff_drive_plugin_consistent_if_present PASSED [ 90%]
+Essential_ROS/Week_08_Midterm_Practical_Exam/test/test_grade_part2_node.py::test_grade_part2_node PASSED [ 95%]
+Essential_ROS/Week_08_Midterm_Practical_Exam/test/test_grade_part3_launch.py::test_grade_part3_launch PASSED [100%]
+
+============================= 21 passed in 26.22s ==============================
+
+$ launch_test Essential_ROS/Week_08_Midterm_Practical_Exam/test/test_grade_part2_node.py
+test_1_default_parameter_is_double_0_6 (test_grade_part2_node.TestControllerBehaviour.test_1_default_parameter_is_double_0_6) ... ok
+test_2_cmd_vel_rate_and_value (test_grade_part2_node.TestControllerBehaviour.test_2_cmd_vel_rate_and_value) ... [student_node-1] [INFO] [1793242575.497823617] [midterm_robot_controller]: max_speed updated to 0.6 m/s
+test_3_out_of_range_rejected (test_grade_part2_node.TestControllerBehaviour.test_3_out_of_range_rejected) ... [student_node-1] [INFO] [1793242580.403824815] [midterm_robot_controller]: max_speed updated to 0.6 m/s
+test_4_integer_type_rejected (test_grade_part2_node.TestControllerBehaviour.test_4_integer_type_rejected) ... [student_node-1] [INFO] [1793242582.354441309] [midterm_robot_controller]: max_speed updated to 0.6 m/s
+test_5_valid_value_applied (test_grade_part2_node.TestControllerBehaviour.test_5_valid_value_applied) ... [student_node-1] [INFO] [1793242583.304733606] [midterm_robot_controller]: max_speed updated to 0.6 m/s
+test_6_high_temperature_throttles (test_grade_part2_node.TestControllerBehaviour.test_6_high_temperature_throttles) ... [student_node-1] [INFO] [1793242587.304673236] [midterm_robot_controller]: max_speed updated to 0.6 m/s
+test_7_threshold_is_strictly_greater_than_65 (test_grade_part2_node.TestControllerBehaviour.test_7_threshold_is_strictly_greater_than_65) ... [student_node-1] [INFO] [1793242593.257202029] [midterm_robot_controller]: max_speed updated to 0.6 m/s
+----------------------------------------------------------------------
+Ran 7 tests in 24.043s
+OK
+----------------------------------------------------------------------
+Ran 0 tests in 0.000s

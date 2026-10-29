@@ -77,6 +77,16 @@ flowchart TD
 | **254** | **`LETHAL_OBSTACLE`** | ขอบสิ่งกีดขวาง กำแพง หรือจุดตกกระทบเลเซอร์ | สิ่งกีดขวางจริง ห้ามชนโดยเด็ดขาด |
 | **255** | **`NO_INFORMATION`** | พื้นที่นอกขอบเขตแผนที่ที่เซนเซอร์มองไม่เห็น | ห้ามวางเส้นทางผ่าน (หากเปิด `track_unknown_space: true`) |
 
+> **ข้อควรระวัง: ค่าที่เห็นบนท็อปปิกไม่ใช่ 0–255**
+> ค่าดิบ 0–255 ข้างบนคือค่าภายในของ Costmap 2D และถูกส่งออกทาง `/<ชื่อ>/costmap_raw` (`nav2_msgs/msg/Costmap`) เท่านั้น
+> ท็อปปิก `/<ชื่อ>/costmap` เป็น `nav_msgs/msg/OccupancyGrid` ซึ่งค่าถูก **แปลงสเกลเป็น -1..100**:
+>
+> | ค่าดิบ (`costmap_raw`) | 0 | 1–252 | 253 (inscribed) | 254 (lethal) | 255 (no information) |
+> | :--- | :---: | :---: | :---: | :---: | :---: |
+> | ค่าใน `OccupancyGrid` (`costmap`) | 0 | 1–98 | **99** | **100** | **-1** |
+>
+> (สูตรของช่วงกลาง: $1 + \lfloor 97 (c - 1) / 251 \rfloor$) — ในการรันจริงของแล็บนี้ `/global_costmap/costmap` มีค่าอยู่ในช่วง -1 ถึง 100 เท่านั้น ดู [ผลการรันจริง](#-ผลการรันจริง-real-run-output)
+
 ---
 
 ### 3. คณิตศาสตร์การกระจายค่าคอสต์ (Inflation Decay Formula)
@@ -139,47 +149,104 @@ graph TD
 
 ## 🛠️ การวิเคราะห์ไฟล์คอนฟิกในโมดูล (Code Walkthrough)
 
-### [`costmap_params.yaml`](file:///mnt/sda/ros/Essential_ROS/Week_13_Nav2_Costmaps_Layers/config/costmap_params.yaml)
-ไฟล์คอนฟิกจัดสรรพารามิเตอร์ของ Costmap 2D ทั้งสองตัว:
+### [`config/costmap_params.yaml`](config/costmap_params.yaml)
+ไฟล์คอนฟิกจัดสรรพารามิเตอร์ของ Costmap 2D ทั้งสองตัว (ค่าในส่วน `local_costmap`/`global_costmap` ของ [`nav2_params.yaml` สัปดาห์ที่ 14](../Week_14_Path_Planning_AMCL/config/nav2_params.yaml) ต้องเหมือนกันทุกตัว — มีชุดทดสอบตรวจ):
 
-- **Local Costmap ([L4-L38](file:///mnt/sda/ros/Essential_ROS/Week_13_Nav2_Costmaps_Layers/config/costmap_params.yaml#L4-L38)):**
+- **Footprint เดียวกันทั้งสอง costmap:** `footprint: "[ [0.20, 0.14], [0.20, -0.14], [-0.20, -0.14], [-0.20, 0.14] ]"` (ยาว 0.40 m กว้าง 0.28 m รวมล้อ)
+  - รัศมีแนบใน (inscribed) = 0.14 m, รัศมีล้อมรอบ (circumscribed) = $\sqrt{0.20^2 + 0.14^2} = 0.244$ m
+  - ไม่ตั้ง `robot_radius` คู่กับ `footprint` (ถ้าตั้ง `robot_radius: 0.22` จะเล็กกว่ามุมตัวถังจริง 0.244 m)
+- **Local Costmap:**
   - `global_frame: odom`: ยึดกับเฟรม Odometry ที่ราบเรียบต่อเนื่องไม่มีการกระโดด
-  - `rolling_window: true`: ขอบเขตแผนที่ขนาด $3 \times 3\text{ m}$ จะเลื่อนตามจุดศูนย์กลางหุ่นยนต์ตลอดเวลา
+  - `rolling_window: true`: ขอบเขตแผนที่ขนาด $3 \times 3\text{ m}$ (60 × 60 เซลล์) จะเลื่อนตามจุดศูนย์กลางหุ่นยนต์ตลอดเวลา
   - `update_frequency: 5.0`: ประมวลผลเซนเซอร์ความถี่สูง 5 Hz เพื่อหลบสิ่งกีดขวางระยะประชิด
-  - `footprint: "[ [0.20, 0.14], [0.20, -0.14], [-0.20, -0.14], [-0.20, 0.14] ]"`: กำหนดพิกัดมุมทั้ง 4 ตามขนาดจริงของ AMR
-- **Global Costmap ([L39-L72](file:///mnt/sda/ros/Essential_ROS/Week_13_Nav2_Costmaps_Layers/config/costmap_params.yaml#L39-L72)):**
-  - `global_frame: map`: อิงกับแผนที่โลกถาวร
-  - `rolling_window: false`: ครอบคลุมทั้งโกดัง
-  - `plugins: ["static_layer", "obstacle_layer", "inflation_layer"]`: โหลด Static Layer เป็นเลเยอร์หลักเพื่อวางแผนเส้นทางข้ามห้อง
+  - เลเยอร์: `obstacle_layer` (marking/clearing จาก `/scan`, `raytrace_max_range: 3.0`) → `inflation_layer`
+- **Global Costmap:**
+  - `global_frame: map`: อิงกับแผนที่โลกถาวร (ขนาดตามแผนที่จาก `map_server`: 200 × 199 เซลล์)
+  - `plugins: ["static_layer", "obstacle_layer", "inflation_layer"]`: Static Layer อ่าน `/map` (ตั้ง `map_topic: /map` แบบ absolute ให้ใช้ได้ทั้งใน Nav2 และแบบ standalone)
+- **Inflation (ทั้งสอง costmap):** `inflation_radius: 0.55` (> circumscribed 0.244 m), `cost_scaling_factor: 3.0`
+
+### [`launch/costmap_demo.launch.py`](launch/costmap_demo.launch.py)
+เปิด Costmap ทั้งสองตัว **โดยไม่ต้องมี Nav2 ทั้งชุด** เพื่อศึกษาเลเยอร์ต่างๆ แยกจาก planner/controller:
+- simulation จากสัปดาห์ที่ 11, `map_server` อ่าน **แผนที่จริงจากสัปดาห์ที่ 12** (`amr_week12/maps/warehouse_map.yaml`)
+- `static_transform_publisher` map → odom (identity เพราะหุ่นยนต์เกิดที่จุด origin ของแผนที่; สัปดาห์ที่ 14 ใช้ AMCL แทน)
+- `nav2_costmap_2d` สองโหนด: `/global_costmap/global_costmap` และ `/local_costmap/local_costmap` + `lifecycle_manager` (`bond_timeout: 0.0` เพราะโหนด costmap แบบ standalone ไม่เปิด bond)
+- *หมายเหตุจากการทดสอบจริง:* executable `nav2_costmap_2d` แบบ standalone ของ Nav2 1.3.13 บางครั้ง crash (SIGSEGV/SIGABRT) **ตอนปิด** ด้วย Ctrl+C หลังจากทำงานถูกต้องแล้ว — ไม่กระทบผลของแล็บ และไม่เกิดกับ costmap ที่อยู่ใน `planner_server`/`controller_server` ของสัปดาห์ที่ 14
+
+```bash
+ros2 launch amr_week13 costmap_demo.launch.py headless:=true
+ros2 run amr_week13 costmap_snapshot --png global_costmap.png   # สถิติค่าใน costmap + ภาพ PNG
+```
+
+### การทดสอบอัตโนมัติ
+- [`test/test_costmap_config.py`](test/test_costmap_config.py): footprint ตรงกับ URDF และเหมือนกันทั้งสอง costmap, `inflation_radius` > circumscribed radius
+- [`test/test_costmap_launch.py`](test/test_costmap_launch.py): เปิด `costmap_demo.launch.py` แบบ headless แล้วตรวจบน `/global_costmap/costmap` ว่าผิวเสาที่ $(2, 2)$ = 100, เซลล์ที่ห่างสิ่งกีดขวาง ≤ 0.14 m = 99, ค่าลดลงแบบ monotonic ตามระยะ และเป็น 0 เมื่อเกิน 0.55 m
 
 ---
 
 ## ⌨️ ตารางคำสั่ง CLI สำคัญ
 | คำสั่ง | คำอธิบาย | ตัวอย่างการใช้งาน |
 | :--- | :--- | :--- |
-| `ros2 lifecycle list` | แสดงรายชื่อ Lifecycle Nodes ทั้งหมดในระบบ Nav2 | `ros2 lifecycle list` |
-| `ros2 lifecycle get /controller_server` | ตรวจสอบสถานะวงจรชีวิตปัจจุบันของ Controller Server | `ros2 lifecycle get /controller_server` |
+| `ros2 launch amr_week13 costmap_demo.launch.py` | เปิด simulation + map_server + global/local costmap แบบ standalone | `ros2 launch amr_week13 costmap_demo.launch.py headless:=true` |
+| `ros2 lifecycle nodes` | แสดงรายชื่อ Lifecycle Nodes ทั้งหมดในระบบ | `ros2 lifecycle nodes` |
+| `ros2 lifecycle get <node>` | ตรวจสอบสถานะวงจรชีวิตปัจจุบันของโหนด | `ros2 lifecycle get /global_costmap/global_costmap` |
 | `ros2 param get /local_costmap/local_costmap inflation_layer.cost_scaling_factor` | อ่านค่าตัวคูณ Inflation ปัจจุบัน | `ros2 param get /local_costmap/local_costmap inflation_layer.cost_scaling_factor` |
-| `ros2 topic echo --once /global_costmap/costmap --field data` | ตรวจสอบข้อมูลดิบใน Master Costmap | `ros2 topic echo --once /global_costmap/costmap --field data` |
+| `ros2 topic echo --once /global_costmap/costmap --field data` | ค่าใน OccupancyGrid (สเกล -1..100) | `ros2 topic echo --once /global_costmap/costmap nav_msgs/msg/OccupancyGrid --field data` |
+| `ros2 topic echo --once /global_costmap/costmap_raw --field data` | ค่าดิบ 0..255 (`nav2_msgs/msg/Costmap`) | `ros2 topic echo --once /global_costmap/costmap_raw nav2_msgs/msg/Costmap --field data` |
+| `ros2 run amr_week13 costmap_snapshot` | สรุปจำนวนเซลล์แต่ละระดับ cost ของทุก costmap | `ros2 run amr_week13 costmap_snapshot --png gc.png` |
 | `ros2 topic hz /local_costmap/costmap` | วัดอัตราความถี่ของการเผยแพร่แผนที่ Local Costmap | `ros2 topic hz /local_costmap/costmap` |
 
 ---
 
-## 📸 ภาพผลการทดสอบจริงจากระบบ (Live Execution & Terminal Capture)
-ผลลัพธ์จากการรันคำสั่งและโหนดจริงในระบบ เพื่อใช้เป็นข้อมูลอ้างอิงในการตรวจสอบความถูกต้อง:
-
-![Terminal Capture: Terminal — Week 13: Layered Costmap 2D Inspection & Footprint](images/terminal_run.png)
+## 📟 ผลการรันจริง (Real Run Output)
+บันทึกจากการรันจริงใน ros:lab-runner (ROS 2 Jazzy, Gazebo Sim 8.15.0) บน Linux 7.0 เมื่อ 2026-10-29
+(ไฟล์: [`results/costmap_demo_run.txt`](results/costmap_demo_run.txt))
 
 ```console
-user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 param get /local_costmap/local_costmap footprint
-String value is: '[[0.20, 0.14], [0.20, -0.14], [-0.20, -0.14], [-0.20, 0.14]]'
-user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 param get /local_costmap/local_costmap inflation_layer.cost_scaling_factor
+$ ros2 launch amr_week13 costmap_demo.launch.py headless:=true   # (terminal 1)
+$ ros2 param get /local_costmap/local_costmap footprint
+String value is: [ [0.20, 0.14], [0.20, -0.14], [-0.20, -0.14], [-0.20, 0.14] ]
+$ ros2 param get /local_costmap/local_costmap inflation_layer.cost_scaling_factor
 Double value is: 3.0
-user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 topic echo --once /global_costmap/costmap --field info
-resolution: 0.05, width: 400, height: 300, origin: [-7.5, -7.5, 0.0]
-[INFO] [costmap_2d]: Cost breakdown: Free(0)=82%, Inscribed(253)=4%, Lethal(254)=2%, Unknown=12%
-user@amr-dev:~/ros$ [CHECKPOINT PASSED: EXPONENTIAL INFLATION DECAY GRADIENT CONFIRMED]
+$ ros2 param get /global_costmap/global_costmap inflation_layer.inflation_radius
+Double value is: 0.55
+$ ros2 topic echo --once /global_costmap/costmap nav_msgs/msg/OccupancyGrid --field info
+map_load_time:
+  sec: 0
+  nanosec: 0
+resolution: 0.05000000074505806
+width: 200
+height: 199
+origin:
+  position:
+    x: -4.988
+    y: -4.97
+    z: 0.0
+  orientation:
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    w: 1.0
+---
+$ ros2 run amr_week13 costmap_snapshot --png images/global_costmap_real.png
+/global_costmap/costmap: frame=map 200x199 cells @ 0.05 m
+  unknown(-1): 208, free(0): 26584, inflated(1..98): 8434, inscribed(99): 2705, lethal(100): 1869
+/local_costmap/costmap: frame=odom 60x60 cells @ 0.05 m
+  unknown(-1): 0, free(0): 3600, inflated(1..98): 0, inscribed(99): 0, lethal(100): 0
+/global_costmap/costmap_raw: 200x199 cells (raw 0..255)
+  free(0): 26603, inflated(1..252): 8436, inscribed(253): 2740, lethal(254): 1813, no_information(255): 208
+wrote images/global_costmap_real.png
+# cost profile below pillar 1 (python3 .colcon/c/runs/real/w13_costmap.py)
+cost profile along x=2.0 below pillar (y, OccupancyGrid value):
+  1.00:0  1.05:0  1.10:0  1.15:29  1.20:34  1.25:40  1.30:46  1.35:53  1.40:62  1.45:72  1.50:84  1.55:97  1.60:99  1.65:99  1.70:100  1.75:100
 ```
+สังเกต:
+- `/global_costmap/costmap` (OccupancyGrid) มีค่า -1..100 ส่วน `costmap_raw` มีค่า 0..255 — จำนวนเซลล์ lethal/inscribed ต่างกันเล็กน้อยเพราะสองข้อความถูกส่งคนละรอบอัปเดต (obstacle layer จาก LiDAR เปลี่ยนตลอด)
+- แนวตั้งใต้เสาที่ $x = 2.0$: ผิวเสาอยู่ที่ $y = 1.70$ (100), ภายใน inscribed 0.14 m เป็น 99, ลดลงแบบเอกซ์โพเนนเชียล และเป็น 0 ที่ระยะเกิน `inflation_radius` 0.55 m ($y \le 1.10$)
+- local costmap ทั้งหมดเป็น 0 เพราะหุ่นยนต์จอดอยู่กลางห้องและ `obstacle_max_range` ของ local costmap คือ 2.5 m
+
+![Global costmap จากการรันจริง](images/global_costmap_real.png)
+
+*ภาพ: `/global_costmap/costmap` จากการรันจริงข้างต้น บันทึกด้วย `ros2 run amr_week13 costmap_snapshot --png images/global_costmap_real.png` (สีฟ้า = unknown/-1 ภายในเสาที่ LiDAR มองไม่เห็น)*
 
 ---
 

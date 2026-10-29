@@ -1,0 +1,24 @@
+# colcon test for amr_adv05 - real run in ros:lab-runner (ROS 2 Jazzy), Linux 7.0, 2026-10-29
+$ colcon test --base-paths Essential_ROS Advanced_ROS --packages-select amr_adv05 --pytest-args -v
+test/test_lifecycle_launch.py::test_lifecycle_launch PASSED              [ 25%]
+test/test_sros2_enforce.py::test_keystore_layout PASSED                  [ 50%]
+test/test_sros2_enforce.py::test_enforce_without_enclave_refuses_to_start PASSED [ 75%]
+test/test_sros2_enforce.py::test_secured_pair_communicates_and_unsecured_listener_gets_nothing PASSED [100%]
+============================== 4 passed in 26.23s ==============================
+$ colcon test-result --verbose
+tests="4" errors/failures: errors="0" failures="0"
+
+# The launch test above is one pytest item; its unittest cases, from `launch_test Advanced_ROS/05_Production_CI_CD_Security/test/test_lifecycle_launch.py`
+# (node log lines interleaved with the test names were removed):
+$ launch_test Advanced_ROS/05_Production_CI_CD_Security/test/test_lifecycle_launch.py
+test_1_unconfigured_publishes_nothing (test_lifecycle_launch.TestLifecycleLaser.test_1_unconfigured_publishes_nothing) ... ok
+test_2_inactive_publishes_nothing (test_lifecycle_launch.TestLifecycleLaser.test_2_inactive_publishes_nothing) ...
+test_3_active_publishes_valid_scans_at_10hz (test_lifecycle_launch.TestLifecycleLaser.test_3_active_publishes_valid_scans_at_10hz) ...
+test_4_deactivate_stops_publishing (test_lifecycle_launch.TestLifecycleLaser.test_4_deactivate_stops_publishing) ...
+test_5_cleanup_then_reconfigure_and_activate_again (test_lifecycle_launch.TestLifecycleLaser.test_5_cleanup_then_reconfigure_and_activate_again) ...
+test_6_shutdown_from_active_finalizes_and_stops (test_lifecycle_launch.TestLifecycleLaser.test_6_shutdown_from_active_finalizes_and_stops) ...
+Ran 6 tests in 17.477s
+OK
+test_exit_code (test_lifecycle_launch.TestShutdown.test_exit_code) ... ok
+Ran 1 test in 0.000s
+OK

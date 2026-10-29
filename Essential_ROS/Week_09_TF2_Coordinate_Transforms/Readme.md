@@ -140,39 +140,54 @@ flowchart TD
 
 ## 🛠️ การวิเคราะห์โค้ดตัวอย่างในโมดูล (Code Walkthrough)
 
-### 1. [`static_sensor_broadcaster.py`](file:///mnt/sda/ros/Essential_ROS/Week_09_TF2_Coordinate_Transforms/src/static_sensor_broadcaster.py)
-- **การใช้ `StaticTransformBroadcaster` ([L12, L31](file:///mnt/sda/ros/Essential_ROS/Week_09_TF2_Coordinate_Transforms/src/static_sensor_broadcaster.py#L12)):**
-  ใช้อ็อบเจกต์เฉพาะที่ส่งข้อมูลเข้าสู่ `/tf_static` ด้วย QoS Transient Local
-- **การกำหนดตำแหน่ง LiDAR และ Camera ([L35-L56](file:///mnt/sda/ros/Essential_ROS/Week_09_TF2_Coordinate_Transforms/src/static_sensor_broadcaster.py#L35-L56)):**
-  ระบุตำแหน่งติดตั้งเทียบกับ `base_link` โดย LiDAR ยื่นไปข้างหน้า $0.08\text{ m}$ สูง $0.095\text{ m}$ และ Camera ยื่นไปข้างหน้า $0.20\text{ m}$ สูง $0.02\text{ m}$
-- **การหมุน Optical Frame ตาม REP 103 ([L57-L68](file:///mnt/sda/ros/Essential_ROS/Week_09_TF2_Coordinate_Transforms/src/static_sensor_broadcaster.py#L57-L68)):**
+### 1. [`static_sensor_broadcaster.py`](src/static_sensor_broadcaster.py)
+- **ตารางเฟรมเซนเซอร์ ([L22-L27](src/static_sensor_broadcaster.py#L22-L27)):** `SENSOR_FRAMES` เก็บ (parent, child, xyz, rpy) ของ `lidar_link`, `camera_link` และ `camera_optical_link` โดยใช้ **ตัวเลขเดียวกับ URDF ของสัปดาห์ที่ 7** ทุกประการ (มีเทสต์ `test_broadcaster_matches_week07_urdf` ตรวจ)
+- **การใช้ `StaticTransformBroadcaster`:** ส่งข้อมูลเข้าสู่ `/tf_static` ด้วย QoS Transient Local (Latching) — ผู้ฟังที่เปิดทีหลังก็ยังได้รับ
+- **การหมุน Optical Frame ตาม REP 103 ([L30-L41](src/static_sensor_broadcaster.py#L30-L41)):**
   ```python
-  q = euler_to_quaternion(-math.pi/2, 0.0, -math.pi/2)
-  t_optical.transform.rotation.x = q[0]
-  t_optical.transform.rotation.y = q[1]
-  t_optical.transform.rotation.z = q[2]
-  t_optical.transform.rotation.w = q[3]
+  ('camera_link', 'camera_optical_link', (0.0, 0.0, 0.0), (-math.pi / 2, 0.0, -math.pi / 2)),
+  q = euler_to_quaternion(-math.pi / 2, 0.0, -math.pi / 2)   # -> (-0.5, 0.5, -0.5, 0.5)
   ```
-  หมุนแกนพิกัดเพื่อให้ระบบกล้องชี้แกน Z พุ่งไปข้างหน้าและแกน X ชี้ไปทางขวาตามมาตรฐานสากล
-- **การส่งข้อมูลรวมเป็นชุด ([L69](file:///mnt/sda/ros/Essential_ROS/Week_09_TF2_Coordinate_Transforms/src/static_sensor_broadcaster.py#L69)):**
+  หมุนแกนพิกัดเพื่อให้ระบบกล้องชี้แกน Z พุ่งไปข้างหน้าและแกน X ชี้ไปทางขวาตามมาตรฐานสากล (มีเทสต์ `test_rep103_optical_quaternion`)
+- **การส่งข้อมูลรวมเป็นชุด ([L64](src/static_sensor_broadcaster.py#L64)):**
   เรียก `self._tf_publisher.sendTransform(transforms)` เพียงคำสั่งเดียวเพื่อบรอดแคสต์ทรานส์ฟอร์มทั้งหมดพร้อมกัน
+
+> [!IMPORTANT]
+> **แหล่งเดียวต่อหนึ่ง Transform (Single Source):** เฟรม `lidar_link`, `camera_link`, `camera_optical_link` มีอยู่แล้วใน `diff_drive_robot.urdf` ซึ่ง `robot_state_publisher` เผยแพร่ให้อัตโนมัติ ถ้าเปิดโหนดนี้ **พร้อมกับ** `robot_state_publisher` จะมีสองโหนดประกาศ Parent-Child คู่เดียวกัน ค่าที่อยู่ใน Buffer จะขึ้นกับว่าใครส่งมาทีหลัง และถ้าค่าไม่ตรงกันจะเกิดอาการกระพริบ/`TF_REPEATED_DATA`
+> ในแล็บนี้จึงใช้ [`launch/tf_lab.launch.py`](launch/tf_lab.launch.py) ซึ่งเลือกเปิด **แหล่งเดียว**: `tf_source:=broadcaster` (โหนดนี้ — ใช้ตอนยังไม่มี URDF หรือสำหรับเซนเซอร์ที่ติดเพิ่มภายหลัง เช่น Sonar ใน Lab 9.4) หรือ `tf_source:=urdf` (`robot_state_publisher` จากแพ็กเกจ `amr_week07`) — ทั้งสองแบบให้ผล $(1.40, 0.30)$ เหมือนกัน และโหนด Broadcaster จะพิมพ์ ERROR เตือนถ้าตรวจพบ `/robot_description` (มี `robot_state_publisher` รันอยู่)
+
+- **การปิดโหนดอย่างถูกต้อง ([L80-L94](src/static_sensor_broadcaster.py#L80-L94)):** ใน Jazzy, rclpy ติดตั้ง Signal Handler ทั้ง SIGINT และ SIGTERM ซึ่งจะ `shutdown` context ให้เองแล้วโยน `KeyboardInterrupt` หรือ `ExternalShutdownException` ออกจาก `rclpy.spin()` โค้ดเดิมเรียก `rclpy.shutdown()` ซ้ำใน `finally` จึงเกิด `RCLError: rcl_shutdown already called` ทุกครั้งที่ถูก `docker stop`/`kill` โค้ดใหม่จับทั้งสอง Exception และใช้ `rclpy.try_shutdown()` (เทสต์ `test_shutdown_signals.py` ส่ง SIGTERM/SIGINT จริงและตรวจว่า exit code = 0 ไม่มี Traceback)
 
 ---
 
-### 2. [`tf_obstacle_listener.py`](file:///mnt/sda/ros/Essential_ROS/Week_09_TF2_Coordinate_Transforms/src/tf_obstacle_listener.py)
-- **การสร้าง TF Buffer และ TransformListener ([L19-L20](file:///mnt/sda/ros/Essential_ROS/Week_09_TF2_Coordinate_Transforms/src/tf_obstacle_listener.py#L19-L20)):**
+### 2. [`tf_obstacle_listener.py`](src/tf_obstacle_listener.py)
+- **การสร้าง TF Buffer และ TransformListener ([L28-L31](src/tf_obstacle_listener.py#L28-L31)):**
   ```python
   self.tf_buffer = tf2_ros.Buffer()
   self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
   ```
-  `TransformListener` จะสปอว์นเธรดเบื้องหลังขึ้นมาคอยดักฟังข้อความจาก `/tf` และ `/tf_static` แล้วนำไปอัปเดตลงใน Ring Buffer โดยอัตโนมัติ
-- **การแปลงพิกัดจุดสิ่งกีดขวาง ([L37-L44](file:///mnt/sda/ros/Essential_ROS/Week_09_TF2_Coordinate_Transforms/src/tf_obstacle_listener.py#L37-L44)):**
+  `TransformListener` สร้าง Subscription ของ `/tf` และ `/tf_static` (`/tf_static` ใช้ QoS Transient Local) **บนโหนดที่ส่งเข้าไป** แล้วนำข้อความไปอัปเดตลงใน Buffer
+  ใน ROS 2 Jazzy ลายเซ็นคือ `TransformListener(buffer, node, *, spin_thread=False, qos=None, static_qos=None)` — ค่าเริ่มต้น **ไม่สร้างเธรดเบื้องหลัง** Subscription ทั้งสองจึงถูกประมวลผลโดย Executor ที่ spin โหนดนี้อยู่ (`rclpy.spin(node)` ใน `main()`) ถ้าโหนดไม่ถูก spin Buffer จะว่างตลอด หากต้องการเธรดแยก (เช่น เรียก `lookup_transform` แบบรอใน callback) ให้ส่ง `spin_thread=True` หรือใช้ `MultiThreadedExecutor`
+- **การแปลงพิกัดจุดสิ่งกีดขวาง ([L39-L52](src/tf_obstacle_listener.py#L39-L52)):**
   ```python
-  pt_in_base = self.tf_buffer.transform(
-      pt_in_camera, 'base_link', timeout=rclpy.duration.Duration(seconds=0.2)
-  )
+  pt_in_camera.header.stamp = Time().to_msg()   # time 0 = transform ล่าสุด
+  pt_in_base = self.tf_buffer.transform(pt_in_camera, TARGET_FRAME)
   ```
-  แปลงพิกัดวัตถุจากระนาบกล้องเข้าสู่ระนาบฐานหุ่นยนต์ พร้อมกำหนด `timeout` เพื่อรอข้อมูล Transform ที่อาจเดินทางมาถึงช้ากว่าเสี้ยววินาที
+  แปลงพิกัดวัตถุ $(1.2, 0.3, 0.0)$ จากระนาบกล้องเข้าสู่ระนาบฐานหุ่นยนต์ได้ $(1.40, 0.30, 0.02)$ เพราะ `camera_link` อยู่หน้า `base_link` $0.20$ m และสูง $0.02$ m (ไม่มีการหมุน) — ไม่ใส่ `timeout` เพราะการรอใน Timer callback ของ Executor เธรดเดียวจะบล็อกไม่ให้ Subscription ของ TF ทำงาน จึงใช้วิธีลองใหม่ทุก 0.5 s และดักจับ `LookupException` / `ConnectivityException` / `ExtrapolationException` แทน
+
+---
+
+### 3. แพ็กเกจ `amr_week09` และการ Build
+```bash
+./docker/run_lab.sh bash
+colcon build --base-paths Essential_ROS --packages-up-to amr_week09     # รวม amr_week07 (URDF)
+source install/setup.bash
+ros2 run amr_week09 static_sensor_broadcaster
+ros2 run amr_week09 tf_obstacle_listener
+ros2 launch amr_week09 tf_lab.launch.py tf_source:=broadcaster   # หรือ tf_source:=urdf
+colcon test --base-paths Essential_ROS --packages-select amr_week09 && colcon test-result --verbose
+```
+ยังรันแบบสคริปต์ได้เช่นเดิม: `python3 Essential_ROS/Week_09_TF2_Coordinate_Transforms/src/static_sensor_broadcaster.py`
 
 ---
 
@@ -180,29 +195,45 @@ flowchart TD
 | คำสั่ง | คำอธิบาย | ตัวอย่างการใช้งาน |
 | :--- | :--- | :--- |
 | `ros2 run tf2_ros tf2_echo <parent> <child>` | พิมพ์ค่า Translation และ Rotation ระหว่าง 2 เฟรมแบบสดๆ | `ros2 run tf2_ros tf2_echo base_link lidar_link` |
-| `ros2 run tf2_tools view_frames` | สร้างไฟล์แผนผังภาพ PDF สรุปโครงสร้าง TF Tree ทั้งหมดในระบบ | `ros2 run tf2_tools view_frames` |
+| `ros2 run tf2_tools view_frames` | ฟัง TF 5 วินาทีแล้วสร้างไฟล์ `frames_<วันเวลา>.pdf` และ `.gv` (Graphviz) สรุปโครงสร้าง TF Tree | `ros2 run tf2_tools view_frames` แล้ว `dot -Tpng frames_*.gv -o tf_tree.png` |
 | `ros2 run tf2_ros tf2_monitor` | มอนิเตอร์ความถี่และอัตรา Latency ของทุกกิ่งก้านใน TF Tree | `ros2 run tf2_ros tf2_monitor` |
 | `ros2 topic echo --qos-durability transient_local /tf_static` | ดักฟังข้อความทรานส์ฟอร์มคงที่ (ตรวจสอบ Latching) | `ros2 topic echo --qos-durability transient_local /tf_static` |
 | `ros2 run tf2_ros static_transform_publisher ...` | บรอดแคสต์ Static Transform ชั่วคราวผ่านบรรทัดคำสั่ง CLI | `ros2 run tf2_ros static_transform_publisher --x 0.1 --y 0 --z 0.2 --frame-id base_link --child-frame-id camera_link` |
 
 ---
 
-## 📸 ภาพผลการทดสอบจริงจากระบบ (Live Execution & Terminal Capture)
-ผลลัพธ์จากการรันคำสั่งและโหนดจริงในระบบ เพื่อใช้เป็นข้อมูลอ้างอิงในการตรวจสอบความถูกต้อง:
+## 📟 ผลการรันจริง (Real Run Output)
+บันทึกจากการรันจริงใน ros:lab-runner (ROS 2 Jazzy, Gazebo Sim 8.15.0) บน Linux 7.0 เมื่อ 2026-10-29
 
-![Terminal Capture: Terminal — Week 09: TF2 Static Broadcaster & Obstacle Listener](images/terminal_run.png)
+ไฟล์ฉบับเต็ม: [`results/tf_lab_broadcaster.txt`](results/tf_lab_broadcaster.txt), [`results/tf_lab_urdf.txt`](results/tf_lab_urdf.txt), [`results/sigterm_shutdown.txt`](results/sigterm_shutdown.txt), [`results/view_frames.gv`](results/view_frames.gv), [`results/colcon_test.txt`](results/colcon_test.txt)
 
 ```console
-user@amr-dev:~/ros$ ./docker/run_lab.sh python3 Essential_ROS/Week_09_TF2_Coordinate_Transforms/src/static_sensor_broadcaster.py &
-[INFO] [static_sensor_broadcaster]: 📡 Published static transforms for LiDAR, Camera, and Optical Frame.
-user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 run tf2_ros tf2_echo base_link lidar_link
-At time 0.0 - Translation: [0.080, 0.000, 0.095]  Rotation: [0.000, 0.000, 0.000, 1.000]
-user@amr-dev:~/ros$ ./docker/run_lab.sh python3 Essential_ROS/Week_09_TF2_Coordinate_Transforms/src/tf_obstacle_listener.py
-[INFO] [tf_obstacle_listener]: 🔍 Listening for transforms and converting obstacle poses...
-[INFO] [tf_obstacle_listener]: 🎯 Obstacle transformed from camera to base_link: X=1.40m, Y=0.30m
-[INFO] [tf_obstacle_listener]: 🎯 Obstacle transformed from camera to base_link: X=1.40m, Y=0.30m
-user@amr-dev:~/ros$ [CHECKPOINT PASSED: REP 103 CAMERA OPTICAL FRAME CONVERSION OK]
+$ ros2 launch amr_week09 tf_lab.launch.py tf_source:=broadcaster
+...
+[static_sensor_broadcaster-1] [INFO] [1793243288.280573459] [static_sensor_broadcaster]: Published static transforms: base_link->lidar_link, base_link->camera_link, camera_link->camera_optical_link
+[tf_obstacle_listener-2] [INFO] [1793243288.281510631] [tf_obstacle_listener]: Listening for transforms and converting obstacle poses...
+[tf_obstacle_listener-2] [INFO] [1793243288.768318273] [tf_obstacle_listener]: Obstacle transformed from camera_link to base_link: X=1.40m, Y=0.30m, Z=0.02m
+...
+$ ros2 run tf2_ros tf2_echo base_link lidar_link
+At time 0.0
+- Translation: [0.080, 0.000, 0.095]
+- Rotation: in Quaternion (xyzw) [0.000, 0.000, 0.000, 1.000]
+...
+$ ros2 run tf2_ros tf2_echo camera_link camera_optical_link
+At time 0.0
+- Translation: [0.000, 0.000, 0.000]
+- Rotation: in Quaternion (xyzw) [-0.500, 0.500, -0.500, 0.500]
+...
+[INFO] [tf_obstacle_listener-2]: process has finished cleanly [pid 49]
+[INFO] [static_sensor_broadcaster-1]: process has finished cleanly [pid 48]
 ```
+
+เมื่อใช้ URDF เป็นแหล่ง TF แทน (`tf_source:=urdf`) ได้ผลเดียวกัน `X=1.40m, Y=0.30m, Z=0.02m` และการส่ง SIGTERM/SIGINT ให้ทั้งสองโหนดได้ `exit code: 0` โดยไม่มี Traceback (ดู [`results/sigterm_shutdown.txt`](results/sigterm_shutdown.txt))
+*(หมายเหตุ: ตอนปิด launch ในโหมด `urdf` โหนด `joint_state_publisher` ของ ROS 2 Jazzy เองยังพิมพ์ `KeyboardInterrupt` Traceback เมื่อได้ SIGINT ซ้ำสองครั้ง — เป็นพฤติกรรมของแพ็กเกจต้นทาง ไม่ใช่โค้ดในแล็บนี้)*
+
+![TF Tree จาก view_frames](images/view_frames_tf_tree.png)
+
+*ภาพ TF Tree จริง: รัน `ros2 launch amr_week09 tf_lab.launch.py tf_source:=urdf` แล้ว `ros2 run tf2_tools view_frames` (ฟัง 5 วินาที) จากนั้นแปลงไฟล์ `frames_2026-10-29_03.08.35.gv` ที่ view_frames สร้างคู่กับ PDF เป็น PNG ด้วย `dot -Tpng -Gdpi=110` (ImageMagick ใน image `ros:lab-runner` ไม่มี Ghostscript จึงแปลง PDF โดยตรงไม่ได้) — ลิงก์ล้อมาจาก `/tf` (~10 Hz จาก `joint_state_publisher`) ส่วนลิงก์อื่นมาจาก `/tf_static` (แสดง rate 10000 / เวลา 0.0)*
 
 ---
 
@@ -215,7 +246,8 @@ user@amr-dev:~/ros$ [CHECKPOINT PASSED: REP 103 CAMERA OPTICAL FRAME CONVERSION 
 | 3 | **`LookupException: "camera_link" passed to lookupTransform does not exist`** | โหนด Broadcaster ยังไม่ได้เปิดทำงาน หรือพิมพ์ชื่อ Frame สลับตัวพิมพ์เล็ก-ใหญ่ | ตรวจสอบชื่อ Frame ในโหนดต้นทาง และรัน Broadcaster ให้เรียบร้อย |
 | 4 | **ภาพวัตถุใน RViz2 คว่ำหน้าลงพื้นหรือเอียง 90 องศา** | ไม่ได้หมุนแปลงพิกัดเข้าสู่ Optical Frame ตามมาตรฐาน REP 103 | เพิ่ม Static Transform แปลง `camera_link` สู่ `camera_optical_link` ด้วย Roll $-90^\circ$ และ Yaw $-90^\circ$ |
 | 5 | **เครือข่าย Wi-Fi ถูกกินแบนด์วิดท์มหาศาลจาก TF** | ส่งพิกัดตำแหน่งเซนเซอร์ที่ตรึงแน่นผ่านท็อปปิก `/tf` ความถี่สูง แทนที่จะส่งเข้า `/tf_static` | เปลี่ยนมาใช้ `StaticTransformBroadcaster` สำหรับเซนเซอร์ทุกตัวที่ไม่มีการขยับ |
-| 6 | **เกิดการกระตุกหรือ Error `TF_REPEATED_DATA` ใน Terminal** | มีโหนดมากกว่าหนึ่งตัวพยายามบรอดแคสต์ Parent-Child คู่เดียวกันด้วยค่าต่างกัน | ตรวจสอบให้แน่ใจว่าแต่ละ Transform มีผู้ส่งเพียงโหนดเดียวในเครือข่าย |
+| 6 | **เกิดการกระตุกหรือ Error `TF_REPEATED_DATA` ใน Terminal** | มีโหนดมากกว่าหนึ่งตัวพยายามบรอดแคสต์ Parent-Child คู่เดียวกันด้วยค่าต่างกัน (เช่น เปิด `static_sensor_broadcaster` พร้อม `robot_state_publisher`) | ตรวจสอบให้แน่ใจว่าแต่ละ Transform มีผู้ส่งเพียงโหนดเดียว: `ros2 topic info /tf_static --verbose` แล้วใช้ `tf_lab.launch.py tf_source:=...` |
+| 7 | **ปิดโหนดด้วย `docker stop` / `kill` แล้วขึ้น `RCLError: rcl_shutdown already called`** | เรียก `rclpy.shutdown()` ซ้ำหลังจาก Signal Handler ของ rclpy ปิด context ไปแล้ว | จับ `ExternalShutdownException` และใช้ `rclpy.try_shutdown()` แทน |
 
 ---
 

@@ -1,0 +1,92 @@
+# Real run: ros:lab-runner (ROS 2 Jazzy, Gazebo Sim 8.15.0), Linux 7.0, 2026-10-29
+# Isolation: ROS_DOMAIN_ID=16, GZ_PARTITION=agent_f, ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST
+# Lines replaced by '...' were trimmed (repetition); no values were edited.
+# taken ~30 s after: ros2 launch amr_adv06 full_warehouse_system.launch.py headless:=true
+
+$ ros2 node list --no-daemon --spin-time 5
+/amcl
+/apriltag_dock_tracker
+/behavior_server
+/bt_navigator
+/bt_navigator_navigate_through_poses_rclcpp_node
+/bt_navigator_navigate_to_pose_rclcpp_node
+/collision_monitor
+/controller_server
+/docking_server
+/global_costmap/global_costmap
+/ground_truth_tf
+/lifecycle_manager_docking
+/lifecycle_manager_localization
+/lifecycle_manager_navigation
+/local_costmap/local_costmap
+/map_server
+/planner_server
+/robot_state_publisher
+/ros_gz_bridge
+/smoother_server
+/synthetic_tag_camera
+/transform_listener_impl_562c5b544480
+/transform_listener_impl_5f332d599870
+/velocity_smoother
+/waypoint_follower
+
+$ ros2 topic list --no-daemon --spin-time 5 | grep -E "^/(cmd_vel|scan|odom|tf|detected_dock_pose|camera/image_raw)$"
+/camera/image_raw
+/cmd_vel
+/detected_dock_pose
+/odom
+/scan
+/tf
+
+$ ros2 action list
+/assisted_teleop
+/backup
+/compute_path_through_poses
+/compute_path_to_pose
+/dock_robot
+/drive_on_heading
+/follow_gps_waypoints
+/follow_path
+/follow_waypoints
+/navigate_through_poses
+/navigate_to_pose
+/smooth_path
+/spin
+/undock_robot
+/wait
+
+$ ros2 service call /docking_server/get_state lifecycle_msgs/srv/GetState
+waiting for service to become available...
+requester: making request: lifecycle_msgs.srv.GetState_Request()
+
+response:
+lifecycle_msgs.srv.GetState_Response(current_state=lifecycle_msgs.msg.State(id=3, label='active'))
+
+
+$ ros2 param get /collision_monitor polygons
+String values are: ['StopZone', 'FootprintApproach']
+
+$ ros2 param get /collision_monitor StopZone.points
+String value is: [[0.40, 0.17], [0.40, -0.17], [0.20, -0.17], [0.20, 0.17]]
+
+$ ros2 param get /docking_server controller.v_linear_max
+Double value is: 0.1
+
+$ ros2 topic hz /scan  (10 s)
+...
+average rate: 9.994
+	min: 0.091s max: 0.108s std dev: 0.00419s window: 74
+
+$ ros2 topic hz /camera/image_raw  (10 s)
+WARNING: topic [/camera/image_raw] does not appear to be published yet
+...
+average rate: 9.451
+	min: 0.064s max: 0.397s std dev: 0.06119s window: 70
+
+$ ros2 topic hz /ground_truth/pose  (10 s)
+...
+average rate: 29.251
+	min: 0.031s max: 0.037s std dev: 0.00083s window: 241
+
+$ ros2 run amr_week11 ground_truth_pose
+diff_drive_robot ground truth: x=-0.000 y=0.000 yaw=0.000 rad (0.0 deg)

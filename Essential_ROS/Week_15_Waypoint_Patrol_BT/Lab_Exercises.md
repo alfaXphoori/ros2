@@ -15,10 +15,10 @@
 ---
 
 ## 📋 ข้อกำหนดก่อนเริ่มปฏิบัติการ (Prerequisites & Setup)
-- เข้าสู่รูทไดเรกทอรี `/mnt/sda/ros`
-- ตรวจสอบความถูกต้องของสคริปต์ในสัปดาห์ที่ 15:
+- เข้าสู่รูทไดเรกทอรีของ repository (เช่น `cd ~/ros`)
+- Build แพ็กเกจ (รวมสัปดาห์ที่ 7, 10–14 ที่ใช้ร่วม):
   ```bash
-  python3 -m py_compile Essential_ROS/Week_15_Waypoint_Patrol_BT/src/waypoint_patrol.py
+  ./docker/run_lab.sh colcon build --base-paths Essential_ROS --packages-up-to amr_week15
   ```
 
 ---
@@ -26,48 +26,52 @@
 ## 🧪 ขั้นตอนการทดลอง (Step-by-Step Lab Tasks)
 
 ### 🔹 Lab 15.1: การเตรียมระบบจำลองและเปิดระบบ Nav2
-**เป้าหมาย:** นำชิ้นส่วนทั้งหมดตั้งแต่สัปดาห์ที่ 11, 7, 14 มาเปิดทำงานร่วมกัน
+**เป้าหมาย:** นำชิ้นส่วนทั้งหมดตั้งแต่สัปดาห์ที่ 7, 10–14 มาเปิดทำงานร่วมกัน พร้อม Behavior Tree ของสัปดาห์นี้
 
-1. **Terminal 1:** เปิดโลกจำลอง Gazebo พร้อม Bridge
+1. **Terminal 1:** เปิดโลกจำลอง + หุ่นยนต์ + Bridge + Nav2 (ใช้ BT `behavior_trees/patrol_nav_to_pose.xml`) ด้วยคำสั่งเดียว
    ```bash
-   ./docker/run_lab.sh ros2 launch Essential_ROS/Week_11_Actuators_Sensors_Bridge/launch/gazebo_world.launch.py
+   ./docker/run_lab.sh ros2 launch amr_week15 patrol_system.launch.py headless:=true
    ```
-2. **Terminal 2:** เปิดระบบแปลงพิกัด TF ของหุ่นยนต์
+2. **Terminal 2:** ตรวจว่า `bt_navigator` ใช้ BT ของเรา (ผลจริง):
    ```bash
-   ./docker/run_lab.sh ros2 launch Essential_ROS/Week_07_URDF_Robot_Modeling/launch/display_urdf.launch.py use_gui:=false
+   ./docker/run_lab.sh ros2 param get /bt_navigator default_nav_to_pose_bt_xml
    ```
-3. **Terminal 3:** เปิดสแตกนำทาง Nav2 Stack
+   ```text
+   String value is: /workspace/.colcon/c/install/amr_week15/share/amr_week15/behavior_trees/patrol_nav_to_pose.xml
+   ```
+   (path ขึ้นกับว่า build ไว้ที่ใด; ของนักศึกษาจะเป็น `/workspace/install/amr_week15/share/...`)
+3. **(ทางเลือก) ส่งพิกัดเริ่มต้นใหม่ให้ AMCL** — AMCL เริ่มที่ $(0,0,0)$ ให้อยู่แล้ว (`set_initial_pose: true`):
    ```bash
-   ./docker/run_lab.sh ros2 launch Essential_ROS/Week_14_Path_Planning_AMCL/launch/nav2_bringup.launch.py
+   ./docker/run_lab.sh ros2 run amr_week14 amcl_initial_pose --ros-args -p use_sim_time:=true
    ```
-4. **Terminal 4:** ส่งพิกัดเริ่มต้นให้ AMCL
-   ```bash
-   ./docker/run_lab.sh python3 Essential_ROS/Week_14_Path_Planning_AMCL/src/amcl_initial_pose.py
-   ```
-   *ตรวจสอบว่าระบบขึ้นสถานะ Navigation active และมีแผนที่พร้อมนำทาง*
 
 ---
 
 ### 🔹 Lab 15.2: การรันภารกิจลาดตระเวน 5 สถานี (Waypoint Mission Execution)
 **เป้าหมาย:** สังเกตการเคลื่อนที่อัตโนมัติและการหน่วงเวลา ณ แต่ละสถานี
 
-1. ใน **Terminal 4** รันสคริปต์ภารกิจลาดตระเวน:
+1. ใน **Terminal 2** รันสคริปต์ภารกิจลาดตระเวน:
    ```bash
-   ./docker/run_lab.sh python3 Essential_ROS/Week_15_Waypoint_Patrol_BT/src/waypoint_patrol.py
+   ./docker/run_lab.sh ros2 run amr_week15 waypoint_patrol --ros-args -p use_sim_time:=true
    ```
-   **ผลลัพธ์ที่คาดหวัง:**
+   **ผลลัพธ์จริง:**
    ```text
-   [INFO] [waypoint_patroller]: 🤖 Nav2 Waypoint Patroller Node Initialized
-   [INFO] [waypoint_patroller]: Waiting for /navigate_to_pose action server...
-   [INFO] [waypoint_patroller]: 📍 [1/5] Navigating to: Station 1: Receiving Dock
-   [INFO] [waypoint_patroller]:    Target: X=2.00, Y=2.00, Yaw=0.00
-   [INFO] [waypoint_patroller]: ✅ Arrived at Station 1: Receiving Dock! Dwelling for 3.0s...
-   [INFO] [waypoint_patroller]: 📍 [2/5] Navigating to: Station 2: Storage Aisle B
+   [INFO] [1793246902.779426712] [waypoint_patroller]: Waiting for Nav2 (bt_navigator active, /navigate_to_pose)...
+   [INFO] [1793246904.054665454] [waypoint_patroller]: [1/5] Navigating to Station 1: Receiving Dock (x=2.00, y=3.50, yaw=0.00)
+   [INFO] [1793246920.529044781] [waypoint_patroller]: [1/5] Station 1: Receiving Dock: SUCCEEDED after 16.4 s, dwelling 3.0 s
+   [INFO] [1793246923.548490325] [waypoint_patroller]: [2/5] Navigating to Station 2: Storage Aisle B (x=2.00, y=-2.00, yaw=-1.57)
+   [INFO] [1793246947.872586855] [waypoint_patroller]: [2/5] Station 2: Storage Aisle B: SUCCEEDED after 24.2 s, dwelling 3.0 s
    ...
-   [INFO] [waypoint_patroller]: 🎉 All patrol stations visited successfully!
+   [INFO] [1793247014.562584142] [waypoint_patroller]: [5/5] Station 5: Charging Base: SUCCEEDED after 18.4 s, dwelling 2.0 s
+   [INFO] [1793247016.588136858] [waypoint_patroller]: Patrol finished: 5/5 stations SUCCEEDED in 111.6 s (sim time)
    ```
+   ตรวจ exit code: `echo $?` ต้องได้ `0` (ถ้ามีสถานีใดไม่ `SUCCEEDED` จะได้ `1`)
 
-2. สังเกตว่าในแต่ละสถานี หุ่นยนต์จะหยุดนิ่งตามเวลา `dwell: 3.0s` เพื่อจำลองการโหลดสัมภาระ แล้วจึงเคลื่อนที่ต่อไปยังสถานีถัดไปโดยอัตโนมัติ
+2. สังเกตว่าในแต่ละสถานี หุ่นยนต์จะหยุดนิ่งตามเวลา `dwell` (หน่วยเป็นเวลาจำลอง) เพื่อจำลองการโหลดสัมภาระ แล้วจึงเคลื่อนที่ต่อไปยังสถานีถัดไปโดยอัตโนมัติ
+3. ลองใช้ `/follow_waypoints` ของ Nav2 (`waypoint_follower`) ส่งหลายจุดใน goal เดียว (ผลจริง: `Goal finished with status: SUCCEEDED`):
+   ```bash
+   ./docker/run_lab.sh ros2 action send_goal /follow_waypoints nav2_msgs/action/FollowWaypoints "{poses: [{header: {frame_id: map}, pose: {position: {x: 1.0, y: -1.0}, orientation: {w: 1.0}}}, {header: {frame_id: map}, pose: {position: {x: -1.0, y: -1.0}, orientation: {w: 1.0}}}]}"
+   ```
 
 ---
 
@@ -78,12 +82,12 @@
 2. สังเกตปฏิกิริยาของระบบใน Terminal 3 (Nav2 Navigator):
    - หุ่นยนต์จะหยุดและขึ้นเตือนว่าเส้นทางเดิมถูกบล็อก
    - Behavior Tree จะเข้าสู่โหนด `RecoveryNode`
-   - หุ่นยนต์จะสั่งล้าง Costmap และอาจทำการหมุนตัวสำรวจรอบทิศ (`Spin Action`) เพื่อหาทางเลี่ยงใหม่
+   - ใน BT ของเรา (`patrol_nav_to_pose.xml`) ลำดับ recovery แบบ RoundRobin คือ ล้าง Costmap → `Spin` 90° → `Wait` 3 s → `BackUp` 0.3 m
 3. หากมีทางเลี่ยงอื่น หุ่นยนต์จะคำนวณเส้นทางอ้อมสิ่งกีดขวางและเดินทางไปถึงเป้าหมายได้สำเร็จ
 
    **คำถาม Checkpoint 15.3:**
    - [ ] หากทางเดินถูกปิดตาย 100% ทุกทิศทาง ผลลัพธ์สุดท้ายของ Action Goal จะเป็นอะไร? (`ABORTED`)
-   - [ ] ในโค้ด `waypoint_patrol.py` หากเป้าหมายล้มเหลว โปรแกรมจะหยุดทำงานทันทีหรือข้ามไปสถานีถัดไป?
+   - [ ] ในโค้ด `waypoint_patrol.py` หากเป้าหมายล้มเหลว โปรแกรมจะหยุดทำงานทันทีหรือข้ามไปสถานีถัดไป? และ exit code สุดท้ายเป็นเท่าใด?
 
 ---
 
@@ -93,10 +97,16 @@
 ให้นักศึกษาแก้ไขไฟล์ `Essential_ROS/Week_15_Waypoint_Patrol_BT/src/waypoint_patrol.py`:
 1. เพิ่มสถานีที่ 6 เข้าไปในรายการ `PATROL_WAYPOINTS`:
    - ชื่อ: `Station 6: Hazmat Inspection`
-   - พิกัด: $X = -1.0$, $Y = 1.5$
+   - พิกัด: $X = -1.0$, $Y = 0.8$ (ห่างเสาต้นซ้ายเกิน 0.55 m)
    - มุมหัน: $\text{Yaw} = 0.785$ rad ($45^\circ$)
    - เวลาหยุดปฏิบัติงาน: `dwell = 4.0` วินาที
-2. ทดสอบรันสคริปต์ใหม่ และตรวจสอบว่าหุ่นยนต์เคลื่อนที่เข้าจอดครบทั้ง 6 สถานี
+2. ตรวจพิกัดใหม่เทียบแผนที่จริงด้วยชุดทดสอบ (ต้องผ่านก่อนรันจริง):
+   ```bash
+   ./docker/run_lab.sh colcon build --base-paths Essential_ROS --packages-select amr_week15
+   ./docker/run_lab.sh colcon test --base-paths Essential_ROS --packages-select amr_week15 --pytest-args -k test_station
+   ```
+   (ลองใส่ $Y = 1.5$ ดู: จุดนั้นห่างมุมเสาเพียง 0.45 m จึงตกในเขต inflation และการทดสอบจะไม่ผ่าน)
+3. ทดสอบรันสคริปต์ใหม่ และตรวจสอบว่าหุ่นยนต์เคลื่อนที่เข้าจอดครบทั้ง 6 สถานี (`6/6 stations SUCCEEDED`)
 
 ---
 
@@ -107,7 +117,7 @@
 ---
 
 ## 📦 สิ่งที่ต้องส่ง (Deliverables Checklist)
-- [ ] ภาพบันทึกหน้าจอผลการรัน `waypoint_patrol.py` ครบทุกสถานี
+- [ ] ภาพบันทึกหน้าจอผลการรัน `waypoint_patrol` ครบทุกสถานี (`5/5 stations SUCCEEDED`)
 - [ ] ภาพบันทึกหน้าจอการแสดงผลเส้นทางเดินหลายสถานีบนโปรแกรม RViz2
 - [ ] ภาพบันทึกเหตุการณ์การทำงานของ Recovery Behavior เมื่อพบสิ่งกีดขวางใน Lab 15.3
 - [ ] โค้ดส่วนที่เพิ่ม Station 6 ใน Lab 15.4
@@ -117,7 +127,7 @@
 
 ## 📊 เกณฑ์การประเมินผล (Lab Grading Rubric - 100 คะแนน)
 | รายการประเมิน | รายละเอียดการให้คะแนน | คะแนนเต็ม |
-| :--- | :--- | :--- :
+| :--- | :--- | :---: |
 | **การเปิดและบูรณาการระบบ Nav2** | นำระบบจำลอง, TF, และ Nav2 Stack มาเปิดทำงานร่วมกันได้สมบูรณ์ | 25 |
 | **ความสำเร็จของภารกิจลาดตระเวน** | หุ่นยนต์เคลื่อนที่ผ่านจุดตรวจครบ 5 สถานี พร้อมระบบหน่วงเวลาถูกต้อง | 25 |
 | **การวิเคราะห์ Recovery Behaviors** | อธิบายและบันทึกภาพการกู้สถานการณ์ของ Behavior Tree ได้ถูกต้อง | 20 |
@@ -130,32 +140,32 @@
 ## ⚠️ การแก้ปัญหาที่พบบ่อยในแล็บ (Troubleshooting)
 | ปัญหา | สาเหตุ | การแก้ไข |
 | :--- | :--- | :--- |
-| `waypoint_patrol.py` แจ้ง `Action server not available` | Nav2 Stack ยังไม่เข้าสู่สถานะ Active | ตรวจสอบว่าใน Terminal ของ `nav2_bringup` ขึ้นข้อความ `Navigation active` แล้ว |
+| `waypoint_patrol` แจ้ง `Nav2 /navigate_to_pose is not available/active!` | Nav2 Stack ยังไม่เข้าสู่สถานะ Active ภายใน 120 s | ตรวจ log `lifecycle_manager_navigation: Managed nodes are active` และ `ros2 lifecycle get /bt_navigator` |
+| `bt_navigator` activate ไม่ผ่านหลังแก้ไฟล์ BT | XML ผิดรูปแบบหรือใช้โหนดที่ไม่มี (เช่น `Error at line 4: -> Node not recognized`) | ตรวจด้วย `test_waypoints.py::test_bt_xml_wellformed_and_known_nodes` และดู [`results/bt_load_check.txt`](results/bt_load_check.txt) |
 | หุ่นยนต์เข้าไม่ถึงสถานีและติด Recovery ซ้ำซาก | พิกัดสถานีอยู่ใกล้กำแพงหรือสิ่งกีดขวางมากเกินไปจนติด Inflation Layer | ขยับพิกัดสถานีให้อยู่ห่างจากขอบกำแพงอย่างน้อย $0.5$ เมตร |
 | มุมหันของหุ่นยนต์ตอนจอดไม่ตรงกับที่กำหนด | แปลงมุม Yaw เป็น Quaternion ผิดสูตร | ตรวจสอบว่าใช้ $z = \sin(\theta/2)$ และ $w = \cos(\theta/2)$ |
 
 
-## 📸 ภาพผลลัพธ์การรันจริงในระบบ (Verified Lab Execution Screenshot)
-ผู้เรียนสามารถตรวจสอบความถูกต้องของผลลัพธ์ที่ได้จากการทำแล็บ เทียบกับภาพบันทึกหน้าจอการรันจริงในระบบ:
-
-![Verified Lab Execution: Terminal — Week 15: Multi-Station Waypoint Patrol & Behavior Tree](images/terminal_run.png)
+## 📟 ผลการรันจริง (Real Run Output)
+บันทึกจากการรันจริงใน ros:lab-runner (ROS 2 Jazzy, Gazebo Sim 8.15.0) บน Linux 7.0 เมื่อ 2026-10-29
+(ฉบับเต็ม: [`results/waypoint_patrol_run.txt`](results/waypoint_patrol_run.txt) และ [`results/bt_load_check.txt`](results/bt_load_check.txt))
 
 ```console
-user@amr-dev:~/ros$ ./docker/run_lab.sh python3 Essential_ROS/Week_15_Waypoint_Patrol_BT/src/waypoint_patrol.py
-[INFO] [waypoint_patroller]: 🤖 Nav2 Waypoint Patroller Node Initialized
-[INFO] [waypoint_patroller]: 📍 [1/5] Navigating to: Station 1: Receiving Dock (X=2.00, Y=2.00)
-[INFO] [waypoint_patroller]: ✅ Arrived at Station 1! Dwelling for 3.0s...
-[INFO] [waypoint_patroller]: 📍 [2/5] Navigating to: Station 2: Storage Aisle B (X=2.00, Y=-2.00)
-[INFO] [waypoint_patroller]: ✅ Arrived at Station 2! Dwelling for 3.0s...
-[INFO] [waypoint_patroller]: 📍 [3/5] Navigating to: Station 3: Quality Check (X=-2.00, Y=-2.00)
-[INFO] [waypoint_patroller]: ✅ Arrived at Station 3! Dwelling for 3.0s...
-[INFO] [waypoint_patroller]: 📍 [4/5] Navigating to: Station 4: Shipping Dock (X=-2.00, Y=2.00)
-[INFO] [waypoint_patroller]: ✅ Arrived at Station 4! Dwelling for 3.0s...
-[INFO] [waypoint_patroller]: 📍 [5/5] Navigating to: Station 5: Charging Base (X=0.00, Y=0.00)
-[INFO] [waypoint_patroller]: ✅ Arrived at Station 5! Dwelling for 2.0s...
-[INFO] [waypoint_patroller]: 🎉 All patrol stations visited successfully!
-user@amr-dev:~/ros$ [CHECKPOINT PASSED: AUTONOMOUS WAREHOUSE PATROL 100% COMPLETE]
+$ ros2 launch amr_week15 patrol_system.launch.py headless:=true   # terminal 1
+$ ros2 run amr_week15 waypoint_patrol --ros-args -p use_sim_time:=true
+[INFO] [1793246902.779426712] [waypoint_patroller]: Waiting for Nav2 (bt_navigator active, /navigate_to_pose)...
+[INFO] [1793246904.054665454] [waypoint_patroller]: [1/5] Navigating to Station 1: Receiving Dock (x=2.00, y=3.50, yaw=0.00)
+[INFO] [1793246920.529044781] [waypoint_patroller]: [1/5] Station 1: Receiving Dock: SUCCEEDED after 16.4 s, dwelling 3.0 s
+[INFO] [1793246923.548490325] [waypoint_patroller]: [2/5] Navigating to Station 2: Storage Aisle B (x=2.00, y=-2.00, yaw=-1.57)
+[INFO] [1793246947.872586855] [waypoint_patroller]: [2/5] Station 2: Storage Aisle B: SUCCEEDED after 24.2 s, dwelling 3.0 s
+[INFO] [1793246950.899491906] [waypoint_patroller]: [3/5] Navigating to Station 3: Quality Check (x=-2.00, y=-2.00, yaw=3.14)
+[INFO] [1793246965.173777686] [waypoint_patroller]: [3/5] Station 3: Quality Check: SUCCEEDED after 14.2 s, dwelling 3.0 s
+[INFO] [1793246968.192004624] [waypoint_patroller]: [4/5] Navigating to Station 4: Shipping Dock (x=-2.00, y=3.50, yaw=1.57)
+[INFO] [1793246992.966556927] [waypoint_patroller]: [4/5] Station 4: Shipping Dock: SUCCEEDED after 24.5 s, dwelling 3.0 s
+[INFO] [1793246995.990225090] [waypoint_patroller]: [5/5] Navigating to Station 5: Charging Base (x=0.00, y=0.00, yaw=0.00)
+[INFO] [1793247014.562584142] [waypoint_patroller]: [5/5] Station 5: Charging Base: SUCCEEDED after 18.4 s, dwelling 2.0 s
+[INFO] [1793247016.588136858] [waypoint_patroller]: Patrol finished: 5/5 stations SUCCEEDED in 111.6 s (sim time)
+(exit code 0)
 ```
 
 ---
-

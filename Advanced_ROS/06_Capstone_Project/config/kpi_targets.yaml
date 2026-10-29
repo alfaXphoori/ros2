@@ -1,0 +1,59 @@
+# Capstone KPI targets and grading rubric - the single source of truth for
+#   * src/capstone_mission.py   (prints every KPI with PASS/FAIL, exit code 1 on any FAIL)
+#   * Readme.md KPI table and rubrics.md (test/test_capstone_config.py checks they match)
+#
+# Values are evidence-based: 5 real headless runs (results/kpi_repeatability.txt) on ros:lab-runner.
+#   pass       = passing target (the mission executor fails the run if it is not met)
+#   excellence = industry-level target for the "Distinction" band of the rubric
+# All errors are TRUE errors against the Gazebo ground truth (not the robot's own estimate).
+kpis:
+  mission_success_pct:
+    name: "Mission stage success"
+    pass: 100.0
+    excellence: 100.0
+    lower_is_better: false
+    note: "6 mission stages (pick, drop, dock, undock, e-stop test, home) in one run; excellence = 5/5 repeated runs"
+  nav_final_error_m:
+    name: "Navigation final position error (true, max)"
+    pass: 0.35
+    excellence: 0.15
+    note: "goal tolerance 0.25 m (Week 14 goal checker) + AMCL error; measured max per run 0.248-0.264 m"
+  amcl_error_m:
+    name: "AMCL localisation error (true, max)"
+    pass: 0.10
+    excellence: 0.05
+    note: "AMCL pose vs ground truth at each station; measured max per run 0.046-0.089 m"
+  docking_error_mm:
+    name: "Docking position error (true)"
+    pass: 15.0
+    excellence: 5.0
+    note: "= docking_threshold 0.015 m of the docking server; measured 2.2-4.5 mm (v_linear_max 0.10 m/s)"
+  docking_yaw_error_deg:
+    name: "Docking yaw error (true)"
+    pass: 3.0
+    excellence: 1.0
+    note: "measured 0.99-1.79 deg"
+  estop_processing_ms:
+    name: "E-stop processing latency (scan -> cmd_vel=0, sim time)"
+    pass: 150.0
+    excellence: 50.0
+    note: "collision_monitor publishes on the next 20 Hz cmd_vel_smoothed message (<= 50 ms after the scan) + TF/transport (hypothesis, see Readme); measured 48-104 ms"
+  estop_gap_cm:
+    name: "E-stop remaining bumper gap"
+    pass: 2.0
+    excellence: 5.0
+    lower_is_better: false
+    note: "box appears 15 cm ahead of the bumper at >= 0.15 m/s; measured 5.6-7.4 cm left"
+
+# Grading: the Capstone Project is 35 % of the course grade (100 rubric points below);
+# the Final Oral Defense (fault injection + questions) is a separate 10 %.
+rubric:
+  course_weight_pct:
+    capstone_project: 35
+    oral_defense: 10
+  dimensions:
+    - {id: 1, name: "System Architecture & Engineering Standards", weight: 20}
+    - {id: 2, name: "Hardware Abstraction & Lifecycle Safety", weight: 20}
+    - {id: 3, name: "Autonomous Navigation Performance", weight: 25}
+    - {id: 4, name: "Precision Docking & Visual Marker Detection", weight: 20}
+    - {id: 5, name: "Software Quality, SROS 2 Security & Automated Tests", weight: 15}

@@ -1,0 +1,8 @@
+# Default parameters for the Week 05 fleet_parameters node.
+# `/**` matches the node in any namespace (e.g. /amr_01/fleet_parameters).
+# fleet_id comes from the launch argument `fleet_id:=...` (overrides this file).
+/**:
+  ros__parameters:
+    max_linear_speed: 0.8
+    safety_margin: 0.35
+    enable_obstacle_stop: true

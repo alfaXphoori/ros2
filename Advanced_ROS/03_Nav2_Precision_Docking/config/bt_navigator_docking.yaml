@@ -1,0 +1,9 @@
+# Fragment to merge into the bt_navigator section of your Nav2 params (ROS 2 Jazzy).
+# Nav2's default BT plugins are always loaded; plugin_lib_names ADDS libraries.
+# The docking BT nodes (DockRobot / UndockRobot) live in opennav_docking_bt and are NOT part of
+# the default list, so a tree that uses them fails to load without these two entries.
+bt_navigator:
+  ros__parameters:
+    plugin_lib_names:
+      - opennav_dock_action_bt_node
+      - opennav_undock_action_bt_node

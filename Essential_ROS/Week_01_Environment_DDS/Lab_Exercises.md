@@ -15,7 +15,7 @@
 ---
 
 ## 📋 ข้อกำหนดก่อนเริ่มปฏิบัติการ (Prerequisites & Setup)
-- เข้าสู่รูทไดเรกทอรีของโครงการ `/mnt/sda/ros`
+- เข้าสู่รูทไดเรกทอรีของ repository วิชา (โฟลเดอร์ที่มี `docker/` และ `Essential_ROS/`)
 - ตรวจสอบความพร้อมของ Docker Engine บนเครื่องโฮสต์:
   ```bash
   docker --version
@@ -24,6 +24,12 @@
   ```bash
   ./docker/run_lab.sh ros2 --help
   ```
+- Build แพ็กเกจของสัปดาห์นี้ (`amr_week01`) ด้วย colcon — `run_lab.sh` จะ source `install/setup.bash` ให้อัตโนมัติในครั้งถัดไป:
+  ```bash
+  ./docker/run_lab.sh colcon build --base-paths Essential_ROS --packages-select amr_week01
+  # หรือใช้ Makefile: make build PKG=amr_week01   (ทดสอบอัตโนมัติ: make test PKG=amr_week01)
+  ```
+- **ห้องแล็บใช้เครือข่ายร่วมกัน:** ตั้ง `ROS_DOMAIN_ID` ตามที่อาจารย์จัดสรรและ `ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST` บนเครื่องโฮสต์ก่อนเรียก `run_lab.sh` (สคริปต์จะส่งต่อตัวแปรเข้าคอนเทนเนอร์)
 > 💡 *หากยังไม่ได้ติดตั้ง สามารถดูขั้นตอนการติดตั้ง Native หรือ WSL2 อย่างละเอียดได้ที่ [คู่มือการติดตั้ง ROS 2](../../docs/ros2_installation_guide.md)*
 
 ---
@@ -56,19 +62,33 @@
 
 1. รันสคริปต์ตรวจสุขภาพระบบของสัปดาห์ที่ 1:
    ```bash
-   ./docker/run_lab.sh bash Essential_ROS/Week_01_Environment_DDS/src/domain_check.sh
+   ./docker/run_lab.sh ros2 run amr_week01 domain_check.sh
+   # หรือแบบไม่ต้อง build: ./docker/run_lab.sh bash Essential_ROS/Week_01_Environment_DDS/src/domain_check.sh
    ```
-   **ตัวอย่างผลลัพธ์ที่คาดหวัง:**
+   **ผลลัพธ์จริง** (`ROS_DOMAIN_ID=11`, ตัดมาจาก [`results/domain_check_and_doctor.txt`](results/domain_check_and_doctor.txt)):
    ```text
-   ==================================================
-   🔍 ROS 2 & DDS Environment Diagnostic Probe
-   ==================================================
-   ✅ ROS_DISTRO: jazzy
-   ℹ️ ROS_DOMAIN_ID: 0 (Default Port Range: 7400-7649)
-   📡 DDS Discovery Multicast Port: 7400
-   🚀 ROS 2 Daemon: RUNNING
-   ==================================================
+   ========================================================
+   ROS 2 DDS & Network Diagnostic (Week 01)
+   ========================================================
+   [1/3] ROS 2 environment
+     ROS_DISTRO                    : jazzy
+     ROS_DOMAIN_ID                 : 11
+     RMW_IMPLEMENTATION            : <not set -> rmw_fastrtps_cpp (Jazzy default)>
+     ROS_AUTOMATIC_DISCOVERY_RANGE : LOCALHOST
+
+   [2/3] RTPS ports for domain 11, participant 0
+     Discovery multicast (SPDP, d0=0)  : 10150
+     User data multicast (d2=1)        : 10151
+     Discovery unicast   (SEDP, d1=10) : 10160
+     User data unicast   (d3=11)       : 10161
+     Port range of this domain         : 10150-10399
+     OK: no overlap with the Linux ephemeral range 32768-60999
+
+   [3/3] ROS 2 daemon
+     The daemon is not running
+   ========================================================
    ```
+   ลองเปลี่ยน Domain ID เป็นอาร์กิวเมนต์ เช่น `domain_check.sh 7` (ได้ 9150) และ `domain_check.sh 120` (จะขึ้นคำเตือนเรื่อง Ephemeral Port)
 
 2. ทดสอบรายงานระบบฉบับละเอียดด้วยคำสั่ง ROS 2 Doctor:
    ```bash
@@ -87,7 +107,7 @@
    ```bash
    ./docker/run_lab.sh ros2 multicast receive
    ```
-   *(โหนดจะค้างรอฟังแพ็กเก็ตที่ส่งเข้ามาทางเครือข่าย UDP 224.0.0.1 หรือช่วงพอร์ต 7400)*
+   *(คำสั่งจะรอรับแพ็กเก็ต 1 แพ็กเก็ตที่กลุ่ม Multicast `225.0.0.1` พอร์ต UDP `49150` — เป็นการทดสอบว่าเครือข่ายส่ง Multicast ถึงกันได้ ส่วน SPDP ของ DDS จริงใช้กลุ่ม `239.255.0.1` พอร์ต $7400 + 250 \times$ Domain ID)*
 
 2. เปิด **Terminal 2** แล้วส่งสัญญาณ Multicast Heartbeat:
    ```bash
@@ -96,8 +116,10 @@
 
 3. สังเกตข้อความที่ปรากฏใน Terminal 1:
    ```text
-   Received from 127.0.0.1:45321: 'Hello World!'
+   Waiting for UDP multicast datagram...
+   Received from 192.168.31.249:55099: 'Hello World!'
    ```
+   (ผลจริง: IP คือที่อยู่ของเครื่องโฮสต์ เพราะคอนเทนเนอร์ใช้ `--net host`; ฝั่ง Terminal 2 พิมพ์ `Sending one UDP multicast datagram...`)
 
    **คำถาม Checkpoint 1.2:**
    - [ ] หากเครือข่าย Wi-Fi ของห้องปฏิบัติการบล็อก UDP Multicast จะส่งผลต่อการค้นหากันของโหนดหุ่นยนต์อย่างไร?
@@ -124,7 +146,7 @@
      ```bash
      ./docker/run_lab.sh bash -c "export ROS_DOMAIN_ID=20 && ros2 run demo_nodes_py listener"
      ```
-   - *ผลลัพธ์:* Terminal 3 เงียบสนิท ไม่ได้รับข้อความใดๆ จาก Talker โดเมน 10
+   - *ผลลัพธ์:* Terminal 3 เงียบสนิท ไม่ได้รับข้อความใดๆ จาก Talker โดเมน 10 (ผลรันจริงด้วยโดเมน 11/87 อยู่ใน [`results/domain_isolation.txt`](results/domain_isolation.txt): listener โดเมนเดียวกันได้ `I heard: [Hello World: 0]`... ส่วน listener อีกโดเมนได้ 0 ข้อความ)
 
 3. ทดสอบคำสั่ง CLI `ros2 node list` ในแต่ละโดเมน:
    ```bash
@@ -181,31 +203,37 @@
 ## ⚠️ การแก้ปัญหาที่พบบ่อยในแล็บ (Troubleshooting)
 | ปัญหา | สาเหตุ | การแก้ไข |
 | :--- | :--- | :--- |
-| `ros2 multicast receive` เงียบตลอดเวลา | ไฟร์วอลล์ของเครื่องโฮสต์ (UFW) ปิดกั้น UDP Port 7400 | รัน `sudo ufw allow 7400/udp` บนเครื่อง Host |
+| `ros2 multicast receive` เงียบตลอดเวลา | ไฟร์วอลล์ของเครื่องโฮสต์ (UFW) ปิดกั้น UDP Multicast (เครื่องมือนี้ใช้พอร์ต 49150) | รัน `sudo ufw allow 49150/udp` สำหรับการทดสอบ และ `sudo ufw allow 7400:7700/udp` สำหรับ DDS โดเมน 0–1 บนเครื่อง Host |
 | `ros2: command not found` | ไม่ได้ source สภาพแวดล้อม ROS 2 | รันผ่าน `./docker/run_lab.sh <คำสั่ง>` ซึ่งมีการ source อัตโนมัติ |
 | สัญญาณรบกวนจากเพื่อนในห้อง | ใช้ `ROS_DOMAIN_ID=0` ซ้ำกันทุกคน | ให้อาจารย์จัดสรรเลขประจำตัว เช่น `ROS_DOMAIN_ID = เลขที่นั่ง` |
 
 
-## 📸 ภาพผลลัพธ์การรันจริงในระบบ (Verified Lab Execution Screenshot)
-ผู้เรียนสามารถตรวจสอบความถูกต้องของผลลัพธ์ที่ได้จากการทำแล็บ เทียบกับภาพบันทึกหน้าจอการรันจริงในระบบ:
-
-![Verified Lab Execution: Terminal — Week 01: ROS 2 Jazzy & DDS Verification](images/terminal_run.png)
+## 📟 ผลการรันจริง (Real Run Output)
+บันทึกจากการรันจริงใน ros:lab-runner (ROS 2 Jazzy, Gazebo Sim 8.15.0) บน Linux 7.0 เมื่อ 2026-10-29 — ไฟล์เต็ม: [`results/domain_check_and_doctor.txt`](results/domain_check_and_doctor.txt), [`results/domain_isolation.txt`](results/domain_isolation.txt)
+(Fleet A ใช้โดเมน 11 และ Fleet B ใช้โดเมน 87 แทน 10/20 เพราะเครื่องแล็บใช้ร่วมกัน)
 
 ```console
-user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 doctor --report
-NETWORK CONFIGURATION
-  device: enp2s0  inet4: 192.168.31.249  flags: <UP,MULTICAST,RUNNING,BROADCAST>
-RMW MIDDLEWARE
-  middleware name    : rmw_fastrtps_cpp
-ROS 2 INFORMATION
-  distribution name  : jazzy (active)
-DDS MULTICAST VERIFICATION
-user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 multicast receive &
-[INFO] [multicast_receiver]: Waiting for UDP multicast datagram on 239.255.0.1...
-user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 multicast send
-[INFO] [multicast_sender]: Sending multicast packet 'Hello from ROS 2'...
-[INFO] [multicast_receiver]: Received valid datagram: 'Hello from ROS 2'
-user@amr-dev:~/ros$ [CHECKPOINT PASSED: DDS PORT 7400/7410 UNICAST & MULTICAST OK]
+$ ROS_DOMAIN_ID=11 ros2 run demo_nodes_py talker          # terminal 1
+$ ROS_DOMAIN_ID=11 ros2 run demo_nodes_py listener        # terminal 2
+$ ROS_DOMAIN_ID=87 ros2 run demo_nodes_py listener        # terminal 3
+
+$ ROS_DOMAIN_ID=11 ros2 node list
+/listener
+/talker
+
+$ ROS_DOMAIN_ID=87 ros2 node list
+/listener
+
+--- terminal 2 (listener, domain 11):
+[INFO] [1793242111.591571080] [listener]: I heard: [Hello World: 0]
+[INFO] [1793242112.542117595] [listener]: I heard: [Hello World: 1]
+...
+--- terminal 3 (listener, domain 87): 0 messages received
+
+$ export ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST && ros2 doctor
+/opt/ros/jazzy/lib/python3.12/site-packages/ros2doctor/api/__init__.py: 122: UserWarning: Fail to call PackageCheck class functions.
+
+All 4 checks passed
 ```
 
 ---

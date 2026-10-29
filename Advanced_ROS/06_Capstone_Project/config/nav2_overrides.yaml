@@ -1,0 +1,22 @@
+# Capstone overrides merged (deep merge) on top of amr_week14 config/nav2_params.yaml by
+# launch/full_warehouse_system.launch.py. Only what differs from Week 14 is listed here.
+#
+# Safety layer = Nav2 collision_monitor (last node before /cmd_vel):
+#   StopZone          : action "stop"     - any >= min_points LiDAR points inside the box
+#                                           0.20 m (bumper) .. 0.40 m ahead -> cmd_vel = 0
+#   FootprintApproach : action "approach" - slow down so that the footprint never reaches an
+#                                           obstacle within time_before_collision (Week 14)
+# Every command source goes through it: controller_server, behavior_server AND the docking
+# server publish on cmd_vel_nav -> velocity_smoother -> cmd_vel_smoothed -> collision_monitor.
+collision_monitor:
+  ros__parameters:
+    polygons: ["StopZone", "FootprintApproach"]
+    StopZone:
+      type: "polygon"
+      action_type: "stop"
+      # base_footprint frame; footprint is 0.40 x 0.28 m -> bumper at x = +0.20 m
+      points: "[[0.40, 0.17], [0.40, -0.17], [0.20, -0.17], [0.20, 0.17]]"
+      min_points: 3
+      visualize: true
+      polygon_pub_topic: "polygon_stop_zone"
+      enabled: true

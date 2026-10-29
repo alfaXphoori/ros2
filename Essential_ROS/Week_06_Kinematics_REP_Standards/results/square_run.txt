@@ -1,0 +1,16 @@
+# Week 06 Lab 6.4 real run: ros:lab-runner (ROS 2 Jazzy), Linux 7.0, 2026-10-29; odometry log: square_odom.csv
+
+$ ros2 run amr_week06 diff_drive_kinematics     # terminal 1 (fresh start at the origin)
+
+$ ros2 run amr_week06 square_driver --csv square_odom.csv     # terminal 2
+[INFO] [1793243067.818953481] [square_driver]: Waiting for diff_drive_kinematics...
+[INFO] [1793243068.836069842] [square_driver]: side 1: 1.0 m straight, then turn 90 deg
+[INFO] [1793243077.155339408] [square_driver]: side 2: 1.0 m straight, then turn 90 deg
+[INFO] [1793243085.375468828] [square_driver]: side 3: 1.0 m straight, then turn 90 deg
+[INFO] [1793243093.655505876] [square_driver]: side 4: 1.0 m straight, then turn 90 deg
+[INFO] [1793243102.916294032] [square_driver]: final pose relative to start: x=+0.0353 m  y=-0.0571 m  yaw=+5.26 deg
+[INFO] [1793243102.916868263] [square_driver]: loop closure error sqrt(dx^2+dy^2) = 0.0672 m
+[INFO] [1793243102.918410822] [square_driver]: odometry log written to square_odom.csv
+
+--- terminal 1 (node) output:
+[INFO] [1793243063.869808436] [diff_drive_kinematics]: 🤖 [DiffDriveKinematics] Ready: L=0.24m, r=0.08m, integration=midpoint, cmd_vel_timeout=0.5s

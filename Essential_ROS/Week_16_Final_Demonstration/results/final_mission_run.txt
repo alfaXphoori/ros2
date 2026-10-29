@@ -1,0 +1,138 @@
+# Real run: ros:lab-runner (ROS 2 Jazzy, Gazebo Sim 8.15.0), Linux 7.0, 2026-10-29
+# Isolation: ROS_DOMAIN_ID=13, GZ_PARTITION=agent_c, ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST
+# Lines replaced by '...' were trimmed (repetition); no values were edited.
+
+$ ros2 launch amr_week16 final_amr_system.launch.py headless:=true   # terminal 1 (log excerpt at the end)
+$ ros2 run amr_week16 final_mission_executor --ros-args -p use_sim_time:=true
+[INFO] [1793247061.753251399] [final_mission_executor]: AMR-101 final mission: initial pose (0.0, 0.0, 0 deg), waiting for Nav2
+[INFO] [1793247061.754060006] [final_mission_executor]: Publishing Initial Pose
+[INFO] [1793247063.845859152] [final_mission_executor]: Setting initial pose
+[INFO] [1793247063.846142402] [final_mission_executor]: Publishing Initial Pose
+...
+[INFO] [1793247070.074358076] [final_mission_executor]: Nav2 is ready for use!
+[INFO] [1793247070.076549884] [final_mission_executor]: Stage 0 Localization + Nav2 bringup: ACTIVE
+[INFO] [1793247070.078633782] [final_mission_executor]: Stage 1/3 -> Cargo Pickup Bay (x=1.50, y=1.00, yaw=90 deg)
+[INFO] [1793247070.080643383] [final_mission_executor]: Navigating to goal: 1.5 1.0...
+[INFO] [1793247078.156349910] [final_mission_executor]: Stage 1 Cargo Pickup Bay: SUCCEEDED in 10.1 s, final position error 0.23 m
+[INFO] [1793247081.153855467] [final_mission_executor]: Stage 2/3 -> Dropoff Station (x=-1.50, y=-1.00, yaw=180 deg)
+[INFO] [1793247081.154933043] [final_mission_executor]: Navigating to goal: -1.5 -1.0...
+[INFO] [1793247095.927730181] [final_mission_executor]: Stage 2 Dropoff Station: SUCCEEDED in 14.8 s, final position error 0.23 m
+[INFO] [1793247097.925684714] [final_mission_executor]: Stage 3/3 -> Home Charging Base (x=0.00, y=0.00, yaw=0 deg)
+[INFO] [1793247097.926695447] [final_mission_executor]: Navigating to goal: 0.0 0.0...
+[INFO] [1793247106.149652983] [final_mission_executor]: Stage 3 Home Charging Base: SUCCEEDED in 8.2 s, final position error 0.23 m
+[INFO] [1793247107.152622698] [final_mission_executor]: MISSION SUMMARY: 3/3 stages SUCCEEDED (100%), total 39.0 s (sim time) -> PASS
+(exit code 0)
+$ ros2 run amr_week11 ground_truth_pose
+diff_drive_robot ground truth: x=-0.196 y=-0.114 yaw=0.244 rad (14.0 deg)
+
+# --- launch log (excerpt) ---
+[amcl-6] [INFO] [1793247061.621062803] [amcl]: initialPoseReceived
+[lifecycle_manager-7] [INFO] [1793247061.726486930] [lifecycle_manager_localization]: Managed nodes are active
+[amcl-6] [INFO] [1793247061.754316054] [amcl]: initialPoseReceived
+[create-3] [INFO] [1793247061.850885744] [ros_gz_sim]: Entity creation successful.
+[amcl-6] [INFO] [1793247063.846274887] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247063.846952653] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247063.847549822] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247063.848468398] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247063.955278115] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247063.956350068] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247063.957364563] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247063.958322283] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247063.959278790] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247063.960216121] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247063.961150176] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247063.962167912] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247063.963182308] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247063.964202964] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247063.965130083] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247063.966092500] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247063.967039626] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247063.967981431] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247063.968890521] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247063.969862379] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247063.970837839] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247063.971845298] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247063.972792019] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247063.973771601] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247063.974794934] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247063.975735054] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247063.976721541] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247063.977708064] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247063.978671461] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247063.979677785] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247063.980643430] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247063.982042188] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247063.984099175] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247063.986179325] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247063.988086669] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247063.989778021] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247063.990994652] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247063.992301356] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247063.993603576] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247063.994784181] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247063.996053295] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247063.997241371] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247063.998417157] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247063.999587459] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.000703849] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.001771246] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.002801866] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.003783981] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.004765145] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.005725344] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.006739793] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.007710198] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.008694127] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.009704941] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.010690778] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.011701255] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.012707330] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.013687994] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.014696932] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.015679238] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.016667718] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.017652180] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.018725541] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.019739958] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.020759646] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.021777406] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.022754796] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.023796142] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.024778919] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.025741904] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.026837365] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.027850158] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.028813049] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.029771166] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.030759849] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.031735663] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.032697823] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.033648553] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.034606464] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.035572129] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.036680889] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.037673055] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.038645947] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.039609869] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.040553310] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.041519484] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.042643480] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.043624341] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.044605910] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.045564887] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.046541317] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.047676778] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.048645625] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.049607313] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.050913637] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.052652423] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.062089169] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.062567845] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1793247064.062988165] [amcl]: initialPoseReceived
+[lifecycle_manager-16] [INFO] [1793247067.098972724] [lifecycle_manager_navigation]: Managed nodes are active
+[bt_navigator-14] [INFO] [1793247070.082763691] [bt_navigator]: Begin navigating from current location (0.00, -0.00) to (1.50, 1.00)
+[bt_navigator-14] [INFO] [1793247078.153296682] [bt_navigator]: Goal succeeded
+[bt_navigator-14] [INFO] [1793247081.155663886] [bt_navigator]: Begin navigating from current location (1.32, 0.87) to (-1.50, -1.00)
+[bt_navigator-14] [INFO] [1793247095.925959557] [bt_navigator]: Goal succeeded
+[bt_navigator-14] [INFO] [1793247097.927298867] [bt_navigator]: Begin navigating from current location (-1.34, -0.85) to (0.00, 0.00)
+[bt_navigator-14] [INFO] [1793247106.147627013] [bt_navigator]: Goal succeeded

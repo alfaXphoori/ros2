@@ -1,0 +1,158 @@
+### Terminal 1
+$ ros2 launch amr_adv02 vision_pipeline.launch.py
+[apriltag_dock_tracker-2] [INFO] [1793246172.252471044] [apriltag_dock_tracker]: AprilTag dock tracker: tag36h11 id=0 size=0.1 m -> detected_dock_pose
+[synthetic_tag_camera-1] [INFO] [1793246172.285959725] [synthetic_tag_camera]: Synthetic camera 640x480 fx=525.0 mode=static tag36h11 id=0 size=0.1 m visible=True
+[object_detector-3] [INFO] [1793246172.444208199] [object_detector]: Object detector ready: classical HSV colour + contour detector (no neural network)
+[apriltag_dock_tracker-2] [INFO] [1793246172.497067509] [apriltag_dock_tracker]: tag 0: x=+0.100 y=+0.050 z=0.801 m  yaw=+15.1 deg
+[object_detector-3] [INFO] [1793246172.712543346] [object_detector]: 2 detections: pallet_cargo(0.98), safety_cone(0.50)
+[apriltag_dock_tracker-2] [INFO] [1793246173.693503443] [apriltag_dock_tracker]: tag 0: x=+0.100 y=+0.050 z=0.801 m  yaw=+15.1 deg
+[object_detector-3] [INFO] [1793246174.792091704] [object_detector]: 2 detections: pallet_cargo(0.98), safety_cone(0.50)
+[apriltag_dock_tracker-2] [INFO] [1793246174.792574356] [apriltag_dock_tracker]: tag 0: x=+0.100 y=+0.050 z=0.801 m  yaw=+15.1 deg
+...
+
+### Terminal 2
+$ ros2 topic list
+/camera/image_raw
+/parameter_events
+/perception/debug_image
+/perception/detections
+/rosout
+
+$ ros2 topic info -v /camera/image_raw | grep -E 'Node name|Reliability|Topic type|count'
+Publisher count: 1
+Node name: synthetic_tag_camera
+Node namespace: /
+Topic type: sensor_msgs/msg/Image
+Topic type hash: RIHS01_d31d41a9a4c4bc8eae9be757b0beed306564f7526c88ea6a4588fb9582527d47
+  Reliability: BEST_EFFORT
+Subscription count: 2
+Node name: apriltag_dock_tracker
+Node namespace: /
+Topic type: sensor_msgs/msg/Image
+Topic type hash: RIHS01_d31d41a9a4c4bc8eae9be757b0beed306564f7526c88ea6a4588fb9582527d47
+  Reliability: BEST_EFFORT
+Node name: object_detector
+Node namespace: /
+Topic type: sensor_msgs/msg/Image
+Topic type hash: RIHS01_d31d41a9a4c4bc8eae9be757b0beed306564f7526c88ea6a4588fb9582527d47
+  Reliability: BEST_EFFORT
+
+$ ros2 topic hz /camera/image_raw     # 5 s
+average rate: 10.088
+	min: 0.083s max: 0.115s std dev: 0.00924s window: 12
+average rate: 9.062
+	min: 0.083s max: 0.292s std dev: 0.04245s window: 20
+
+$ ros2 topic echo --once /camera/tag_pose_ground_truth
+header:
+  stamp:
+    sec: 1793246190
+    nanosec: 770857064
+  frame_id: camera_optical_link
+pose:
+  position:
+    x: 0.1
+    y: 0.05
+    z: 0.8
+  orientation:
+    x: 0.9914448613738104
+    y: 0.0
+    z: -0.13052619222005157
+    w: 0.0
+---
+
+$ ros2 topic echo --once /detected_dock_pose
+header:
+  stamp:
+    sec: 1793246193
+    nanosec: 870802982
+  frame_id: camera_optical_link
+pose:
+  position:
+    x: 0.10014476125885227
+    y: 0.050091894717137486
+    z: 0.8009729531192056
+  orientation:
+    x: -0.991297094694728
+    y: 7.65630545435123e-05
+    z: 0.13163254559218052
+    w: 0.0017138053602113769
+---
+
+$ ros2 run amr_adv02 pose_error_monitor --ros-args -p count:=10
+stamp 1793246196.970792411 detected z=0.8010 m truth z=0.8000 m | position error   0.99 mm  rotation error  0.23 deg
+stamp 1793246197.070799190 detected z=0.8010 m truth z=0.8000 m | position error   0.99 mm  rotation error  0.23 deg
+stamp 1793246197.170821368 detected z=0.8010 m truth z=0.8000 m | position error   0.99 mm  rotation error  0.23 deg
+stamp 1793246197.271228315 detected z=0.8010 m truth z=0.8000 m | position error   0.99 mm  rotation error  0.23 deg
+stamp 1793246197.371209552 detected z=0.8010 m truth z=0.8000 m | position error   0.99 mm  rotation error  0.23 deg
+stamp 1793246197.470848114 detected z=0.8010 m truth z=0.8000 m | position error   0.99 mm  rotation error  0.23 deg
+stamp 1793246197.570800335 detected z=0.8010 m truth z=0.8000 m | position error   0.99 mm  rotation error  0.23 deg
+stamp 1793246197.670826589 detected z=0.8010 m truth z=0.8000 m | position error   0.99 mm  rotation error  0.23 deg
+stamp 1793246197.770799891 detected z=0.8010 m truth z=0.8000 m | position error   0.99 mm  rotation error  0.23 deg
+stamp 1793246197.970821659 detected z=0.8010 m truth z=0.8000 m | position error   0.99 mm  rotation error  0.23 deg
+10 frames: position error mean 0.99 mm max 0.99 mm | rotation error mean 0.23 deg max 0.23 deg
+
+$ ros2 topic echo --once /perception/detections
+header:
+  stamp:
+    sec: 1793246199
+    nanosec: 870848321
+  frame_id: camera_optical_link
+detections:
+- header:
+    stamp:
+      sec: 1793246199
+      nanosec: 870848321
+    frame_id: camera_optical_link
+  results:
+  - hypothesis:
+      class_id: pallet_cargo
+      score: 0.9836219879518072
+    pose:
+      pose:
+        position:
+          x: 0.0
+          y: 0.0
+          z: 0.0
+        orientation:
+          x: 0.0
+          y: 0.0
+          z: 0.0
+          w: 1.0
+  bbox:
+    center:
+      position:
+        x: 518.0
+        y: 384.0
+      theta: 0.0
+    size_x: 166.0
+    size_y: 96.0
+  id: ''
+- header:
+    stamp:
+      sec: 1793246199
+      nanosec: 870848321
+    frame_id: camera_optical_link
+  results:
+  - hypothesis:
+...
+    size_x: 166.0
+    size_y: 96.0
+      class_id: safety_cone
+      score: 0.4991332611050921
+      position:
+        x: 96.5
+        y: 371.0
+    size_x: 65.0
+    size_y: 142.0
+
+### Tag removed from the scene
+$ ros2 launch amr_adv02 vision_pipeline.launch.py tag_visible:=false
+$ timeout 5 ros2 topic echo /detected_dock_pose
+# (exit after 5 s: no message)
+$ timeout 5 ros2 topic hz /camera/image_raw
+average rate: 9.999
+	min: 0.097s max: 0.103s std dev: 0.00092s window: 33
+[apriltag_dock_tracker-2] [INFO] [1793246207.612893945] [apriltag_dock_tracker]: tag not visible
+[object_detector-3] [INFO] [1793246207.613503383] [object_detector]: 2 detections: pallet_cargo(0.98), safety_cone(0.50)
+[object_detector-3] [INFO] [1793246209.723656077] [object_detector]: 2 detections: pallet_cargo(0.98), safety_cone(0.50)

@@ -1,0 +1,61 @@
+$ ros2 run amr_adv03 check_bt
+installed models: 63 Nav2 BT nodes, 2 docking BT nodes (DockRobot, UndockRobot)
+dock_and_charge_bt.xml: 11 nodes: Sequence, IsBatteryLow, ComputePathToPose, FollowPath, DockRobot, RetryUntilSuccessful, Sequence, Wait, Inverter, IsBatteryLow, UndockRobot
+RESULT: VALID
+
+# the tree before the fix (git history), without the docking plugin libraries:
+$ ros2 run amr_adv03 check_bt /tmp/home/old_bt.xml --plugins-yaml /tmp/home/empty.yaml
+installed models: 63 Nav2 BT nodes, 2 docking BT nodes (DockRobot, UndockRobot)
+old_bt.xml: 5 nodes: Sequence, IsBatteryLow, NavigateToPose, DockRobot, Wait
+ERROR: root must be <root BTCPP_format="4"> (Nav2 Jazzy uses BehaviorTree.CPP 4)
+ERROR: IsBatteryLow min_battery=20.0: BatteryState.percentage is a fraction 0..1
+ERROR: DockRobot: add opennav_dock_action_bt_node to bt_navigator plugin_lib_names
+RESULT: 3 error(s)
+[ros2run]: Process exited with failure 1
+
+$ ros2 interface show opennav_docking_msgs/action/DockRobot
+Unknown package 'opennav_docking_msgs'
+
+$ ros2 interface show nav2_msgs/action/DockRobot | grep -v '^\s'
+#goal definition
+
+bool use_dock_id True  # Whether to use the dock_id or dock_pose fields
+string dock_id  # Dock name or ID to dock at, from given dock database
+
+geometry_msgs/PoseStamped dock_pose  # Dock pose
+string dock_type  # If using dock_pose, what type of dock it is. Not necessary if only using one type of dock.
+
+float32 max_staging_time 1000.0  # Maximum time for navigation to get to the dock's staging pose.
+bool navigate_to_staging_pose True  # Whether or not to navigate to staging pose or assume robot is already at staging pose within tolerance to execute behavior
+
+---
+#result definition
+
+# Error codes
+# Note: The expected priority order of the errors should match the message order
+uint16 NONE=0
+uint16 DOCK_NOT_IN_DB=901
+uint16 DOCK_NOT_VALID=902
+uint16 FAILED_TO_STAGE=903
+uint16 FAILED_TO_DETECT_DOCK=904
+uint16 FAILED_TO_CONTROL=905
+uint16 FAILED_TO_CHARGE=906
+uint16 UNKNOWN=999
+
+bool success True  # docking success status
+uint16 error_code 0  # Contextual error code, if any
+uint16 num_retries 0  # Number of retries attempted
+string error_msg
+---
+#feedback definition
+
+uint16 NONE=0
+uint16 NAV_TO_STAGING_POSE=1
+uint16 INITIAL_PERCEPTION=2
+uint16 CONTROLLING=3
+uint16 WAIT_FOR_CHARGE=4
+uint16 RETRY=5
+
+uint16 state  # Current docking state
+builtin_interfaces/Duration docking_time  # Docking time elapsed
+uint16 num_retries 0  # Number of retries attempted

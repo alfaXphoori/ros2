@@ -1,0 +1,42 @@
+# colcon test for amr_adv04 - real run in ros:lab-runner (ROS 2 Jazzy), Linux 7.0, 2026-10-29
+$ colcon test --base-paths Essential_ROS Advanced_ROS --packages-select amr_adv04 --pytest-args -v
+test/test_fake_diff_drive_kinematics.py::test_straight_line PASSED       [  4%]
+test/test_fake_diff_drive_kinematics.py::test_straight_line_heading_90deg PASSED [  8%]
+test/test_fake_diff_drive_kinematics.py::test_quarter_circle_is_exact PASSED [ 13%]
+test/test_fake_diff_drive_kinematics.py::test_many_small_steps_equal_one_big_step PASSED [ 17%]
+test/test_fake_diff_drive_kinematics.py::test_spin_in_place_wheels_opposite PASSED [ 21%]
+test/test_fake_diff_drive_kinematics.py::test_forward_wheels_equal PASSED [ 26%]
+test/test_fake_diff_drive_kinematics.py::test_yaw_quaternion_unit_norm PASSED [ 30%]
+test/test_fleet_config.py::test_parser_accepts_config PASSED             [ 34%]
+test/test_fleet_config.py::test_robots_and_chargers PASSED               [ 39%]
+test/test_fleet_config.py::test_battery_policy PASSED                    [ 43%]
+test/test_fleet_config.py::test_nav_graph PASSED                         [ 47%]
+test/test_fleet_config.py::test_cross_checks_pass PASSED                 [ 52%]
+test/test_fleet_config.py::test_cli_exit_code_ok PASSED                  [ 56%]
+test/test_fleet_config.py::test_old_config_is_rejected_by_rmf PASSED     [ 60%]
+test/test_fleet_config.py::test_each_required_section[mechanical_system] PASSED [ 65%]
+test/test_fleet_config.py::test_each_required_section[ambient_system] PASSED [ 69%]
+test/test_fleet_config.py::test_each_required_section[tool_system] PASSED [ 73%]
+test/test_fleet_config.py::test_each_required_section[battery_system] PASSED [ 78%]
+test/test_fleet_config.py::test_each_required_section[profile] PASSED    [ 82%]
+test/test_fleet_config.py::test_each_required_section[limits] PASSED     [ 86%]
+test/test_fleet_config.py::test_unknown_charger_is_caught PASSED         [ 91%]
+test/test_fleet_config.py::test_nav_graph_without_levels_raises PASSED   [ 95%]
+test/test_multi_robot_launch.py::test_multi_robot_launch PASSED          [100%]
+============================== 23 passed in 7.65s ==============================
+$ colcon test-result --verbose
+tests="23" errors/failures: errors="0" failures="0"
+
+# The launch test above is one pytest item; its unittest cases, from `launch_test Advanced_ROS/04_Multi_Robot_Fleet_OpenRMF/test/test_multi_robot_launch.py`
+# (node log lines interleaved with the test names were removed):
+$ launch_test Advanced_ROS/04_Multi_Robot_Fleet_OpenRMF/test/test_multi_robot_launch.py
+test_1_namespaced_nodes (test_multi_robot_launch.TestMultiRobotFleet.test_1_namespaced_nodes) ...
+test_2_topics_namespaced_without_collisions (test_multi_robot_launch.TestMultiRobotFleet.test_2_topics_namespaced_without_collisions) ... ok
+test_3_wheel_tf_per_robot (test_multi_robot_launch.TestMultiRobotFleet.test_3_wheel_tf_per_robot) ... ok
+test_4_one_shared_tree_with_start_poses (test_multi_robot_launch.TestMultiRobotFleet.test_4_one_shared_tree_with_start_poses) ... ok
+test_5_cmd_vel_moves_only_its_own_robot (test_multi_robot_launch.TestMultiRobotFleet.test_5_cmd_vel_moves_only_its_own_robot) ... ok
+Ran 5 tests in 3.821s
+OK
+test_exit_codes (test_multi_robot_launch.TestShutdown.test_exit_codes) ... ok
+Ran 1 test in 0.000s
+OK

@@ -90,9 +90,9 @@ flowchart TD
     Request["Request: Set Parameter<br/>(e.g., max_linear_speed = 5.0)"]
     
     subgraph Node_Validation ["กระบวนการตรวจสอบภายในโหนด"]
-        TypeCheck{"ชนิดข้อมูลตรงหรือไม่?<br/>(ParameterType.PARAMETER_DOUBLE)"}
-        RangeCheck{"อยู่ในช่วงปลอดภัยหรือไม่?<br/>(0.1 <= speed <= 2.5)"}
-        ApplyParam["อัปเดตตัวแปรภายใน<br/>self.max_speed = 5.0<br/>successful = True"]
+        TypeCheck{"ชั้นที่ 1 (rclpy อัตโนมัติ):<br/>ชนิดข้อมูลตรงกับตอน declare หรือไม่?<br/>(PARAMETER_DOUBLE)"}
+        RangeCheck{"ชั้นที่ 2 (add_on_set_parameters_callback):<br/>อยู่ในช่วงปลอดภัยหรือไม่?<br/>(0.1 <= speed <= 2.5)"}
+        ApplyParam["rclpy บันทึกค่า แล้วเรียก<br/>add_post_set_parameters_callback<br/>self.max_linear_speed = ค่าใหม่"]
         RejectParam["ปฏิเสธคำขอ<br/>successful = False<br/>reason = 'Speed outside range!'"]
     end
     
@@ -106,6 +106,10 @@ flowchart TD
     RejectParam --> Response
     ApplyParam --> Response
 ```
+
+- **ชั้นที่ 1 — Static Typing ของ rclpy:** ชนิดของพารามิเตอร์ถูกกำหนดจากค่า Default ตอน `declare_parameter()` (เช่น `0.8` → `PARAMETER_DOUBLE`) rclpy จะปฏิเสธค่าผิดชนิด **ก่อน** เรียก Callback ของเรา เช่น `ros2 param set ... max_linear_speed 1` ได้ `Wrong parameter type, expected 'Type.DOUBLE' got 'Type.INTEGER'` — โค้ดใน Callback จึงไม่ต้อง (และไม่สามารถ) ตรวจ/รับค่า Integer เอง (ถ้าต้องการรับหลายชนิดต้องประกาศ `ParameterDescriptor(dynamic_typing=True)`)
+- **ชั้นที่ 2 — `add_on_set_parameters_callback`:** ตรวจกฎทางวิศวกรรม (ช่วงความเร็ว, ระยะเผื่อขั้นต่ำ) ของพารามิเตอร์ **ทุกตัวในคำขอ** ก่อนตัดสินใจ ถ้าตัวใดไม่ผ่านจะคืน `SetParametersResult(successful=False, reason=...)` และไม่มีค่าใดถูกเปลี่ยน
+- **หลังผ่านแล้ว — `add_post_set_parameters_callback`:** ถูกเรียกเมื่อ rclpy บันทึกค่าเรียบร้อยแล้วเท่านั้น จึงเป็นจุดที่ปลอดภัยสำหรับนำค่าไปใช้จริง (อัปเดตตัวแปรภายในและ Publish `speed_limit`) — ถ้าไปอัปเดตตัวแปรในชั้นที่ 2 อาจได้ค่าครึ่งๆ กลางๆ เมื่อคำขอแบบ Atomic มีบางตัวไม่ผ่าน
 
 ---
 
@@ -151,59 +155,85 @@ classDiagram
 
 ## 🛠️ การวิเคราะห์โค้ดตัวอย่างในโมดูล (Code Walkthrough)
 
-### 1. [`fleet_parameters.py`](file:///mnt/sda/ros/Essential_ROS/Week_05_Parameters_Launch/src/fleet_parameters.py)
+โค้ดอยู่ในแพ็กเกจ `amr_week05` ซึ่งพึ่งพาแพ็กเกจ `amr_week02`–`amr_week04` (`<exec_depend>` ใน [`package.xml`](package.xml)):
+```bash
+./docker/run_lab.sh colcon build --base-paths Essential_ROS --packages-up-to amr_week05   # build week 02-05; หรือ make build PKG=amr_week05
+./docker/run_lab.sh ros2 run amr_week05 fleet_parameters
+./docker/run_lab.sh ros2 launch amr_week05 core_system.launch.py robot_ns:=amr_01 fleet_id:=AMR_01
+```
+
+### 1. [`fleet_parameters.py`](src/fleet_parameters.py)
 โหนดจำลองการควบคุมพารามิเตอร์ความปลอดภัยของฝูงหุ่นยนต์:
-- **การประกาศพารามิเตอร์เริ่มต้น ([L17-L20](file:///mnt/sda/ros/Essential_ROS/Week_05_Parameters_Launch/src/fleet_parameters.py#L17-L20)):**
+- **การประกาศพารามิเตอร์พร้อม Descriptor:**
   ```python
-  self.declare_parameter('fleet_id', 'AMR_ALPHA_01')
-  self.declare_parameter('max_linear_speed', 0.8)
-  self.declare_parameter('safety_margin', 0.35)
+  self.declare_parameter('fleet_id', 'AMR_ALPHA_01',
+                         ParameterDescriptor(description='Robot identifier in the fleet'))
+  self.declare_parameter('max_linear_speed', 0.8, ParameterDescriptor(
+      description='Speed limit [m/s]',
+      additional_constraints=f'{SPEED_RANGE[0]} <= value <= {SPEED_RANGE[1]}'))
+  self.declare_parameter('safety_margin', 0.35, ...)
   self.declare_parameter('enable_obstacle_stop', True)
   ```
-  การประกาศพารามิเตอร์ต้องระบุชื่อและค่าเริ่มต้น (Default Value) เสมอ เพื่อกำหนดโครงสร้างประเภทข้อมูลตั้งต้น
-- **การลงทะเบียน Dynamic Callback ([L23](file:///mnt/sda/ros/Essential_ROS/Week_05_Parameters_Launch/src/fleet_parameters.py#L23)):**
+  ค่า Default กำหนดชนิดข้อมูล ส่วน `description`/`additional_constraints` แสดงใน `ros2 param describe` (เป็นเอกสารเท่านั้น การบังคับช่วงอยู่ใน Callback)
+- **การลงทะเบียน Callback สองตัว:**
   ```python
-  self.add_on_set_parameters_callback(self.parameters_callback)
+  # validate (may reject) -> rclpy stores the values -> apply (only after success)
+  self.add_on_set_parameters_callback(self.validate_parameters)
+  self.add_post_set_parameters_callback(self.apply_parameters)
   ```
-  ผูกฟังก์ชันตรวจสอบความถูกต้องเข้ากับระบบ เมื่อมีคำสั่ง `ros2 param set` หรือคำขอจากเครือข่าย ฟังก์ชันนี้จะถูกเรียกทันที
-- **ตรรกะการตรวจสอบความปลอดภัย (Validation Logic) ([L31-L58](file:///mnt/sda/ros/Essential_ROS/Week_05_Parameters_Launch/src/fleet_parameters.py#L31-L58)):**
+- **ตรรกะการตรวจสอบความปลอดภัย (Validation Logic):**
   ```python
-  def parameters_callback(self, params):
-      result = SetParametersResult()
-      result.successful = True
+  def validate_parameters(self, params):
       for param in params:
           if param.name == 'max_linear_speed':
-              if param.type_ != ParameterType.PARAMETER_DOUBLE:
-                  result.successful = False
-                  result.reason = 'max_linear_speed must be a floating point number.'
-                  return result
-              if not (0.1 <= param.value <= 2.5):
-                  result.successful = False
-                  result.reason = f'Speed {param.value} is outside valid safety range [0.1, 2.5] m/s!'
-                  return result
+              low, high = SPEED_RANGE
+              if not (low <= param.value <= high):
+                  return SetParametersResult(
+                      successful=False,
+                      reason=f'Speed {param.value} is outside valid safety range '
+                             f'[{low}, {high}] m/s!')
+          elif param.name == 'safety_margin':
+              ...
+      return SetParametersResult(successful=True)
   ```
-  หากพบค่าที่ไม่ปลอดภัย ระบบจะปฏิเสธคำขอทันที ทำให้ค่าคอนฟิกเดิมไม่ถูกแก้ไขและส่งข้อความเตือนกลับไปยังผู้ส่ง
-
----
-
-### 2. [`core_system.launch.py`](file:///mnt/sda/ros/Essential_ROS/Week_05_Parameters_Launch/launch/core_system.launch.py)
-ไฟล์ Launch ที่ทำหน้าที่เปิดระบบสื่อสารพื้นฐานของ AMR แบบครบวงจร:
-- **การประกาศอาร์กิวเมนต์ ([L15-L28](file:///mnt/sda/ros/Essential_ROS/Week_05_Parameters_Launch/launch/core_system.launch.py#L15-L28)):**
+  ไม่มีการตรวจชนิดข้อมูลในนี้ เพราะ rclpy ปฏิเสธค่าผิดชนิดไปแล้วตั้งแต่ชั้นที่ 1 (โค้ดเวอร์ชันเก่าที่เช็ค `Parameter.Type.INTEGER` ใน Callback จึงเป็น Dead Code ที่ไม่มีวันทำงาน)
+- **การนำค่าไปใช้จริง:**
   ```python
-  robot_namespace_arg = DeclareLaunchArgument(
-      'robot_ns',
-      default_value='',
-      description='Optional namespace for multi-robot isolation'
-  )
+  def apply_parameters(self, params):
+      for param in params:
+          if param.name == 'max_linear_speed':
+              self.max_linear_speed = param.value
+              self.publish_speed_limit()      # latched std_msgs/Float64 on 'speed_limit'
   ```
-  ช่วยให้ผู้ใช้งานสามารถระบุค่าผ่าน CLI ได้ เช่น `ros2 launch core_system.launch.py robot_ns:=amr_01`
-- **การรวมโปรเซสหลายสัปดาห์เข้าด้วยกัน ([L39-L65](file:///mnt/sda/ros/Essential_ROS/Week_05_Parameters_Launch/launch/core_system.launch.py#L39-L65)):**
-  สคริปต์นี้ผสานการทำงานของ:
-  1. `sensor_qos_publisher` (สัปดาห์ที่ 2)
-  2. `power_service_server` (สัปดาห์ที่ 3)
-  3. `navigate_action_server` (สัปดาห์ที่ 4)
-  4. `fleet_parameters` (สัปดาห์ที่ 5)
-  เข้าสู่คอนเทนเนอร์เดียวกัน ทำให้สามารถเริ่มระบบทั้งหุ่นยนต์ได้ด้วยคำสั่งเดียว
+  โหนดอื่น (เช่น ตัวควบคุมความเร็ว) Subscribe `speed_limit` แบบ `TRANSIENT_LOCAL` เพื่อได้ค่าปัจจุบันทันที
+
+### 2. [`core_system.launch.py`](launch/core_system.launch.py) และ [`config/fleet_params.yaml`](config/fleet_params.yaml)
+ไฟล์ Launch ที่ทำหน้าที่เปิดระบบสื่อสารพื้นฐานของ AMR หนึ่งคันแบบครบวงจร:
+- **การประกาศอาร์กิวเมนต์:**
+  ```python
+  DeclareLaunchArgument('robot_ns', default_value='',
+                        description='Namespace for multi-robot isolation (empty = none)'),
+  DeclareLaunchArgument('fleet_id', default_value='AMR_01', ...),
+  DeclareLaunchArgument('params_file',
+                        default_value=PathJoinSubstitution(
+                            [FindPackageShare('amr_week05'), 'config', 'fleet_params.yaml']), ...),
+  ```
+  ระบุค่าผ่าน CLI ได้ เช่น `ros2 launch amr_week05 core_system.launch.py robot_ns:=amr_01`
+- **การใช้ค่าอาร์กิวเมนต์จริงด้วย `PushRosNamespace` + `launch_ros.actions.Node`:**
+  ```python
+  robot = GroupAction([
+      PushRosNamespace(robot_ns),
+      Node(package='amr_week02', executable='sensor_qos_publisher', output='screen'),
+      Node(package='amr_week03', executable='power_service_server', output='screen'),
+      Node(package='amr_week04', executable='navigate_action_server', output='screen'),
+      # YAML file first, launch argument overrides it
+      Node(package='amr_week05', executable='fleet_parameters', output='screen',
+           parameters=[params_file, {'fleet_id': fleet_id}]),
+  ])
+  ```
+  ทุกโหนดในกลุ่มถูกใส่ Namespace `robot_ns` (เช่น `/amr_01/fleet_parameters`, `/amr_01/robot/set_power_mode`) — ใช้ได้เพราะโหนดของสัปดาห์ที่ 2–4 ใช้ชื่อแบบ Relative; `fleet_id` ถูกส่งเข้าเป็นพารามิเตอร์ และ YAML ใช้คีย์ `/**` จึงตรงกับโหนดในทุก Namespace
+- **ทำไมไม่ใช้ `ExecuteProcess(cmd=['python3', '<path>.py'])` แบบเดิม:** `ExecuteProcess` รันโปรแกรมตามพาธไฟล์โดยไม่รู้จัก Namespace/Parameters ของ ROS อาร์กิวเมนต์ `robot_ns` และ `fleet_id` จึงถูกประกาศแต่ไม่เคยถูกใช้ และพาธที่คำนวณจาก `__file__` จะเสียเมื่อไฟล์ถูกติดตั้งไปที่ `install/` — `Node(package=..., executable=...)` หาโปรแกรมผ่าน ament index ของแพ็กเกจที่ build แล้ว
+- [`test/test_core_system_launch.py`](test/test_core_system_launch.py) Launch ด้วย `robot_ns:=amr_01` แล้วตรวจว่าทุกโหนด/Service/Topic อยู่ใต้ `/amr_01`, `fleet_id` ตรงกับ Launch Argument, SetParameters 3.0 ถูกปฏิเสธ, 1.0 ผ่านและถูก Publish ที่ `/amr_01/speed_limit`, ค่า Integer ถูก rclpy ปฏิเสธ และการตั้งแบบ Atomic เป็น All-or-Nothing
 
 ---
 
@@ -215,26 +245,38 @@ classDiagram
 | `ros2 param set <node> <param> <val>` | ปรับเปลี่ยนค่าพารามิเตอร์แบบ On-the-fly | `ros2 param set /fleet_parameters max_linear_speed 1.5` |
 | `ros2 param dump <node>` | บันทึกค่าพารามิเตอร์ปัจจุบันของโหนดลงไฟล์ YAML | `ros2 param dump /fleet_parameters > my_params.yaml` |
 | `ros2 param load <node> <yaml_file>` | โหลดค่าพารามิเตอร์จากไฟล์ YAML เข้าสู่โหนดที่กำลังรัน | `ros2 param load /fleet_parameters my_params.yaml` |
-| `ros2 launch <pkg_or_path> <file>` | รันระบบผ่านสคริปต์ Python Launch | `ros2 launch Essential_ROS/Week_05_Parameters_Launch/launch/core_system.launch.py` |
+| `ros2 param describe <node> <param>` | ดูชนิด คำอธิบาย และข้อจำกัดของพารามิเตอร์ | `ros2 param describe /amr_01/fleet_parameters max_linear_speed` |
+| `ros2 launch <pkg> <file> [arg:=value]` | รันระบบผ่านสคริปต์ Python Launch ของแพ็กเกจที่ build แล้ว | `ros2 launch amr_week05 core_system.launch.py robot_ns:=amr_01` |
 
 ---
 
-## 📸 ภาพผลการทดสอบจริงจากระบบ (Live Execution & Terminal Capture)
-ผลลัพธ์จากการรันคำสั่งและโหนดจริงในระบบ เพื่อใช้เป็นข้อมูลอ้างอิงในการตรวจสอบความถูกต้อง:
-
-![Terminal Capture: Terminal — Week 05: Dynamic Parameter Validation & Reconfigure](images/terminal_run.png)
+## 📟 ผลการรันจริง (Real Run Output)
+บันทึกจากการรันจริงใน ros:lab-runner (ROS 2 Jazzy, Gazebo Sim 8.15.0) บน Linux 7.0 เมื่อ 2026-10-29 — ไฟล์เต็ม: [`results/launch_and_params_run.txt`](results/launch_and_params_run.txt)
 
 ```console
-user@amr-dev:~/ros$ ./docker/run_lab.sh python3 Essential_ROS/Week_05_Parameters_Launch/src/fleet_parameters.py &
-[INFO] [fleet_parameters]: 🤖 [FleetParametersNode] Initialized: ID=AMR_ALPHA_01, MaxSpeed=0.8m/s, Margin=0.35m
-user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 param get /fleet_parameters max_linear_speed
-Double value is: 0.8
-user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 param set /fleet_parameters max_linear_speed 1.2
-[WARN] [fleet_parameters]: ⚡ max_linear_speed updated to: 1.2 m/s
+$ ros2 launch amr_week05 core_system.launch.py robot_ns:=amr_01 fleet_id:=AMR_01     # terminal 1
+
+$ ros2 node list
+/amr_01/fleet_parameters
+/amr_01/navigate_action_server
+/amr_01/power_service_server
+/amr_01/sensor_qos_publisher
+
+$ ros2 param get /amr_01/fleet_parameters fleet_id
+String value is: AMR_01
+
+$ ros2 param set /amr_01/fleet_parameters max_linear_speed 1.2
 Set parameter successful
-user@amr-dev:~/ros$ ./docker/run_lab.sh ros2 param set /fleet_parameters max_linear_speed 3.5
+
+$ ros2 topic echo --once /amr_01/speed_limit
+data: 1.2
+---
+
+$ ros2 param set /amr_01/fleet_parameters max_linear_speed 3.5
 Setting parameter failed: Speed 3.5 is outside valid safety range [0.1, 2.5] m/s!
-user@amr-dev:~/ros$ [CHECKPOINT PASSED: DYNAMIC CALLBACK REJECTED UNSAFE SPEED VALUES]
+
+$ ros2 param set /amr_01/fleet_parameters max_linear_speed 1     # integer, not 1.0
+Setting parameter failed: Wrong parameter type, expected 'Type.DOUBLE' got 'Type.INTEGER'
 ```
 
 ---
@@ -245,10 +287,11 @@ user@amr-dev:~/ros$ [CHECKPOINT PASSED: DYNAMIC CALLBACK REJECTED UNSAFE SPEED V
 |:---:| :--- | :--- | :--- |
 | 1 | **เรียก `get_parameter()` แล้วโปรแกรม Crash: `ParameterNotDeclaredException`** | พยายามอ่านค่าพารามิเตอร์ที่ยังไม่ได้เรียก `self.declare_parameter()` | ต้องประกาศพารามิเตอร์พร้อมค่า Default เสมอในส่วน `__init__` ของโหนด |
 | 2 | **สั่ง `ros2 param set` ผ่าน CLI แล้วติด Error ปฏิเสธค่า** | ค่าที่ส่งเข้าไปไม่ผ่านเงื่อนไขใน `add_on_set_parameters_callback` (เช่น ป้อนค่าความเร็วเกินช่วงปลอดภัย) | ตรวจสอบข้อความ `reason` ในเทอร์มินัล และปรับค่าให้อยู่ในช่วงที่กำหนด |
-| 3 | **Launch file ไม่พบไฟล์สคริปต์ปลายทาง (`FileNotFoundError`)** | การอ้างอิง Relative Path ใน Launch File ไม่ตรงกับ Working Directory ขณะรัน | ใช้ `os.path.dirname(os.path.realpath(__file__))` หรือ `get_package_share_directory()` เพื่อหา Absolute Path ที่แน่นอน |
+| 3 | **Launch file ไม่พบไฟล์สคริปต์/คอนฟิกปลายทาง (`FileNotFoundError` หรือ `package not found`)** | อ้างอิงพาธจาก `__file__` หรือ Working Directory ซึ่งเปลี่ยนไปเมื่อไฟล์ถูกติดตั้งลง `install/` หรือยังไม่ได้ build แพ็กเกจที่อ้างถึง | ใช้ `Node(package=..., executable=...)` และ `FindPackageShare()`/`get_package_share_directory()` พร้อมเพิ่ม `<exec_depend>` แล้ว `colcon build --packages-up-to <pkg>` |
 | 4 | **ส่ง Argument ผ่าน CLI แล้ว Launch File ไม่นำค่าไปใช้** | ดึงค่าตัวแปรผ่าน Python ธรรมดาแทนที่จะใช้ `LaunchConfiguration` | ใช้ `LaunchConfiguration('arg_name')` ในการส่งต่อค่าไปยังโหนด |
 | 5 | **ไฟล์ YAML โหลดไม่เข้าโหนด (`Invalid parameter file`)** | โครงสร้าง Indentation ของ YAML ไม่ตรง หรือลืมระบุ Node Name และ Namespace ให้ตรงกับโหนดจริง | ตรวจสอบโครงสร้าง: บรรทัดแรกต้องเป็น `/**:` หรือ `/<node_name>:` ตามด้วย `ros__parameters:` (ขีดล่าง 2 ตัว) |
-| 6 | **ข้อผิดพลาด Parameter Type Mismatch เมื่อ Set ผ่าน CLI** | ส่งค่าจำนวนเต็ม (Integer) ให้กับพารามิเตอร์ประเภท Double เช่น ใส่ `1` แทนที่จะเป็น `1.0` | ระบุทศนิยมให้ชัดเจน เช่น `ros2 param set /node speed 1.0` |
+| 6 | **`Setting parameter failed: Wrong parameter type, expected 'Type.DOUBLE' got 'Type.INTEGER'`** | ส่งค่าจำนวนเต็ม (Integer) ให้กับพารามิเตอร์ประเภท Double เช่น ใส่ `1` แทนที่จะเป็น `1.0` — rclpy ปฏิเสธก่อนถึง Callback ของเรา | ระบุทศนิยมให้ชัดเจน เช่น `ros2 param set /node speed 1.0` |
+| 7 | **ใส่ `robot_ns:=amr_01` แล้วท็อปปิก/เซอร์วิสบางตัวยังอยู่ที่ `/`** | โหนดใช้ชื่อแบบ Absolute (ขึ้นต้นด้วย `/`) ซึ่งไม่ถูกใส่ Namespace | ใช้ชื่อแบบ Relative เช่น `'robot/set_power_mode'` |
 
 ---
 
