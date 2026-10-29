@@ -20,12 +20,14 @@ Publishes
       like a real camera would see it (independent of AMCL / odometry errors).
 """
 
+import signal
 import threading
 
 from geometry_msgs.msg import PoseStamped, TransformStamped
 import rclpy
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
+from rclpy.signals import SignalHandlerOptions
 from tf2_ros import TransformBroadcaster
 
 try:
@@ -46,22 +48,40 @@ class GroundTruthTF(Node):
         self.pub_pose = self.create_publisher(PoseStamped, 'ground_truth/pose', 10)
         self.tf_pub = TransformBroadcaster(self)
         self.count = 0
+        self.closed = False
+        # serialises the gz transport thread with close(): publishing on a destroyed
+        # publisher from that thread crashed the process at shutdown (SIGSEGV)
         self.lock = threading.Lock()
 
         from gz.msgs10.pose_v_pb2 import Pose_V
         from gz.transport13 import Node as GzNode
         self.gz = GzNode()
-        topic = f'/world/{self.world}/dynamic_pose/info'
-        self.gz.subscribe(Pose_V, topic, self.on_poses)
-        self.get_logger().info(f'Ground truth of model "{self.model}" from gz {topic} -> '
+        self.topic = f'/world/{self.world}/dynamic_pose/info'
+        self.gz.subscribe(Pose_V, self.topic, self.on_poses)
+        self.get_logger().info(f'Ground truth of model "{self.model}" from gz {self.topic} -> '
                                f'/ground_truth/pose + TF {self.base_frame} -> {self.world_frame}')
+
+    def close(self):
+        """Stop the gz callbacks from using ROS before the ROS publishers are destroyed."""
+        with self.lock:   # waits for a callback that is publishing right now
+            self.closed = True
 
     def on_poses(self, msg):
         """Gazebo transport thread: one Pose_V per physics publish."""
         with self.lock:
+            if self.closed:
+                return
             self.count += 1
             if self.count % self.decimation:
                 return
+            try:
+                self.publish(msg)
+            except Exception as err:  # noqa: B902 - never raise into the gz thread
+                # SIGINT shuts the rclpy context down before main() reaches close()
+                if self.context.ok():
+                    self.get_logger().error(f'ground truth publish failed: {err}')
+
+    def publish(self, msg):
         for pose in msg.pose:
             if pose.name == self.model:
                 break
@@ -90,13 +110,23 @@ class GroundTruthTF(Node):
 
 
 def main(args=None):
-    rclpy.init(args=args)
+    # Own signal handling: SIGINT/SIGTERM only set a flag that the loop below checks between
+    # spin_once() calls, so the context stays valid until the gz callbacks are stopped
+    # (close) and the node is destroyed. With rclpy's handler the context was shut down while
+    # spin() built its wait set (RCLError, exit code 1) and while the gz thread was still
+    # publishing (SIGSEGV); a KeyboardInterrupt can also land inside a pybind call.
+    rclpy.init(args=args, signal_handler_options=SignalHandlerOptions.NO)
+    stop = threading.Event()
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        signal.signal(sig, lambda *_: stop.set())
     node = GroundTruthTF()
     try:
-        rclpy.spin(node)
-    except (KeyboardInterrupt, ExternalShutdownException):
+        while not stop.is_set() and rclpy.ok():
+            rclpy.spin_once(node, timeout_sec=0.1)
+    except ExternalShutdownException:
         pass
     finally:
+        node.close()
         node.destroy_node()
         rclpy.try_shutdown()
 
