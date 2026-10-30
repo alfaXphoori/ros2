@@ -253,7 +253,7 @@ stateDiagram-v2
       time.sleep(STEP_PERIOD)  # OK here: other executor threads keep serving cancel/goals
   ```
   `_stop_requested()` คืน `True` เมื่อ Goal ถูก Preempt ไปแล้ว (`not goal_handle.is_active`) หรือเมื่อ `goal_handle.is_cancel_requested` (แล้วเรียก `goal_handle.canceled()`) — **ต้องตรวจในทุกรอบเสมอ** มิฉะนั้นหุ่นยนต์จะไม่หยุดแม้ Client สั่งยกเลิก การเปลี่ยนสถานะทั้งหมดทำภายใต้ `_goal_lock` เพื่อไม่ให้ `abort()` จากเธรดอื่นชนกับ `canceled()`/`succeed()`
-- **`main()`:** ใช้ `MultiThreadedExecutor()` แทน `rclpy.spin(node)` และใช้ Clean Shutdown แบบสัปดาห์ที่ 2
+- **`main()`:** ใช้ `MultiThreadedExecutor()` แทน `rclpy.spin(node)` และใช้ Clean Shutdown แบบสัปดาห์ที่ 2 (ลูป `executor.spin_once()` ที่ตรวจ flag) ก่อน `executor.shutdown()` จะเรียก `abort_active_goal()` เพื่อจบ Goal ที่ยังรันอยู่ ไม่อย่างนั้น executor ต้องรอจน Goal เดินครบทุก Step (0.5 s ต่อ Step)
 
 ### 2. [`navigate_action_client.py`](src/navigate_action_client.py)
 ไคลเอนต์แบบลำดับขั้น (Sequential) ที่ยังไม่บล็อก Event Loop เพราะทุกจุดที่รอใช้ `rclpy.spin_until_future_complete()`:

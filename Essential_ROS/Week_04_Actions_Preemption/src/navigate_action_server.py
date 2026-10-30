@@ -24,12 +24,7 @@ from rclpy.action import ActionServer, CancelResponse, GoalResponse
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import ExternalShutdownException, MultiThreadedExecutor
 from rclpy.node import Node
-
-
-def ignore_further_sigint():
-    """Ctrl+C under `ros2 launch` arrives twice (terminal process group + launch forwarding it).
-    Ignore later SIGINTs so they cannot interrupt the cleanup and kill us with a traceback."""
-    signal.signal(signal.SIGINT, signal.SIG_IGN)
+from rclpy.signals import SignalHandlerOptions
 
 
 STEP_PERIOD = 0.5  # seconds per "distance step"
@@ -82,6 +77,12 @@ class NavigateActionServer(Node):
             self._active_goal = goal_handle
         goal_handle.execute()
 
+    def abort_active_goal(self):
+        """On shutdown: end a running goal, so executor.shutdown() does not wait for all its steps."""
+        with self._goal_lock:
+            if self._active_goal is not None and self._active_goal.is_active:
+                self._active_goal.abort()
+
     def cancel_callback(self, goal_handle):
         self.get_logger().warn('Received request to cancel goal execution!')
         return CancelResponse.ACCEPT
@@ -132,16 +133,25 @@ class NavigateActionServer(Node):
 
 
 def main(args=None):
-    rclpy.init(args=args)
+    # Clean shutdown as in Week 2: SIGINT/SIGTERM only set a flag, the loop stops between
+    # spin_once() calls (rclpy's own handler could shut the context down mid-callback).
+    rclpy.init(args=args, signal_handler_options=SignalHandlerOptions.NO)
+    stop = threading.Event()
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        signal.signal(sig, lambda *_: stop.set())
     node = NavigateActionServer()
     executor = MultiThreadedExecutor()
     executor.add_node(node)
     try:
-        executor.spin()
-    except (KeyboardInterrupt, ExternalShutdownException):
+        while not stop.is_set() and rclpy.ok():
+            executor.spin_once(timeout_sec=0.1)
+    except ExternalShutdownException:
         pass
     finally:
-        ignore_further_sigint()
+        # stopping: ignore further signals (Python resets our handler at exit -> 2nd Ctrl+C = -2)
+        for sig in (signal.SIGINT, signal.SIGTERM):
+            signal.signal(sig, signal.SIG_IGN)
+        node.abort_active_goal()
         executor.shutdown()
         node.destroy_node()
         rclpy.try_shutdown()

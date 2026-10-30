@@ -11,11 +11,14 @@ child frame break TF's "one source per transform" rule. tf_lab.launch.py
 """
 
 import math
+import signal
+import threading
 
 import rclpy
 from geometry_msgs.msg import TransformStamped
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
+from rclpy.signals import SignalHandlerOptions
 from tf2_ros.static_transform_broadcaster import StaticTransformBroadcaster
 
 # (parent, child, xyz, rpy) -- same numbers as amr_week07/urdf/diff_drive_robot.urdf
@@ -78,19 +81,24 @@ class StaticSensorBroadcaster(Node):
 
 
 def main(args=None):
-    rclpy.init(args=args)
+    # Clean shutdown as in Week 2: SIGINT/SIGTERM only set a flag, the loop stops between
+    # spin_once() calls (rclpy's own handler could shut the context down mid-callback).
+    rclpy.init(args=args, signal_handler_options=SignalHandlerOptions.NO)
+    stop = threading.Event()
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        signal.signal(sig, lambda *_: stop.set())
     node = StaticSensorBroadcaster()
     try:
-        rclpy.spin(node)
-    except (KeyboardInterrupt, ExternalShutdownException):
-        # Ctrl+C (SIGINT) or SIGTERM: rclpy's signal handler already shut the context down
+        while not stop.is_set() and rclpy.ok():
+            rclpy.spin_once(node, timeout_sec=0.1)
+    except ExternalShutdownException:
         pass
     finally:
-        try:
-            node.destroy_node()
-            rclpy.try_shutdown()   # no "rcl_shutdown already called" if already shut down
-        except KeyboardInterrupt:
-            pass  # a second SIGINT (Ctrl+C + ros2 launch forwarding) during cleanup
+        # stopping: ignore further signals (Python resets our handler at exit -> 2nd Ctrl+C = -2)
+        for sig in (signal.SIGINT, signal.SIGTERM):
+            signal.signal(sig, signal.SIG_IGN)
+        node.destroy_node()
+        rclpy.try_shutdown()
 
 
 if __name__ == '__main__':

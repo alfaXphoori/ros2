@@ -141,34 +141,34 @@ flowchart TD
 ## 🛠️ การวิเคราะห์โค้ดตัวอย่างในโมดูล (Code Walkthrough)
 
 ### 1. [`static_sensor_broadcaster.py`](src/static_sensor_broadcaster.py)
-- **ตารางเฟรมเซนเซอร์ ([L22-L27](src/static_sensor_broadcaster.py#L22-L27)):** `SENSOR_FRAMES` เก็บ (parent, child, xyz, rpy) ของ `lidar_link`, `camera_link` และ `camera_optical_link` โดยใช้ **ตัวเลขเดียวกับ URDF ของสัปดาห์ที่ 7** ทุกประการ (มีเทสต์ `test_broadcaster_matches_week07_urdf` ตรวจ)
+- **ตารางเฟรมเซนเซอร์ ([L25-L30](src/static_sensor_broadcaster.py#L25-L30)):** `SENSOR_FRAMES` เก็บ (parent, child, xyz, rpy) ของ `lidar_link`, `camera_link` และ `camera_optical_link` โดยใช้ **ตัวเลขเดียวกับ URDF ของสัปดาห์ที่ 7** ทุกประการ (มีเทสต์ `test_broadcaster_matches_week07_urdf` ตรวจ)
 - **การใช้ `StaticTransformBroadcaster`:** ส่งข้อมูลเข้าสู่ `/tf_static` ด้วย QoS Transient Local (Latching) — ผู้ฟังที่เปิดทีหลังก็ยังได้รับ
-- **การหมุน Optical Frame ตาม REP 103 ([L30-L41](src/static_sensor_broadcaster.py#L30-L41)):**
+- **การหมุน Optical Frame ตาม REP 103 ([L33-L44](src/static_sensor_broadcaster.py#L33-L44)):**
   ```python
   ('camera_link', 'camera_optical_link', (0.0, 0.0, 0.0), (-math.pi / 2, 0.0, -math.pi / 2)),
   q = euler_to_quaternion(-math.pi / 2, 0.0, -math.pi / 2)   # -> (-0.5, 0.5, -0.5, 0.5)
   ```
   หมุนแกนพิกัดเพื่อให้ระบบกล้องชี้แกน Z พุ่งไปข้างหน้าและแกน X ชี้ไปทางขวาตามมาตรฐานสากล (มีเทสต์ `test_rep103_optical_quaternion`)
-- **การส่งข้อมูลรวมเป็นชุด ([L64](src/static_sensor_broadcaster.py#L64)):**
+- **การส่งข้อมูลรวมเป็นชุด ([L67](src/static_sensor_broadcaster.py#L67)):**
   เรียก `self._tf_publisher.sendTransform(transforms)` เพียงคำสั่งเดียวเพื่อบรอดแคสต์ทรานส์ฟอร์มทั้งหมดพร้อมกัน
 
 > [!IMPORTANT]
 > **แหล่งเดียวต่อหนึ่ง Transform (Single Source):** เฟรม `lidar_link`, `camera_link`, `camera_optical_link` มีอยู่แล้วใน `diff_drive_robot.urdf` ซึ่ง `robot_state_publisher` เผยแพร่ให้อัตโนมัติ ถ้าเปิดโหนดนี้ **พร้อมกับ** `robot_state_publisher` จะมีสองโหนดประกาศ Parent-Child คู่เดียวกัน ค่าที่อยู่ใน Buffer จะขึ้นกับว่าใครส่งมาทีหลัง และถ้าค่าไม่ตรงกันจะเกิดอาการกระพริบ/`TF_REPEATED_DATA`
 > ในแล็บนี้จึงใช้ [`launch/tf_lab.launch.py`](launch/tf_lab.launch.py) ซึ่งเลือกเปิด **แหล่งเดียว**: `tf_source:=broadcaster` (โหนดนี้ — ใช้ตอนยังไม่มี URDF หรือสำหรับเซนเซอร์ที่ติดเพิ่มภายหลัง เช่น Sonar ใน Lab 9.4) หรือ `tf_source:=urdf` (`robot_state_publisher` จากแพ็กเกจ `amr_week07`) — ทั้งสองแบบให้ผล $(1.40, 0.30)$ เหมือนกัน และโหนด Broadcaster จะพิมพ์ ERROR เตือนถ้าตรวจพบ `/robot_description` (มี `robot_state_publisher` รันอยู่)
 
-- **การปิดโหนดอย่างถูกต้อง ([L80-L94](src/static_sensor_broadcaster.py#L80-L94)):** ใน Jazzy, rclpy ติดตั้ง Signal Handler ทั้ง SIGINT และ SIGTERM ซึ่งจะ `shutdown` context ให้เองแล้วโยน `KeyboardInterrupt` หรือ `ExternalShutdownException` ออกจาก `rclpy.spin()` โค้ดเดิมเรียก `rclpy.shutdown()` ซ้ำใน `finally` จึงเกิด `RCLError: rcl_shutdown already called` ทุกครั้งที่ถูก `docker stop`/`kill` โค้ดใหม่จับทั้งสอง Exception และใช้ `rclpy.try_shutdown()` (เทสต์ `test_shutdown_signals.py` ส่ง SIGTERM/SIGINT จริงและตรวจว่า exit code = 0 ไม่มี Traceback)
+- **การปิดโหนดอย่างถูกต้อง ([L83-L101](src/static_sensor_broadcaster.py#L83-L101)):** ใช้แบบเดียวกับสัปดาห์ที่ 2 หัวข้อ 3: ปิด Signal Handler ของ rclpy (`SignalHandlerOptions.NO`) แล้วให้ SIGINT/SIGTERM แค่ตั้ง flag ที่ลูป `spin_once()` ตรวจ ถ้าปล่อยให้ Signal Handler ของ rclpy `shutdown` context เอง context อาจถูกปิดระหว่างที่ `spin()` กำลังดึงข้อความ (exit code 1) และถ้าเรียก `rclpy.shutdown()` ซ้ำใน `finally` จะเกิด `RCLError: rcl_shutdown already called` จึงใช้ `rclpy.try_shutdown()` (เทสต์ `test_shutdown_signals.py` ส่ง SIGTERM/SIGINT จริงและตรวจว่า exit code = 0 ไม่มี Traceback)
 
 ---
 
 ### 2. [`tf_obstacle_listener.py`](src/tf_obstacle_listener.py)
-- **การสร้าง TF Buffer และ TransformListener ([L28-L31](src/tf_obstacle_listener.py#L28-L31)):**
+- **การสร้าง TF Buffer และ TransformListener ([L32-L35](src/tf_obstacle_listener.py#L32-L35)):**
   ```python
   self.tf_buffer = tf2_ros.Buffer()
   self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
   ```
   `TransformListener` สร้าง Subscription ของ `/tf` และ `/tf_static` (`/tf_static` ใช้ QoS Transient Local) **บนโหนดที่ส่งเข้าไป** แล้วนำข้อความไปอัปเดตลงใน Buffer
   ใน ROS 2 Jazzy ลายเซ็นคือ `TransformListener(buffer, node, *, spin_thread=False, qos=None, static_qos=None)` — ค่าเริ่มต้น **ไม่สร้างเธรดเบื้องหลัง** Subscription ทั้งสองจึงถูกประมวลผลโดย Executor ที่ spin โหนดนี้อยู่ (`rclpy.spin(node)` ใน `main()`) ถ้าโหนดไม่ถูก spin Buffer จะว่างตลอด หากต้องการเธรดแยก (เช่น เรียก `lookup_transform` แบบรอใน callback) ให้ส่ง `spin_thread=True` หรือใช้ `MultiThreadedExecutor`
-- **การแปลงพิกัดจุดสิ่งกีดขวาง ([L39-L52](src/tf_obstacle_listener.py#L39-L52)):**
+- **การแปลงพิกัดจุดสิ่งกีดขวาง ([L43-L56](src/tf_obstacle_listener.py#L43-L56)):**
   ```python
   pt_in_camera.header.stamp = Time().to_msg()   # time 0 = transform ล่าสุด
   pt_in_base = self.tf_buffer.transform(pt_in_camera, TARGET_FRAME)

@@ -67,7 +67,7 @@ flowchart TD
 ```
 
 #### ทำไม `rclpy.spin(node)` จึงเป็นหัวใจสำคัญ?
-- `rclpy.spin(node)` คือการรัน **Event Loop** แบบบล็อกรอสัญญาณ (Event-Driven Loop)
+- `rclpy.spin(node)` คือการรัน **Event Loop** แบบบล็อกรอสัญญาณ (Event-Driven Loop) ส่วน `rclpy.spin_once(node, timeout_sec=0.1)` คือ Event Loop เดียวกันแต่ทำทีละรอบ โค้ดในแล็บใช้แบบหลังใน `main()` เพื่อให้ปิดโหนดได้สะอาด (ดูหัวข้อ 3)
 - หน้าที่ของมันคือการคอยตรวจสอบว่ามี "เหตุการณ์ (Event)" ใดเกิดขึ้นหรือไม่ เช่น:
   - ตัวนับเวลา (Timer) เดินมาถึงเวลาที่กำหนดหรือยัง?
   - มีแพ็กเก็ตข้อมูลใหม่ส่งเข้ามาทางเครือข่ายสำหรับ Subscription หรือไม่?
@@ -233,20 +233,26 @@ self.sub_state = self.create_subscription(
 ### 3. การปิดโหนดอย่างถูกวิธี (Clean Shutdown)
 ```python
 def main(args=None):
-    rclpy.init(args=args)
+    rclpy.init(args=args, signal_handler_options=SignalHandlerOptions.NO)
+    stop = threading.Event()
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        signal.signal(sig, lambda *_: stop.set())    # only raise a flag
     node = SensorQoSPublisher()
     try:
-        rclpy.spin(node)
-    except (KeyboardInterrupt, ExternalShutdownException):
-        pass                         # Ctrl+C (SIGINT) or SIGTERM
+        while not stop.is_set() and rclpy.ok():
+            rclpy.spin_once(node, timeout_sec=0.1)   # the same event loop, one step at a time
+    except ExternalShutdownException:
+        pass
     finally:
-        ignore_further_sigint()      # 2nd Ctrl+C from `ros2 launch` must not break cleanup
+        for sig in (signal.SIGINT, signal.SIGTERM):
+            signal.signal(sig, signal.SIG_IGN)       # stopping: ignore further signals
         node.destroy_node()
-        rclpy.try_shutdown()         # no 'rcl_shutdown already called' traceback
+        rclpy.try_shutdown()
 ```
-- rclpy ติดตั้ง Signal Handler ของตัวเองสำหรับ `SIGINT` และ `SIGTERM`: เมื่อได้รับสัญญาณ จะ **shutdown context ให้ก่อนแล้ว** `spin()` จึงจบด้วย `KeyboardInterrupt` (Ctrl+C) หรือ `ExternalShutdownException` (เช่น `docker stop`/`kill` ส่ง SIGTERM)
-- ถ้าเรียก `rclpy.shutdown()` ซ้ำจะเกิด `RCLError: rcl_shutdown already called` ให้ใช้ `rclpy.try_shutdown()` แทน
-- เมื่อกด Ctrl+C ที่ `ros2 launch` โหนดลูกจะได้ SIGINT **สองครั้ง** (จาก Terminal ทั้ง Process Group และจาก launch ที่ส่งต่อให้) ครั้งที่สองอาจมาระหว่าง `destroy_node()` แล้วทำให้เกิด Traceback — `ignore_further_sigint()` จึงตั้ง `SIGINT` เป็น `SIG_IGN` ก่อนเริ่มเก็บกวาด
+- **ปัญหาของค่าเริ่มต้น:** ถ้าเรียก `rclpy.init()` เฉยๆ rclpy จะติดตั้ง Signal Handler ของตัวเองสำหรับ `SIGINT` และ `SIGTERM` ซึ่ง **shutdown context ทันที** ที่ได้สัญญาณ ถ้าจังหวะนั้น `spin()` กำลังดึงข้อความออกจาก Subscription อยู่ จะเกิด `RuntimeError: Unable to convert call argument '0'` แล้วโหนดจบด้วย exit code 1 (เกิดไม่บ่อยแต่เกิดจริง: ทดสอบส่ง SIGINT ซ้ำ 120 ครั้งกับโหนดในคอร์สนี้ เจอ 2 ครั้ง และเคยทำให้ launch test ของ Capstone ล้ม)
+- **วิธีแก้:** ปิด Signal Handler ของ rclpy (`SignalHandlerOptions.NO`) แล้วให้ `SIGINT`/`SIGTERM` แค่ตั้ง flag ลูป `spin_once()` จะเห็น flag ในรอบถัดไป (ไม่เกิน 0.1 s) แล้วออกมาเก็บกวาดตอนที่ context ยังใช้งานได้ ทั้ง Ctrl+C และ `docker stop`/`kill` จึงจบด้วย exit code 0
+- เมื่อกด Ctrl+C ที่ `ros2 launch` โหนดลูกจะได้ SIGINT **สองครั้ง** (จาก Terminal ทั้ง Process Group และจาก launch ที่ส่งต่อให้) ถ้าครั้งที่สองมาระหว่างลูป ก็แค่ตั้ง flag ซ้ำ แต่ถ้ามาตอนเก็บกวาดหรือตอน Python ปิดตัว จะมีปัญหา เพราะตอนปิดตัว Python คืน Handler ที่เป็นฟังก์ชัน Python กลับเป็นค่าเริ่มต้น SIGINT ครั้งที่สองจะฆ่าโหนดทันที (exit code -2) บล็อก `finally` จึงตั้งทั้งสองสัญญาณเป็น `SIG_IGN` ก่อนเริ่มเก็บกวาด (Python ไม่คืนค่า `SIG_IGN`)
+- `rclpy.try_shutdown()` ไม่ error แม้ context ถูกปิดไปแล้ว (ต่างจาก `rclpy.shutdown()` ที่จะเกิด `RCLError: rcl_shutdown already called`) ส่วน `ExternalShutdownException` ยังต้องจับไว้ เผื่อมีโค้ดอื่นเรียก `rclpy.shutdown()` ระหว่าง spin
 - [`test/test_processes.py`](test/test_processes.py) ทดสอบทั้งกรณี SIGTERM และ SIGINT สองครั้งติดกัน (exit code ต้องเป็น 0 และไม่มี Traceback)
 
 ---

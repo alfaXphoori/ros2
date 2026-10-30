@@ -17,12 +17,16 @@ Run:  ros2 run amr_adv02 object_detector
       ros2 run amr_adv02 object_detector --ros-args -p backend:=yolo -p model:=yolov8n.pt
 """
 
+import signal
+import threading
+
 import cv2
 import rclpy
 from cv_bridge import CvBridge, CvBridgeError
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
+from rclpy.signals import SignalHandlerOptions
 from sensor_msgs.msg import Image
 from vision_msgs.msg import Detection2D, Detection2DArray, ObjectHypothesisWithPose
 
@@ -121,14 +125,24 @@ class ObjectDetectorNode(Node):
 
 
 def main(args=None):
-    rclpy.init(args=args)
+    # SIGINT/SIGTERM only set a flag that the loop checks between spin_once() calls. With
+    # rclpy's own handler the context could be shut down while a message was being taken
+    # (RuntimeError in take_message -> exit code 1 at the end of a launch test).
+    rclpy.init(args=args, signal_handler_options=SignalHandlerOptions.NO)
+    stop = threading.Event()
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        signal.signal(sig, lambda *_: stop.set())
     node = None
     try:
         node = ObjectDetectorNode()
-        rclpy.spin(node)
-    except (KeyboardInterrupt, ExternalShutdownException):
+        while not stop.is_set() and rclpy.ok():
+            rclpy.spin_once(node, timeout_sec=0.1)
+    except ExternalShutdownException:
         pass
     finally:
+        # stopping: ignore further signals (Python resets our handler at exit -> 2nd Ctrl+C = -2)
+        for sig in (signal.SIGINT, signal.SIGTERM):
+            signal.signal(sig, signal.SIG_IGN)
         if node is not None:
             node.destroy_node()
         rclpy.try_shutdown()

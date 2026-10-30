@@ -7,19 +7,15 @@ and robot state (RELIABLE + TRANSIENT_LOCAL, i.e. "latched" for late joiners).
 
 import random
 import signal
+import threading
 
 import rclpy
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from rclpy.qos import (DurabilityPolicy, HistoryPolicy, QoSProfile, ReliabilityPolicy,
                        qos_profile_sensor_data)
+from rclpy.signals import SignalHandlerOptions
 from std_msgs.msg import Float32, String
-
-
-def ignore_further_sigint():
-    """Ctrl+C under `ros2 launch` arrives twice (terminal process group + launch forwarding it).
-    Ignore later SIGINTs so they cannot interrupt the cleanup and kill us with a traceback."""
-    signal.signal(signal.SIGINT, signal.SIG_IGN)
 
 
 # Critical robot state: guaranteed delivery + keep the last value for late-joining subscribers
@@ -68,17 +64,27 @@ class SensorQoSPublisher(Node):
 
 
 def main(args=None):
-    rclpy.init(args=args)
+    # Clean shutdown (Week 2 Readme, section 3): rclpy's default SIGINT/SIGTERM handler shuts the
+    # context down at once, even while spin() is taking a message (RuntimeError -> exit code 1).
+    # Here the signals only set a flag; the loop stops between spin_once() calls, and a second
+    # Ctrl+C from `ros2 launch` cannot interrupt the cleanup.
+    rclpy.init(args=args, signal_handler_options=SignalHandlerOptions.NO)
+    stop = threading.Event()
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        signal.signal(sig, lambda *_: stop.set())
     node = SensorQoSPublisher()
     try:
-        rclpy.spin(node)
-    except (KeyboardInterrupt, ExternalShutdownException):
-        # Ctrl+C (SIGINT) or SIGTERM: rclpy's signal handler already shut the context down
+        while not stop.is_set() and rclpy.ok():
+            rclpy.spin_once(node, timeout_sec=0.1)
+    except ExternalShutdownException:
         pass
     finally:
-        ignore_further_sigint()
+        # We are stopping: ignore further signals. At interpreter exit Python resets our flag
+        # handler to the default action, so a 2nd Ctrl+C from `ros2 launch` would kill us (-2).
+        for sig in (signal.SIGINT, signal.SIGTERM):
+            signal.signal(sig, signal.SIG_IGN)
         node.destroy_node()
-        rclpy.try_shutdown()  # no 'rcl_shutdown already called' traceback
+        rclpy.try_shutdown()
 
 
 if __name__ == '__main__':

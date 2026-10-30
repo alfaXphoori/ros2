@@ -12,19 +12,15 @@ Accepted values are applied in a post-set callback and the active speed limit is
 """
 
 import signal
+import threading
 
 import rclpy
 from rcl_interfaces.msg import ParameterDescriptor, SetParametersResult
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from rclpy.qos import DurabilityPolicy, QoSProfile
+from rclpy.signals import SignalHandlerOptions
 from std_msgs.msg import Float64
-
-
-def ignore_further_sigint():
-    """Ctrl+C under `ros2 launch` arrives twice (terminal process group + launch forwarding it).
-    Ignore later SIGINTs so they cannot interrupt the cleanup and kill us with a traceback."""
-    signal.signal(signal.SIGINT, signal.SIG_IGN)
 
 
 SPEED_RANGE = (0.1, 2.5)   # m/s
@@ -98,14 +94,22 @@ class FleetParametersNode(Node):
 
 
 def main(args=None):
-    rclpy.init(args=args)
+    # Clean shutdown as in Week 2: SIGINT/SIGTERM only set a flag, the loop stops between
+    # spin_once() calls (rclpy's own handler could shut the context down mid-callback).
+    rclpy.init(args=args, signal_handler_options=SignalHandlerOptions.NO)
+    stop = threading.Event()
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        signal.signal(sig, lambda *_: stop.set())
     node = FleetParametersNode()
     try:
-        rclpy.spin(node)
-    except (KeyboardInterrupt, ExternalShutdownException):
+        while not stop.is_set() and rclpy.ok():
+            rclpy.spin_once(node, timeout_sec=0.1)
+    except ExternalShutdownException:
         pass
     finally:
-        ignore_further_sigint()
+        # stopping: ignore further signals (Python resets our handler at exit -> 2nd Ctrl+C = -2)
+        for sig in (signal.SIGINT, signal.SIGTERM):
+            signal.signal(sig, signal.SIG_IGN)
         node.destroy_node()
         rclpy.try_shutdown()
 

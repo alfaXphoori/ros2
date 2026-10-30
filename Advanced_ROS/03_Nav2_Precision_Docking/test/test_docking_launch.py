@@ -52,8 +52,15 @@ class TestDocking(unittest.TestCase):
         req = SetParameters.Request()
         req.parameters = [Parameter(name='tag_visible', value=ParameterValue(
             type=ParameterType.PARAMETER_BOOL, bool_value=visible))]
-        fut = srv.call_async(req)
-        rclpy.spin_until_future_complete(self.client, fut, timeout_sec=10.0)
+        # Retry: right after wait_for_service() the server may not see our response reader yet
+        # and drops the reply ("failed to send response (timeout)" in its log). Setting the same
+        # value twice is harmless.
+        for _ in range(3):
+            fut = srv.call_async(req)
+            rclpy.spin_until_future_complete(self.client, fut, timeout_sec=5.0)
+            if fut.result() is not None:
+                break
+        self.assertIsNotNone(fut.result(), 'no reply from synthetic_tag_camera/set_parameters')
         self.assertTrue(fut.result().results[0].successful)
         end = time.monotonic() + 1.5  # let the old detections expire
         while time.monotonic() < end:

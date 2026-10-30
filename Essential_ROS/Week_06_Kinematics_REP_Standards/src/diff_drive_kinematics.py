@@ -8,12 +8,14 @@ Frames follow REP 103 (m, rad, s) and REP 105 (odom), base_footprint from REP 12
 """
 
 import signal
+import threading
 
 import rclpy
 from geometry_msgs.msg import TransformStamped, Twist
 from nav_msgs.msg import Odometry
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
+from rclpy.signals import SignalHandlerOptions
 from tf2_ros import TransformBroadcaster
 
 try:  # installed package (ros2 run amr_week06 ...)
@@ -22,12 +24,6 @@ try:  # installed package (ros2 run amr_week06 ...)
 except ImportError:  # python3 src/diff_drive_kinematics.py
     from kinematics import (INTEGRATORS, forward_kinematics, inverse_kinematics,
                             yaw_to_quaternion)
-
-
-def ignore_further_sigint():
-    """Ctrl+C under `ros2 launch` arrives twice (terminal process group + launch forwarding it).
-    Ignore later SIGINTs so they cannot interrupt the cleanup and kill us with a traceback."""
-    signal.signal(signal.SIGINT, signal.SIG_IGN)
 
 
 class DiffDriveKinematics(Node):
@@ -132,14 +128,22 @@ class DiffDriveKinematics(Node):
 
 
 def main(args=None):
-    rclpy.init(args=args)
+    # Clean shutdown as in Week 2: SIGINT/SIGTERM only set a flag, the loop stops between
+    # spin_once() calls (rclpy's own handler could shut the context down mid-callback).
+    rclpy.init(args=args, signal_handler_options=SignalHandlerOptions.NO)
+    stop = threading.Event()
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        signal.signal(sig, lambda *_: stop.set())
     node = DiffDriveKinematics()
     try:
-        rclpy.spin(node)
-    except (KeyboardInterrupt, ExternalShutdownException):
+        while not stop.is_set() and rclpy.ok():
+            rclpy.spin_once(node, timeout_sec=0.1)
+    except ExternalShutdownException:
         pass
     finally:
-        ignore_further_sigint()
+        # stopping: ignore further signals (Python resets our handler at exit -> 2nd Ctrl+C = -2)
+        for sig in (signal.SIGINT, signal.SIGTERM):
+            signal.signal(sig, signal.SIG_IGN)
         node.destroy_node()
         rclpy.try_shutdown()
 

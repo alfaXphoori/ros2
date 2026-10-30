@@ -8,12 +8,16 @@ Lecture example: camera_link is 0.20 m ahead / 0.02 m above base_link, so the
 point (1.2, 0.3, 0.0) in camera_link is (1.40, 0.30, 0.02) in base_link.
 """
 
+import signal
+import threading
+
 import rclpy
 import tf2_geometry_msgs  # noqa: F401  registers PointStamped with Buffer.transform()
 import tf2_ros
 from geometry_msgs.msg import PointStamped
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
+from rclpy.signals import SignalHandlerOptions
 from rclpy.time import Time
 
 SOURCE_FRAME = 'camera_link'
@@ -54,18 +58,24 @@ class TfObstacleListener(Node):
 
 
 def main(args=None):
-    rclpy.init(args=args)
+    # Clean shutdown as in Week 2: SIGINT/SIGTERM only set a flag, the loop stops between
+    # spin_once() calls (rclpy's own handler could shut the context down mid-callback).
+    rclpy.init(args=args, signal_handler_options=SignalHandlerOptions.NO)
+    stop = threading.Event()
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        signal.signal(sig, lambda *_: stop.set())
     node = TfObstacleListener()
     try:
-        rclpy.spin(node)
-    except (KeyboardInterrupt, ExternalShutdownException):
+        while not stop.is_set() and rclpy.ok():
+            rclpy.spin_once(node, timeout_sec=0.1)
+    except ExternalShutdownException:
         pass
     finally:
-        try:
-            node.destroy_node()
-            rclpy.try_shutdown()
-        except KeyboardInterrupt:
-            pass  # a second SIGINT (Ctrl+C + ros2 launch forwarding) during cleanup
+        # stopping: ignore further signals (Python resets our handler at exit -> 2nd Ctrl+C = -2)
+        for sig in (signal.SIGINT, signal.SIGTERM):
+            signal.signal(sig, signal.SIG_IGN)
+        node.destroy_node()
+        rclpy.try_shutdown()
 
 
 if __name__ == '__main__':

@@ -126,6 +126,9 @@ def main(args=None):
     except ExternalShutdownException:
         pass
     finally:
+        # stopping: ignore further signals (Python resets our handler at exit -> 2nd Ctrl+C = -2)
+        for sig in (signal.SIGINT, signal.SIGTERM):
+            signal.signal(sig, signal.SIG_IGN)
         node.close()
         node.destroy_node()
         rclpy.try_shutdown()

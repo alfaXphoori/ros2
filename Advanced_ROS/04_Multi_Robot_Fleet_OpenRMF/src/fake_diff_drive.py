@@ -18,12 +18,15 @@ frames must be made unique with frame_prefix instead.
 """
 
 import math
+import signal
+import threading
 
 import rclpy
 from geometry_msgs.msg import TransformStamped, Twist
 from nav_msgs.msg import Odometry
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
+from rclpy.signals import SignalHandlerOptions
 from sensor_msgs.msg import JointState
 from tf2_ros import TransformBroadcaster
 
@@ -133,13 +136,23 @@ class FakeDiffDrive(Node):
 
 
 def main(args=None):
-    rclpy.init(args=args)
+    # SIGINT/SIGTERM only set a flag that the loop checks between spin_once() calls. With
+    # rclpy's own handler the context could be shut down while a message was being taken
+    # (RuntimeError in take_message -> exit code 1 at the end of a launch test).
+    rclpy.init(args=args, signal_handler_options=SignalHandlerOptions.NO)
+    stop = threading.Event()
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        signal.signal(sig, lambda *_: stop.set())
     node = FakeDiffDrive()
     try:
-        rclpy.spin(node)
-    except (KeyboardInterrupt, ExternalShutdownException):
+        while not stop.is_set() and rclpy.ok():
+            rclpy.spin_once(node, timeout_sec=0.1)
+    except ExternalShutdownException:
         pass
     finally:
+        # stopping: ignore further signals (Python resets our handler at exit -> 2nd Ctrl+C = -2)
+        for sig in (signal.SIGINT, signal.SIGTERM):
+            signal.signal(sig, signal.SIG_IGN)
         node.destroy_node()
         rclpy.try_shutdown()
 
