@@ -78,7 +78,7 @@ flowchart TD
 | 8 | Midterm | โมดูล 01 + 02 | ✅ ใช้แล็บ 01–02 เป็นฐาน (วัด CPU/latency บนเครื่องผู้เรียน ไม่กำหนดให้ใช้ GPU) |
 | 9 | Nav2 Docking | [03 Docking](Advanced_ROS/03_Nav2_Precision_Docking/README.md) `amr_adv03` | ✅ `opennav_docking` จริง + vision ในลูป, วัดจริง 11.4–14.5 mm |
 | 10 | Behavior Trees | `amr_adv03` (`dock_and_charge_bt.xml`, `check_bt`) + Essential [Week 15](Essential_ROS/Week_15_Waypoint_Patrol_BT/Readme.md) | ✅ BT ผ่านการตรวจกับ node ที่ติดตั้งจริง; custom BT โหลดใน `bt_navigator` จริงใน Week 15 |
-| 11 | Costmap Filters | Essential [Week 13](Essential_ROS/Week_13_Nav2_Costmaps_Layers/Readme.md) (costmap พื้นฐาน) | 🟡 Keepout/Speed filter เป็นแบบฝึกหัดต่อยอดจาก Week 13 (ยังไม่มีไฟล์ mask ใน repo) |
+| 11 | Costmap Filters | Essential [Week 13](Essential_ROS/Week_13_Nav2_Costmaps_Layers/Readme.md) (`amr_week13`) | ✅ `costmap_filters_demo.launch.py` (`KeepoutFilter` + `SpeedFilter` พร้อม mask จริงและ `test_costmap_filters.py`) |
 | 12–13 | Multi-robot & Open-RMF | [04 Fleet](Advanced_ROS/04_Multi_Robot_Fleet_OpenRMF/README.md) `amr_adv04` | ✅ 2–3 หุ่นยนต์ namespaced + config RMF ผ่าน parser จริงของ `rmf_fleet_adapter` 2.7.2 |
 | 14–15 | Lifecycle, SROS 2, CI/CD | [05 Production](Advanced_ROS/05_Production_CI_CD_Security/README.md) `amr_adv05` | ✅ lifecycle launch_test, SROS 2 Enforce จริง, DDS vs Zenoh |
 | 16 | Capstone | [06 Capstone](Advanced_ROS/06_Capstone_Project/Readme.md) `amr_adv06` | ✅ ระบบคลังสินค้าบูรณาการ headless (ดูผลรันจริงในโมดูล) |

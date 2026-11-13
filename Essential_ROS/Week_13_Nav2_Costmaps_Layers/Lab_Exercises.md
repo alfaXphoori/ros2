@@ -183,3 +183,18 @@ wrote images/global_costmap_real.png
 *ภาพ: `/global_costmap/costmap` จากการรันจริงข้างต้น บันทึกด้วย `costmap_snapshot --png`*
 
 ---
+
+### ส่วนเสริม (Advanced Week 11): Nav2 Costmap Filters (Keep-out & Speed Restricted Zones)
+แพ็กเกจ `amr_week13` มีแล็บเสริมสำหรับ **KeepoutFilter** และ **SpeedFilter** พร้อมไฟล์ mask จริง:
+* [`maps/keepout_mask.yaml`](maps/keepout_mask.yaml) (`keepout_mask.pgm`): พื้นที่ห้ามเข้า `[1.0, 2.5] x [-2.5, -1.0]`
+* [`maps/speed_mask.yaml`](maps/speed_mask.yaml) (`speed_mask.pgm`): พื้นที่จำกัดความเร็ว 50% รอบจุดกำเนิด `[-1.0, 1.0] x [-1.0, 1.0]`
+* [`config/costmap_filters_params.yaml`](config/costmap_filters_params.yaml) และ [`launch/costmap_filters_demo.launch.py`](launch/costmap_filters_demo.launch.py)
+
+```bash
+ros2 launch amr_week13 costmap_filters_demo.launch.py
+# ในอีก terminal:
+ros2 topic echo --once /speed_limit
+colcon test --base-paths Essential_ROS --packages-select amr_week13
+```
+
+---
