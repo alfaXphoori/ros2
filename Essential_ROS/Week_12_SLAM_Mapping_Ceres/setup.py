@@ -27,6 +27,7 @@ setup(
         'console_scripts': [
             'explore_warehouse = amr_week12.explore_warehouse:main',
             'render_map = amr_week12.map_tools:main',
+            'slam_lifecycle_guard = amr_week12.slam_lifecycle_guard:main',
         ],
     },
 )

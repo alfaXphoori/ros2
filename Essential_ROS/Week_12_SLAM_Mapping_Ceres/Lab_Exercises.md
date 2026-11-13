@@ -46,6 +46,12 @@
    [async_slam_toolbox_node-5] [INFO] [1793243178.422905473] [slam_toolbox]: Activating
    [async_slam_toolbox_node-5] Registering sensor: [Custom Described Lidar]
    ```
+   launch file นี้เปิด `slam_lifecycle_guard` ไปด้วย ซึ่งแค่ตรวจว่าโหนดเป็น `active` แล้วก็จบ (log จริงจากการรัน `test_slam_launch.py` ซึ่งเปิดผ่าน `slam_mapping_sim.launch.py` เลขโปรเซสจึงต่างจากข้างบน):
+   ```text
+   [slam_lifecycle_guard-6] [INFO] [1793371471.763302618] [slam_lifecycle_guard]: slam_toolbox is ACTIVE
+   [INFO] [slam_lifecycle_guard-6]: process has finished cleanly [pid 59]
+   ```
+   *(ถ้าเห็น WARN `still inactive ... sending its transitions directly` แปลว่า autostart ของ launch พลาด และ guard สั่ง activate ให้เอง ดู Readme หัวข้อ 2)*
    ตรวจสถานะ Lifecycle และพารามิเตอร์ที่โหนดใช้อยู่จริง:
    ```bash
    ./docker/run_lab.sh ros2 lifecycle get /slam_toolbox                  # active [3]

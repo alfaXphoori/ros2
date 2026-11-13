@@ -159,6 +159,8 @@ launch file นี้จึง include `online_async_launch.py` ของ slam_t
 ros2 launch amr_week12 online_async_slam.launch.py
 ros2 lifecycle get /slam_toolbox        # ต้องได้ active [3]
 ```
+- **จุดอ่อนของ autostart:** launch จะสั่ง `activate` ก็ต่อเมื่อได้รับ message `/slam_toolbox/transition_event` ว่า "configuring → inactive" แล้วเท่านั้น ถ้า message นี้หายระหว่าง DDS discovery โหนดจะค้างอยู่ `inactive` ตลอดไปและไม่มี `/map` (เกิดจริง 1 ใน 5 รอบของ `make check`: log มี `Configuring` แต่ไม่มีบรรทัด `[LifecycleLaunch] Slamtoolbox node is activating.`)
+- launch file นี้จึงเปิด [`src/slam_lifecycle_guard.py`](src/slam_lifecycle_guard.py) ไปด้วย: guard ถาม `/slam_toolbox/get_state` ทุก 0.5 s ถ้าโหนดค้างอยู่ `unconfigured`/`inactive` นานเกิน `heal_after` (15 s) จะสั่ง transition ที่ขาดไปเองผ่าน `/slam_toolbox/change_state` แล้ว log เป็น WARN และจะจบด้วย exit code 0 ทันทีที่โหนดเป็น `active` (ปกติภายใน 1 s โดยไม่ต้องทำอะไร) ส่วน `nav2_lifecycle_guard` ของสัปดาห์ที่ 14 ใช้หลักการเดียวกันกับโหนดของ Nav2
 
 ### 3. [`launch/slam_mapping_sim.launch.py`](launch/slam_mapping_sim.launch.py) และ [`src/explore_warehouse.py`](src/explore_warehouse.py)
 รวม simulation (สัปดาห์ที่ 11) + SLAM ในคำสั่งเดียว และ (เมื่อ `explore:=true`) สคริปต์ขับสำรวจอัตโนมัติ `explore_warehouse` ที่ขับตามเส้นทางตายตัว 9 ขั้น: หมุนรอบตัว → ไปหลังเสา $(0, 3.3)$ → มุมทั้ง 4 ของโกดัง → กลับจุดเริ่ม (ปิดวงรอบเพื่อ Loop Closure)
@@ -258,6 +260,7 @@ recall_tol: 0.894
 | 3 | **คำสั่ง `map_saver_cli` แจ้ง `Failed to spin map subscription`** | ไม่ได้รับ `/map` ภายใน `save_map_timeout` (ค่าเริ่มต้น 2 s) — เกิดได้เมื่อ simulation ช้า หรือ SLAM ยังไม่ active | ตรวจ `ros2 lifecycle get /slam_toolbox` แล้วสั่งใหม่พร้อม `--ros-args -p use_sim_time:=true -p save_map_timeout:=10.0` (เกิดขึ้นจริงระหว่างการเตรียมแล็บนี้) |
 | 7 | **ไม่มี `/map` เลย และ `ros2 lifecycle get /slam_toolbox` ได้ `unconfigured`** | เปิด slam_toolbox ด้วย `Node` ธรรมดา (เป็น Lifecycle Node ตั้งแต่ Jazzy) | ใช้ `online_async_slam.launch.py` ของแพ็กเกจนี้ (include `online_async_launch.py` ของ slam_toolbox) |
 | 8 | **พารามิเตอร์ใน YAML ไม่มีผล** | คีย์บนสุดของไฟล์ไม่ตรงกับชื่อโหนด (`async_slam_toolbox_node` ≠ `slam_toolbox`) | ใช้คีย์ `slam_toolbox:` และตรวจด้วย `ros2 param get /slam_toolbox max_laser_range` |
+| 9 | **`ros2 lifecycle get /slam_toolbox` ค้างที่ `inactive` และไม่มี `/map`** (log มี `Configuring` แต่ไม่มี `Activating`) | launch ไม่ได้รับ `transition_event` "configuring → inactive" จึงไม่สั่ง activate | `slam_lifecycle_guard` สั่ง activate เองหลัง 15 s (ดู WARN ใน log) หรือสั่งเองด้วย `ros2 lifecycle set /slam_toolbox activate` |
 | 4 | **Loop Closure ไม่ยอมทำงาน แม้หุ่นยนต์จะขับวนกลับมาจุดเดิมแล้ว** | ค่า `loop_search_maximum_distance` สั้นเกินไป หรือเกณฑ์ Correlation สูงเกินไป | ปรับเพิ่มระยะค้นหา Loop Search Distance ในไฟล์ YAML ให้ครอบคลุมรัศมีทางเดิน |
 | 5 | **แผนที่มีจุดดำกระจายสกปรกเต็มทางเดินโล่ง (Salt-and-Pepper Noise)** | ลำแสงเลเซอร์ LiDAR มี Noise สูง หรือมีเศษฝุ่นสะท้อน | ปรับเพิ่มค่า `minimum_distance_penalty` หรือฟิลเตอร์กรอง Range ของเลเซอร์ |
 | 6 | **ไฟล์แผนที่ถูกตัดขอบขาดหายไปบางส่วน** | พื้นที่โกดังใหญ่เกินกว่าพิกัด Bounding Box ตั้งต้น | SLAM Toolbox จะขยายแผนที่ให้อัตโนมัติ (Dynamic Resizing) แต่ต้องขับหุ่นยนต์สำรวจให้ทั่ว |

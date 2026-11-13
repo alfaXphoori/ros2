@@ -110,12 +110,19 @@ class TestSlam(unittest.TestCase):
 @launch_testing.post_shutdown_test()
 class TestShutdown(unittest.TestCase):
 
-    def test_exit_codes(self, proc_info):
+    def test_exit_codes(self, proc_info, proc_output):
         # Nodes must exit cleanly. gz sim (process 'gazebo') sometimes ignores SIGINT and
         # SIGTERM while shutting down after a long run and is SIGKILLed (-9) by launch;
         # it is a single process, so nothing is left running.
+        # slam_toolbox 2.8.5 sometimes aborts (-6) on SIGINT, after it has mapped correctly:
+        # one of its threads still sleeps on the context that SIGINT just shut down
+        # ("context cannot be slept with because it's invalid"). Only that abort is accepted.
+        known_abort = any("context cannot be slept with because it's invalid"
+                          in line.text.decode() for line in proc_output)
         for info in proc_info:
             allowed = (0, -2, -15, 130, 143)
             if info.process_name.startswith('gazebo'):
                 allowed += (-9,)
+            if info.process_name.startswith('async_slam_toolbox_node') and known_abort:
+                allowed += (-6,)
             self.assertIn(info.returncode, allowed, info.process_name)

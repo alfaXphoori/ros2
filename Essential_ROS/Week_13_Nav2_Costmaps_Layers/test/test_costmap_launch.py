@@ -57,9 +57,10 @@ class TestCostmaps(unittest.TestCase):
         cls.node.destroy_node()
         rclpy.try_shutdown()
 
-    def wait_for(self, name, timeout=120.0):
+    def wait_for(self, name, ready=lambda msg: True, timeout=120.0):
+        """Latest /<name>/costmap once ready(msg) holds (the callback keeps only the newest)."""
         end = time.monotonic() + timeout
-        while time.monotonic() < end and name not in self.maps:
+        while time.monotonic() < end and not (name in self.maps and ready(self.maps[name])):
             rclpy.spin_once(self.node, timeout_sec=0.2)
         self.assertIn(name, self.maps, f'/{name}/costmap never published')
         return self.maps[name]
@@ -70,7 +71,9 @@ class TestCostmaps(unittest.TestCase):
         self.assertEqual((msg.info.width, msg.info.height), (60, 60))   # 3 m / 0.05 m
 
     def test_global_costmap_values(self):
-        msg = self.wait_for('global_costmap')
+        # The first global costmap can come before the static layer got /map (all -1):
+        # wait for one that already contains the lethal map cells.
+        msg = self.wait_for('global_costmap', ready=lambda m: 100 in m.data)
         self.assertEqual(msg.header.frame_id, 'map')
         grid = to_array(msg)
         values = set(np.unique(grid).tolist())
@@ -125,4 +128,10 @@ class TestShutdown(unittest.TestCase):
                 self.assertIn(info.returncode, (0, -2, -6, -11, -15, 130, 143),
                               info.process_name)
                 continue
-            self.assertIn(info.returncode, (0, -2, -15, 130, 143), info.process_name)
+            allowed = (0, -2, -15, 130, 143)
+            if info.process_name.startswith('gazebo'):
+                # gz sim sometimes ignores SIGINT and SIGTERM while shutting down and is
+                # SIGKILLed (-9) by launch, as in Weeks 11/12/14-16; it is a single process,
+                # so nothing is left running.
+                allowed += (-9,)
+            self.assertIn(info.returncode, allowed, info.process_name)
