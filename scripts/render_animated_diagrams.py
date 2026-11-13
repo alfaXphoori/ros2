@@ -575,18 +575,429 @@ def build_anim_capstone_mission():
     return "Capstone Warehouse AMR Mission", 460 + tbl_h + 24, header + stage + n_lc + n_nav + n_dock + n_stop + n_kpi + paths + anim_els + tbl, anim_css + tbl_css
 
 
+def build_anim_params_launch():
+    dur = 12.0
+    steps = [
+        ("YAML + Launch Arguments", "Python Launch โหลดค่าเริ่มจาก YAML และใส่ Namespace (PushRosNamespace)", 0.3, 3.0),
+        ("ตรวจสอบค่าแบบ Real-Time", "ส่งคำสั่ง ros2 param set max_speed → ผ่าน OnSetParametersCallback", 3.1, 6.0),
+        ("ปฏิเสธค่าอันตรายทันที", "หากตั้งความเร็วเกินพิกัด (> 2.0 m/s) Callback จะคืน unsuccessful ✗", 6.1, 8.9),
+        ("ปรับพฤติกรรมทันใจ", "ค่าที่ผ่านเกณฑ์ถูกนำไปใช้วิ่งจริงทันทีโดยไม่ต้อง Restart โหนด ✓", 9.0, 11.7),
+    ]
+    header = make_header(
+        "Params & Launch", "Dynamic Validation & Namespacing",
+        "การตั้งค่าหุ่นยนต์จากไฟล์ YAML การแยก Namespace และตรวจสอบค่าพารามิเตอร์แบบเรียลไทม์"
+    )
+    stage = make_stage(120, 320, "Launch Bringup → /amr_01 Node ↔ Parameter Callback Safety Guard")
+
+    n_yml = node_card(44, 184, 210, 146, "YAML + Launch", "PushRosNamespace", "#fefce8", "bb-doc", "fleet_params.yaml", "#fde68a")
+    n_cb = node_card(368, 184, 224, 146, "Validation Callback", "max_speed ≤ 2.0 m/s", "#eff6ff", "bb-shield", "SetParametersResult", "#bfdbfe")
+    n_ok = node_card(706, 176, 210, 134, "/amr_01/controller", "ใช้ค่าใหม่ 1.2 m/s", "#f0fdf4", "bb-robot", "Accepted ✓", "#bbf7d0")
+    n_err = node_card(706, 328, 210, 96, "Danger Value (5.0)", "เกินขีดจำกัดความปลอดภัย", "#fff1f2", "", "Rejected ✗", "#fecdd3")
+
+    paths = (
+        '<path class="ant-amber" d="M254 257H364" marker-end="url(#bb-ah-amber)"/>'
+        '<path class="ant-green" d="M592 243H702" marker-end="url(#bb-ah-green)"/>'
+        '<path class="ant-red" d="M592 288L702 368" marker-end="url(#bb-ah-red)"/>'
+    )
+
+    anim_css = (
+        kf_move("pk-yaml", dur, 0.3, 3.0, [(149, 257), (470, 257)])
+        + kf_move("pk-set", dur, 3.1, 6.0, [(480, 243), (780, 243)])
+        + kf_move("pk-bad", dur, 6.1, 8.9, [(480, 286), (650, 336), (765, 372)])
+        + kf_pop("bd-rej", dur, 7.0, 8.9)
+        + kf_pop("bd-acc", dur, 9.2, 11.7)
+    )
+    anim_els = (
+        pkt_chip("pk-yaml", "YAML Config", "#fde047", 110)
+        + pkt_chip("pk-set", "speed=1.2 ✓", "#7de3b4", 108)
+        + pkt_chip("pk-bad", "speed=5.0!", "#fb7185", 108)
+        + pop_pill("bd-rej", 640, 396, "บล็อกค่าอันตราย ✗", "#e11d48")
+        + pop_pill("bd-acc", 811, 160, "ปรับค่า Real-Time ✓", "#16a34a")
+    )
+
+    tbl, tbl_css, tbl_h = make_step_table(460, steps, dur, split_x=256)
+    return "Dynamic Parameters & Python Launch", 460 + tbl_h + 24, header + stage + n_yml + n_cb + n_ok + n_err + paths + anim_els + tbl, anim_css + tbl_css
+
+
+def build_anim_diff_kinematics():
+    dur = 12.0
+    steps = [
+        ("รับคำสั่ง Twist (v, ω)", "รับความเร็วเดินหน้า v และความเร็วหมุน ω จากโหนดควบคุม", 0.3, 3.0),
+        ("Inverse Kinematics", "แปลง (v, ω) เป็นความเร็วล้อซ้าย-ขวา: vL = v − ωL/2, vR = v + ωL/2", 3.1, 5.9),
+        ("Encoder Wheel Ticks", "อ่านระยะหมุนจริงจากล้อซ้าย-ขวาแล้วเข้าสมการ Forward Kinematics", 6.0, 8.9),
+        ("Midpoint Integration", "อินทิเกรตหาตำแหน่ง (x, y, θ) และส่งออก nav_msgs/Odometry (/odom)", 9.0, 11.7),
+    ]
+    header = make_header(
+        "Kinematics REP", "Diff-Drive Forward & Inverse Math",
+        "การแปลงคำสั่ง /cmd_vel เป็นความเร็วล้อสองข้าง และคำนวณตำแหน่งสะสม /odom ตามมาตรฐาน REP 103/105"
+    )
+    stage = make_stage(120, 320, "Kinematics Pipeline: /cmd_vel → (vL, vR) → Wheel Encoders → /odom")
+
+    n_cmd = node_card(42, 184, 192, 146, "/cmd_vel", "Linear v, Angular ω", "#eff6ff", "bb-app", "Twist Msg", "#bfdbfe")
+    n_ik = node_card(268, 184, 206, 146, "Inverse Kinematics", "Wheel Sep L, Radius r", "#faf5ff", "bb-cpu", "(vL, vR) rad/s", "#e9d5ff")
+    n_wh = node_card(508, 184, 198, 146, "Wheels & Encoders", "ΔsL, ΔsR + Δθ", "#fefce8", "bb-robot", "Physical Motion", "#fde68a")
+    n_od = node_card(740, 184, 178, 146, "Odometry Node", "Midpoint Integration", "#f0fdf4", "bb-map", "Pub: /odom + TF", "#bbf7d0")
+
+    paths = (
+        '<path class="ant-blue" d="M234 257H264" marker-end="url(#bb-ah-blue)"/>'
+        '<path class="ant" d="M474 257H504" marker-end="url(#bb-ah)"/>'
+        '<path class="ant-amber" d="M706 257H736" marker-end="url(#bb-ah-amber)"/>'
+    )
+
+    anim_css = (
+        kf_move("pk-twist", dur, 0.3, 3.0, [(138, 257), (360, 257)])
+        + kf_move("pk-wheel", dur, 3.1, 5.9, [(371, 257), (600, 257)])
+        + kf_move("pk-enc", dur, 6.0, 8.9, [(607, 257), (820, 257)])
+        + kf_pop("bd-rep", dur, 9.1, 11.7)
+    )
+    anim_els = (
+        pkt_chip("pk-twist", "(v, ω) SI", "#93c5fd", 96)
+        + pkt_chip("pk-wheel", "ωL / ωR", "#c4b5fd", 96)
+        + pkt_chip("pk-enc", "Δx, Δy, Δθ", "#fde047", 104)
+        + pop_pill("bd-rep", 829, 366, "Pose odom→base ✓", "#16a34a")
+    )
+
+    tbl, tbl_css, tbl_h = make_step_table(460, steps, dur, split_x=256)
+    return "Differential Drive Kinematics & REP 103/105", 460 + tbl_h + 24, header + stage + n_cmd + n_ik + n_wh + n_od + paths + anim_els + tbl, anim_css + tbl_css
+
+
+def build_anim_urdf_rsp():
+    dur = 12.0
+    steps = [
+        ("โหลด URDF + Inertia", "ตรวจสอบโครงสร้าง Link-Joint XML และ Inertia Matrix (check_urdf ✓)", 0.3, 3.0),
+        ("ส่ง /tf_static (Fixed)", "robot_state_publisher ส่ง TF ของข้อต่อ fixed (lidar, imu, base) ครั้งเดียว", 3.1, 5.9),
+        ("รับ /joint_states 50 Hz", "รับมุมหมุนล้อซ้าย-ขวาต่อเนื่องจาก JointState Publisher หรือ Gazebo", 6.0, 8.9),
+        ("แสดงผล 3D ใน RViz2", "คำนวณ Forward Kinematics แล้วปล่อย /tf แบบเรียลไทม์ หุ่นหมุนล้อได้ ✓", 9.0, 11.7),
+    ]
+    header = make_header(
+        "URDF & RSP", "Link-Joint Tree → /tf_static & /tf",
+        "การแปลงแบบจำลอง 3 มิติ URDF และมุมข้อต่อ /joint_states เป็นโครงสร้างพิกัดหุ่นยนต์"
+    )
+    stage = make_stage(120, 320, "Robot Description + /joint_states → robot_state_publisher → /tf & RViz2")
+
+    n_urdf = node_card(44, 176, 210, 134, "URDF / Xacro XML", "Visual + Collision + Inertia", "#fefce8", "bb-doc", "robot_description", "#fde68a")
+    n_js = node_card(44, 326, 210, 102, "/joint_states", "มุมหมุนล้อต่อเนื่อง", "#eff6ff", "", "Continuous Joints", "#bfdbfe")
+    n_rsp = node_card(368, 200, 224, 160, "robot_state_publisher", "Forward Kinematics Solver", "#faf5ff", "bb-cpu", "Tree Cache", "#e9d5ff")
+    n_rviz = node_card(706, 200, 210, 160, "RViz2 & Nav2", "3D Mesh + TF Axes", "#f0fdf4", "bb-robot", "Sub: /tf, /tf_static", "#bbf7d0")
+
+    paths = (
+        '<path class="ant-amber" d="M254 243L364 264" marker-end="url(#bb-ah-amber)"/>'
+        '<path class="ant-blue" d="M254 377L364 316" marker-end="url(#bb-ah-blue)"/>'
+        '<path class="ant-green" d="M592 280H702" marker-end="url(#bb-ah-green)"/>'
+    )
+
+    anim_css = (
+        kf_move("pk-xml", dur, 0.3, 3.0, [(150, 243), (470, 264)])
+        + kf_move("pk-tfs", dur, 3.1, 5.9, [(480, 260), (780, 260)])
+        + kf_move("pk-js", dur, 6.0, 8.9, [(150, 377), (470, 316)])
+        + kf_move("pk-tf", dur, 9.0, 11.7, [(480, 298), (780, 298)])
+        + kf_pop("bd-rv", dur, 9.6, 11.7)
+    )
+    anim_els = (
+        pkt_chip("pk-xml", "URDF Tree", "#fde047", 104)
+        + pkt_chip("pk-tfs", "/tf_static", "#c4b5fd", 100)
+        + pkt_chip("pk-js", "JointState", "#93c5fd", 104)
+        + pkt_chip("pk-tf", "/tf Wheel 50Hz", "#7de3b4", 120)
+        + pop_pill("bd-rv", 811, 396, "โมเดล 3D พร้อมใช้งาน ✓", "#16a34a")
+    )
+
+    tbl, tbl_css, tbl_h = make_step_table(460, steps, dur, split_x=256)
+    return "URDF & robot_state_publisher Pipeline", 460 + tbl_h + 24, header + stage + n_urdf + n_js + n_rsp + n_rviz + paths + anim_els + tbl, anim_css + tbl_css
+
+
+def build_anim_midterm_pipeline():
+    dur = 12.0
+    steps = [
+        ("1. ตรวจโมเดล URDF", "เช็คโครงสร้างข้อต่อและ Inertia Matrix ผ่าน check_urdf ไม่มี Error", 0.3, 3.0),
+        ("2. สตาร์ท Safety Node", "โหนดคุมความเร็ว /cmd_vel พร้อม Parameter Callback กันค่าความเร็วเกิน", 3.1, 5.9),
+        ("3. ตัดความเร็วเมื่อร้อนเกิน", "เมื่ออุณหภูมิเกินเกณฑ์ โหมดฉุกเฉินจะบังคับหยุดหรือจำกัดความเร็วทันที", 6.0, 8.9),
+        ("4. ผ่าน Autograder 100%", "รวมระบบด้วย Launch File และรันชุดตรวจ colcon test ผ่านทุกเคส ✓", 9.0, 11.7),
+    ]
+    header = make_header(
+        "Midterm Exam", "Integrated Verification Pipeline",
+        "ภาพรวมสถาปัตยกรรมระบบสอบกลางภาค: URDF + โหนดควบคุมความปลอดภัย + Launch + ชุดตรวจอัตโนมัติ"
+    )
+    stage = make_stage(120, 320, "Week 08 Integration: URDF Model + Safety Controller + Launch → Autograder")
+
+    n_p1 = node_card(42, 184, 196, 146, "Part 1: URDF", "Box + Wheel Inertia", "#fefce8", "bb-doc", "check_urdf ✓", "#fde68a")
+    n_p2 = node_card(272, 184, 204, 146, "Part 2: Safety Node", "Temp + Param Guard", "#eff6ff", "bb-shield", "Pub: /cmd_vel", "#bfdbfe")
+    n_p3 = node_card(510, 184, 196, 146, "Part 3: Launch+RViz", "robot_state_pub", "#faf5ff", "bb-app", "/tf + Display", "#e9d5ff")
+    n_test = node_card(740, 184, 178, 146, "Autograder", "colcon test (pytest)", "#f0fdf4", "bb-cpu", "Score Report", "#bbf7d0")
+
+    paths = (
+        '<path class="ant-amber" d="M238 257H268" marker-end="url(#bb-ah-amber)"/>'
+        '<path class="ant-blue" d="M476 257H506" marker-end="url(#bb-ah-blue)"/>'
+        '<path class="ant-green" d="M706 257H736" marker-end="url(#bb-ah-green)"/>'
+    )
+
+    anim_css = (
+        kf_move("pk-u", dur, 0.3, 3.0, [(140, 257), (364, 257)])
+        + kf_move("pk-s", dur, 3.1, 5.9, [(374, 257), (600, 257)])
+        + kf_pop("bd-th", dur, 6.2, 8.9)
+        + kf_move("pk-t", dur, 9.0, 11.7, [(608, 257), (820, 257)])
+        + kf_pop("bd-ok", dur, 9.8, 11.7)
+    )
+    anim_els = (
+        pkt_chip("pk-u", "URDF OK", "#fde047", 96)
+        + pkt_chip("pk-s", "Safe Twist", "#93c5fd", 104)
+        + pkt_chip("pk-t", "Launch Test", "#7de3b4", 108)
+        + pop_pill("bd-th", 374, 366, "Thermal Guard Active!", "#e11d48")
+        + pop_pill("bd-ok", 829, 366, "Tests PASS ✓", "#16a34a")
+    )
+
+    tbl, tbl_css, tbl_h = make_step_table(460, steps, dur, split_x=256)
+    return "Week 08 Midterm Practical Pipeline", 460 + tbl_h + 24, header + stage + n_p1 + n_p2 + n_p3 + n_test + paths + anim_els + tbl, anim_css + tbl_css
+
+
+def build_anim_gazebo_ecs():
+    dur = 12.0
+    steps = [
+        ("โหลด SDF World + Friction", "Gazebo อ่านไฟล์ SDF 1.8 กำหนดแรงเสียดทานล้อ (μ1, μ2) และแสง/กำแพง", 0.3, 3.0),
+        ("สร้าง ECS Entity + Component", "แยกข้อมูลหุ่นยนต์เป็น Entity และตำแหน่ง/มวล/ล้อเป็น Component อิสระ", 3.1, 5.9),
+        ("DART Physics Step (1 ms)", "System Plugin คำนวณแรงสัมผัสและการเคลื่อนที่ทุก 1 ms (ไม่เกิด Tunneling)", 6.0, 8.9),
+        ("ปล่อยข้อมูลลง gz-transport", "อัปเดตภาพ Ogre2 (หรือ Headless `-s`) และส่ง LiDAR/Odom ผ่าน Protobuf", 9.0, 11.7),
+    ]
+    header = make_header(
+        "Gazebo Harmonic", "ECS Pattern & DART Physics Loop",
+        "สถาปัตยกรรม Entity-Component-System (ECS) การจำลองฟิสิกส์ 1 ms และเรนเดอร์สภาพแวดล้อม 3 มิติ"
+    )
+    stage = make_stage(120, 320, "SDF World → Gazebo Sim 8 ECS Core (DART Physics + Sensors) → gz-transport")
+
+    n_sdf = node_card(44, 184, 198, 146, "SDF 1.8 World", "warehouse.sdf + μ1/μ2", "#fefce8", "bb-doc", "max_step_size=1ms", "#fde68a")
+    n_ecs = node_card(276, 184, 214, 146, "ECS Core", "Entities + Components", "#faf5ff", "bb-cpu", "Modular Systems", "#e9d5ff")
+    n_phy = node_card(524, 184, 196, 146, "DART + Ogre2", "Physics & Ray Sensors", "#f0fdf4", "bb-lidar", "Contact Solver", "#bbf7d0")
+    n_gz = node_card(754, 184, 164, 146, "gz-transport", "ZeroMQ / Protobuf", "#eff6ff", "bb-server", "/scan /clock", "#bfdbfe")
+
+    paths = (
+        '<path class="ant-amber" d="M242 257H272" marker-end="url(#bb-ah-amber)"/>'
+        '<path class="ant" d="M490 257H520" marker-end="url(#bb-ah)"/>'
+        '<path class="ant-blue" d="M720 257H750" marker-end="url(#bb-ah-blue)"/>'
+    )
+
+    anim_css = (
+        kf_move("pk-sdf", dur, 0.3, 3.0, [(143, 257), (373, 257)])
+        + kf_move("pk-ecs", dur, 3.1, 5.9, [(383, 257), (612, 257)])
+        + kf_pop("bd-step", dur, 6.2, 8.9)
+        + kf_move("pk-pb", dur, 9.0, 11.7, [(622, 257), (830, 257)])
+    )
+    anim_els = (
+        pkt_chip("pk-sdf", "SDF 1.8", "#fde047", 96)
+        + pkt_chip("pk-ecs", "ECS Update", "#c4b5fd", 104)
+        + pkt_chip("pk-pb", "Protobuf Msg", "#93c5fd", 112)
+        + pop_pill("bd-step", 622, 366, "DART Step 1 ms ✓", "#16a34a")
+    )
+
+    tbl, tbl_css, tbl_h = make_step_table(460, steps, dur, split_x=256)
+    return "Gazebo Sim Harmonic ECS & Physics Loop", 460 + tbl_h + 24, header + stage + n_sdf + n_ecs + n_phy + n_gz + paths + anim_els + tbl, anim_css + tbl_css
+
+
+def build_anim_costmap_layers():
+    dur = 12.0
+    steps = [
+        ("Static Map Layer", "โหลดแผนที่คลังสินค้าจาก map_server (กำแพง/ชั้นวาง = Cost 254)", 0.3, 3.0),
+        ("Obstacle Raycasting", "LiDAR สแกนวัตถุใหม่แบบ Real-Time (Marking สิ่งกีดขวาง + Clearing ทางโล่ง)", 3.1, 5.9),
+        ("Inflation Layer Decay", "ขยายรัศมีปลอดภัยจากขอบวัตถุ (254) → รัศมีตัวถัง (253) → ค่อยๆ จางลง", 6.0, 8.9),
+        ("Keepout & Speed Filter", "ทับซ้อนหน้ากาก Keepout (ห้ามเข้า Cost 254) และโซนจำกัดความเร็ว %", 9.0, 11.7),
+    ]
+    header = make_header(
+        "Nav2 Costmap 2D", "Layered Risk Map & Costmap Filters",
+        "การรวมชั้นแผนที่นิ่ง สิ่งกีดขวางเรียลไทม์ รัศมีปลอดภัย (Inflation) และโซนควบคุม (Keepout/Speed)"
+    )
+    stage = make_stage(120, 320, "Static Layer + Obstacle Layer + Inflation Layer + Costmap Filters → Master Grid")
+
+    n_st = node_card(44, 176, 200, 134, "Static Layer", "แผนที่ .pgm คลังสินค้า", "#f8fafc", "bb-map", "Lethal 254", "#e2e8f0")
+    n_ob = node_card(44, 326, 200, 102, "Obstacle Layer", "LiDAR Mark / Clear", "#eff6ff", "", "/scan Real-Time", "#bfdbfe")
+    n_inf = node_card(322, 194, 214, 160, "Inflation Layer", "Exponential Cost Decay", "#fefce8", "bb-shield", "Inscribed = 253", "#fde68a")
+    n_flt = node_card(574, 194, 176, 160, "Costmap Filters", "Keepout + Speed Mask", "#fff1f2", "bb-lock", "Speed Limit %", "#fecdd3")
+    n_out = node_card(784, 194, 136, 160, "Master Grid", "0–254 Costmap", "#f0fdf4", "bb-robot", "Safe Path ✓", "#bbf7d0")
+
+    paths = (
+        '<path class="ant" d="M244 243L318 264" marker-end="url(#bb-ah)"/>'
+        '<path class="ant-blue" d="M244 377L318 304" marker-end="url(#bb-ah-blue)"/>'
+        '<path class="ant-amber" d="M536 274H570" marker-end="url(#bb-ah-amber)"/>'
+        '<path class="ant-green" d="M750 274H780" marker-end="url(#bb-ah-green)"/>'
+    )
+
+    anim_css = (
+        kf_move("pk-st", dur, 0.3, 3.0, [(144, 243), (418, 264)])
+        + kf_move("pk-ob", dur, 3.1, 5.9, [(144, 377), (418, 294)])
+        + kf_move("pk-in", dur, 6.0, 8.9, [(429, 274), (654, 274)])
+        + kf_move("pk-fl", dur, 9.0, 11.7, [(662, 274), (848, 274)])
+        + kf_pop("bd-cm", dur, 9.6, 11.7)
+    )
+    anim_els = (
+        pkt_chip("pk-st", "Static 254", "#cbd5e1", 98)
+        + pkt_chip("pk-ob", "Scan Ray", "#93c5fd", 96)
+        + pkt_chip("pk-in", "253 Ring", "#fde047", 96)
+        + pkt_chip("pk-fl", "Masked ✓", "#7de3b4", 98)
+        + pop_pill("bd-cm", 844, 390, "กันชน + จำกัดโซน ✓", "#16a34a")
+    )
+
+    tbl, tbl_css, tbl_h = make_step_table(460, steps, dur, split_x=256)
+    return "Nav2 Layered Costmap & Filters", 460 + tbl_h + 24, header + stage + n_st + n_ob + n_inf + n_flt + n_out + paths + anim_els + tbl, anim_css + tbl_css
+
+
+def build_anim_behavior_tree():
+    dur = 12.0
+    steps = [
+        ("Patrol Tick Propagation", "BT Navigator ส่งสัญญาณ Tick ลง Sequence → เริ่มเดินไปยัง Waypoint", 0.3, 3.0),
+        ("Compute + Follow Path", "คืนค่า RUNNING ระหว่างวิ่ง และปรับเส้นทางใหม่เมื่อเจอของขวางทาง", 3.1, 5.9),
+        ("Recovery Fallback", "หากติดหล่มคืนค่า FAILURE → สั่ง ClearCostmap + Spin + BackUp กู้คืน", 6.0, 8.9),
+        ("Waypoint ถึงจุดหมาย", "กู้คืนสำเร็จและกลับเข้าเส้นทางจนถึงจุดตรวจ → คืนค่า SUCCESS ✓", 9.0, 11.7),
+    ]
+    header = make_header(
+        "Behavior Trees", "Nav2 Tick & Recovery Fallback",
+        "กลไกการตัดสินใจด้วย Behavior Tree (Tick → RUNNING / FAILURE → Recovery) สำหรับภารกิจลาดตระเวน"
+    )
+    stage = make_stage(120, 320, "Patrol Commander → BT Navigator Root Tick → Navigation Subtree ↔ Recovery Subtree")
+
+    n_pat = node_card(44, 184, 198, 146, "Patrol Commander", "5-Station Waypoints", "#eff6ff", "bb-app", "Dwell Time Loop", "#bfdbfe")
+    n_bt = node_card(276, 184, 210, 146, "BT Root (Recovery)", "Sequence + Fallback", "#faf5ff", "bb-cpu", "Blackboard Ports", "#e9d5ff")
+    n_nav = node_card(520, 174, 196, 132, "Navigate Action", "Compute + Follow", "#f0fdf4", "bb-robot", "RUNNING / OK", "#bbf7d0")
+    n_rec = node_card(520, 322, 196, 102, "Recovery Behaviors", "Clear / Spin / BackUp", "#fff1f2", "", "On FAILURE ↺", "#fecdd3")
+    n_res = node_card(748, 184, 170, 146, "Station Status", "Goal Reached!", "#fefce8", "bb-doc", "SUCCESS ✓", "#fde68a")
+
+    paths = (
+        '<path class="ant-blue" d="M242 257H272" marker-end="url(#bb-ah-blue)"/>'
+        '<path class="ant-green" d="M486 240H516" marker-end="url(#bb-ah-green)"/>'
+        '<path class="ant-red" d="M486 290L516 364" marker-end="url(#bb-ah-red)"/>'
+        '<path class="ant-amber" d="M716 240H744" marker-end="url(#bb-ah-amber)"/>'
+    )
+
+    anim_css = (
+        kf_move("pk-wp", dur, 0.3, 3.0, [(143, 257), (371, 257)])
+        + kf_move("pk-tk", dur, 3.1, 5.9, [(381, 240), (610, 240)])
+        + kf_move("pk-rc", dur, 6.0, 8.9, [(381, 286), (498, 344), (610, 366)])
+        + kf_pop("bd-fb", dur, 6.9, 8.9)
+        + kf_move("pk-ok", dur, 9.0, 11.7, [(618, 240), (826, 240)])
+        + kf_pop("bd-suc", dur, 9.6, 11.7)
+    )
+    anim_els = (
+        pkt_chip("pk-wp", "Next Goal", "#93c5fd", 96)
+        + pkt_chip("pk-tk", "Tick RUNNING", "#7de3b4", 112)
+        + pkt_chip("pk-rc", "Clear + Spin", "#fb7185", 108)
+        + pkt_chip("pk-ok", "SUCCESS ✓", "#fde047", 100)
+        + pop_pill("bd-fb", 618, 412, "กู้คืนเส้นทางสำเร็จ!", "#e11d48")
+        + pop_pill("bd-suc", 833, 366, "ถึงจุดตรวจครบ ✓", "#16a34a")
+    )
+
+    tbl, tbl_css, tbl_h = make_step_table(460, steps, dur, split_x=256)
+    return "Nav2 Behavior Tree & Waypoint Patrol", 460 + tbl_h + 24, header + stage + n_pat + n_bt + n_nav + n_rec + n_res + paths + anim_els + tbl, anim_css + tbl_css
+
+
+def build_anim_final_demo():
+    dur = 12.0
+    steps = [
+        ("1. One-Click Bringup", "รัน final_amr_system เปิด Gazebo + ros_gz_bridge + Nav2 (use_sim_time=true)", 0.3, 3.0),
+        ("2. ส่ง Initial Pose & AMCL", "ตั้งพิกัดเริ่มต้นให้ AMCL Particle Filter ยุบรวมล็อกตำแหน่งหุ่นยนต์", 3.1, 5.9),
+        ("3. ภารกิจ 3 สถานี + หลบสิ่งขวาง", "หุ่นวิ่งขนส่งสินค้าข้าม 3 สถานี พร้อมหลบสิ่งกีดขวางใหม่กลางทาง", 6.0, 8.9),
+        ("4. ผ่านเกณฑ์ Final Demo ✓", "Collision Monitor + Recovery ทำงานครบ 5 มิติ พร้อมสอบป้องกันโครงงาน", 9.0, 11.7),
+    ]
+    header = make_header(
+        "Final AMR Demo", "One-Click Bringup & 3-Station Mission",
+        "ระบบบูรณาการปลายภาค: เปิด Gazebo + Bridge + Nav2 ในคำสั่งเดียวและปฏิบัติภารกิจขนส่ง 3 สถานี"
+    )
+    stage = make_stage(120, 320, "final_amr_system.launch.py → Gazebo World + ros_gz_bridge + Nav2 Stack → Mission")
+
+    n_sim = node_card(42, 184, 198, 146, "Gazebo Harmonic", "Warehouse + /clock", "#fefce8", "bb-server", "gz_ros_bridge", "#fde68a")
+    n_amcl = node_card(274, 184, 200, 146, "AMCL + Costmap", "Global Localization", "#eff6ff", "bb-map", "Scan + Map", "#bfdbfe")
+    n_nav = node_card(508, 184, 204, 146, "Nav2 BT + Monitor", "3-Station Obstacle Avoidance", "#faf5ff", "bb-robot", "collision_monitor", "#e9d5ff")
+    n_pass = node_card(746, 184, 172, 146, "Final Evaluation", "5-Dimension Rubric", "#f0fdf4", "bb-doc", "Autonomous ✓", "#bbf7d0")
+
+    paths = (
+        '<path class="ant-amber" d="M240 257H270" marker-end="url(#bb-ah-amber)"/>'
+        '<path class="ant-blue" d="M474 257H504" marker-end="url(#bb-ah-blue)"/>'
+        '<path class="ant-green" d="M712 257H742" marker-end="url(#bb-ah-green)"/>'
+    )
+
+    anim_css = (
+        kf_move("pk-gz", dur, 0.3, 3.0, [(141, 257), (364, 257)])
+        + kf_move("pk-loc", dur, 3.1, 5.9, [(374, 257), (600, 257)])
+        + kf_pop("bd-obs", dur, 6.2, 8.9)
+        + kf_move("pk-fin", dur, 9.0, 11.7, [(610, 257), (826, 257)])
+        + kf_pop("bd-done", dur, 9.6, 11.7)
+    )
+    anim_els = (
+        pkt_chip("pk-gz", "/scan /clock", "#fde047", 104)
+        + pkt_chip("pk-loc", "AMCL Pose", "#93c5fd", 104)
+        + pkt_chip("pk-fin", "3 Stations ✓", "#7de3b4", 108)
+        + pop_pill("bd-obs", 610, 366, "หลบสิ่งกีดขวางกลางทาง ✓", "#7c3aed")
+        + pop_pill("bd-done", 832, 160, "ภารกิจสำเร็จ 100% ✓", "#16a34a")
+    )
+
+    tbl, tbl_css, tbl_h = make_step_table(460, steps, dur, split_x=256)
+    return "Week 16 Final AMR Demonstration", 460 + tbl_h + 24, header + stage + n_sim + n_amcl + n_nav + n_pass + paths + anim_els + tbl, anim_css + tbl_css
+
+
+def build_anim_sros2_lifecycle():
+    dur = 12.0
+    steps = [
+        ("Lifecycle Managed States", "Supervisor สั่ง Configure → Activate โหนดเซนเซอร์ (ป้องกันส่งข้อมูลก่อนพร้อม)", 0.3, 3.0),
+        ("SROS 2 Enclave (mTLS)", "โหนดที่มี Keystore/Certificate เท่านั้นจึงแลกเปลี่ยนข้อมูลแบบเข้ารหัส AES-GCM ได้", 3.1, 5.9),
+        ("บล็อกโหนดแปลกปลอม", "โหนดที่ไม่มีใบรับรอง (No Enclave) ในโหมด Enforce ถูก DDS ปฏิเสธทันที ✗", 6.0, 8.9),
+        ("CI/CD launch_testing", "ชุดทดสอบอัตโนมัติรันพิสูจน์ Lifecycle + SROS 2 ใน Container ผ่านทุกด่าน ✓", 9.0, 11.7),
+    ]
+    header = make_header(
+        "Lifecycle & SROS 2", "Managed Nodes, Security & CI/CD",
+        "วงจรชีวิต Lifecycle Node การเข้ารหัส/ยืนยันตัวตน DDS Security (SROS 2) และการทดสอบ CI/CD"
+    )
+    stage = make_stage(120, 320, "Lifecycle Supervisor → SROS 2 Enclave (DDS Security Enforce) ↔ launch_testing CI")
+
+    n_lc = node_card(44, 184, 206, 146, "Lifecycle Sensor", "Unconf → Inact → Act", "#faf5ff", "bb-cpu", "/scan_managed", "#e9d5ff")
+    n_sec = node_card(284, 184, 214, 146, "SROS 2 Keystore", "Auth + Access + AES", "#eff6ff", "bb-lock", "Enclave Enforce", "#bfdbfe")
+    n_ok = node_card(532, 176, 200, 134, "Trusted Listener", "Valid Cert ✓", "#f0fdf4", "bb-shield", "Encrypted DDS", "#bbf7d0")
+    n_rogue = node_card(532, 328, 200, 96, "Rogue Node (No Cert)", "ไม่มี Enclave Key", "#fff1f2", "", "Blocked ✗", "#fecdd3")
+    n_ci = node_card(764, 184, 154, 146, "CI Pipeline", "launch_testing", "#fefce8", "bb-doc", "pytest PASS", "#fde68a")
+
+    paths = (
+        '<path class="ant" d="M250 257H280" marker-end="url(#bb-ah)"/>'
+        '<path class="ant-green" d="M498 243H528" marker-end="url(#bb-ah-green)"/>'
+        '<path class="ant-red" d="M498 292L528 368" marker-end="url(#bb-ah-red)"/>'
+        '<path class="ant-amber" d="M732 243H760" marker-end="url(#bb-ah-amber)"/>'
+    )
+
+    anim_css = (
+        kf_move("pk-lc", dur, 0.3, 3.0, [(147, 257), (381, 257)])
+        + kf_move("pk-enc2", dur, 3.1, 5.9, [(391, 243), (622, 243)])
+        + kf_move("pk-rog", dur, 6.0, 8.9, [(391, 290), (508, 344), (618, 372)])
+        + kf_pop("bd-blk", dur, 6.8, 8.9)
+        + kf_move("pk-ci", dur, 9.0, 11.7, [(632, 243), (836, 243)])
+        + kf_pop("bd-ci", dur, 9.6, 11.7)
+    )
+    anim_els = (
+        pkt_chip("pk-lc", "ACTIVE 10Hz", "#c4b5fd", 108)
+        + pkt_chip("pk-enc2", "mTLS + AES", "#7de3b4", 104)
+        + pkt_chip("pk-rog", "No Cert!", "#fb7185", 92)
+        + pkt_chip("pk-ci", "CI PASS ✓", "#fde047", 98)
+        + pop_pill("bd-blk", 632, 404, "ปฏิเสธโหนดแปลกปลอม ✗", "#e11d48")
+        + pop_pill("bd-ci", 841, 366, "CI/CD Verified ✓", "#16a34a")
+    )
+
+    tbl, tbl_css, tbl_h = make_step_table(460, steps, dur, split_x=256)
+    return "Lifecycle, SROS 2 Security & CI/CD", 460 + tbl_h + 24, header + stage + n_lc + n_sec + n_ok + n_rogue + n_ci + paths + anim_els + tbl, anim_css + tbl_css
+
+
 BUILDERS = {
     "anim-ros2-dds": build_anim_ros2_dds,
     "anim-topic-qos": build_anim_topic_qos,
     "anim-service-deadlock": build_anim_service_deadlock,
     "anim-action-preempt": build_anim_action_preempt,
+    "anim-params-launch": build_anim_params_launch,
+    "anim-diff-kinematics": build_anim_diff_kinematics,
+    "anim-urdf-rsp": build_anim_urdf_rsp,
+    "anim-midterm-pipeline": build_anim_midterm_pipeline,
     "anim-tf2-transform": build_anim_tf2_transform,
+    "anim-gazebo-ecs": build_anim_gazebo_ecs,
     "anim-gazebo-bridge": build_anim_gazebo_bridge,
     "anim-slam-loop": build_anim_slam_loop,
+    "anim-costmap-layers": build_anim_costmap_layers,
     "anim-nav2-amcl": build_anim_nav2_amcl,
+    "anim-behavior-tree": build_anim_behavior_tree,
+    "anim-final-demo": build_anim_final_demo,
     "anim-ros2-control": build_anim_ros2_control,
     "anim-vision-docking": build_anim_vision_docking,
     "anim-openrmf-fleet": build_anim_openrmf_fleet,
+    "anim-sros2-lifecycle": build_anim_sros2_lifecycle,
     "anim-capstone-mission": build_anim_capstone_mission,
 }
 

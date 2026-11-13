@@ -33,6 +33,10 @@ URDF (Unified Robot Description Format) เป็นรูปแบบไฟล�
 
 ![essential-w07-01](../../docs/diagrams/essential-w07-01.svg)
 
+### 🎬 ภาพเคลื่อนไหวการทำงานของ URDF + `/joint_states` → `robot_state_publisher`
+
+![anim-urdf-rsp](../../docs/diagrams/anim-urdf-rsp.svg)
+
 #### ประเภทของข้อต่อ (Joint Types in URDF):
 1. **`fixed`**: เชื่อมต่อติดแน่น ไม่มีการเคลื่อนไหวสัมพัทธ์ (0 องศาอิสระ) เช่น เซนเซอร์ LiDAR หรือโครงสร้างภายใน
 2. **`continuous`**: หมุนรอบแกนได้อย่างอิสระไม่จำกัดรอบ (1 องศาอิสระ, หมุน $360^\circ$ ต่อเนื่อง) นิยมใช้กับล้อขับเคลื่อน

@@ -40,6 +40,10 @@
 
 ![essential-w15-01](../../docs/diagrams/essential-w15-01.svg)
 
+### 🎬 ภาพเคลื่อนไหว Behavior Tree Tick, Navigation และ Recovery Fallback
+
+![anim-behavior-tree](../../docs/diagrams/anim-behavior-tree.svg)
+
 ---
 
 ### 2. ชนิดของโหนดใน Behavior Tree (BehaviorTree.CPP Taxonomy)

@@ -47,6 +47,10 @@
 
 ![essential-w08](../../docs/diagrams/essential-w08.svg)
 
+### 🎬 ภาพเคลื่อนไหวระบบตรวจสอบกลางภาคแบบครบวงจร (`URDF → Safety → Launch → Autograder`)
+
+![anim-midterm-pipeline](../../docs/diagrams/anim-midterm-pipeline.svg)
+
 ### 🔹 ตอนที่ 1: แบบจำลองหุ่นยนต์ 3 มิติ URDF (35 คะแนน)
 | ตัวชี้วัด | เกณฑ์คะแนนเต็ม | หักคะแนนกรณีมีข้อบกพร่อง |
 | :--- | :---: | :--- |

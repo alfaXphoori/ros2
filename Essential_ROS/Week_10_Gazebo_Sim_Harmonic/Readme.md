@@ -35,6 +35,10 @@
 
 ![essential-w10](../../docs/diagrams/essential-w10.svg)
 
+### 🎬 ภาพเคลื่อนไหวสถาปัตยกรรม Gazebo Harmonic ECS และ DART Physics Loop
+
+![anim-gazebo-ecs](../../docs/diagrams/anim-gazebo-ecs.svg)
+
 ---
 
 ### 2. พารามิเตอร์ฟิสิกส์และการคำนวณเวลา (Physics Engine Mechanics)

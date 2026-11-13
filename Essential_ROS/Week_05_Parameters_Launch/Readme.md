@@ -39,6 +39,10 @@
 
 ![essential-w05-01](../../docs/diagrams/essential-w05-01.svg)
 
+### 🎬 ภาพเคลื่อนไหวการตั้งค่า YAML Launch และ Dynamic Parameter Validation
+
+![anim-params-launch](../../docs/diagrams/anim-params-launch.svg)
+
 ---
 
 ### 2. บริการเบื้องหลัง 6 รายการที่ซ่อนอยู่ (Under-the-Hood Parameter Services)

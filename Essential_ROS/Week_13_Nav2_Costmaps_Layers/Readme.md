@@ -71,6 +71,10 @@ $$\text{cost}(d) = (\text{INSCRIBED COST} - 1) \cdot \exp\left(-\alpha \cdot (d 
 
 ![essential-w13-02](../../docs/diagrams/essential-w13-02.svg)
 
+### 🎬 ภาพเคลื่อนไหวการซ้อนทับชั้น Costmap 2D และ Costmap Filters
+
+![anim-costmap-layers](../../docs/diagrams/anim-costmap-layers.svg)
+
 #### การคำนวณรัศมีตัวถังหุ่นยนต์สี่เหลี่ยมผืนผ้า (ยาว $L$, กว้าง $W$):
 1. **รัศมีแนบใน (Inscribed Radius: $r_{\text{inscribed}}$):**
    $$r_{\text{inscribed}} = \frac{W}{2}$$

@@ -79,6 +79,10 @@
 
 ![essential-w06-02](../../docs/diagrams/essential-w06-02.svg)
 
+### 🎬 ภาพเคลื่อนไหวการแปลงความเร็ว `/cmd_vel → (vL, vR) → /odom`
+
+![anim-diff-kinematics](../../docs/diagrams/anim-diff-kinematics.svg)
+
 #### ก. จุดศูนย์กลางการหมุนชั่วขณะ (Instantaneous Center of Curvature: ICC)
 เมื่อหุ่นยนต์เคลื่อนที่เป็นแนวโค้ง ทั้งล้อซ้ายและล้อขวาจะหมุนรอบจุดร่วมเดียวกันคือ ICC ด้วยรัศมีความโค้ง $R$:
 $$v = \omega R$$

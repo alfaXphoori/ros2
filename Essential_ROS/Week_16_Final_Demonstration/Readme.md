@@ -29,6 +29,10 @@
 
 ![essential-w16](../../docs/diagrams/essential-w16.svg)
 
+### 🎬 ภาพเคลื่อนไหวระบบบูรณาการ One-Click Bringup และภารกิจ 3 สถานี
+
+![anim-final-demo](../../docs/diagrams/anim-final-demo.svg)
+
 ---
 
 ## 🛠️ การวิเคราะห์โค้ดระบบปลายภาค (Code Walkthrough)

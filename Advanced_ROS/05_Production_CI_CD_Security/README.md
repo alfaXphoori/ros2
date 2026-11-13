@@ -37,6 +37,10 @@
 
 ![advanced-m05-01](../../docs/diagrams/advanced-m05-01.svg)
 
+### 🎬 ภาพเคลื่อนไหว Lifecycle Node, SROS 2 Enclave และ `launch_testing` CI
+
+![anim-sros2-lifecycle](../../docs/diagrams/anim-sros2-lifecycle.svg)
+
 ### หน้าที่ของ 4 สถานะหลัก (Primary States):
 1. **`Unconfigured`:** โหนดถูกสร้างแล้ว (มี service `~/change_state`, `~/get_state`) แต่ยังไม่ได้อ่านพารามิเตอร์ ยังไม่สร้าง publisher และยังไม่เปิดฮาร์ดแวร์
 2. **`Inactive`:** โหลดคอนฟิกและสร้างทรัพยากรแล้ว แต่ `LifecyclePublisher` จะ **ทิ้ง** ทุกการเรียก `publish()` (ไม่มีข้อมูลออกสู่เครือข่าย)
