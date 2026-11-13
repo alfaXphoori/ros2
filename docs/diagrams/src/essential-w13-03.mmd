@@ -1,0 +1,15 @@
+graph TD
+    subgraph CircleModel ["โมเดลวงกลม (robot_radius = 0.25m)"]
+        C1["รัศมี 0.25m ครอบคลุมทั้งตัว"]
+        C2["ข้อดี: คำนวณ Collision เร็วมาก (O(1))"]
+        C3["ข้อจำกัด: สิ้นเปลืองพื้นที่ในช่องแคบ (Over-conservative)"]
+    end
+
+    subgraph PolyModel ["โมเดลรูปหลายเหลี่ยม (footprint: 4 corners)"]
+        P1["สี่เหลี่ยมผืนผ้า 0.40m x 0.28m"]
+        P2["ข้อดี: แม่นยำ ขับลอดช่องแคบโรงงานได้จริง"]
+        P3["ข้อจำกัด: คำนวณจุดตัด Polygon ซับซ้อนกว่า"]
+    end
+
+    style CircleModel fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    style PolyModel fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px

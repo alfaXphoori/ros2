@@ -1,0 +1,31 @@
+graph TD
+    subgraph FSM_Problem ["FSM: ข้อจำกัด State Explosion"]
+        S1["Navigating"] <--> S2["Obstacle Avoidance"]
+        S2 <--> S3["Recovery Spin"]
+        S3 <--> S1
+        S1 <--> S4["Emergency Stop"]
+        S2 <--> S4
+        S3 <--> S4
+        S4 <--> S5["Recharging"]
+        S1 <--> S5
+    end
+
+    subgraph BT_Solution ["Behavior Tree: ลำดับชั้นแบบโมดูลาร์"]
+        Root["Root: RecoveryNode"]
+        NavSeq["Sequence: Nav Loop"]
+        Plan["Action: ComputePath"]
+        Control["Action: FollowPath"]
+        RecovFall["Fallback: Recoveries"]
+        Clear["ClearCostmap"]
+        Spin["Spin 360°"]
+
+        Root --> NavSeq
+        NavSeq --> Plan
+        NavSeq --> Control
+        Root --> RecovFall
+        RecovFall --> Clear
+        RecovFall --> Spin
+    end
+
+    style FSM_Problem fill:#ffebee,stroke:#c62828,stroke-width:2px
+    style BT_Solution fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px

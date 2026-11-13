@@ -17,22 +17,7 @@
 
 การประมวลผลภาพในงานหุ่นยนต์มีความท้าทายเรื่องปริมาณข้อมูลมหาศาล (ภาพ Full HD 1080p ที่ 30 FPS มีอัตราข้อมูลสูงกว่า 180 MB/s):
 
-```mermaid
-flowchart TD
-    Cam["📷 RGB-D Camera (RealSense / OAK-D) หรือ synthetic_tag_camera ในแล็บ"] -->|Raw Video Stream| Driver["Camera ROS 2 Driver Node"]
-    Driver -->|"/camera/image_raw (sensor_msgs/Image)"| Bridge["cv_bridge (imgmsg_to_cv2)"]
-    Driver -->|"/camera/camera_info (Camera Matrix K, D)"| PnP["PnP Solver (solvePnP)"]
-
-    subgraph Perception_Pipeline ["AI & Perception Node"]
-        Bridge --> OpenCV_Mat["OpenCV Matrix (BGR8 / RGB8)"]
-        OpenCV_Mat --> YOLO["Detector: Classical CV (lab) / YOLOv8-11 (optional)"]
-        OpenCV_Mat --> MarkerDet["AprilTag / ArUco Detection"]
-        MarkerDet --> PnP
-    end
-
-    YOLO -->|"/perception/detections (vision_msgs/Detection2DArray)"| Consumers["Tracking / Semantic mapping / Task logic"]
-    PnP -->|"/detected_dock_pose (geometry_msgs/PoseStamped)"| Docking["Nav2 Docking Server (opennav_docking)"]
-```
+![advanced-m02](../../docs/diagrams/advanced-m02.svg)
 
 ---
 

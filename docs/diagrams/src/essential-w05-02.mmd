@@ -1,0 +1,29 @@
+flowchart TD
+    Request["Request: Set Parameter<br/>(e.g., max_linear_speed = 5.0)"]
+
+    subgraph Node_Validation ["กระบวนการตรวจสอบภายในโหนด"]
+        TypeCheck{"ชั้นที่ 1 (rclpy อัตโนมัติ):<br/>ชนิดข้อมูลตรงกับตอน declare หรือไม่?<br/>(PARAMETER_DOUBLE)"}
+        RangeCheck{"ชั้นที่ 2 (add_on_set_parameters_callback):<br/>อยู่ในช่วงปลอดภัยหรือไม่?<br/>(0.1 <= speed <= 2.5)"}
+        ApplyParam["rclpy บันทึกค่า แล้วเรียก<br/>add_post_set_parameters_callback<br/>self.max_linear_speed = ค่าใหม่"]
+        RejectParam["ปฏิเสธคำขอ<br/>successful = False<br/>reason = 'Speed outside range!'"]
+    end
+
+    Response["ส่งผลลัพธ์ SetParametersResult กลับไปยังผู้ขอ"]
+
+    Request --> TypeCheck
+    TypeCheck -- ไม่ตรง --> RejectParam
+    TypeCheck -- ตรง --> RangeCheck
+    RangeCheck -- อยู่นอกช่วง --> RejectParam
+    RangeCheck -- ถูกต้อง --> ApplyParam
+    RejectParam --> Response
+    ApplyParam --> Response
+
+    classDef node fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#0f172a
+    classDef sim fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#0f172a
+    classDef hw fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#0f172a
+    classDef sec fill:#ffe4e6,stroke:#e11d48,stroke-width:2px,color:#0f172a
+    classDef bt fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#0f172a
+    classDef tool fill:#ffedd5,stroke:#ea580c,stroke-width:2px,color:#0f172a
+    classDef cfg fill:#f1f5f9,stroke:#64748b,stroke-width:2px,color:#0f172a
+    class RejectParam sec
+    class Request,TypeCheck,RangeCheck,ApplyParam,Response cfg

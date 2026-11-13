@@ -1,0 +1,9 @@
+stateDiagram-v2
+    [*] --> Bringup: Stage 0 initial pose ที่ Home + ตรวจ lifecycle 11 โหนด ACTIVE
+    Bringup --> PickStation: Stage 1 NavigateToPose (2.0, 1.0, 90°) + dwell (load)
+    PickStation --> DropStation: Stage 2 NavigateToPose (-2.0, 1.0, 90°) + dwell (unload)
+    DropStation --> Docking: Stage 3 DockRobot home_dock (staging -> AprilTag -> graceful controller)
+    Docking --> Undocking: วัด docking error จาก ground truth
+    Undocking --> EStopTest: Stage 4 UndockRobot กลับไปที่ staging pose
+    EStopTest --> ReturnHome: Stage 5 กล่องโผล่ใน StopZone ขณะวิ่ง -> ต้องหยุดก่อนชน
+    ReturnHome --> [*]: Stage 6 NavigateToPose Home + ตาราง KPI + exit code

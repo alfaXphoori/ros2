@@ -46,12 +46,7 @@
 
 ## 📊 เกณฑ์การประเมินและการตัดคะแนนอย่างละเอียด (Grading Rubric - 100 คะแนน)
 
-```mermaid
-pie title สัดส่วนคะแนนการสอบกลางภาค (Midterm Exam)
-    "ตอนที่ 1: URDF 3D Modeling" : 35
-    "ตอนที่ 2: Python Node & Safety" : 40
-    "ตอนที่ 3: Launch & RViz2" : 25
-```
+![essential-w08](../../docs/diagrams/essential-w08.svg)
 
 ### 🔹 ตอนที่ 1: แบบจำลองหุ่นยนต์ 3 มิติ URDF (35 คะแนน)
 | ตัวชี้วัด | เกณฑ์คะแนนเต็ม | หักคะแนนกรณีมีข้อบกพร่อง |

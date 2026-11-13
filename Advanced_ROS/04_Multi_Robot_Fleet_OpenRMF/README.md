@@ -45,38 +45,7 @@
 
 **Open-RMF (Open Robotics Middleware Framework)** เป็นชุดซอฟต์แวร์โอเพนซอร์สที่เริ่มพัฒนาโดย Open Robotics ด้วยทุนจากหน่วยงานรัฐของสิงคโปร์ (เดิมมุ่งใช้ในโรงพยาบาล) ปัจจุบันเป็นโครงการภายใต้ Open Source Robotics Alliance (OSRA) ใช้ประสานงานฝูงหุ่นยนต์ต่างยี่ห้อ (Heterogeneous Fleets) และโครงสร้างพื้นฐานอาคาร:
 
-```mermaid
-flowchart TD
-    subgraph Enterprise_Layer ["Enterprise IT / WMS"]
-        WMS["WMS / ERP"] -->|"Task requests (delivery, patrol, ...)"| Dispatcher["rmf_task_ros2 Dispatcher<br>(ประมูลงาน: เลือก fleet ที่ต้นทุนต่ำสุด)"]
-    end
-
-    subgraph RMF_Core ["Open-RMF Traffic"]
-        Schedule["rmf_traffic_schedule<br>(Traffic Schedule แบบรวมศูนย์ 1 โหนด)"]
-        Negotiation["Traffic Negotiation<br>(/rmf_traffic/negotiation_*)"]
-    end
-
-    subgraph Fleet_Adapters ["Fleet Adapters (แต่ละตัวมี Schedule Mirror)"]
-        AdapterA["Fleet Adapter A (EasyFullControl)"]
-        AdapterB["Fleet Adapter B (Forklift)"]
-    end
-
-    Building["Door / Lift Supervisors"]
-
-    Dispatcher <--> AdapterA
-    Dispatcher <--> AdapterB
-    AdapterA <-->|"itinerary_set / participants"| Schedule
-    AdapterB <-->|"itinerary_set / participants"| Schedule
-    AdapterA <--> Negotiation
-    AdapterB <--> Negotiation
-    AdapterA <-->|"door/lift requests"| Building
-
-    subgraph Physical_Fleets ["Physical Robot Fleets"]
-        AdapterA <==>|"ROS 2 /amr_01/..."| AMR1["AMR 01 (Nav2)"]
-        AdapterA <==>|"ROS 2 /amr_02/..."| AMR2["AMR 02 (Nav2)"]
-        AdapterB <==>|"Vendor API"| Forklifts["Autonomous Forklifts"]
-    end
-```
+![advanced-m04-01](../../docs/diagrams/advanced-m04-01.svg)
 
 - **Traffic Schedule** เป็น **โหนดกลางเพียงโหนดเดียว** (`rmf_traffic_ros2/rmf_traffic_schedule`) ที่เก็บ itinerary (เส้นทาง + เวลา) ของทุก participant; Fleet Adapter แต่ละตัวถือ **Schedule Mirror** (สำเนาที่ได้รับ patch จากโหนดกลาง) ไว้วางแผนเส้นทางในเครื่องของตัวเอง — จึงเป็นระบบ "รวมศูนย์ + มิเรอร์" ไม่ใช่ฐานข้อมูลแบบกระจาย (ระบบ production มักเปิด schedule node สำรองไว้ทำ fail-over)
 - **Fleet Adapter** แปลงคำสั่งระดับ RMF (ไป waypoint, เทียบท่า, ชาร์จ) เป็น API ของหุ่นยนต์แต่ละยี่ห้อ และรายงานตำแหน่ง/แบตเตอรี่กลับ
@@ -90,13 +59,7 @@ flowchart TD
 
 Open-RMF ไม่ได้ดูแค่พิกัด 2 มิติ $(x, y)$ บนแผนที่ แต่ดู **วิถีการเคลื่อนที่ตามเวลา $(x(t), y(t), \theta(t))$** ที่แต่ละ participant ประกาศไว้ใน schedule:
 
-```mermaid
-flowchart LR
-    R1["หุ่นยนต์ 1: Trajectory T_1(t)"] --> ConflictDetector["Conflict Detection"]
-    R2["หุ่นยนต์ 2: Trajectory T_2(t)"] --> ConflictDetector
-    ConflictDetector -->|"พบการตัดกันของวิถี ณ เวลา t = t_c"| Negotiator["Traffic Negotiation"]
-    Negotiator -->|"แต่ละฝ่ายเสนอแผน (proposal) เช่น รอที่ Holding Point หรือเลี่ยงเส้นทาง"| Resolution["เลือกชุดแผนที่ต้นทุน (ความล่าช้ารวม) ต่ำสุด"]
-```
+![advanced-m04-02](../../docs/diagrams/advanced-m04-02.svg)
 
 เงื่อนไขความปลอดภัย: ณ ทุกจุดเวลา $t$ footprint ของหุ่นยนต์ตัวหนึ่งต้องไม่ล้ำเข้าไปใน vicinity ของอีกตัว (โปรไฟล์ทั้งสองเป็นวงกลมใน `fleet_adapter_config.yaml`):
 

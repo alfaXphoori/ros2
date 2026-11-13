@@ -57,18 +57,7 @@ Visual Studio Code เป็น IDE ยอดนิยมสูงสุดส�
 
 ## 2. การออกแบบและจัดการ Colcon Workspace อย่างมืออาชีพ
 
-```mermaid
-flowchart TD
-    WS["📁 ~/ros2_ws (Workspace Root)"]
-    WS --> Src["📁 src/ (โค้ดที่เราพัฒนาหรือ Clone มา)"]
-    WS --> Build["📁 build/ (ไฟล์ Object และ Cache การคอมไพล์)"]
-    WS --> Install["📁 install/ (ไบนารี, สคริปต์, และ setup.bash สำหรับรัน)"]
-    WS --> Log["📁 log/ (บันทึกข้อผิดพลาดในการ Build แต่ละครั้ง)"]
-
-    Src --> Pkg1["📦 my_amr_description (URDF/Meshes)"]
-    Src --> Pkg2["📦 my_amr_controller (C++ Control Node)"]
-    Src --> Pkg3["📦 my_amr_navigation (Nav2 Launch & Config)"]
-```
+![dev-toolkit-01](diagrams/dev-toolkit-01.svg)
 
 ### กฎทองในการจัดการ Workspace:
 1. **ห้าม Commit โฟลเดอร์ `build/`, `install/`, และ `log/` ขึ้น Git เด็ดขาด** (ใส่ไว้ใน `.gitignore`)
@@ -143,14 +132,7 @@ ros2 bag play test_flight/test_flight_0.mcap   # เล่นข้อมูล�
 
 ## 5. การสร้างแพ็กเกจหุ่นยนต์: Python vs C++ (Package Creation Standard)
 
-```mermaid
-flowchart LR
-    A["คำสั่งสร้างแพ็กเกจ (ros2 pkg create)"] --> B["Python Node (ament_python)"]
-    A --> C["C++ Node (ament_cmake)"]
-
-    B --> B1["เหมาะสำหรับ: High-level logic, AI, State Machines, Web Bridge"]
-    C --> C1["เหมาะสำหรับ: Motor Control, Sensor Drivers, Computer Vision, SLAM Core"]
-```
+![dev-toolkit-02](diagrams/dev-toolkit-02.svg)
 
 ### 🐍 คำสั่งสร้างแพ็กเกจ Python:
 ```bash

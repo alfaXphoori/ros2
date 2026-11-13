@@ -1,0 +1,21 @@
+flowchart TD
+    subgraph PoseGraph ["โครงสร้าง Pose Graph"]
+        X0["Node 0 (จุดเริ่มต้น)"] -->|"Odom Edge"| X1["Node 1"]
+        X1 -->|"Odom Edge"| X2["Node 2"]
+        X2 -->|"Odom Edge"| X3["Node 3"]
+        X3 -->|"Odom Edge"| X4["Node 4"]
+        X4 -.->|"Loop Closure Edge (Scan Correlation > 0.35)"| X0
+    end
+
+    subgraph CeresEngine ["Google Ceres Non-Linear Solver"]
+        Cost["ฟังก์ชันผลรวมความผิดพลาดรวม:<br/>J(x) = sum( e_ij^T * Omega_ij * e_ij )"]
+        LM["อัลกอริทึม Levenberg-Marquardt<br/>(Sparse Normal Cholesky)"]
+        Cost --> LM
+    end
+
+    PoseGraph --> CeresEngine
+    CeresEngine --> Result["Graph Relaxation: ขจัด Drift สะสม ผนังที่เคยเอียงกลับมาตรงแนบสนิท"]
+
+    style PoseGraph fill:#e1f5fe,stroke:#0288d1,stroke-width:2px
+    style CeresEngine fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    style Result fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px

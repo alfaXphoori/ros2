@@ -1,0 +1,22 @@
+flowchart TD
+    subgraph MultiExecutor ["MultiThreadedExecutor (Thread Pool: Thread 1, 2, 3...)"]
+        Thread1["Thread 1: รัน Timer Callback (ติดบล็อกรอ Service)"]
+        Thread2["Thread 2: อิสระ! มารับ Response จาก DDS และปลดล็อก Thread 1"]
+    end
+
+    subgraph CBGroup ["ReentrantCallbackGroup"]
+        Timer["Timer Callback"]
+        ClientSub["Client Response Callback"]
+    end
+
+    CBGroup --> MultiExecutor
+
+    classDef node fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#0f172a
+    classDef sim fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#0f172a
+    classDef hw fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#0f172a
+    classDef sec fill:#ffe4e6,stroke:#e11d48,stroke-width:2px,color:#0f172a
+    classDef bt fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#0f172a
+    classDef tool fill:#ffedd5,stroke:#ea580c,stroke-width:2px,color:#0f172a
+    classDef cfg fill:#f1f5f9,stroke:#64748b,stroke-width:2px,color:#0f172a
+    class Thread1,Thread2,Timer node
+    class ClientSub tool

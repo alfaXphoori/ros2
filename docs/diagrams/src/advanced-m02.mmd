@@ -1,0 +1,23 @@
+flowchart TD
+    Cam["📷 RGB-D Camera (RealSense / OAK-D) หรือ synthetic_tag_camera ในแล็บ"] -->|Raw Video Stream| Driver["Camera ROS 2 Driver Node"]
+    Driver -->|"/camera/image_raw (sensor_msgs/Image)"| Bridge["cv_bridge (imgmsg_to_cv2)"]
+    Driver -->|"/camera/camera_info (Camera Matrix K, D)"| PnP["PnP Solver (solvePnP)"]
+
+    subgraph Perception_Pipeline ["AI & Perception Node"]
+        Bridge --> OpenCV_Mat["OpenCV Matrix (BGR8 / RGB8)"]
+        OpenCV_Mat --> YOLO["Detector: Classical CV (lab) / YOLOv8-11 (optional)"]
+        OpenCV_Mat --> MarkerDet["AprilTag / ArUco Detection"]
+        MarkerDet --> PnP
+    end
+
+    YOLO -->|"/perception/detections (vision_msgs/Detection2DArray)"| Consumers["Tracking / Semantic mapping / Task logic"]
+    PnP -->|"/detected_dock_pose (geometry_msgs/PoseStamped)"| Docking["Nav2 Docking Server (opennav_docking)"]
+
+    classDef node fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#0f172a
+    classDef sim fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#0f172a
+    classDef hw fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#0f172a
+    classDef sec fill:#ffe4e6,stroke:#e11d48,stroke-width:2px,color:#0f172a
+    classDef bt fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#0f172a
+    classDef tool fill:#ffedd5,stroke:#ea580c,stroke-width:2px,color:#0f172a
+    classDef cfg fill:#f1f5f9,stroke:#64748b,stroke-width:2px,color:#0f172a
+    class Cam hw

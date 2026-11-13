@@ -1,0 +1,49 @@
+flowchart TD
+    subgraph Phase1 ["Phase 1: Foundations & ROS 2 Architecture (W1-W3)"]
+        W1["Week 1: Linux, Dev Tools, Docker & ROS 2 Architecture (DDS)"]
+        W2["Week 2: Core Communication (Topics, Services, Parameters & CLI)"]
+        W3["Week 3: Asynchronous Actions, Composition & Python/C++ Nodes"]
+    end
+
+    subgraph Phase2 ["Phase 2: Robot Modeling, Kinematics & Transforms (W4-W6)"]
+        W4["Week 4: Standards (REP 103/105), Kinematics & Odometry"]
+        W5["Week 5: Robot Modeling (URDF, Xacro, Materials & Visual/Collision)"]
+        W6["Week 6: Coordinate Frames & TF2 (Static, Dynamic, Buffer & Listeners)"]
+    end
+
+    subgraph Phase3 ["Phase 3: Simulation & Sensor Pipeline (W7-W9)"]
+        W7["Week 7: Physics Simulation (Gazebo Sim (Gazebo Harmonic) Full Integration)"]
+        W8["Week 8: Sensor Pipeline (LiDAR, Depth Camera, IMU, Encoders)"]
+        W9["Week 9: Sensor Fusion & State Estimation (robot_localization EKF)"]
+    end
+
+    subgraph Phase4 ["Phase 4: Autonomous Navigation & Decision Systems (W10-W13)"]
+        W10["Week 10: Mapping & SLAM (SLAM Toolbox, Cartographer)"]
+        W11["Week 11: Navigation 2 (Nav2) Stack Architecture & Costmaps"]
+        W12["Week 12: Planners, Controllers (DWB/RPP) & AMCL Localization"]
+        W13["Week 13: Nav2 Behavior Trees & Autonomous Waypoint Patrol"]
+    end
+
+    subgraph Phase5 ["Phase 5: Capstone Project & Production Deployment (W14-W16)"]
+        W14["Week 14: Capstone AMR Architecture & Custom Hardware Interface"]
+        W15["Week 15: Edge Deployment, Lifecycle Nodes, Security & Optimization"]
+        W16["Week 16: Project Demonstration, Code Review & Evaluation"]
+    end
+
+    Phase1 --> Phase2
+    Phase2 --> Phase3
+    Phase3 --> Phase4
+    Phase4 --> Phase5
+
+    classDef node fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#0f172a
+    classDef sim fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#0f172a
+    classDef hw fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#0f172a
+    classDef sec fill:#ffe4e6,stroke:#e11d48,stroke-width:2px,color:#0f172a
+    classDef bt fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#0f172a
+    classDef tool fill:#ffedd5,stroke:#ea580c,stroke-width:2px,color:#0f172a
+    classDef cfg fill:#f1f5f9,stroke:#64748b,stroke-width:2px,color:#0f172a
+    class W3,W16 node
+    class W1,W4,W6,W7,W10,W11,W12,W13 sim
+    class W5,W8,W9,W14 hw
+    class W15 sec
+    class W2 tool

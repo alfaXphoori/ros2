@@ -1,0 +1,15 @@
+flowchart LR
+    A["คำสั่งสร้างแพ็กเกจ (ros2 pkg create)"] --> B["Python Node (ament_python)"]
+    A --> C["C++ Node (ament_cmake)"]
+
+    B --> B1["เหมาะสำหรับ: High-level logic, AI, State Machines, Web Bridge"]
+    C --> C1["เหมาะสำหรับ: Motor Control, Sensor Drivers, Computer Vision, SLAM Core"]
+
+    classDef node fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#0f172a
+    classDef sim fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#0f172a
+    classDef hw fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#0f172a
+    classDef sec fill:#ffe4e6,stroke:#e11d48,stroke-width:2px,color:#0f172a
+    classDef bt fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#0f172a
+    classDef tool fill:#ffedd5,stroke:#ea580c,stroke-width:2px,color:#0f172a
+    classDef cfg fill:#f1f5f9,stroke:#64748b,stroke-width:2px,color:#0f172a
+    class A node

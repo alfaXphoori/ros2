@@ -1,0 +1,50 @@
+flowchart TD
+    subgraph AppLayer ["1. Application Layer (User Code)"]
+        PyNode["Python Nodes (rclpy)"]
+        CppNode["C++ Nodes (rclcpp)"]
+    end
+
+    subgraph RCLLayer ["2. ROS Client Library Layer (Common C Implementation)"]
+        RCL["rcl (Core Logic, Timers, Lifecycle, Graph Cache)"]
+    end
+
+    subgraph RMWLayer ["3. ROS Middleware Interface (RMW Abstraction Layer)"]
+        RMW["rmw C API (rmw_create_publisher, rmw_publish, etc.)"]
+    end
+
+    subgraph DDSLayer ["4. DDS Implementations (Plug-and-Play Vendors)"]
+        FastDDS["eProsima Fast DDS (Default in ROS 2 Jazzy)"]
+        Cyclone["Eclipse Cyclone DDS (เน้นความเสถียรและ Low Latency)"]
+        Connext["RTI Connext DDS (มาตรฐานอากาศยาน DO-178C และการแพทย์)"]
+    end
+
+    subgraph TransportLayer ["5. Network & Hardware Transport Layer"]
+        UDPMC["UDP/IP Multicast (ใช้สำหรับ Discovery)"]
+        UDPUni["UDP/IP Unicast (ใช้สำหรับ User Data Traffic)"]
+        SHM["Shared Memory / Posix SHM (Zero-Copy ภายในเครื่องเดียวกัน)"]
+    end
+
+    PyNode --> RCL
+    CppNode --> RCL
+    RCL --> RMW
+    RMW --> FastDDS
+    RMW --> Cyclone
+    RMW --> Connext
+    FastDDS --> UDPMC
+    FastDDS --> UDPUni
+    FastDDS --> SHM
+    Cyclone --> UDPMC
+    Cyclone --> UDPUni
+    Cyclone --> SHM
+
+    classDef node fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#0f172a
+    classDef sim fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#0f172a
+    classDef hw fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#0f172a
+    classDef sec fill:#ffe4e6,stroke:#e11d48,stroke-width:2px,color:#0f172a
+    classDef bt fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#0f172a
+    classDef tool fill:#ffedd5,stroke:#ea580c,stroke-width:2px,color:#0f172a
+    classDef cfg fill:#f1f5f9,stroke:#64748b,stroke-width:2px,color:#0f172a
+    class PyNode,CppNode,RMW,Connext,UDPMC,UDPUni,SHM node
+    class FastDDS sec
+    class RCL bt
+    class Cyclone tool

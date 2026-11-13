@@ -16,44 +16,7 @@
 
 ## สารบัญโครงสร้างหลักสูตร (Curriculum Overview)
 
-```mermaid
-flowchart TD
-    subgraph Phase1 ["Phase 1: Foundations & ROS 2 Architecture (W1-W3)"]
-        W1["Week 1: Linux, Dev Tools, Docker & ROS 2 Architecture (DDS)"]
-        W2["Week 2: Core Communication (Topics, Services, Parameters & CLI)"]
-        W3["Week 3: Asynchronous Actions, Composition & Python/C++ Nodes"]
-    end
-
-    subgraph Phase2 ["Phase 2: Robot Modeling, Kinematics & Transforms (W4-W6)"]
-        W4["Week 4: Standards (REP 103/105), Kinematics & Odometry"]
-        W5["Week 5: Robot Modeling (URDF, Xacro, Materials & Visual/Collision)"]
-        W6["Week 6: Coordinate Frames & TF2 (Static, Dynamic, Buffer & Listeners)"]
-    end
-
-    subgraph Phase3 ["Phase 3: Simulation & Sensor Pipeline (W7-W9)"]
-        W7["Week 7: Physics Simulation (Gazebo Sim (Gazebo Harmonic) Full Integration)"]
-        W8["Week 8: Sensor Pipeline (LiDAR, Depth Camera, IMU, Encoders)"]
-        W9["Week 9: Sensor Fusion & State Estimation (robot_localization EKF)"]
-    end
-
-    subgraph Phase4 ["Phase 4: Autonomous Navigation & Decision Systems (W10-W13)"]
-        W10["Week 10: Mapping & SLAM (SLAM Toolbox, Cartographer)"]
-        W11["Week 11: Navigation 2 (Nav2) Stack Architecture & Costmaps"]
-        W12["Week 12: Planners, Controllers (DWB/RPP) & AMCL Localization"]
-        W13["Week 13: Nav2 Behavior Trees & Autonomous Waypoint Patrol"]
-    end
-
-    subgraph Phase5 ["Phase 5: Capstone Project & Production Deployment (W14-W16)"]
-        W14["Week 14: Capstone AMR Architecture & Custom Hardware Interface"]
-        W15["Week 15: Edge Deployment, Lifecycle Nodes, Security & Optimization"]
-        W16["Week 16: Project Demonstration, Code Review & Evaluation"]
-    end
-
-    Phase1 --> Phase2
-    Phase2 --> Phase3
-    Phase3 --> Phase4
-    Phase4 --> Phase5
-```
+![legacy-curriculum-01](docs/diagrams/legacy-curriculum-01.svg)
 
 ---
 
@@ -339,15 +302,7 @@ flowchart TD
     5. เดินทางกลับแท่นชาร์จอัตโนมัติเมื่อแบตเตอรี่ต่ำ (Simulated Battery Level)
 
 - **สถาปัตยกรรมระบบ (System Architecture):**
-  ```mermaid
-  flowchart LR
-      MissionCtrl["Mission Dispatcher Node"] -->|"Action Goal"| Nav2["Nav2 Stack (BT Navigator)"]
-      Nav2 -->|"cmd_vel"| BaseController["Robot Base Controller"]
-      BaseController -->|"TF / Odom"| EKF["robot_localization (EKF)"]
-      Sensors["Sensors: LiDAR, IMU, Encoders"] --> EKF
-      Sensors --> Nav2
-      SafetyMonitor["Safety & Battery Monitor"] -->|"Preempt / Cancel"| MissionCtrl
-  ```
+  ![legacy-curriculum-02](docs/diagrams/legacy-curriculum-02.svg)
 
 ---
 

@@ -49,15 +49,7 @@ $$p(\mathbf{x}_{1:t}, \mathbf{m} \mid \mathbf{z}_{1:t}, \mathbf{u}_{1:t})$$
 การแปลงค่า Log-Odds กลับมาเป็นความน่าจะเป็น:
 $$p(m_i) = \frac{1}{1 + e^{-l(m_i)}}$$
 
-```mermaid
-flowchart LR
-    Ray["ลำแสงเลเซอร์ (LiDAR Ray)"]
-    Origin["จุดยิง (Robot Pose)"]
-    Hit["จุดตกกระทบ (Obstacle Hit)"]
-
-    Origin -->|"Bresenham Algorithm: ทางเดินแสงว่างเปล่า l_free (-)"| Ray
-    Ray -->|"จุดตกกระทบสะท้อนกลับ l_occ (+)"| Hit
-```
+![essential-w12-01](../../docs/diagrams/essential-w12-01.svg)
 
 เมื่อมีข้อมูลการสแกนรอบใหม่เข้ามา การอัปเดตเซลล์ทำได้ด้วยการ **บวก-ลบตัวเลขธรรมดา**:
 $$l_t(m_i) = l_{t-1}(m_i) + \text{inverse sensor model}(m_i, z_t) - l_0$$
@@ -78,29 +70,7 @@ SLAM Toolbox ทำงานบนสถาปัตยกรรม **Graph-base
    - **Odometry Edges:** เชื่อมระหว่างโหนดที่อยู่ติดกันตามเวลา ($\mathbf{x}_i \rightarrow \mathbf{x}_{i+1}$)
    - **Loop Closure Edges:** เชื่อมระหว่างโหนดปัจจุบันกับโหนดในอดีตเมื่อหุ่นยนต์วนกลับมาที่เดิม
 
-```mermaid
-flowchart TD
-    subgraph PoseGraph ["โครงสร้าง Pose Graph"]
-        X0["Node 0 (จุดเริ่มต้น)"] -->|"Odom Edge"| X1["Node 1"]
-        X1 -->|"Odom Edge"| X2["Node 2"]
-        X2 -->|"Odom Edge"| X3["Node 3"]
-        X3 -->|"Odom Edge"| X4["Node 4"]
-        X4 -.->|"Loop Closure Edge (Scan Correlation > 0.35)"| X0
-    end
-
-    subgraph CeresEngine ["Google Ceres Non-Linear Solver"]
-        Cost["ฟังก์ชันผลรวมความผิดพลาดรวม:<br/>J(x) = sum( e_ij^T * Omega_ij * e_ij )"]
-        LM["อัลกอริทึม Levenberg-Marquardt<br/>(Sparse Normal Cholesky)"]
-        Cost --> LM
-    end
-
-    PoseGraph --> CeresEngine
-    CeresEngine --> Result["Graph Relaxation: ขจัด Drift สะสม ผนังที่เคยเอียงกลับมาตรงแนบสนิท"]
-
-    style PoseGraph fill:#e1f5fe,stroke:#0288d1,stroke-width:2px
-    style CeresEngine fill:#fff3e0,stroke:#f57c00,stroke-width:2px
-    style Result fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
-```
+![essential-w12-02](../../docs/diagrams/essential-w12-02.svg)
 
 #### ฟังก์ชันเป้าหมายความคลาดเคลื่อน (Objective Cost Function):
 $$\min_{\mathbf{x}} J(\mathbf{x}) = \sum_{(i,j) \in \mathcal{E}} \mathbf{e}_{ij}(\mathbf{x}_i, \mathbf{x}_j)^T \mathbf{\Omega}_{ij} \mathbf{e}_{ij}(\mathbf{x}_i, \mathbf{x}_j)$$

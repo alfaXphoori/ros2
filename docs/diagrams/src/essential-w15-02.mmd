@@ -1,0 +1,29 @@
+classDiagram
+    class TreeNode {
+        +tick() NodeStatus
+        +status: SUCCESS | FAILURE | RUNNING
+    }
+    class ControlNode {
+        +children: List[TreeNode]
+    }
+    class DecoratorNode {
+        +child: TreeNode
+    }
+    class LeafNode {
+    }
+    class ActionNode {
+        +execute()
+    }
+    class ConditionNode {
+        +check() bool
+    }
+
+    TreeNode <|-- ControlNode
+    TreeNode <|-- DecoratorNode
+    TreeNode <|-- LeafNode
+    LeafNode <|-- ActionNode
+    LeafNode <|-- ConditionNode
+    ControlNode <|-- Sequence
+    ControlNode <|-- Fallback
+    ControlNode <|-- ReactiveSequence
+    ControlNode <|-- RecoveryNode

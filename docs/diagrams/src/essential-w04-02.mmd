@@ -1,0 +1,25 @@
+graph TD
+    subgraph ClientNode ["Action Client Node"]
+        AC_Goal["Send Goal Client"]
+        AC_Cancel["Cancel Goal Client"]
+        AC_Result["Get Result Client"]
+        AC_FB["Feedback Subscriber"]
+        AC_Status["Status Subscriber"]
+    end
+
+    subgraph ServerNode ["Action Server Node"]
+        AS_Goal["Send Goal Service"]
+        AS_Cancel["Cancel Goal Service"]
+        AS_Result["Get Result Service"]
+        AS_FB["Feedback Publisher"]
+        AS_Status["Status Publisher"]
+    end
+
+    AC_Goal -->|"/navigate_distance/_action/send_goal [Service]"| AS_Goal
+    AC_Cancel -->|"/navigate_distance/_action/cancel_goal [Service]"| AS_Cancel
+    AC_Result -->|"/navigate_distance/_action/get_result [Service]"| AS_Result
+    AS_FB -->|"/navigate_distance/_action/feedback [Topic]"| AC_FB
+    AS_Status -->|"/navigate_distance/_action/status [Topic]"| AC_Status
+
+    style ClientNode fill:#e1f5fe,stroke:#0288d1,stroke-width:2px
+    style ServerNode fill:#fff3e0,stroke:#f57c00,stroke-width:2px

@@ -19,54 +19,7 @@
 
 ## 🏗️ สถาปัตยกรรมระบบบูรณาการแบบ End-to-End (System Integration Architecture)
 
-```mermaid
-flowchart TD
-    subgraph Gazebo_Harmonic ["1. Digital Twin (Gazebo Sim 8, physics: DART)"]
-        World["Warehouse world (amr_week10)"]
-        Robot["Robot URDF (amr_week07): DiffDrive + JointStatePublisher plugins, gpu_lidar 10 Hz"]
-    end
-
-    subgraph Middleware_Bridge ["2. Middleware"]
-        Bridge["ros_gz_bridge (แปลง gz.msgs <-> ROS msgs: /cmd_vel /odom /scan /tf /joint_states /clock)"]
-        GT["ground_truth_tf (amr_adv06): gz-transport -> /ground_truth/pose + TF base_footprint->sim_world"]
-    end
-
-    subgraph Perception ["3. TF2 & Perception"]
-        RSP["robot_state_publisher"] --> TF["TF: map->odom->base_footprint->camera_optical_link"]
-        Cam["synthetic_tag_camera (amr_adv02): render AprilTag from TRUE pose"]
-        Tracker["apriltag_dock_tracker (amr_adv02) -> /detected_dock_pose"]
-    end
-
-    subgraph Nav2 ["4. Nav2 (amr_week14 bringup, params + capstone overrides)"]
-        AMCL["map_server + AMCL (real Week 12 map)"]
-        BT["bt_navigator (Week 15 BT)"]
-        Ctrl["planner / controller (DWB) / smoother / behavior_server"]
-        Dock["docking_server (opennav_docking, amr_adv03 params)"]
-        VS["velocity_smoother 20 Hz"]
-        CM["collision_monitor: StopZone (stop) + FootprintApproach"]
-    end
-
-    subgraph Mission ["5. Mission Executive"]
-        Exec["capstone_mission: lifecycle check -> pick -> drop -> DockRobot -> UndockRobot -> E-stop test -> home, KPI vs ground truth"]
-    end
-
-    World --- Robot
-    Robot ==> Bridge
-    Robot ==> GT
-    Bridge ==> RSP
-    Bridge ==> AMCL
-    GT ==> Cam
-    Cam ==> Tracker ==> Dock
-    TF ==> Nav2
-    Exec ==> BT
-    Exec ==> Dock
-    BT ==> Ctrl
-    Dock -- "navigate to staging" --> BT
-    Ctrl -- cmd_vel_nav --> VS
-    Dock -- cmd_vel_nav --> VS
-    VS -- cmd_vel_smoothed --> CM
-    CM -- "/cmd_vel" --> Bridge
-```
+![advanced-m06-01](../../docs/diagrams/advanced-m06-01.svg)
 
 **ข้อเท็จจริงทางเทคนิคที่ควรรู้:**
 - Gazebo Sim Harmonic ใช้ **DART** (`gz-physics-dartsim-plugin`) เป็น physics engine ค่าเริ่มต้น (ODE เป็นค่าเริ่มต้นของ Gazebo Classic ไม่ใช่ Harmonic)
@@ -91,17 +44,7 @@ flowchart TD
 
 สถานะด้านล่างคือสิ่งที่ `capstone_mission` ทำจริง (ตำแหน่งทั้งหมดอยู่ใน [`config/capstone_mission.yaml`](config/capstone_mission.yaml))
 
-```mermaid
-stateDiagram-v2
-    [*] --> Bringup: Stage 0 initial pose ที่ Home + ตรวจ lifecycle 11 โหนด ACTIVE
-    Bringup --> PickStation: Stage 1 NavigateToPose (2.0, 1.0, 90°) + dwell (load)
-    PickStation --> DropStation: Stage 2 NavigateToPose (-2.0, 1.0, 90°) + dwell (unload)
-    DropStation --> Docking: Stage 3 DockRobot home_dock (staging -> AprilTag -> graceful controller)
-    Docking --> Undocking: วัด docking error จาก ground truth
-    Undocking --> EStopTest: Stage 4 UndockRobot กลับไปที่ staging pose
-    EStopTest --> ReturnHome: Stage 5 กล่องโผล่ใน StopZone ขณะวิ่ง -> ต้องหยุดก่อนชน
-    ReturnHome --> [*]: Stage 6 NavigateToPose Home + ตาราง KPI + exit code
-```
+![advanced-m06-02](../../docs/diagrams/advanced-m06-02.svg)
 
 > หมายเหตุ: ไม่มีแบตเตอรี่จำลองในโครงงานนี้ (`use_battery_status: false` ใน docking server) "ชาร์จ" จึงหมายถึงเทียบแท่นสำเร็จตาม `docking_threshold` 0.015 m
 

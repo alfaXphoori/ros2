@@ -38,27 +38,7 @@
 - ทุกพารามิเตอร์เป็น **Strongly Typed**: `PARAMETER_BOOL`, `PARAMETER_INTEGER`, `PARAMETER_DOUBLE`, `PARAMETER_STRING`, `PARAMETER_BYTE_ARRAY`, `PARAMETER_BOOL_ARRAY`, `PARAMETER_INTEGER_ARRAY`, `PARAMETER_DOUBLE_ARRAY`, `PARAMETER_STRING_ARRAY`
 - รองรับการปรับแต่งค่าแบบเรียลไทม์ขณะที่หุ่นยนต์กำลังเคลื่อนที่ (On-the-fly Reconfiguration)
 
-```mermaid
-graph TD
-    subgraph ROS1_Arch ["ROS 1 Architecture (Centralized)"]
-        Master["roscore (Parameter Server)"]
-        R1Node1["Node 1"] -->|Get/Set| Master
-        R1Node2["Node 2"] -->|Get/Set| Master
-    end
-
-    subgraph ROS2_Arch ["ROS 2 Architecture (Decentralized & Event-Driven)"]
-        R2Node1["Node: /amr_01/motor_controller<br/>[Owns: max_speed, kp, ki]"]
-        R2Node2["Node: /amr_01/laser_filter<br/>[Owns: scan_angle, range_min]"]
-        CLI["CLI / GUI Manager"]
-        
-        CLI -->|~/set_parameters Service| R2Node1
-        CLI -->|~/set_parameters Service| R2Node2
-        R2Node1 -.->|/parameter_events Topic| CLI
-    end
-
-    style ROS1_Arch fill:#ffebee,stroke:#c62828,stroke-width:2px
-    style ROS2_Arch fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
-```
+![essential-w05-01](../../docs/diagrams/essential-w05-01.svg)
 
 ---
 
@@ -85,27 +65,7 @@ graph TD
 ### 3. Dynamic Validation & Parameter Descriptors
 เพื่อป้องกันไม่ให้ผู้ใช้งานหรือสคริปต์ภายนอกใส่ค่าที่เป็นอันตราย เช่น ป้อนความเร็วหุ่นยนต์ $100\text{ m/s}$ หรือระยะเซฟตี้ติดลบ ROS 2 จัดเตรียมสองชั้นการป้องกัน:
 
-```mermaid
-flowchart TD
-    Request["Request: Set Parameter<br/>(e.g., max_linear_speed = 5.0)"]
-    
-    subgraph Node_Validation ["กระบวนการตรวจสอบภายในโหนด"]
-        TypeCheck{"ชั้นที่ 1 (rclpy อัตโนมัติ):<br/>ชนิดข้อมูลตรงกับตอน declare หรือไม่?<br/>(PARAMETER_DOUBLE)"}
-        RangeCheck{"ชั้นที่ 2 (add_on_set_parameters_callback):<br/>อยู่ในช่วงปลอดภัยหรือไม่?<br/>(0.1 <= speed <= 2.5)"}
-        ApplyParam["rclpy บันทึกค่า แล้วเรียก<br/>add_post_set_parameters_callback<br/>self.max_linear_speed = ค่าใหม่"]
-        RejectParam["ปฏิเสธคำขอ<br/>successful = False<br/>reason = 'Speed outside range!'"]
-    end
-    
-    Response["ส่งผลลัพธ์ SetParametersResult กลับไปยังผู้ขอ"]
-
-    Request --> TypeCheck
-    TypeCheck -- ไม่ตรง --> RejectParam
-    TypeCheck -- ตรง --> RangeCheck
-    RangeCheck -- อยู่นอกช่วง --> RejectParam
-    RangeCheck -- ถูกต้อง --> ApplyParam
-    RejectParam --> Response
-    ApplyParam --> Response
-```
+![essential-w05-02](../../docs/diagrams/essential-w05-02.svg)
 
 - **ชั้นที่ 1 — Static Typing ของ rclpy:** ชนิดของพารามิเตอร์ถูกกำหนดจากค่า Default ตอน `declare_parameter()` (เช่น `0.8` → `PARAMETER_DOUBLE`) rclpy จะปฏิเสธค่าผิดชนิด **ก่อน** เรียก Callback ของเรา เช่น `ros2 param set ... max_linear_speed 1` ได้ `Wrong parameter type, expected 'Type.DOUBLE' got 'Type.INTEGER'` — โค้ดใน Callback จึงไม่ต้อง (และไม่สามารถ) ตรวจ/รับค่า Integer เอง (ถ้าต้องการรับหลายชนิดต้องประกาศ `ParameterDescriptor(dynamic_typing=True)`)
 - **ชั้นที่ 2 — `add_on_set_parameters_callback`:** ตรวจกฎทางวิศวกรรม (ช่วงความเร็ว, ระยะเผื่อขั้นต่ำ) ของพารามิเตอร์ **ทุกตัวในคำขอ** ก่อนตัดสินใจ ถ้าตัวใดไม่ผ่านจะคืน `SetParametersResult(successful=False, reason=...)` และไม่มีค่าใดถูกเปลี่ยน
@@ -119,37 +79,7 @@ flowchart TD
 - **Event-Driven Architecture:** รองรับการดักจับเหตุการณ์ เช่น เมื่อโหนดเซนเซอร์ตาย ให้รันโหนดรีสตาร์ท (`OnProcessExit`)
 - **Substitutions:** มีระบบแทนที่ค่าตัวแปรแบบ Lazy Evaluation เช่น `LaunchConfiguration`, `EnvironmentVariable`, `PathJoinSubstitution`
 
-```mermaid
-classDiagram
-    class LaunchDescription {
-        +add_action(action)
-        +entities: List[LaunchDescriptionEntity]
-    }
-    class DeclareLaunchArgument {
-        +name: str
-        +default_value: str
-        +description: str
-    }
-    class Node {
-        +package: str
-        +executable: str
-        +namespace: str
-        +parameters: List
-        +remappings: List
-    }
-    class ExecuteProcess {
-        +cmd: List[str]
-        +output: str
-    }
-    class IncludeLaunchDescription {
-        +launch_description_source
-    }
-
-    LaunchDescription *-- DeclareLaunchArgument
-    LaunchDescription *-- Node
-    LaunchDescription *-- ExecuteProcess
-    LaunchDescription *-- IncludeLaunchDescription
-```
+![essential-w05-03](../../docs/diagrams/essential-w05-03.svg)
 
 ---
 

@@ -1,0 +1,28 @@
+flowchart LR
+    subgraph SBC ["Single-Board Computer (Ubuntu 24.04)"]
+        ROS2_App["ROS 2 jazzy nodes"] <--> DDS_Layer["Fast DDS Middleware"]
+        DDS_Layer <--> UROS_Agent["micro_ros_agent Node"]
+    end
+
+    subgraph Embedded_MCU ["Microcontroller (FreeRTOS)"]
+        UROS_Client["micro-ROS Client (rclc)"]
+        PID_Loop["Hardware Timer PID Loop (1000 Hz)"]
+        Enc_ISR["Encoder Interrupts (Quadrature QEI)"]
+        PWM_Gen["Hardware PWM Generation"]
+    end
+
+    UROS_Agent <==>|"USB CDC Serial / UART (921600 baud)"| UROS_Client
+    UROS_Client <--> PID_Loop
+    Enc_ISR --> PID_Loop
+    PID_Loop --> PWM_Gen
+
+    classDef node fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#0f172a
+    classDef sim fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#0f172a
+    classDef hw fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#0f172a
+    classDef sec fill:#ffe4e6,stroke:#e11d48,stroke-width:2px,color:#0f172a
+    classDef bt fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#0f172a
+    classDef tool fill:#ffedd5,stroke:#ea580c,stroke-width:2px,color:#0f172a
+    classDef cfg fill:#f1f5f9,stroke:#64748b,stroke-width:2px,color:#0f172a
+    class ROS2_App node
+    class PID_Loop,Enc_ISR,PWM_Gen hw
+    class UROS_Client tool

@@ -1,0 +1,12 @@
+sequenceDiagram
+    autonumber
+    participant Encoders as ล้อหมุน (Odometry)
+    participant AMCL as AMCL Particle Filter
+    participant LiDAR as เลเซอร์สแกน (/scan)
+    participant TF as TF Tree (map -> odom)
+
+    Encoders->>AMCL: 1. Prediction Step: อนุภาคทุกตัวขยับตามระยะล้อ + สัญญาณรบกวน (alpha 1-4)
+    LiDAR->>AMCL: 2. Correction Step: นำ LaserScan จริงเทียบกับแผนที่ในมุมมองของแต่ละอนุภาค
+    Note over AMCL: 3. Importance Weighting: อนุภาคที่ลำแสงเลเซอร์ตรงกับกำแพงจะได้ค่าน้ำหนัก w สูง
+    Note over AMCL: 4. KLD Resampling: คัดเลือกอนุภาคน้ำหนักสูงมาขยายพันธุ์ใหม่ ลดจำนวนอนุภาคเมื่อมั่นใจ
+    AMCL->>TF: 5. Broadcast Transform: map -> odom (ชดเชย Drift ให้ระบบ)

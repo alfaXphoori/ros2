@@ -1,0 +1,14 @@
+sequenceDiagram
+    autonumber
+    participant Client as Service Client โหนดควบคุมหลัก
+    participant DDS as DDS Middleware Layer
+    participant Server as Service Server โหนดจัดการพลังงาน
+
+    Note over Client: ตรวจสอบความพร้อมของ Server ด้วย wait_for_service()
+    Client->>DDS: ยิงคำถาม Discovery ค้นหา Service /robot/set_power_mode
+    DDS-->>Client: ยืนยัน Service Online พร้อมรับคำขอ
+
+    Client->>Server: ส่ง Request: SetBool.Request(data=True)<br/>[แนบ Request ID: Client GUID + Seq 1]
+    Note over Server: ได้รับ Request และเริ่มประมวลผล Callback<br/>1. ตรวจสอบเงื่อนไขความปลอดภัย<br/>2. ตั้งค่าความเร็วสูงสุดเป็น 0.3 m/s<br/>3. เตรียมคำตอบ Response
+    Server-->>Client: ส่ง Response: SetBool.Response(success=True, message="Eco Mode Enabled")
+    Note over Client: ได้รับ Response และนำผลลัพธ์ไปประมวลผลต่อ

@@ -1,0 +1,29 @@
+flowchart TD
+    subgraph RawSensors ["ข้อมูลเซนเซอร์นำเข้า (Sensor Inputs)"]
+        StaticMap["Static Map (.yaml/.pgm จาก SLAM)"]
+        LaserScan["LiDAR LaserScan (/scan)"]
+        DepthCam["RGB-D PointCloud2 (/camera/points)"]
+    end
+
+    subgraph LayeredPipeline ["กระบวนการรวมเลเยอร์ Costmap (Layer Aggregation Pipeline)"]
+        SL["1. Static Layer<br/>(โหลดกำแพงถาวรจาก Map Server)"]
+        OL["2. Obstacle Layer<br/>(Marking และ Clearing สดจาก LiDAR)"]
+        VL["3. Voxel Layer<br/>(ตรวจจับสิ่งกีดขวาง 3D ป้องกันเพดาน/โต๊ะ)"]
+        IL["4. Inflation Layer<br/>(แผ่สนามศักย์ความปลอดภัยรอบสิ่งกีดขวาง)"]
+    end
+
+    subgraph MasterGrid ["Master Costmap Output"]
+        Values["ตารางกริดคอสต์ค่า 0 - 255<br/>(ส่งต่อไปยัง Global Planner & Local Controller)"]
+    end
+
+    StaticMap --> SL
+    LaserScan --> OL
+    DepthCam --> VL
+    SL --> IL
+    OL --> IL
+    VL --> IL
+    IL --> Values
+
+    style RawSensors fill:#e1f5fe,stroke:#0288d1,stroke-width:2px
+    style LayeredPipeline fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    style MasterGrid fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px

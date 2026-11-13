@@ -12,21 +12,7 @@
 
 ## 🗺️ โครงสร้างการเรียนรู้ระดับสูง (Advanced Modules)
 
-```mermaid
-flowchart TD
-    M1["01: ros2_control<br>(mock hardware, gz_ros2_control, DiffDriveController)"]
-    M2["02: Vision & Perception<br>(AprilTag PnP, Detection2DArray, YOLO optional)"]
-    M3["03: Nav2 Precision Docking<br>(opennav_docking + vision, Charging BT)"]
-    M4["04: Multi-Robot & Open-RMF<br>(Namespacing, frame_prefix, RMF fleet config)"]
-    M5["05: Production & SROS2<br>(Lifecycle, SROS 2 Enforce, launch_testing, Zenoh)"]
-    M6["06: Capstone Project<br>(Nav2 + Docking + E-stop, KPI vs Ground Truth)"]
-
-    M1 --> M6
-    M2 --> M3
-    M3 --> M6
-    M4 --> M6
-    M5 --> M6
-```
+![advanced-roadmap](../docs/diagrams/advanced-roadmap.svg)
 
 | โมดูล | หัวข้อการเรียนรู้ | เอกสารคู่มือ | ใบงานแล็บ | โค้ดตัวอย่างสำคัญ |
 | :---: | :--- | :--- | :--- | :--- |

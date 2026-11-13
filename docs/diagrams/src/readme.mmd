@@ -1,0 +1,36 @@
+flowchart TD
+    Start["🚀 เริ่มต้นเรียนรู้ ROS 2 AMR"]
+    Start --> Essential["📘 Essential ROS Track<br>(ระดับพื้นฐานสู่การขับเคลื่อนอัตโนมัติ)"]
+    Start --> Advanced["🚀 Advanced ROS Track<br>(ระดับวิศวกรรมขั้นสูง & Production)"]
+
+    subgraph E_Path ["Essential Track (5 Modules)"]
+        E1["01: Core Communication"] --> E2["02: Modeling & TF2"]
+        E2 --> E3["03: Gazebo Sim"]
+        E3 --> E4["04: SLAM Mapping"]
+        E4 --> E5["05: Nav2 Navigation"]
+    end
+
+    subgraph A_Path ["Advanced Track (6 Modules)"]
+        A1["01: ros2_control & Hardware"]
+        A2["02: Vision & AI Perception"]
+        A3["03: Precision Docking"]
+        A4["04: Multi-Robot Open-RMF"]
+        A5["05: Production & SROS2"]
+        A6["06: Capstone Warehouse AMR<br>(Nav2 + Docking + E-stop KPIs)"]
+    end
+
+    Essential --> E_Path
+    Advanced --> A_Path
+
+    classDef node fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#0f172a
+    classDef sim fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#0f172a
+    classDef hw fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#0f172a
+    classDef sec fill:#ffe4e6,stroke:#e11d48,stroke-width:2px,color:#0f172a
+    classDef bt fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#0f172a
+    classDef tool fill:#ffedd5,stroke:#ea580c,stroke-width:2px,color:#0f172a
+    classDef cfg fill:#f1f5f9,stroke:#64748b,stroke-width:2px,color:#0f172a
+    class Start node
+    class E1,A3 sim
+    class A1,A2 hw
+    class A5,A6 sec
+    class A4 bt

@@ -1,0 +1,23 @@
+flowchart TD
+    Footprint["base_footprint<br/>(Virtual 2D Ground Projection: Z=0)"]
+    BaseLink["base_link<br/>(Main Body / Chassis Center)"]
+    LWheel["left_wheel_link<br/>(Active Drive Wheel)"]
+    RWheel["right_wheel_link<br/>(Active Drive Wheel)"]
+    FCaster["front_caster_link<br/>(Passive Support)"]
+    RCaster["rear_caster_link<br/>(Passive Support)"]
+    Lidar["lidar_link<br/>(2D Laser Sensor)"]
+    Camera["camera_link<br/>(RGB-D Sensor)"]
+
+    Footprint -->|"base_footprint_joint [fixed]"| BaseLink
+    BaseLink -->|"left_wheel_joint [continuous]"| LWheel
+    BaseLink -->|"right_wheel_joint [continuous]"| RWheel
+    BaseLink -->|"front_caster_joint [fixed]"| FCaster
+    BaseLink -->|"rear_caster_joint [fixed]"| RCaster
+    BaseLink -->|"lidar_joint [fixed]"| Lidar
+    BaseLink -->|"camera_joint [fixed]"| Camera
+
+    style Footprint fill:#f5f5f5,stroke:#9e9e9e,stroke-width:1px
+    style BaseLink fill:#e1f5fe,stroke:#0288d1,stroke-width:2px
+    style Lidar fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    style LWheel fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    style RWheel fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px

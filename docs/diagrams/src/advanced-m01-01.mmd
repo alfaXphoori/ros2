@@ -1,0 +1,37 @@
+flowchart TD
+    subgraph ROS2_User_Space ["High-Level ROS 2 Ecosystem"]
+        Nav2["Nav2 Stack / Teleop"] -->|"/diff_drive_controller/cmd_vel (TwistStamped)"| DDC["diff_drive_controller"]
+        JSB["joint_state_broadcaster"] -->|"/joint_states"| RSP["robot_state_publisher"]
+        RSP --> TF["TF2 (/tf)"]
+    end
+
+    subgraph Controller_Manager ["Controller Manager (Deterministic Real-time Loop: 50-1000 Hz)"]
+        DDC
+        JSB
+        RM["Resource Manager (Memory Safety & Lifecycle)"]
+    end
+
+    subgraph Hardware_Interface ["C++ Hardware Interface Plugin (SystemInterface)"]
+        HI["DiffDriveHardwareSystem / mock_components/GenericSystem / gz_ros2_control/GazeboSimSystem"]
+        HI -->|"read(position, velocity)"| StateBuf["State Buffers"]
+        CmdBuf["Command Buffers"] -->|"write(velocity)"| HI
+    end
+
+    subgraph Physical_Hardware ["Physical Actuators & Sensors"]
+        HI <==>|"CAN Bus / UART Serial / EtherCAT"| MotorDrivers["BLDC Motor Drivers & Optical Encoders"]
+    end
+
+    DDC <--> RM
+    JSB <--> RM
+    RM <--> HI
+
+    classDef node fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#0f172a
+    classDef sim fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#0f172a
+    classDef hw fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#0f172a
+    classDef sec fill:#ffe4e6,stroke:#e11d48,stroke-width:2px,color:#0f172a
+    classDef bt fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#0f172a
+    classDef tool fill:#ffedd5,stroke:#ea580c,stroke-width:2px,color:#0f172a
+    classDef cfg fill:#f1f5f9,stroke:#64748b,stroke-width:2px,color:#0f172a
+    class CmdBuf node
+    class Nav2,HI sim
+    class JSB,RM bt

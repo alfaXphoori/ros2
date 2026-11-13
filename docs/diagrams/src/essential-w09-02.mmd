@@ -1,0 +1,11 @@
+sequenceDiagram
+    autonumber
+    participant Sensor as กล้องตรวจจับสิ่งกีดขวาง (เวลา t = 100.25 s)
+    participant Buffer as TF2 Buffer (เก็บแคชประวัติ t = 95.00 ถึง 105.00 s)
+    participant Planner as Local Path Planner
+
+    Sensor->>Planner: ส่งข้อมูล PointStamped ในเฟรม camera_link (ประทับเวลา t = 100.25 s)
+    Planner->>Buffer: ขอ Transform: camera_link -> base_link ณ เวลา t = 100.25 s
+    Note over Buffer: ทำ Slerp (Spherical Linear Interpolation) หาค่ามุมระหว่างสองจุดเวลาที่ใกล้เคียงที่สุด
+    Buffer-->>Planner: ส่งค่า Transform ที่ถูกต้องตรงกับเสี้ยววินาทีที่กล้องถ่ายภาพจริง
+    Note over Planner: แปลงจุดกีดขวางเข้าสู่ฐานหุ่นยนต์อย่างแม่นยำแม้หุ่นยนต์กำลังเคลื่อนที่

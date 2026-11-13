@@ -1,0 +1,22 @@
+classDiagram
+    class Link {
+        +String name
+    }
+    class Visual {
+        +Origin xyz, rpy
+        +Geometry (Box, Cylinder, Sphere, Mesh)
+        +Material (Color, Texture)
+    }
+    class Collision {
+        +Origin xyz, rpy
+        +Geometry (Simplified Primitives)
+    }
+    class Inertial {
+        +Origin xyz, rpy
+        +Mass value
+        +Inertia (ixx, iyy, izz, ixy, ixz, iyz)
+    }
+
+    Link *-- Visual : "ใช้แสดงผลใน RViz2"
+    Link *-- Collision : "ใช้ตรวจจับการชนใน Gazebo"
+    Link *-- Inertial : "ใช้คำนวณไดนามิกส์ฟิสิกส์"

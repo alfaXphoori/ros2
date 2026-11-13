@@ -1,0 +1,14 @@
+stateDiagram-v2
+    [*] --> Station1 : เริ่มต้นภารกิจ (Start Mission)
+    Station1 --> Station2 : เดินทางสำเร็จ & Dwell 3s (โหลดสินค้า)
+    Station2 --> Station3 : เดินทางสำเร็จ & Dwell 3s (ตรวจสอบสต็อก)
+    Station3 --> Station4 : เดินทางสำเร็จ & Dwell 3s (ส่งมอบสินค้า)
+    Station4 --> Station5 : เดินทางสำเร็จ & Dwell 3s (จุดชาร์จไฟ)
+    Station5 --> [*] : จบภารกิจสมบูรณ์ (Mission Complete)
+
+    Station1 --> Recovery : เกิดสิ่งกีดขวางติดขัด
+    Station2 --> Recovery : เกิดสิ่งกีดขวางติดขัด
+    Station3 --> Recovery : เกิดสิ่งกีดขวางติดขัด
+    Station4 --> Recovery : เกิดสิ่งกีดขวางติดขัด
+    Recovery --> Station1 : แก้ไขสำเร็จ รันต่อ
+    Recovery --> Station2 : แก้ไขสำเร็จ รันต่อ

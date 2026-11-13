@@ -1,0 +1,19 @@
+sequenceDiagram
+    autonumber
+    participant CM as Controller Manager Loop (100 Hz)
+    participant HI as Hardware Interface (C++)
+    participant MCU as Real Motor / MCU
+    participant DDC as DiffDriveController
+
+    loop ทุกๆ คาบเวลา T = 10 ms
+        CM->>HI: read(time, period)
+        HI->>MCU: ส่งคำสั่งถามค่า Encoders ผ่าน Serial/CAN
+        MCU-->>HI: ส่งค่า Encoder Ticks ล่าสุดกลับมา
+        HI-->>CM: อัปเดตตำแหน่ง (Position) และความเร็ว (Velocity) ใน State Buffer
+
+        CM->>DDC: update(time, period)
+        DDC->>CM: คำนวณความเร็วล้อซ้าย-ขวาจาก ~/cmd_vel (TwistStamped) และเขียนใส่ Command Buffer
+
+        CM->>HI: write(time, period)
+        HI->>MCU: ส่งคำสั่ง Target Velocity (rad/s) ไปยัง Motor Drivers
+    end

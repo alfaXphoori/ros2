@@ -1,0 +1,19 @@
+flowchart TD
+    WS["📁 ~/ros2_ws (Workspace Root)"]
+    WS --> Src["📁 src/ (โค้ดที่เราพัฒนาหรือ Clone มา)"]
+    WS --> Build["📁 build/ (ไฟล์ Object และ Cache การคอมไพล์)"]
+    WS --> Install["📁 install/ (ไบนารี, สคริปต์, และ setup.bash สำหรับรัน)"]
+    WS --> Log["📁 log/ (บันทึกข้อผิดพลาดในการ Build แต่ละครั้ง)"]
+
+    Src --> Pkg1["📦 my_amr_description (URDF/Meshes)"]
+    Src --> Pkg2["📦 my_amr_controller (C++ Control Node)"]
+    Src --> Pkg3["📦 my_amr_navigation (Nav2 Launch & Config)"]
+
+    classDef node fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#0f172a
+    classDef sim fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#0f172a
+    classDef hw fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#0f172a
+    classDef sec fill:#ffe4e6,stroke:#e11d48,stroke-width:2px,color:#0f172a
+    classDef bt fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#0f172a
+    classDef tool fill:#ffedd5,stroke:#ea580c,stroke-width:2px,color:#0f172a
+    classDef cfg fill:#f1f5f9,stroke:#64748b,stroke-width:2px,color:#0f172a
+    class WS cfg

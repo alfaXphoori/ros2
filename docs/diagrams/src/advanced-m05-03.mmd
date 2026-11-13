@@ -1,0 +1,16 @@
+flowchart LR
+    Dev["วิศวกร: make check (ก่อน git push)"] --> Action["container ros:lab-runner (หรือ CI runner)"]
+    Action --> Build["colcon build"]
+    Build --> Unit["pytest unit tests"]
+    Unit --> IntTest["launch_testing: เปิดโหนดจริง แล้วตรวจพฤติกรรมบนกราฟ ROS"]
+    IntTest --> Assert["ตรวจ exit code หลังปิด (post_shutdown_test)"]
+    Assert --> Deploy["Deploy ไปยังหุ่นยนต์จริง"]
+
+    classDef node fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#0f172a
+    classDef sim fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#0f172a
+    classDef hw fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#0f172a
+    classDef sec fill:#ffe4e6,stroke:#e11d48,stroke-width:2px,color:#0f172a
+    classDef bt fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#0f172a
+    classDef tool fill:#ffedd5,stroke:#ea580c,stroke-width:2px,color:#0f172a
+    classDef cfg fill:#f1f5f9,stroke:#64748b,stroke-width:2px,color:#0f172a
+    class Dev tool

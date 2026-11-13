@@ -1,0 +1,45 @@
+flowchart TD
+    subgraph Part1 ["ตอนที่ 1: การควบคุมฮาร์ดแวร์จริง (W1-W3)"]
+        W1["W1: ros2_control Architecture"]
+        W2["W2: Hardware Interfaces & Loops"]
+        W3["W3: micro-ROS (MCU & Closed-loop PID)"]
+    end
+
+    subgraph Part2 ["ตอนที่ 2: ระบบการมองเห็นและการรับรู้ด้วย AI (W4-W8)"]
+        W4["W4: ROS 2 Vision Pipeline (cv_bridge)"]
+        W5["W5: Deep Learning YOLO Detection"]
+        W6["W6: Visual Marker (AprilTag Docking)"]
+        W7["W7: 3D Point Cloud Processing (PCL)"]
+        W8["W8: 🔴 สอบปฏิบัติการกลางภาค (Midterm)"]
+    end
+
+    subgraph Part3 ["ตอนที่ 3: ระบบนำทางแม่นยำสูงและพฤติกรรมอัตโนมัติ (W9-W11)"]
+        W9["W9: Nav2 Precision Docking Server"]
+        W10["W10: Advanced Nav2 Behavior Trees"]
+        W11["W11: Costmap Filters & Restricted Zones"]
+    end
+
+    subgraph Part4 ["ตอนที่ 4: ฝูงหุ่นยนต์และความปลอดภัยระดับอุตสาหกรรม (W12-W16)"]
+        W12["W12: Multi-Robot Fleet & Namespacing"]
+        W13["W13: Open-RMF Fleet Management Core"]
+        W14["W14: Lifecycle Nodes (Deterministic States)"]
+        W15["W15: SROS 2 Cybersecurity & CI/CD Testing"]
+        W16["W16: 🏆 Capstone Showcase & Final Defense"]
+    end
+
+    Part1 --> Part2
+    Part2 --> Part3
+    Part3 --> Part4
+
+    classDef node fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#0f172a
+    classDef sim fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#0f172a
+    classDef hw fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#0f172a
+    classDef sec fill:#ffe4e6,stroke:#e11d48,stroke-width:2px,color:#0f172a
+    classDef bt fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#0f172a
+    classDef tool fill:#ffedd5,stroke:#ea580c,stroke-width:2px,color:#0f172a
+    classDef cfg fill:#f1f5f9,stroke:#64748b,stroke-width:2px,color:#0f172a
+    class W7 node
+    class W6,W9,W10,W11 sim
+    class W1,W2,W3,W4,W5 hw
+    class W8,W15 sec
+    class W12,W13,W14,W16 bt

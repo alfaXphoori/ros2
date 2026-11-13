@@ -51,27 +51,7 @@
 ### 2. มาตรฐาน REP 105: Coordinate Frames for Mobile Platforms
 ในระบบนำทางหุ่นยนต์เคลื่อนที่อัตโนมัติ (AMR) พิกัดตำแหน่งถูกแบ่งออกเป็นลำดับชั้นอย่างเคร่งครัด:
 
-```mermaid
-flowchart TD
-    Earth["earth<br/>(พิกัดละติจูด/ลองจิจูด สากล WGS-84 / UTM)"]
-    Map["map<br/>(พิกัดแผนที่โลก: World-fixed, ปลอด Drift, อาจมีการกระโดด)"]
-    Odom["odom<br/>(พิกัดการเคลื่อนที่สะสม: ต่อเนื่อง ไม่มีทางกระโดด แต่มี Drift สะสม)"]
-    BaseFootprint["base_footprint (REP 120)<br/>(เงาของหุ่นยนต์ฉายลงบนพื้นระนาบ 2D: Z=0)"]
-    BaseLink["base_link<br/>(จุดศูนย์กลางทางกายภาพของหุ่นยนต์ 3D)"]
-    Lidar["laser_frame<br/>(พิกัดของเซนเซอร์ LiDAR)"]
-    IMU["imu_link<br/>(พิกัดของเซนเซอร์ IMU)"]
-
-    Earth -.-> Map
-    Map -->|Global Localization / AMCL Correction| Odom
-    Odom -->|Wheel Encoders + IMU Integration| BaseFootprint
-    BaseFootprint -->|คงที่ตามความสูงแชสซี| BaseLink
-    BaseLink -->|ตำแหน่งติดตั้งเซนเซอร์ (Static TF)| Lidar
-    BaseLink -->|ตำแหน่งติดตั้งเซนเซอร์ (Static TF)| IMU
-
-    style Map fill:#e1f5fe,stroke:#0288d1,stroke-width:2px
-    style Odom fill:#fff3e0,stroke:#f57c00,stroke-width:2px
-    style BaseLink fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
-```
+![essential-w06-01](../../docs/diagrams/essential-w06-01.svg)
 
 > [!NOTE]
 > REP 105 นิยามเฉพาะ `earth`, `map`, `odom` และ `base_link` ส่วน **`base_footprint`** (จุดใต้หุ่นยนต์บนพื้น, $Z = 0$) นิยามไว้ใน **REP 120** (Coordinate Frames for Humanoid Robots) แต่ถูกนำมาใช้อย่างแพร่หลายกับ AMR ล้อ (เช่น TurtleBot, Nav2 ใช้เป็น `robot_base_frame` ได้) เพื่อให้ Planner 2D ไม่ต้องสนใจความสูงของแชสซี
@@ -98,15 +78,7 @@ flowchart TD
 - $v_R, v_L$: ความเร็วเชิงเส้นสัมผัสพื้นของล้อขวาและล้อซ้าย ($m/s$)
 - $\omega_R, \omega_L$: ความเร็วเชิงมุมในการหมุนของมอเตอร์ล้อขวาและล้อซ้าย ($rad/s$)
 
-```mermaid
-flowchart LR
-    CmdVel["คำสั่งความเร็วหุ่นยนต์<br/>(v, omega)"]
-    Wheels["คำสั่งรอบหมุนมอเตอร์<br/>(omega_R, omega_L)"]
-    Odometry["การประมาณตำแหน่งและพิกัด<br/>(x, y, theta)"]
-
-    CmdVel -->|"Inverse Kinematics (IK)"| Wheels
-    Wheels -->|"Forward Kinematics (FK) & Dead Reckoning"| Odometry
-```
+![essential-w06-02](../../docs/diagrams/essential-w06-02.svg)
 
 #### ก. จุดศูนย์กลางการหมุนชั่วขณะ (Instantaneous Center of Curvature: ICC)
 เมื่อหุ่นยนต์เคลื่อนที่เป็นแนวโค้ง ทั้งล้อซ้ายและล้อขวาจะหมุนรอบจุดร่วมเดียวกันคือ ICC ด้วยรัศมีความโค้ง $R$:

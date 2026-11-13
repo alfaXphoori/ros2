@@ -1,0 +1,13 @@
+sequenceDiagram
+    autonumber
+    actor Dev as วิศวกร (Terminal 1)
+    participant Pub as Talker Node
+    participant DDS as Fast-DDS Middleware
+    participant Sub as Listener Node
+    actor Obs as วิศวกร (Terminal 2)
+
+    Dev->>Pub: ros2 run demo_nodes_py talker
+    Obs->>Sub: ros2 run demo_nodes_py listener
+    Pub->>DDS: Publish 'Hello World: <count>'
+    DDS->>Sub: Deliver Message via Shared Memory/UDP
+    Sub-->>Obs: Print 'I heard: [Hello World: <count>]'

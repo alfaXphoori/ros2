@@ -1,0 +1,30 @@
+flowchart TD
+    subgraph Phase1 ["1. Coarse Navigation (นำทางหยาบ)"]
+        Nav["Nav2 NavigateToPose"] -->|"เดินทางด้วย Global Path"| Staging["Staging Area (0.7 m หน้าแท่นชาร์จ)"]
+    end
+
+    subgraph Phase2 ["2. Perception & Alignment (เล็งเป้าหมาย)"]
+        Staging --> Cam["AprilTag / LiDAR Detector"]
+        Cam -->|"ตรวจจับพิกัดแท่นชาร์จ"| DockPose["Fine Target Pose"]
+    end
+
+    subgraph Phase3 ["3. Precision Approach (เข้าจอดความแม่นยำสูง)"]
+        DockPose --> Controller["Docking Controller (graceful control law, 0.05-0.15 m/s)"]
+        Controller --> Contact["isDocked: ระยะถึง dock pose < docking_threshold (หรือ contact/กระแสชาร์จบนหุ่นจริง)"]
+    end
+
+    subgraph Phase4 ["4. Charging & Monitoring (ชาร์จแบตเตอรี่)"]
+        Contact --> Charge["รอชาร์จจน BatteryState.percentage ≥ 0.95 (ใน BT)"]
+        Charge --> Undock["Undock Action (ถอยหลังออกจากแท่น)"]
+    end
+
+    Phase1 --> Phase2 --> Phase3 --> Phase4
+
+    classDef node fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#0f172a
+    classDef sim fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#0f172a
+    classDef hw fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#0f172a
+    classDef sec fill:#ffe4e6,stroke:#e11d48,stroke-width:2px,color:#0f172a
+    classDef bt fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#0f172a
+    classDef tool fill:#ffedd5,stroke:#ea580c,stroke-width:2px,color:#0f172a
+    classDef cfg fill:#f1f5f9,stroke:#64748b,stroke-width:2px,color:#0f172a
+    class Nav sim

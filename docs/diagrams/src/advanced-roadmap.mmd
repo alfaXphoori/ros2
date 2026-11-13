@@ -1,0 +1,25 @@
+flowchart TD
+    M1["01: ros2_control<br>(mock hardware, gz_ros2_control, DiffDriveController)"]
+    M2["02: Vision & Perception<br>(AprilTag PnP, Detection2DArray, YOLO optional)"]
+    M3["03: Nav2 Precision Docking<br>(opennav_docking + vision, Charging BT)"]
+    M4["04: Multi-Robot & Open-RMF<br>(Namespacing, frame_prefix, RMF fleet config)"]
+    M5["05: Production & SROS2<br>(Lifecycle, SROS 2 Enforce, launch_testing, Zenoh)"]
+    M6["06: Capstone Project<br>(Nav2 + Docking + E-stop, KPI vs Ground Truth)"]
+
+    M1 --> M6
+    M2 --> M3
+    M3 --> M6
+    M4 --> M6
+    M5 --> M6
+
+    classDef node fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#0f172a
+    classDef sim fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#0f172a
+    classDef hw fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#0f172a
+    classDef sec fill:#ffe4e6,stroke:#e11d48,stroke-width:2px,color:#0f172a
+    classDef bt fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#0f172a
+    classDef tool fill:#ffedd5,stroke:#ea580c,stroke-width:2px,color:#0f172a
+    classDef cfg fill:#f1f5f9,stroke:#64748b,stroke-width:2px,color:#0f172a
+    class M1,M3 sim
+    class M2 hw
+    class M5,M6 sec
+    class M4 bt

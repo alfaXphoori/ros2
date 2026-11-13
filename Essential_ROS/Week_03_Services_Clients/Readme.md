@@ -38,22 +38,7 @@
   - การเปลี่ยนโหมดการใช้พลังงาน (Normal Mode $\leftrightarrow$ Eco Mode)
   - การขออนุญาตเข้าจอดในแท่นชาร์จ
 
-```mermaid
-sequenceDiagram
-    autonumber
-    participant Client as Service Client โหนดควบคุมหลัก
-    participant DDS as DDS Middleware Layer
-    participant Server as Service Server โหนดจัดการพลังงาน
-
-    Note over Client: ตรวจสอบความพร้อมของ Server ด้วย wait_for_service()
-    Client->>DDS: ยิงคำถาม Discovery ค้นหา Service /robot/set_power_mode
-    DDS-->>Client: ยืนยัน Service Online พร้อมรับคำขอ
-    
-    Client->>Server: ส่ง Request: SetBool.Request(data=True)<br/>[แนบ Request ID: Client GUID + Seq 1]
-    Note over Server: ได้รับ Request และเริ่มประมวลผล Callback<br/>1. ตรวจสอบเงื่อนไขความปลอดภัย<br/>2. ตั้งค่าความเร็วสูงสุดเป็น 0.3 m/s<br/>3. เตรียมคำตอบ Response
-    Server-->>Client: ส่ง Response: SetBool.Response(success=True, message="Eco Mode Enabled")
-    Note over Client: ได้รับ Response และนำผลลัพธ์ไปประมวลผลต่อ
-```
+![essential-w03-01](../../docs/diagrams/essential-w03-01.svg)
 
 ---
 
@@ -92,25 +77,7 @@ def timer_callback(self):
     self.get_logger().info(f'Result: {response.success}')
 ```
 
-```mermaid
-sequenceDiagram
-    autonumber
-    participant Timer as Timer Trigger (1 Hz)
-    participant Thread as Single Executor Thread (เธรดเดี่ยว)
-    participant Client as Service Client (ผู้ส่งคำขอ)
-    participant DDSNet as DDS Middleware (เครือข่าย)
-    participant Server as Service Server (ผู้ประมวลผล)
-
-    Timer->>Thread: ปลุกเธรดให้มารัน timer_callback()
-    Note over Thread: เธรดถูก "จอง (Locked)" เพื่อรันโค้ดในฟังก์ชันนี้
-    Thread->>Client: สั่ง cli.call(req) แบบ Synchronous
-    Client->>DDSNet: ส่งแพ็กเก็ต Request ออกไปทางเครือข่าย
-    DDSNet->>Server: Server รับคำขอและประมวลผลเสร็จสิ้น
-    Server-->>DDSNet: Server ส่ง Response กลับมาแล้ว!
-    DDSNet->>Thread: ⚠️ มีแพ็กเก็ต Response มาถึงแล้ว ช่วยมารับและถอดรหัสที!
-    
-    Note over Thread: 💥 DEADLOCK! เธรดยังคงหลับ (Block) รอผลลัพธ์ของ cli.call()<br/>แต่การหยิบ Response จาก DDS เข้ามาต้องใช้เธรดเดียวกันนี้!<br/>ต่างฝ่ายต่างรอซึ่งกันและกัน โปรแกรมค้างชั่วนิรันดร์
-```
+![essential-w03-02](../../docs/diagrams/essential-w03-02.svg)
 
 #### ทำไมจึงเกิดการติดหล่ม (Deadlock)?
 1. **มีเพียง 1 Thread เท่านั้น:** `SingleThreadedExecutor` มีทรัพยากรการประมวลผลเพียง 1 เธรดคอยวนลูปทำงานทีละ Callback
@@ -142,20 +109,7 @@ def response_handler(self, future):
 #### ทางออกที่ 2: การใช้ MultiThreadedExecutor ร่วมกับ ReentrantCallbackGroup (สำหรับงานระดับสูง)
 หากมีความจำเป็นต้องรอผลลัพธ์แบบบล็อก เราต้องเพิ่มจำนวนเธรดในระบบผ่าน **`MultiThreadedExecutor`** และแบ่งกลุ่ม Callback ด้วย **`ReentrantCallbackGroup`**:
 
-```mermaid
-flowchart TD
-    subgraph MultiExecutor ["MultiThreadedExecutor (Thread Pool: Thread 1, 2, 3...)"]
-        Thread1["Thread 1: รัน Timer Callback (ติดบล็อกรอ Service)"]
-        Thread2["Thread 2: อิสระ! มารับ Response จาก DDS และปลดล็อก Thread 1"]
-    end
-
-    subgraph CBGroup ["ReentrantCallbackGroup"]
-        Timer["Timer Callback"]
-        ClientSub["Client Response Callback"]
-    end
-
-    CBGroup --> MultiExecutor
-```
+![essential-w03-03](../../docs/diagrams/essential-w03-03.svg)
 
 - **`MutuallyExclusiveCallbackGroup` (ค่าปริยาย):** ในกลุ่มเดียวกัน Callbacks จะถูกรันทีละตัวเท่านั้น ห้ามรันซ้อนกัน (Thread-safe อัตโนมัติ)
 - **`ReentrantCallbackGroup`:** อนุญาตให้ Callbacks ในกลุ่มเดียวกัน สามารถถูกหยิบไปประมวลผลพร้อมกันในหลายเธรดคู่ขนานได้ เมื่อใช้คู่กับ `MultiThreadedExecutor` (มีอย่างน้อย 2 เธรด) Response จึงถูกรับได้แม้ Callback อื่นกำลังบล็อกอยู่ — ถ้าใช้ Reentrant แต่ยังหมุนด้วย `SingleThreadedExecutor` ก็ยัง Deadlock เหมือนเดิม

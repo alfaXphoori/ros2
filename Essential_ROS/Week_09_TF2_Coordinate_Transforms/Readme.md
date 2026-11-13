@@ -58,13 +58,7 @@ $$\mathbf{v}' = \mathbf{q} \otimes \mathbf{v} \otimes \mathbf{q}^*$$
 - **แกน +X:** ชี้ไปทางขวาของภาพ (Image Width / Right)
 - **แกน +Y:** ชี้ดิ่งลงด้านล่างของภาพ (Image Height / Down)
 
-```mermaid
-flowchart LR
-    Body["camera_link<br/>(Body Convention)<br/>X: หน้า, Y: ซ้าย, Z: บน"]
-    Optical["camera_optical_link<br/>(Optical Convention)<br/>Z: หน้า, X: ขวา, Y: ล่าง"]
-
-    Body -->|"Roll = -90°, Pitch = 0°, Yaw = -90°"| Optical
-```
+![essential-w09-01](../../docs/diagrams/essential-w09-01.svg)
 
 การแปลงจาก `camera_link` สู่ `camera_optical_link` ต้องหมุนด้วยมุม Euler:
 $$\text{Roll} = -90^\circ \left(-\frac{\pi}{2}\right), \quad \text{Pitch} = 0^\circ, \quad \text{Yaw} = -90^\circ \left(-\frac{\pi}{2}\right)$$
@@ -76,19 +70,7 @@ $$\mathbf{q}_{\text{optical}} = [-0.5, 0.5, -0.5, 0.5]$$
 ### 3. สถาปัตยกรรม TF2 Ring Buffer และ Time Travel
 ไลบรารี TF2 ใน ROS 2 ไม่ได้เป็นเพียงผู้กระจายข้อความ แต่เป็น **โครงสร้างข้อมูลแคชประวัติเชิงเวลา (Ring Buffer)** ที่เก็บรักษาข้อมูลพิกัดย้อนหลัง (โดยค่าเริ่มต้น 10 วินาที):
 
-```mermaid
-sequenceDiagram
-    autonumber
-    participant Sensor as กล้องตรวจจับสิ่งกีดขวาง (เวลา t = 100.25 s)
-    participant Buffer as TF2 Buffer (เก็บแคชประวัติ t = 95.00 ถึง 105.00 s)
-    participant Planner as Local Path Planner
-
-    Sensor->>Planner: ส่งข้อมูล PointStamped ในเฟรม camera_link (ประทับเวลา t = 100.25 s)
-    Planner->>Buffer: ขอ Transform: camera_link -> base_link ณ เวลา t = 100.25 s
-    Note over Buffer: ทำ Slerp (Spherical Linear Interpolation) หาค่ามุมระหว่างสองจุดเวลาที่ใกล้เคียงที่สุด
-    Buffer-->>Planner: ส่งค่า Transform ที่ถูกต้องตรงกับเสี้ยววินาทีที่กล้องถ่ายภาพจริง
-    Note over Planner: แปลงจุดกีดขวางเข้าสู่ฐานหุ่นยนต์อย่างแม่นยำแม้หุ่นยนต์กำลังเคลื่อนที่
-```
+![essential-w09-02](../../docs/diagrams/essential-w09-02.svg)
 
 #### ทำไม Time Travel จึงจำเป็น?
 หากหุ่นยนต์เคลื่อนที่ด้วยความเร็ว $1.5\text{ m/s}$ และการประมวลผลระบบจำแนกภาพ (Deep Learning) ใช้เวลาหน่วง $200\text{ ms}$:
@@ -109,32 +91,7 @@ sequenceDiagram
 ### 5. ข้อยกเว้นและข้อผิดพลาดในระบบ TF2 (TF Exceptions Handling)
 เมื่อเรียกใช้ `tf_buffer.transform()` หรือ `tf_buffer.lookup_transform()` อาจเกิดข้อยกเว้น 3 ประเภทหลัก ซึ่งผู้พัฒนาต้องเขียนบล็อก `try-except` ดักจับเสมอ:
 
-```mermaid
-flowchart TD
-    Lookup["คำขอดึงพิกัด (lookup_transform)"]
-    
-    Check1{"พบชื่อ Frame ใน Buffer หรือไม่?"}
-    Check2{"มีเส้นทางเชื่อมโยง Parent-Child ถึงกันหรือไม่?"}
-    Check3{"ประทับเวลา (Timestamp) อยู่ในช่วงแคช 10 วินาทีหรือไม่?"}
-    
-    Success["ได้ค่า Transform สำเร็จ"]
-    E1["tf2_ros.LookupException<br/>(ไม่พบชื่อ Frame ในระบบ)"]
-    E2["tf2_ros.ConnectivityException<br/>(ไม่มีกิ่งไม้เชื่อมต่อระหว่างสองเฟรม)"]
-    E3["tf2_ros.ExtrapolationException<br/>(ร้องขอเวลาในอนาคตหรืออดีตที่หลุดแคช)"]
-
-    Lookup --> Check1
-    Check1 -- ไม่พบ --> E1
-    Check1 -- พบ --> Check2
-    Check2 -- ทรีขาดตอน --> E2
-    Check2 -- ทรีเชื่อมสมบูรณ์ --> Check3
-    Check3 -- นอกช่วงเวลา --> E3
-    Check3 -- อยู่ในช่วงแคช --> Success
-
-    style Success fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
-    style E1 fill:#ffebee,stroke:#c62828,stroke-width:2px
-    style E2 fill:#ffebee,stroke:#c62828,stroke-width:2px
-    style E3 fill:#ffebee,stroke:#c62828,stroke-width:2px
-```
+![essential-w09-03](../../docs/diagrams/essential-w09-03.svg)
 
 ---
 

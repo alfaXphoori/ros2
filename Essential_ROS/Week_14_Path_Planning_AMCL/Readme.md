@@ -30,20 +30,7 @@
 ### 1. การประมาณตำแหน่งด้วย AMCL (Particle Filter Localization)
 เมื่อหุ่นยนต์มีแผนที่ที่สร้างเสร็จแล้ว หุ่นยนต์จะต้องแก้ปัญหาการระบุตำแหน่งตนเองเทียบกับแผนที่โลก (Global Localization):
 
-```mermaid
-sequenceDiagram
-    autonumber
-    participant Encoders as ล้อหมุน (Odometry)
-    participant AMCL as AMCL Particle Filter
-    participant LiDAR as เลเซอร์สแกน (/scan)
-    participant TF as TF Tree (map -> odom)
-
-    Encoders->>AMCL: 1. Prediction Step: อนุภาคทุกตัวขยับตามระยะล้อ + สัญญาณรบกวน (alpha 1-4)
-    LiDAR->>AMCL: 2. Correction Step: นำ LaserScan จริงเทียบกับแผนที่ในมุมมองของแต่ละอนุภาค
-    Note over AMCL: 3. Importance Weighting: อนุภาคที่ลำแสงเลเซอร์ตรงกับกำแพงจะได้ค่าน้ำหนัก w สูง
-    Note over AMCL: 4. KLD Resampling: คัดเลือกอนุภาคน้ำหนักสูงมาขยายพันธุ์ใหม่ ลดจำนวนอนุภาคเมื่อมั่นใจ
-    AMCL->>TF: 5. Broadcast Transform: map -> odom (ชดเชย Drift ให้ระบบ)
-```
+![essential-w14-01](../../docs/diagrams/essential-w14-01.svg)
 
 #### ก. โมเดลการเคลื่อนที่เชิงสถิติ (Odometry Motion Model Noise $\alpha_1 - \alpha_4$):
 เมื่อหุ่นยนต์เคลื่อนที่จากสถานะ $\mathbf{x} = [x, y, \theta]^T$ ไปยัง $\mathbf{x}' = [x', y', \theta']^T$ คำสั่งจะถูกแบ่งออกเป็น 3 จังหวะ:
@@ -68,15 +55,7 @@ $$\mathbf{T}_{\text{odom}}^{\text{map}} = \mathbf{T}_{\text{base}}^{\text{map}} 
 ### 2. การวางแผนเส้นทางระดับโลก (Global Planners Architecture)
 Global Planner มีหน้าที่ค้นหาแนวเส้นทางจากจุดพิกัดปัจจุบันไปยังเป้าหมายบน Global Costmap:
 
-```mermaid
-flowchart TD
-    StartGoal["Start Pose & Goal Pose"] --> Planner{"เลือกใช้อัลกอริทึมใด?"}
-    Planner -->|NavFn Planner| NavFn["Dijkstra / A*<br/>(มองหุ่นยนต์เป็นจุดกลม 2D วิ่งบนตาราง Grid)"]
-    Planner -->|Smac Planner| Smac["Hybrid A* / State Lattice<br/>(คำนึงถึงข้อจำกัดรัศมีวงเลี้ยวและการถอยหลัง)"]
-
-    NavFn --> PathOut["Global Path: nav_msgs/Path<br/>(ชุดพิกัด Waypoints ส่งต่อให้ Controller)"]
-    Smac --> PathOut
-```
+![essential-w14-02](../../docs/diagrams/essential-w14-02.svg)
 
 | อัลกอริทึม | ลักษณะการทำงาน | จุดเด่น | กรณีการใช้งานที่เหมาะสม |
 | :--- | :--- | :--- | :--- |

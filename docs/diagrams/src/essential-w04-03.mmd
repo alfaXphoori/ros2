@@ -1,0 +1,14 @@
+stateDiagram-v2
+    [*] --> STATUS_ACCEPTED : Client ส่ง Goal สำเร็จ & Server รับงาน
+    STATUS_ACCEPTED --> STATUS_EXECUTING : Action Server เริ่มต้นรัน execute_callback
+
+    STATUS_EXECUTING --> STATUS_SUCCEEDED : ภารกิจสำเร็จสมบูรณ์ (goal_handle.succeed())
+    STATUS_EXECUTING --> STATUS_CANCELING : Client ส่ง cancel_goal_async()
+    STATUS_EXECUTING --> STATUS_ABORTED : ตรวจพบความผิดพลาดฮาร์ดแวร์ (goal_handle.abort())
+
+    STATUS_CANCELING --> STATUS_CANCELED : จัดการหยุดมอเตอร์ปลอดภัยแล้ว (goal_handle.canceled())
+    STATUS_CANCELING --> STATUS_ABORTED : เกิดขัดข้องระหว่างหยุด (goal_handle.abort())
+
+    STATUS_SUCCEEDED --> [*]
+    STATUS_CANCELED --> [*]
+    STATUS_ABORTED --> [*]

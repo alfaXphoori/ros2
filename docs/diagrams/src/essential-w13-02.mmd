@@ -1,0 +1,17 @@
+flowchart LR
+    Lethal["Lethal (Cost 254)<br/>d = 0"]
+    Inscribed["Inscribed (Cost 253)<br/>d = r_inscribed"]
+    Decay["Decay Zone (Cost 252 -> 1)<br/>r_inscribed < d < r_inflation"]
+    Free["Free Space (Cost 0)<br/>d >= r_inflation"]
+
+    Lethal --> Inscribed --> Decay --> Free
+
+    classDef node fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#0f172a
+    classDef sim fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#0f172a
+    classDef hw fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#0f172a
+    classDef sec fill:#ffe4e6,stroke:#e11d48,stroke-width:2px,color:#0f172a
+    classDef bt fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#0f172a
+    classDef tool fill:#ffedd5,stroke:#ea580c,stroke-width:2px,color:#0f172a
+    classDef cfg fill:#f1f5f9,stroke:#64748b,stroke-width:2px,color:#0f172a
+    class Inscribed,Decay,Free node
+    class Lethal sec

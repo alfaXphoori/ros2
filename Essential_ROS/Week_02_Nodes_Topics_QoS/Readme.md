@@ -44,27 +44,7 @@ while not rospy.is_shutdown():
 
 ใน **ROS 2** สถาปัตยกรรมบังคับใช้แนวทาง **Class-based Object-Oriented Programming (OOP)** โดยสืบทอดมาจากคลาส `rclpy.node.Node`:
 
-```mermaid
-flowchart TD
-    subgraph OSProcess ["Operating System Process (Python Runtime)"]
-        subgraph ExecutorLoop ["Executor (SingleThreadedExecutor Event Loop)"]
-            TimerQueue["Timer Queue (e.g. 2 Hz Clock)"]
-            SubQueue["Subscription Message Queue"]
-        end
-
-        subgraph CustomNodeClass ["class SensorQoSPublisher(Node)"]
-            Constructor["__init__(): ประกาศ Topic, QoS, Timers"]
-            PublisherA["self.pub_sensor (/sensor/temperature)"]
-            PublisherB["self.pub_state (/robot/state)"]
-            TimerCallback["def timer_callback(self): ประมวลผลและส่งข้อมูล"]
-            MemberVars["ตัวแปรสถานะ: self.counter, self.battery"]
-        end
-    end
-
-    ExecutorLoop -->|"เมื่อครบเวลา 0.5 วินาที"| TimerCallback
-    TimerCallback --> PublisherA
-    TimerCallback --> PublisherB
-```
+![essential-w02](../../docs/diagrams/essential-w02.svg)
 
 #### ทำไม `rclpy.spin(node)` จึงเป็นหัวใจสำคัญ?
 - `rclpy.spin(node)` คือการรัน **Event Loop** แบบบล็อกรอสัญญาณ (Event-Driven Loop) ส่วน `rclpy.spin_once(node, timeout_sec=0.1)` คือ Event Loop เดียวกันแต่ทำทีละรอบ โค้ดในแล็บใช้แบบหลังใน `main()` เพื่อให้ปิดโหนดได้สะอาด (ดูหัวข้อ 3)

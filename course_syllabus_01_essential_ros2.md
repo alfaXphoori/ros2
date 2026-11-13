@@ -27,40 +27,7 @@
 
 ## 📅 ตารางแผนการสอนรายสัปดาห์ (16-Week Course Schedule)
 
-```mermaid
-flowchart TD
-    subgraph Part1 ["ตอนที่ 1: พื้นฐานระบบและการสื่อสาร (W1-W5)"]
-        W1["W1: Linux, Docker & ROS 2 Architecture"]
-        W2["W2: Node & Topic Pub/Sub (QoS)"]
-        W3["W3: Service-Client & RPC"]
-        W4["W4: Asynchronous Actions"]
-        W5["W5: Parameters & Launch System"]
-    end
-
-    subgraph Part2 ["ตอนที่ 2: แบบจำลองหุ่นยนต์และระบบพิกัด (W6-W9)"]
-        W6["W6: Kinematics & REP Standards"]
-        W7["W7: URDF 3D Modeling & RViz2"]
-        W8["W8: 🔴 สอบปฏิบัติการกลางภาค (Midterm)"]
-        W9["W9: TF2 Transform Tree & Listeners"]
-    end
-
-    subgraph Part3 ["ตอนที่ 3: สภาพแวดล้อมจำลองและเซนเซอร์ (W10-W11)"]
-        W10["W10: Gazebo Sim 3D World & Physics"]
-        W11["W11: Actuator Plugins & ros_gz_bridge"]
-    end
-
-    subgraph Part4 ["ตอนที่ 4: แผนที่และการนำทางอัตโนมัติ (W12-W16)"]
-        W12["W12: 2D SLAM Mapping (SLAM Toolbox)"]
-        W13["W13: Nav2 Stack & Costmap 2D Layers"]
-        W14["W14: Path Planning & AMCL Localization"]
-        W15["W15: Autonomous Waypoint Patrol"]
-        W16["W16: 🏁 สอบปฏิบัติการปลายภาค (Final Demo)"]
-    end
-
-    Part1 --> Part2
-    Part2 --> Part3
-    Part3 --> Part4
-```
+![syllabus-essential](docs/diagrams/syllabus-essential.svg)
 
 ---
 

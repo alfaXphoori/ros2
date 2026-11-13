@@ -1,0 +1,30 @@
+flowchart LR
+    subgraph ROS2_Stack ["ROS 2 Node Graph (DDS / CDR)"]
+        Teleop["Teleop / Nav2 Controller<br/>(/cmd_vel [geometry_msgs/Twist])"]
+        SLAM["SLAM Toolbox / Costmap<br/>(/scan [sensor_msgs/LaserScan])"]
+        OdomNode["Localization / EKF<br/>(/odom [nav_msgs/Odometry])"]
+        SimTime["ROS 2 System Clock<br/>(/clock [rosgraph_msgs/Clock])"]
+    end
+
+    subgraph Bridge_Layer ["ros_gz_bridge (parameter_bridge)"]
+        B_Vel["ROS_TO_GZ<br/>Twist แปลงเป็น gz.msgs.Twist"]
+        B_Scan["GZ_TO_ROS<br/>gz.msgs.LaserScan แปลงเป็น LaserScan"]
+        B_Odom["GZ_TO_ROS<br/>gz.msgs.Odometry แปลงเป็น Odometry"]
+        B_Clock["GZ_TO_ROS<br/>gz.msgs.Clock แปลงเป็น Clock"]
+    end
+
+    subgraph Gazebo_Stack ["Gazebo Sim 8 (Gazebo Transport / Protobuf)"]
+        GZ_DiffDrive["DiffDrive System Plugin<br/>(ขับเคลื่อนข้อต่อล้อจริง)"]
+        GZ_LiDAR["Sensors System Plugin<br/>(เรนเดอร์ GPU Ray Scan)"]
+        GZ_OdomPub["Gazebo Odometry Publisher"]
+        GZ_WorldClock["Physics Simulation Clock"]
+    end
+
+    Teleop --> B_Vel --> GZ_DiffDrive
+    GZ_LiDAR --> B_Scan --> SLAM
+    GZ_OdomPub --> B_Odom --> OdomNode
+    GZ_WorldClock --> B_Clock --> SimTime
+
+    style ROS2_Stack fill:#e1f5fe,stroke:#0288d1,stroke-width:2px
+    style Bridge_Layer fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    style Gazebo_Stack fill:#f1f8e9,stroke:#558b2f,stroke-width:2px

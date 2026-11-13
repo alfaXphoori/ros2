@@ -44,62 +44,14 @@
 | **ผลสรุปสุดท้าย (Result)** | ไม่มีสัญญาณแจ้งเตือนการจบลำดับ | ได้รับข้อมูล Response ตอนเสร็จ | ได้รับ Result Object พร้อมสถานะสิ้นสุดงาน |
 | **ตัวอย่างในหุ่นยนต์จริง** | เซนเซอร์ LiDAR (`/scan`), กล้อง (`/image_raw`), ล้อ (`/odom`) | ขอสวิตช์โหมด (`/set_mode`), รีเซ็ต Odometry (`/reset_odom`) | นำทาง (`/navigate_to_pose`), ติดตามเป้าหมาย (`/follow_path`) |
 
-```mermaid
-sequenceDiagram
-    autonumber
-    participant Client as Action Client (Nav2 Coordinator)
-    participant Server as Action Server (Motor & Path Controller)
-
-    Note over Client,Server: Phase 1: การส่งและตอบรับเป้าหมาย (Goal Request)
-    Client->>Server: Send Goal Request (UUID 8a4f... สุ่มโดย Client, Pose X=10.0, Y=5.0)
-    Server-->>Client: Goal Response: ACCEPTED (+ เวลาที่รับงาน)
-
-    Note over Client,Server: Phase 2: การดำเนินงานและรายงานความคืบหน้า (Feedback Loop)
-    loop ทุกๆ 500 ms ขณะกำลังนำทาง
-        Server->>Client: Feedback Stream (Current Pose, Distance Remaining = 12.4 m)
-    end
-
-    Note over Client,Server: Phase 3a: กรณีจบภารกิจสำเร็จ (Normal Flow)
-    Server-->>Client: Result Callback: SUCCEEDED (Total Time = 28.5s)
-
-    Note over Client,Server: Phase 3b: กรณีตรวจพบสิ่งกีดขวางหรือคำสั่งฉุกเฉิน (Preemption Flow)
-    Client->>Server: Cancel Goal Request (UUID: 8a4f...)
-    Note over Server: มอเตอร์เริ่มลดความเร็ว Deceleration จนหยุดนิ่ง
-    Server-->>Client: Cancel Response: ACCEPTED & Status: CANCELED
-```
+![essential-w04-01](../../docs/diagrams/essential-w04-01.svg)
 
 ---
 
 ### 2. โครงสร้างใต้ฝากระโปรงของ ROS 2 Action (Under the Hood: 5 DDS Channels)
 ROS 2 ไม่ได้มี DDS Primitive ชนิดพิเศษชื่อว่า "Action" แต่สร้างครอบอยู่บน DDS Topics และ Services โดยเมื่อผู้พัฒนาประกาศสร้าง Action ขึ้นมา 1 ชื่อ (เช่น `/navigate_distance`) เฟรมเวิร์ก `rclpy.action` จะสร้าง **5 DDS Communication Endpoints** ให้อัตโนมัติ:
 
-```mermaid
-graph TD
-    subgraph ClientNode ["Action Client Node"]
-        AC_Goal["Send Goal Client"]
-        AC_Cancel["Cancel Goal Client"]
-        AC_Result["Get Result Client"]
-        AC_FB["Feedback Subscriber"]
-        AC_Status["Status Subscriber"]
-    end
-
-    subgraph ServerNode ["Action Server Node"]
-        AS_Goal["Send Goal Service"]
-        AS_Cancel["Cancel Goal Service"]
-        AS_Result["Get Result Service"]
-        AS_FB["Feedback Publisher"]
-        AS_Status["Status Publisher"]
-    end
-
-    AC_Goal -->|"/navigate_distance/_action/send_goal [Service]"| AS_Goal
-    AC_Cancel -->|"/navigate_distance/_action/cancel_goal [Service]"| AS_Cancel
-    AC_Result -->|"/navigate_distance/_action/get_result [Service]"| AS_Result
-    AS_FB -->|"/navigate_distance/_action/feedback [Topic]"| AC_FB
-    AS_Status -->|"/navigate_distance/_action/status [Topic]"| AC_Status
-
-    style ClientNode fill:#e1f5fe,stroke:#0288d1,stroke-width:2px
-    style ServerNode fill:#fff3e0,stroke:#f57c00,stroke-width:2px
-```
+![essential-w04-02](../../docs/diagrams/essential-w04-02.svg)
 
 #### คุณลักษณะของแต่ละแชนเนล:
 1. **`/action_name/_action/send_goal` (ROS 2 Service):**
@@ -154,22 +106,7 @@ float32 estimated_time_remaining
 ### 4. วงจรชีวิตของ Action Goal (Goal State Machine)
 ROS 2 กำหนดสถานะมาตรฐานของ Goal ผ่านมาตรฐาน `action_msgs/msg/GoalStatus`:
 
-```mermaid
-stateDiagram-v2
-    [*] --> STATUS_ACCEPTED : Client ส่ง Goal สำเร็จ & Server รับงาน
-    STATUS_ACCEPTED --> STATUS_EXECUTING : Action Server เริ่มต้นรัน execute_callback
-    
-    STATUS_EXECUTING --> STATUS_SUCCEEDED : ภารกิจสำเร็จสมบูรณ์ (goal_handle.succeed())
-    STATUS_EXECUTING --> STATUS_CANCELING : Client ส่ง cancel_goal_async()
-    STATUS_EXECUTING --> STATUS_ABORTED : ตรวจพบความผิดพลาดฮาร์ดแวร์ (goal_handle.abort())
-    
-    STATUS_CANCELING --> STATUS_CANCELED : จัดการหยุดมอเตอร์ปลอดภัยแล้ว (goal_handle.canceled())
-    STATUS_CANCELING --> STATUS_ABORTED : เกิดขัดข้องระหว่างหยุด (goal_handle.abort())
-    
-    STATUS_SUCCEEDED --> [*]
-    STATUS_CANCELED --> [*]
-    STATUS_ABORTED --> [*]
-```
+![essential-w04-03](../../docs/diagrams/essential-w04-03.svg)
 
 #### รายละเอียดรหัสสถานะ (Status Constants):
 - `STATUS_UNKNOWN (0)`: ยังไม่ทราบสถานะ

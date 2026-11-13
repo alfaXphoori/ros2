@@ -1,0 +1,14 @@
+flowchart LR
+    R1["หุ่นยนต์ 1: Trajectory T_1(t)"] --> ConflictDetector["Conflict Detection"]
+    R2["หุ่นยนต์ 2: Trajectory T_2(t)"] --> ConflictDetector
+    ConflictDetector -->|"พบการตัดกันของวิถี ณ เวลา t = t_c"| Negotiator["Traffic Negotiation"]
+    Negotiator -->|"แต่ละฝ่ายเสนอแผน (proposal) เช่น รอที่ Holding Point หรือเลี่ยงเส้นทาง"| Resolution["เลือกชุดแผนที่ต้นทุน (ความล่าช้ารวม) ต่ำสุด"]
+
+    classDef node fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#0f172a
+    classDef sim fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#0f172a
+    classDef hw fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#0f172a
+    classDef sec fill:#ffe4e6,stroke:#e11d48,stroke-width:2px,color:#0f172a
+    classDef bt fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#0f172a
+    classDef tool fill:#ffedd5,stroke:#ea580c,stroke-width:2px,color:#0f172a
+    classDef cfg fill:#f1f5f9,stroke:#64748b,stroke-width:2px,color:#0f172a
+    class R1,R2 node

@@ -1,0 +1,24 @@
+flowchart TD
+    Lookup["คำขอดึงพิกัด (lookup_transform)"]
+
+    Check1{"พบชื่อ Frame ใน Buffer หรือไม่?"}
+    Check2{"มีเส้นทางเชื่อมโยง Parent-Child ถึงกันหรือไม่?"}
+    Check3{"ประทับเวลา (Timestamp) อยู่ในช่วงแคช 10 วินาทีหรือไม่?"}
+
+    Success["ได้ค่า Transform สำเร็จ"]
+    E1["tf2_ros.LookupException<br/>(ไม่พบชื่อ Frame ในระบบ)"]
+    E2["tf2_ros.ConnectivityException<br/>(ไม่มีกิ่งไม้เชื่อมต่อระหว่างสองเฟรม)"]
+    E3["tf2_ros.ExtrapolationException<br/>(ร้องขอเวลาในอนาคตหรืออดีตที่หลุดแคช)"]
+
+    Lookup --> Check1
+    Check1 -- ไม่พบ --> E1
+    Check1 -- พบ --> Check2
+    Check2 -- ทรีขาดตอน --> E2
+    Check2 -- ทรีเชื่อมสมบูรณ์ --> Check3
+    Check3 -- นอกช่วงเวลา --> E3
+    Check3 -- อยู่ในช่วงแคช --> Success
+
+    style Success fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    style E1 fill:#ffebee,stroke:#c62828,stroke-width:2px
+    style E2 fill:#ffebee,stroke:#c62828,stroke-width:2px
+    style E3 fill:#ffebee,stroke:#c62828,stroke-width:2px

@@ -36,28 +36,7 @@
 
 ในโหนด ROS ทั่วไป เมื่อสั่งรันโหนด โค้ดจะเริ่ม Subscribe, Publish, และเชื่อมต่อฮาร์ดแวร์ทันที หากฮาร์ดแวร์ยังไม่พร้อม โหนดจะ Crash และทำให้ระบบรวน ROS 2 จึงมีมาตรฐาน **Managed Lifecycle Node** เพื่อให้โหนดภายนอก (เช่น System Supervisor หรือ Nav2 Lifecycle Manager) เป็นผู้ควบคุมจังหวะการเปิด-ปิด:
 
-```mermaid
-stateDiagram-v2
-    [*] --> Unconfigured: สร้างอินสแตนซ์ของโหนด
-    Unconfigured --> Configuring: configure
-    Configuring --> Inactive: on_configure() = SUCCESS (สร้าง publisher/timer, เปิดพอร์ต)
-    Configuring --> Unconfigured: FAILURE
-
-    Inactive --> Activating: activate
-    Activating --> Active: on_activate() (เปิด timer, LifecyclePublisher เริ่มส่ง)
-
-    Active --> Deactivating: deactivate
-    Deactivating --> Inactive: on_deactivate() (หยุด timer)
-
-    Inactive --> CleaningUp: cleanup
-    CleaningUp --> Unconfigured: on_cleanup() (ทำลาย publisher/timer)
-
-    Unconfigured --> ShuttingDown: shutdown
-    Inactive --> ShuttingDown: shutdown
-    Active --> ShuttingDown: shutdown
-    ShuttingDown --> Finalized: on_shutdown() (ต้องคืนทรัพยากรเองทั้งหมด)
-    Finalized --> [*]
-```
+![advanced-m05-01](../../docs/diagrams/advanced-m05-01.svg)
 
 ### หน้าที่ของ 4 สถานะหลัก (Primary States):
 1. **`Unconfigured`:** โหนดถูกสร้างแล้ว (มี service `~/change_state`, `~/get_state`) แต่ยังไม่ได้อ่านพารามิเตอร์ ยังไม่สร้าง publisher และยังไม่เปิดฮาร์ดแวร์
@@ -80,14 +59,7 @@ stateDiagram-v2
 
 ในโรงงานหรือโรงพยาบาล เครือข่าย Wi-Fi เสี่ยงต่อการถูกดักฟัง (Eavesdropping), Man-in-the-Middle หรือการฉีดคำสั่งปลอม (เช่น ส่ง `/cmd_vel` ปลอม) **SROS 2** คือชุดเครื่องมือของ ROS 2 ที่ตั้งค่า **DDS-Security** (มาตรฐาน OMG) ให้แต่ละโหนด:
 
-```mermaid
-flowchart TD
-    subgraph Security_Triad ["เสาหลักของ DDS-Security ที่ SROS 2 ตั้งค่าให้"]
-        Auth["1. Authentication<br>ใบรับรอง X.509 ของแต่ละ enclave ลงนามโดย Identity CA ของ keystore"]
-        Access["2. Access Control<br>governance.xml (กติกาทั้ง domain) + permissions.xml (enclave นี้ pub/sub อะไรได้ บน domain ใด)"]
-        Crypto["3. Cryptographic<br>เข้ารหัส/ลงนามข้อความด้วย AES-GCM / GMAC (builtin plugin DDS:Crypto:AES-GCM-GMAC)"]
-    end
-```
+![advanced-m05-02](../../docs/diagrams/advanced-m05-02.svg)
 
 ### ขั้นตอนสร้าง Keystore, Enclave และรันแบบ Enforce
 ```bash
@@ -145,15 +117,7 @@ export RMW_IMPLEMENTATION=rmw_zenoh_cpp
 repo นี้รันชุดทดสอบบนเครื่องก่อน push ด้วย `make check` (lint + `colcon build` + `colcon test` ใน container `ros:lab-runner`
 เดียวกับที่ใช้ในห้องแล็บ) ในงานจริงนำคำสั่งเดียวกันไปใส่ใน CI runner (เช่น GitHub Actions หรือ GitLab CI) เพื่อให้รันอัตโนมัติทุกครั้งที่ push:
 
-```mermaid
-flowchart LR
-    Dev["วิศวกร: make check (ก่อน git push)"] --> Action["container ros:lab-runner (หรือ CI runner)"]
-    Action --> Build["colcon build"]
-    Build --> Unit["pytest unit tests"]
-    Unit --> IntTest["launch_testing: เปิดโหนดจริง แล้วตรวจพฤติกรรมบนกราฟ ROS"]
-    IntTest --> Assert["ตรวจ exit code หลังปิด (post_shutdown_test)"]
-    Assert --> Deploy["Deploy ไปยังหุ่นยนต์จริง"]
-```
+![advanced-m05-03](../../docs/diagrams/advanced-m05-03.svg)
 
 โครงสร้างของ launch test ที่ดี (ดู [`test/test_lifecycle_launch.py`](test/test_lifecycle_launch.py)):
 1. `@pytest.mark.launch_test` + `generate_test_description()` คืน `LaunchDescription` ที่มีโหนดภายใต้การทดสอบ และ `ReadyToTest()`

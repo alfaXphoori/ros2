@@ -1,0 +1,17 @@
+sequenceDiagram
+    autonumber
+    participant Timer as Timer Trigger (1 Hz)
+    participant Thread as Single Executor Thread (เธรดเดี่ยว)
+    participant Client as Service Client (ผู้ส่งคำขอ)
+    participant DDSNet as DDS Middleware (เครือข่าย)
+    participant Server as Service Server (ผู้ประมวลผล)
+
+    Timer->>Thread: ปลุกเธรดให้มารัน timer_callback()
+    Note over Thread: เธรดถูก "จอง (Locked)" เพื่อรันโค้ดในฟังก์ชันนี้
+    Thread->>Client: สั่ง cli.call(req) แบบ Synchronous
+    Client->>DDSNet: ส่งแพ็กเก็ต Request ออกไปทางเครือข่าย
+    DDSNet->>Server: Server รับคำขอและประมวลผลเสร็จสิ้น
+    Server-->>DDSNet: Server ส่ง Response กลับมาแล้ว!
+    DDSNet->>Thread: ⚠️ มีแพ็กเก็ต Response มาถึงแล้ว ช่วยมารับและถอดรหัสที!
+
+    Note over Thread: 💥 DEADLOCK! เธรดยังคงหลับ (Block) รอผลลัพธ์ของ cli.call()<br/>แต่การหยิบ Response จาก DDS เข้ามาต้องใช้เธรดเดียวกันนี้!<br/>ต่างฝ่ายต่างรอซึ่งกันและกัน โปรแกรมค้างชั่วนิรันดร์

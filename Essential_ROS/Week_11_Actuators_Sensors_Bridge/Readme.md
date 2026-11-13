@@ -32,38 +32,7 @@ Gazebo Sim (Harmonic) ใช้ระบบเครือข่ายภาย�
 
 เพื่อให้ทั้งสองระบบสื่อสารกันได้ แพ็กเกจ `ros_gz_bridge` จะสร้างโปรเซสตัวแปลงข้อมูลสองทาง (Bidirectional Translation Process) ชื่อว่า **`parameter_bridge`**:
 
-```mermaid
-flowchart LR
-    subgraph ROS2_Stack ["ROS 2 Node Graph (DDS / CDR)"]
-        Teleop["Teleop / Nav2 Controller<br/>(/cmd_vel [geometry_msgs/Twist])"]
-        SLAM["SLAM Toolbox / Costmap<br/>(/scan [sensor_msgs/LaserScan])"]
-        OdomNode["Localization / EKF<br/>(/odom [nav_msgs/Odometry])"]
-        SimTime["ROS 2 System Clock<br/>(/clock [rosgraph_msgs/Clock])"]
-    end
-
-    subgraph Bridge_Layer ["ros_gz_bridge (parameter_bridge)"]
-        B_Vel["ROS_TO_GZ<br/>Twist แปลงเป็น gz.msgs.Twist"]
-        B_Scan["GZ_TO_ROS<br/>gz.msgs.LaserScan แปลงเป็น LaserScan"]
-        B_Odom["GZ_TO_ROS<br/>gz.msgs.Odometry แปลงเป็น Odometry"]
-        B_Clock["GZ_TO_ROS<br/>gz.msgs.Clock แปลงเป็น Clock"]
-    end
-
-    subgraph Gazebo_Stack ["Gazebo Sim 8 (Gazebo Transport / Protobuf)"]
-        GZ_DiffDrive["DiffDrive System Plugin<br/>(ขับเคลื่อนข้อต่อล้อจริง)"]
-        GZ_LiDAR["Sensors System Plugin<br/>(เรนเดอร์ GPU Ray Scan)"]
-        GZ_OdomPub["Gazebo Odometry Publisher"]
-        GZ_WorldClock["Physics Simulation Clock"]
-    end
-
-    Teleop --> B_Vel --> GZ_DiffDrive
-    GZ_LiDAR --> B_Scan --> SLAM
-    GZ_OdomPub --> B_Odom --> OdomNode
-    GZ_WorldClock --> B_Clock --> SimTime
-
-    style ROS2_Stack fill:#e1f5fe,stroke:#0288d1,stroke-width:2px
-    style Bridge_Layer fill:#fff3e0,stroke:#f57c00,stroke-width:2px
-    style Gazebo_Stack fill:#f1f8e9,stroke:#558b2f,stroke-width:2px
-```
+![essential-w11-01](../../docs/diagrams/essential-w11-01.svg)
 
 ---
 
@@ -77,19 +46,7 @@ flowchart LR
 ### 3. โครงสร้างและการประมวลผลข้อความ LaserScan
 ข้อความ `sensor_msgs/msg/LaserScan` ประกอบด้วยข้อมูลเรดาร์เลเซอร์ 2 มิติ:
 
-```mermaid
-flowchart TD
-    Scan["sensor_msgs/msg/LaserScan"]
-    H["Header: stamp (เวลาที่ยิงแสง), frame_id = 'lidar_link'"]
-    A["มุมกวาด: angle_min (-180°), angle_max (+180°), angle_increment (0.5°)"]
-    R["ระยะทาง: range_min (0.12m), range_max (12.0m)"]
-    D["ranges[]: อาเรย์ตัวเลขทศนิยมระบุระยะห่างของแต่ละลำแสง"]
-
-    Scan --> H
-    Scan --> A
-    Scan --> R
-    Scan --> D
-```
+![essential-w11-02](../../docs/diagrams/essential-w11-02.svg)
 
 #### ก. การแปลงดัชนีอาเรย์ (Array Index $i$) สู่มุมองศา ($\theta_i$):
 $$\theta_i = \text{angle min} + (i \cdot \text{angle increment})$$

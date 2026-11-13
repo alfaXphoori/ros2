@@ -1,0 +1,17 @@
+flowchart LR
+    Ray["ลำแสงเลเซอร์ (LiDAR Ray)"]
+    Origin["จุดยิง (Robot Pose)"]
+    Hit["จุดตกกระทบ (Obstacle Hit)"]
+
+    Origin -->|"Bresenham Algorithm: ทางเดินแสงว่างเปล่า l_free (-)"| Ray
+    Ray -->|"จุดตกกระทบสะท้อนกลับ l_occ (+)"| Hit
+
+    classDef node fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#0f172a
+    classDef sim fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#0f172a
+    classDef hw fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#0f172a
+    classDef sec fill:#ffe4e6,stroke:#e11d48,stroke-width:2px,color:#0f172a
+    classDef bt fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#0f172a
+    classDef tool fill:#ffedd5,stroke:#ea580c,stroke-width:2px,color:#0f172a
+    classDef cfg fill:#f1f5f9,stroke:#64748b,stroke-width:2px,color:#0f172a
+    class Origin,Hit node
+    class Ray hw

@@ -32,37 +32,7 @@ Nav2 คือสแตกระบบนำทางอัตโนมัติ
 - ทุกเซิร์ฟเวอร์ใน Nav2 (Planner, Controller, Recoveries, BT Navigator) จะถูกจัดการผ่าน `lifecycle_manager`
 - หัวใจสำคัญของการหลบหลีกสิ่งกีดขวางคือ **Costmap 2D**: ตารางกริด 2 มิติที่แปลงสภาพแวดล้อมให้กลายเป็น "ต้นทุนของความเสี่ยง (Cost)" เพื่อให้อัลกอริทึมเลือกเส้นทางที่ปลอดภัยที่สุด
 
-```mermaid
-flowchart TD
-    subgraph RawSensors ["ข้อมูลเซนเซอร์นำเข้า (Sensor Inputs)"]
-        StaticMap["Static Map (.yaml/.pgm จาก SLAM)"]
-        LaserScan["LiDAR LaserScan (/scan)"]
-        DepthCam["RGB-D PointCloud2 (/camera/points)"]
-    end
-
-    subgraph LayeredPipeline ["กระบวนการรวมเลเยอร์ Costmap (Layer Aggregation Pipeline)"]
-        SL["1. Static Layer<br/>(โหลดกำแพงถาวรจาก Map Server)"]
-        OL["2. Obstacle Layer<br/>(Marking และ Clearing สดจาก LiDAR)"]
-        VL["3. Voxel Layer<br/>(ตรวจจับสิ่งกีดขวาง 3D ป้องกันเพดาน/โต๊ะ)"]
-        IL["4. Inflation Layer<br/>(แผ่สนามศักย์ความปลอดภัยรอบสิ่งกีดขวาง)"]
-    end
-
-    subgraph MasterGrid ["Master Costmap Output"]
-        Values["ตารางกริดคอสต์ค่า 0 - 255<br/>(ส่งต่อไปยัง Global Planner & Local Controller)"]
-    end
-
-    StaticMap --> SL
-    LaserScan --> OL
-    DepthCam --> VL
-    SL --> IL
-    OL --> IL
-    VL --> IL
-    IL --> Values
-
-    style RawSensors fill:#e1f5fe,stroke:#0288d1,stroke-width:2px
-    style LayeredPipeline fill:#fff3e0,stroke:#f57c00,stroke-width:2px
-    style MasterGrid fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
-```
+![essential-w13-01](../../docs/diagrams/essential-w13-01.svg)
 
 ---
 
@@ -100,15 +70,7 @@ $$\text{cost}(d) = (\text{INSCRIBED COST} - 1) \cdot \exp\left(-\alpha \cdot (d 
 - $r_{\text{inscribed}}$: รัศมีวงกลมแนบในของหุ่นยนต์ (Inscribed Radius)
 - $\alpha$: ค่าตัวคูณปรับสเกลความชัน (`cost_scaling_factor`)
 
-```mermaid
-flowchart LR
-    Lethal["Lethal (Cost 254)<br/>d = 0"]
-    Inscribed["Inscribed (Cost 253)<br/>d = r_inscribed"]
-    Decay["Decay Zone (Cost 252 -> 1)<br/>r_inscribed < d < r_inflation"]
-    Free["Free Space (Cost 0)<br/>d >= r_inflation"]
-
-    Lethal --> Inscribed --> Decay --> Free
-```
+![essential-w13-02](../../docs/diagrams/essential-w13-02.svg)
 
 #### การคำนวณรัศมีตัวถังหุ่นยนต์สี่เหลี่ยมผืนผ้า (ยาว $L$, กว้าง $W$):
 1. **รัศมีแนบใน (Inscribed Radius: $r_{\text{inscribed}}$):**
@@ -127,23 +89,7 @@ $$r_{\text{circumscribed}} = \sqrt{0.20^2 + 0.14^2} = \sqrt{0.0400 + 0.0196} = \
 
 ### 4. การเปรียบเทียบการกำหนดขนาด: `robot_radius` vs `footprint`
 
-```mermaid
-graph TD
-    subgraph CircleModel ["โมเดลวงกลม (robot_radius = 0.25m)"]
-        C1["รัศมี 0.25m ครอบคลุมทั้งตัว"]
-        C2["ข้อดี: คำนวณ Collision เร็วมาก (O(1))"]
-        C3["ข้อจำกัด: สิ้นเปลืองพื้นที่ในช่องแคบ (Over-conservative)"]
-    end
-
-    subgraph PolyModel ["โมเดลรูปหลายเหลี่ยม (footprint: 4 corners)"]
-        P1["สี่เหลี่ยมผืนผ้า 0.40m x 0.28m"]
-        P2["ข้อดี: แม่นยำ ขับลอดช่องแคบโรงงานได้จริง"]
-        P3["ข้อจำกัด: คำนวณจุดตัด Polygon ซับซ้อนกว่า"]
-    end
-
-    style CircleModel fill:#fff3e0,stroke:#f57c00,stroke-width:2px
-    style PolyModel fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
-```
+![essential-w13-03](../../docs/diagrams/essential-w13-03.svg)
 
 ---
 

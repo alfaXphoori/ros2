@@ -19,31 +19,7 @@
 
 ## 🎯 เลือกเส้นทางการเรียนรู้ (Choose Your Track)
 
-```mermaid
-flowchart TD
-    Start["🚀 เริ่มต้นเรียนรู้ ROS 2 AMR"]
-    Start --> Essential["📘 Essential ROS Track<br>(ระดับพื้นฐานสู่การขับเคลื่อนอัตโนมัติ)"]
-    Start --> Advanced["🚀 Advanced ROS Track<br>(ระดับวิศวกรรมขั้นสูง & Production)"]
-
-    subgraph E_Path ["Essential Track (5 Modules)"]
-        E1["01: Core Communication"] --> E2["02: Modeling & TF2"]
-        E2 --> E3["03: Gazebo Sim"]
-        E3 --> E4["04: SLAM Mapping"]
-        E4 --> E5["05: Nav2 Navigation"]
-    end
-
-    subgraph A_Path ["Advanced Track (6 Modules)"]
-        A1["01: ros2_control & Hardware"]
-        A2["02: Vision & AI Perception"]
-        A3["03: Precision Docking"]
-        A4["04: Multi-Robot Open-RMF"]
-        A5["05: Production & SROS2"]
-        A6["06: Capstone Warehouse AMR<br>(Nav2 + Docking + E-stop KPIs)"]
-    end
-
-    Essential --> E_Path
-    Advanced --> A_Path
-```
+![readme](docs/diagrams/readme.svg)
 
 ---
 

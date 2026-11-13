@@ -1,0 +1,30 @@
+flowchart TD
+    subgraph OSProcess ["Operating System Process (Python Runtime)"]
+        subgraph ExecutorLoop ["Executor (SingleThreadedExecutor Event Loop)"]
+            TimerQueue["Timer Queue (e.g. 2 Hz Clock)"]
+            SubQueue["Subscription Message Queue"]
+        end
+
+        subgraph CustomNodeClass ["class SensorQoSPublisher(Node)"]
+            Constructor["__init__(): ประกาศ Topic, QoS, Timers"]
+            PublisherA["self.pub_sensor (/sensor/temperature)"]
+            PublisherB["self.pub_state (/robot/state)"]
+            TimerCallback["def timer_callback(self): ประมวลผลและส่งข้อมูล"]
+            MemberVars["ตัวแปรสถานะ: self.counter, self.battery"]
+        end
+    end
+
+    ExecutorLoop -->|"เมื่อครบเวลา 0.5 วินาที"| TimerCallback
+    TimerCallback --> PublisherA
+    TimerCallback --> PublisherB
+
+    classDef node fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#0f172a
+    classDef sim fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#0f172a
+    classDef hw fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#0f172a
+    classDef sec fill:#ffe4e6,stroke:#e11d48,stroke-width:2px,color:#0f172a
+    classDef bt fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#0f172a
+    classDef tool fill:#ffedd5,stroke:#ea580c,stroke-width:2px,color:#0f172a
+    classDef cfg fill:#f1f5f9,stroke:#64748b,stroke-width:2px,color:#0f172a
+    class TimerQueue,SubQueue,Constructor,TimerCallback,MemberVars node
+    class PublisherA hw
+    class PublisherB bt

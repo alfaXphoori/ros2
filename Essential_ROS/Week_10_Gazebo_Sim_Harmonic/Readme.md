@@ -34,43 +34,7 @@
   - แยกไลบรารีออกเป็นโมดูลอิสระ: `gz-physics` (DART / Bullet), `gz-rendering` (Ogre2 / Vulkan), `gz-sensors`, `gz-gui`, `gz-transport`, `gz-math`
   - ใช้ **Gazebo Transport** (IPC ผ่าน ZeroMQ / Protobuf) ความเร็วสูงในการแลกเปลี่ยนข้อมูลภายใน โดยไม่ขึ้นกับ ROS 2 โดยตรง
 
-```mermaid
-graph TD
-    subgraph ECS_Core ["Gazebo Sim Core Architecture (ECS)"]
-        subgraph Entities ["Entities (Unique IDs)"]
-            E1["Entity 1: Robot Chassis"]
-            E2["Entity 2: Left Wheel"]
-            E3["Entity 3: LiDAR Ray"]
-        end
-
-        subgraph Components ["Components (Raw Data / State)"]
-            C1["Pose Component (x, y, z, q)"]
-            C2["LinearVelocity Component"]
-            C3["Inertial Component (Mass, Tensor)"]
-            C4["Contact Component"]
-        end
-
-        subgraph Systems ["Systems (Logic & Processors)"]
-            S_Phys["gz::sim::systems::Physics<br/>(คำนวณสมการนิวตัน 1000 Hz)"]
-            S_Sens["gz::sim::systems::Sensors<br/>(เรนเดอร์ภาพและยิงแสง LiDAR)"]
-            S_Broad["gz::sim::systems::SceneBroadcaster<br/>(ส่งข้อมูลฉากสู่ GUI)"]
-            S_Cmd["gz::sim::systems::UserCommands<br/>(จัดการการ Spawn/Delete)"]
-        end
-    end
-
-    Entities --- Components
-    Components --- Systems
-
-    GZ_Transport["Gazebo Transport Bus (gz.msgs)"]
-    Systems <--> GZ_Transport
-
-    ROS_Bridge["ros_gz_bridge"] <--> GZ_Transport
-    ROS_Bridge <--> ROS_Ecosystem["ROS 2 Nodes & Nav2"]
-
-    style ECS_Core fill:#f1f8e9,stroke:#558b2f,stroke-width:2px
-    style GZ_Transport fill:#fff3e0,stroke:#f57c00,stroke-width:2px
-    style ROS_Ecosystem fill:#e1f5fe,stroke:#0288d1,stroke-width:2px
-```
+![essential-w10](../../docs/diagrams/essential-w10.svg)
 
 ---
 

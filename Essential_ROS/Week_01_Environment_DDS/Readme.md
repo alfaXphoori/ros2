@@ -39,46 +39,7 @@
 
 ใน **ROS 2 (เริ่มต้นพัฒนา พ.ศ. 2557 จนถึงเวอร์ชัน LTS ปัจจุบัน Jazzy Jalisco)** สถาปัตยกรรมถูกยกเครื่องใหม่ทั้งหมดโดยนำมาตรฐานอุตสาหกรรมระดับสากลอย่าง **OMG Data Distribution Service (DDS)** มาเป็นรากฐาน:
 
-```mermaid
-flowchart TD
-    subgraph AppLayer ["1. Application Layer (User Code)"]
-        PyNode["Python Nodes (rclpy)"]
-        CppNode["C++ Nodes (rclcpp)"]
-    end
-
-    subgraph RCLLayer ["2. ROS Client Library Layer (Common C Implementation)"]
-        RCL["rcl (Core Logic, Timers, Lifecycle, Graph Cache)"]
-    end
-
-    subgraph RMWLayer ["3. ROS Middleware Interface (RMW Abstraction Layer)"]
-        RMW["rmw C API (rmw_create_publisher, rmw_publish, etc.)"]
-    end
-
-    subgraph DDSLayer ["4. DDS Implementations (Plug-and-Play Vendors)"]
-        FastDDS["eProsima Fast DDS (Default in ROS 2 Jazzy)"]
-        Cyclone["Eclipse Cyclone DDS (เน้นความเสถียรและ Low Latency)"]
-        Connext["RTI Connext DDS (มาตรฐานอากาศยาน DO-178C และการแพทย์)"]
-    end
-
-    subgraph TransportLayer ["5. Network & Hardware Transport Layer"]
-        UDPMC["UDP/IP Multicast (ใช้สำหรับ Discovery)"]
-        UDPUni["UDP/IP Unicast (ใช้สำหรับ User Data Traffic)"]
-        SHM["Shared Memory / Posix SHM (Zero-Copy ภายในเครื่องเดียวกัน)"]
-    end
-
-    PyNode --> RCL
-    CppNode --> RCL
-    RCL --> RMW
-    RMW --> FastDDS
-    RMW --> Cyclone
-    RMW --> Connext
-    FastDDS --> UDPMC
-    FastDDS --> UDPUni
-    FastDDS --> SHM
-    Cyclone --> UDPMC
-    Cyclone --> UDPUni
-    Cyclone --> SHM
-```
+![essential-w01-01](../../docs/diagrams/essential-w01-01.svg)
 
 ---
 
@@ -99,31 +60,7 @@ flowchart TD
 ### 3. กลไกการค้นพบของ DDS (DDS Discovery Protocol Deep Dive)
 เมื่อโหนดใน ROS 2 ถูกสร้างขึ้นในระบบเครือข่ายที่ไม่มีโหนด Master กลลวงที่ทำให้โหนดสามารถมองเห็นกันได้คือโปรโตคอล **RTPS Discovery** ซึ่งแบ่งออกเป็น 2 ขั้นตอนสำคัญ:
 
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Dev as ผู้ใช้งาน / Launch
-    participant NodeA as โหนด Robot Controller (Domain 0)
-    participant Net as เครือข่าย UDP Multicast (Port 7400)
-    participant NodeB as โหนด Motor Driver (Domain 0)
-    participant NodeX as หุ่นยนต์ตัวอื่น (Domain 15)
-
-    Dev->>NodeA: สั่งเปิดโหนด
-    Note over NodeA: เริ่มต้น SPDP (Simple Participant Discovery)
-    NodeA->>Net: ประกาศตัวตนผ่าน SPDP Packet ไปยัง Multicast 239.255.0.1:7400<br/>"ฉันคือ NodeA, IP: 192.168.1.50, GUID Prefix: 01.0f..."
-    Net->>NodeB: ส่งต่อแพ็กเก็ตไปยังสมาชิก Domain 0
-    Net--xNodeX: ถูกคัดกรองทิ้ง (NodeX ฟังอยู่ที่พอร์ต 11150 ของ Domain 15)
-    Note over NodeB: บันทึกข้อมูล NodeA ลงในตาราง Participant Cache
-    NodeB->>NodeA: ส่งตอบกลับแบบ Unicast SPDP ยืนยันการมีตัวตน
-    
-    rect rgb(240, 248, 255)
-        Note over NodeA,NodeB: เริ่มต้น SEDP (Simple Endpoint Discovery Protocol)
-        NodeA->>NodeB: SEDP แลกเปลี่ยนรายการ Topic, QoS Profile, Data Types
-        NodeB->>NodeA: SEDP ยืนยันการจับคู่ Publisher/Subscriber (Matched)
-    end
-    
-    Note over NodeA,NodeB: สร้างการเชื่อมต่อแบบ Peer-to-Peer ตรงกัน (Data Streaming เริ่มต้น)
-```
+![essential-w01-02](../../docs/diagrams/essential-w01-02.svg)
 
 1. **SPDP (Simple Participant Discovery Protocol):**
    - โหนดจะส่งแพ็กเก็ต Multicast เป็นระยะ เรียกว่า `DATA(p)` ประกาศการมีตัวตนไปยังกลุ่ม Multicast `239.255.0.1` (ค่าปริยายของ RTPS) ซึ่งอยู่ในช่วง **Administratively Scoped** `239.0.0.0/8` (RFC 2365) หมายถึงใช้ได้เฉพาะภายในเครือข่ายขององค์กร/ห้องแล็บ เราเตอร์จะไม่ส่งต่อออกอินเทอร์เน็ต ไม่ใช่ Multicast "ทั่วโลก" — โดยปกติแพ็กเก็ตจึงไปถึงเฉพาะเครื่องใน Subnet เดียวกัน
@@ -176,14 +113,7 @@ $$\text{Port} = PB + (DG \times \text{Domain ID}) + d + (PG \times \text{Partici
 ### 5. สถาปัตยกรรม Colcon Workspace: Underlay และ Overlay
 การพัฒนาโปรแกรมบน ROS 2 จะไม่แตะต้องไฟล์ของระบบปฏิบัติการโดยตรง แต่จะใช้ระบบซ้อนทับสภาพแวดล้อม (Chained Environment):
 
-```mermaid
-flowchart TD
-    Underlay["Underlay: ระบบแกนกลาง (/opt/ros/jazzy/setup.bash)<br/>บรรจุไลบรารีมาตรฐาน rclpy, rclcpp, nav2, gazebo"]
-    Overlay["Overlay: พื้นที่พัฒนาของผู้ใช้ (~/ros2_ws/install/setup.bash)<br/>บรรจุแพ็กเกจที่เราพัฒนาเองใน src/"]
-
-    Underlay -->|"source /opt/ros/jazzy/setup.bash"| Overlay
-    Overlay -->|"AMENT_PREFIX_PATH ค้นหาที่ Overlay ก่อน"| Executable["โหนดที่ถูกประมวลผล"]
-```
+![essential-w01-03](../../docs/diagrams/essential-w01-03.svg)
 
 - โครงสร้างโฟลเดอร์ของ Colcon Workspace:
   - `src/`: โฟลเดอร์เก็บ Source Code ต้นฉบับที่ผู้พัฒนาเขียนขึ้น

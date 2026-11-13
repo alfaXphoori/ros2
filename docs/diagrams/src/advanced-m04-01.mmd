@@ -1,0 +1,41 @@
+flowchart TD
+    subgraph Enterprise_Layer ["Enterprise IT / WMS"]
+        WMS["WMS / ERP"] -->|"Task requests (delivery, patrol, ...)"| Dispatcher["rmf_task_ros2 Dispatcher<br>(ประมูลงาน: เลือก fleet ที่ต้นทุนต่ำสุด)"]
+    end
+
+    subgraph RMF_Core ["Open-RMF Traffic"]
+        Schedule["rmf_traffic_schedule<br>(Traffic Schedule แบบรวมศูนย์ 1 โหนด)"]
+        Negotiation["Traffic Negotiation<br>(/rmf_traffic/negotiation_*)"]
+    end
+
+    subgraph Fleet_Adapters ["Fleet Adapters (แต่ละตัวมี Schedule Mirror)"]
+        AdapterA["Fleet Adapter A (EasyFullControl)"]
+        AdapterB["Fleet Adapter B (Forklift)"]
+    end
+
+    Building["Door / Lift Supervisors"]
+
+    Dispatcher <--> AdapterA
+    Dispatcher <--> AdapterB
+    AdapterA <-->|"itinerary_set / participants"| Schedule
+    AdapterB <-->|"itinerary_set / participants"| Schedule
+    AdapterA <--> Negotiation
+    AdapterB <--> Negotiation
+    AdapterA <-->|"door/lift requests"| Building
+
+    subgraph Physical_Fleets ["Physical Robot Fleets"]
+        AdapterA <==>|"ROS 2 /amr_01/..."| AMR1["AMR 01 (Nav2)"]
+        AdapterA <==>|"ROS 2 /amr_02/..."| AMR2["AMR 02 (Nav2)"]
+        AdapterB <==>|"Vendor API"| Forklifts["Autonomous Forklifts"]
+    end
+
+    classDef node fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#0f172a
+    classDef sim fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#0f172a
+    classDef hw fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#0f172a
+    classDef sec fill:#ffe4e6,stroke:#e11d48,stroke-width:2px,color:#0f172a
+    classDef bt fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#0f172a
+    classDef tool fill:#ffedd5,stroke:#ea580c,stroke-width:2px,color:#0f172a
+    classDef cfg fill:#f1f5f9,stroke:#64748b,stroke-width:2px,color:#0f172a
+    class Building node
+    class WMS sim
+    class Schedule,Negotiation,AdapterA,AdapterB bt

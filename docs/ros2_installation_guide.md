@@ -30,15 +30,7 @@
 
 ## 1. ข้อกำหนดฮาร์ดแวร์และซอฟต์แวร์ขั้นต่ำ (System Requirements)
 
-```mermaid
-flowchart LR
-    subgraph Spec ["🖥️ Recommended Hardware Specification"]
-        CPU["CPU: 4-Core Intel/AMD (แนะนำ 8-Core ขึ้นไป)"]
-        RAM["RAM: ขั้นต่ำ 8 GB (แนะนำ 16-32 GB สำหรับ Gazebo/Nav2)"]
-        Disk["Storage: 40 GB Free Disk Space (SSD แนะนำ NVMe)"]
-        GPU["GPU: NVIDIA GTX 1650 หรือใหม่กว่า (รองรับ OpenGL 3.3+)"]
-    end
-```
+![install-guide-01](diagrams/install-guide-01.svg)
 
 | รายการ | ขั้นต่ำ (Minimum) | แนะนำสำหรับงานวิจัยและอุตสาหกรรม (Recommended) |
 | :--- | :--- | :--- |
@@ -54,14 +46,7 @@ flowchart LR
 
 การติดตั้งผ่าน APT Official Repository ของ Open Robotics โดยตรง เป็นวิธีที่มีประสิทธิภาพสูงสุด (Native Performance) และไม่มี Overhead ด้านการจำลอง Hardware หรือ Display
 
-```mermaid
-flowchart TD
-    S1["1. ตรวจสอบ Locale UTF-8"] --> S2["2. เปิดใช้งาน Ubuntu Universe"]
-    S2 --> S3["3. เพิ่ม ROS 2 GPG Key & Repo"]
-    S3 --> S4["4. ติดตั้ง ros-jazzy-desktop"]
-    S4 --> S5["5. ติดตั้ง ros-dev-tools & rosdep"]
-    S5 --> S6["6. Source /opt/ros/jazzy/setup.bash"]
-```
+![install-guide-02](diagrams/install-guide-02.svg)
 
 ### ขั้นตอนที่ 1.1: ตรวจสอบและตั้งค่า System Locale
 ROS 2 จำเป็นต้องทำงานบน Locale ที่รองรับ UTF-8 เพื่อป้องกันข้อผิดพลาดในการประมวลผลสตริงและ Topic Data:
@@ -134,11 +119,7 @@ rosdep update
 
 หากท่านใช้เครื่องที่มีระบบปฏิบัติการอื่น หรือไม่ต้องการให้แพ็กเกจระบบตีกับโปรเจกต์อื่น โครงการนี้มี Dockerfile ที่ติดตั้ง ROS 2 Jazzy, Gazebo Harmonic, Nav2, SLAM Toolbox และ X11 GUI ไว้พร้อมใช้งานทันที
 
-```mermaid
-flowchart LR
-    Host["🖥️ Host OS (Linux/WSL)"] -- "X11 Display Socket & Network" --> Container["🐳 Docker Container (ros:lab-runner)"]
-    Container -- "Mount Volume (/workspace)" --> Code["📁 โค้ดโปรเจกต์ (โฟลเดอร์ที่ clone repo นี้)"]
-```
+![install-guide-03](diagrams/install-guide-03.svg)
 
 ### ขั้นตอนที่ 2.1: ตรวจสอบและติดตั้ง Docker Engine
 บน Ubuntu โฮสต์:
@@ -327,21 +308,7 @@ source ~/.bashrc
 
 ## การทดสอบความสมบูรณ์ของระบบหลังติดตั้ง (Post-Installation Verification)
 
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Dev as วิศวกร (Terminal 1)
-    participant Pub as Talker Node
-    participant DDS as Fast-DDS Middleware
-    participant Sub as Listener Node
-    actor Obs as วิศวกร (Terminal 2)
-
-    Dev->>Pub: ros2 run demo_nodes_py talker
-    Obs->>Sub: ros2 run demo_nodes_py listener
-    Pub->>DDS: Publish 'Hello World: <count>'
-    DDS->>Sub: Deliver Message via Shared Memory/UDP
-    Sub-->>Obs: Print 'I heard: [Hello World: <count>]'
-```
+![install-guide-04](diagrams/install-guide-04.svg)
 
 ### การทดสอบที่ 1: ตรวจสอบความสมบูรณ์ด้วย ROS 2 Doctor
 ```bash

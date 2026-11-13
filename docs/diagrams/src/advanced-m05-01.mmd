@@ -1,0 +1,20 @@
+stateDiagram-v2
+    [*] --> Unconfigured: สร้างอินสแตนซ์ของโหนด
+    Unconfigured --> Configuring: configure
+    Configuring --> Inactive: on_configure() = SUCCESS (สร้าง publisher/timer, เปิดพอร์ต)
+    Configuring --> Unconfigured: FAILURE
+
+    Inactive --> Activating: activate
+    Activating --> Active: on_activate() (เปิด timer, LifecyclePublisher เริ่มส่ง)
+
+    Active --> Deactivating: deactivate
+    Deactivating --> Inactive: on_deactivate() (หยุด timer)
+
+    Inactive --> CleaningUp: cleanup
+    CleaningUp --> Unconfigured: on_cleanup() (ทำลาย publisher/timer)
+
+    Unconfigured --> ShuttingDown: shutdown
+    Inactive --> ShuttingDown: shutdown
+    Active --> ShuttingDown: shutdown
+    ShuttingDown --> Finalized: on_shutdown() (ต้องคืนทรัพยากรเองทั้งหมด)
+    Finalized --> [*]

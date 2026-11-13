@@ -1,0 +1,19 @@
+flowchart TD
+    Earth["earth<br/>(พิกัดละติจูด/ลองจิจูด สากล WGS-84 / UTM)"]
+    Map["map<br/>(พิกัดแผนที่โลก: World-fixed, ปลอด Drift, อาจมีการกระโดด)"]
+    Odom["odom<br/>(พิกัดการเคลื่อนที่สะสม: ต่อเนื่อง ไม่มีทางกระโดด แต่มี Drift สะสม)"]
+    BaseFootprint["base_footprint (REP 120)<br/>(เงาของหุ่นยนต์ฉายลงบนพื้นระนาบ 2D: Z=0)"]
+    BaseLink["base_link<br/>(จุดศูนย์กลางทางกายภาพของหุ่นยนต์ 3D)"]
+    Lidar["laser_frame<br/>(พิกัดของเซนเซอร์ LiDAR)"]
+    IMU["imu_link<br/>(พิกัดของเซนเซอร์ IMU)"]
+
+    Earth -.-> Map
+    Map -->|Global Localization / AMCL Correction| Odom
+    Odom -->|Wheel Encoders + IMU Integration| BaseFootprint
+    BaseFootprint -->|คงที่ตามความสูงแชสซี| BaseLink
+    BaseLink -->|"ตำแหน่งติดตั้งเซนเซอร์ (Static TF)"| Lidar
+    BaseLink -->|"ตำแหน่งติดตั้งเซนเซอร์ (Static TF)"| IMU
+
+    style Map fill:#e1f5fe,stroke:#0288d1,stroke-width:2px
+    style Odom fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    style BaseLink fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px

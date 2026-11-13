@@ -19,29 +19,7 @@
 
 การใช้เพียงระบบนำทางปกติ (Nav2 Planner/Controller) ไม่สามารถให้ความแม่นยำระดับมิลลิเมตรได้ ข้อจำกัดหลัก **ไม่ใช่** ความละเอียดของแผนที่ (resolution ตั้งค่าได้ ค่า 0.05 m เป็นเพียงค่าที่นิยม) แต่คือ **ความแม่นยำของการระบุตำแหน่ง (localization)** ด้วย AMCL/SLAM ที่ปกติคลาดเคลื่อนระดับหลายเซนติเมตร และ goal tolerance ของ controller (`xy_goal_tolerance` ค่าเริ่มต้น 0.25 m) ทางแก้คือวัดตำแหน่งแท่นชาร์จ **สัมพัทธ์กับหุ่นยนต์โดยตรง** ด้วยเซนเซอร์ระยะใกล้ (กล้อง + AprilTag, LiDAR) แล้วควบคุมเข้าจอดด้วย control law เฉพาะ — ROS 2 จึงมีโมดูล **`opennav_docking` (Nav2 Docking Server)**:
 
-```mermaid
-flowchart TD
-    subgraph Phase1 ["1. Coarse Navigation (นำทางหยาบ)"]
-        Nav["Nav2 NavigateToPose"] -->|"เดินทางด้วย Global Path"| Staging["Staging Area (0.7 m หน้าแท่นชาร์จ)"]
-    end
-
-    subgraph Phase2 ["2. Perception & Alignment (เล็งเป้าหมาย)"]
-        Staging --> Cam["AprilTag / LiDAR Detector"]
-        Cam -->|"ตรวจจับพิกัดแท่นชาร์จ"| DockPose["Fine Target Pose"]
-    end
-
-    subgraph Phase3 ["3. Precision Approach (เข้าจอดความแม่นยำสูง)"]
-        DockPose --> Controller["Docking Controller (graceful control law, 0.05-0.15 m/s)"]
-        Controller --> Contact["isDocked: ระยะถึง dock pose < docking_threshold (หรือ contact/กระแสชาร์จบนหุ่นจริง)"]
-    end
-
-    subgraph Phase4 ["4. Charging & Monitoring (ชาร์จแบตเตอรี่)"]
-        Contact --> Charge["รอชาร์จจน BatteryState.percentage ≥ 0.95 (ใน BT)"]
-        Charge --> Undock["Undock Action (ถอยหลังออกจากแท่น)"]
-    end
-
-    Phase1 --> Phase2 --> Phase3 --> Phase4
-```
+![advanced-m03-01](../../docs/diagrams/advanced-m03-01.svg)
 
 ---
 
@@ -49,13 +27,7 @@ flowchart TD
 
 สำหรับการเข้าชาร์จที่ขั้วชาร์จอยู่ด้านท้ายของหุ่นยนต์ การควบคุมถอยหลังของระบบ Differential Drive มีความอ่อนไหวต่อความผิดพลาดเชิงมุม (Angular Instability) มากกว่าการเดินหน้า:
 
-```mermaid
-flowchart LR
-    Robot["AMR Pose (x, y, θ)"] -- "Tracking Error (e_lat, e_yaw)" --> Controller["Docking Controller"]
-    Dock["Dock Pose (x_d, y_d, θ_d)"] --> Controller
-    Controller -->|"Linear Velocity v < 0 (ถอยหลังช้าๆ)"| Motors["ล้อมอเตอร์"]
-    Controller -->|"Angular Velocity ω (ปรับจูนมุม)"| Motors
-```
+![advanced-m03-02](../../docs/diagrams/advanced-m03-02.svg)
 
 สมการควบคุมมุมเลี้ยวระหว่างถอยหลังเข้าหาเส้นแนวแกนกลางแท่นชาร์จ:
 $$\omega(t) = -K_{\text{yaw}} e_{\text{yaw}}(t) - K_{\text{lat}} e_{\text{lat}}(t)$$
@@ -71,14 +43,7 @@ $$\omega(t) = -K_{\text{yaw}} e_{\text{yaw}}(t) - K_{\text{lat}} e_{\text{lat}}(
 
 แล็บนี้รัน **Docking Server ตัวจริงของ Nav2** โดยไม่ต้องมี Gazebo หรือหุ่นยนต์จริง: ฐานหุ่นยนต์เป็นแบบจลนศาสตร์ (kinematic) และ "กล้อง" เรนเดอร์ AprilTag จากตำแหน่งปัจจุบันของหุ่นยนต์ (vision-in-the-loop) จึงวัดความคลาดเคลื่อนเทียบกับตำแหน่งจริงได้แม่นยำ
 
-```mermaid
-flowchart LR
-    Base["fake_base<br/>cmd_vel → odom + TF odom→base_footprint"] -->|TF| Cam["synthetic_tag_camera (mode tf)<br/>ภาพแท็กตามท่าทางหุ่นปัจจุบัน"]
-    Cam -->|"/camera/image_raw + camera_info"| Trk["apriltag_dock_tracker (amr_adv02)"]
-    Trk -->|"/detected_dock_pose (PoseStamped, optical frame)"| DS["docking_server (opennav_docking)<br/>SimpleChargingDock + dock DB"]
-    DS -->|"/cmd_vel (Twist)"| Base
-    Client["dock_client<br/>DockRobot / UndockRobot"] <-->|"nav2_msgs/action"| DS
-```
+![advanced-m03-03](../../docs/diagrams/advanced-m03-03.svg)
 
 | ไฟล์ | หน้าที่ |
 | :--- | :--- |

@@ -1,0 +1,15 @@
+flowchart LR
+    Base["fake_base<br/>cmd_vel → odom + TF odom→base_footprint"] -->|TF| Cam["synthetic_tag_camera (mode tf)<br/>ภาพแท็กตามท่าทางหุ่นปัจจุบัน"]
+    Cam -->|"/camera/image_raw + camera_info"| Trk["apriltag_dock_tracker (amr_adv02)"]
+    Trk -->|"/detected_dock_pose (PoseStamped, optical frame)"| DS["docking_server (opennav_docking)<br/>SimpleChargingDock + dock DB"]
+    DS -->|"/cmd_vel (Twist)"| Base
+    Client["dock_client<br/>DockRobot / UndockRobot"] <-->|"nav2_msgs/action"| DS
+
+    classDef node fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#0f172a
+    classDef sim fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#0f172a
+    classDef hw fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#0f172a
+    classDef sec fill:#ffe4e6,stroke:#e11d48,stroke-width:2px,color:#0f172a
+    classDef bt fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#0f172a
+    classDef tool fill:#ffedd5,stroke:#ea580c,stroke-width:2px,color:#0f172a
+    classDef cfg fill:#f1f5f9,stroke:#64748b,stroke-width:2px,color:#0f172a
+    class Base,Client sim

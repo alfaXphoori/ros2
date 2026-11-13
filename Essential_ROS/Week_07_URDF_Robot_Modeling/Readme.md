@@ -32,31 +32,7 @@ URDF (Unified Robot Description Format) เป็นรูปแบบไฟล�
 - **`<link>`**: ชิ้นส่วนแข็ง (Rigid Body) ที่มีมวล รูปร่าง และพิกัดเฉพาะตัว
 - **`<joint>`**: จุดเชื่อมต่อทางกลศาสตร์ระหว่าง 2 ลิงก์ ซึ่งต้องระบุความสัมพันธ์แบบลำดับชั้นต้นไม้ (**Parent Link** และ **Child Link**) ห้ามมีวงจรปิด (No Closed Loops ใน URDF มาตรฐาน)
 
-```mermaid
-flowchart TD
-    Footprint["base_footprint<br/>(Virtual 2D Ground Projection: Z=0)"]
-    BaseLink["base_link<br/>(Main Body / Chassis Center)"]
-    LWheel["left_wheel_link<br/>(Active Drive Wheel)"]
-    RWheel["right_wheel_link<br/>(Active Drive Wheel)"]
-    FCaster["front_caster_link<br/>(Passive Support)"]
-    RCaster["rear_caster_link<br/>(Passive Support)"]
-    Lidar["lidar_link<br/>(2D Laser Sensor)"]
-    Camera["camera_link<br/>(RGB-D Sensor)"]
-
-    Footprint -->|"base_footprint_joint [fixed]"| BaseLink
-    BaseLink -->|"left_wheel_joint [continuous]"| LWheel
-    BaseLink -->|"right_wheel_joint [continuous]"| RWheel
-    BaseLink -->|"front_caster_joint [fixed]"| FCaster
-    BaseLink -->|"rear_caster_joint [fixed]"| RCaster
-    BaseLink -->|"lidar_joint [fixed]"| Lidar
-    BaseLink -->|"camera_joint [fixed]"| Camera
-
-    style Footprint fill:#f5f5f5,stroke:#9e9e9e,stroke-width:1px
-    style BaseLink fill:#e1f5fe,stroke:#0288d1,stroke-width:2px
-    style Lidar fill:#fff3e0,stroke:#f57c00,stroke-width:2px
-    style LWheel fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
-    style RWheel fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
-```
+![essential-w07-01](../../docs/diagrams/essential-w07-01.svg)
 
 #### ประเภทของข้อต่อ (Joint Types in URDF):
 1. **`fixed`**: เชื่อมต่อติดแน่น ไม่มีการเคลื่อนไหวสัมพัทธ์ (0 องศาอิสระ) เช่น เซนเซอร์ LiDAR หรือโครงสร้างภายใน
@@ -71,30 +47,7 @@ flowchart TD
 ### 2. องค์ประกอบ 3 เสาหลักของ `<link>`
 ภายในแท็กลิงก์ 1 ชิ้น จะมีองค์ประกอบที่ทำหน้าที่แตกต่างกันอย่างสิ้นเชิง 3 ส่วน:
 
-```mermaid
-classDiagram
-    class Link {
-        +String name
-    }
-    class Visual {
-        +Origin xyz, rpy
-        +Geometry (Box, Cylinder, Sphere, Mesh)
-        +Material (Color, Texture)
-    }
-    class Collision {
-        +Origin xyz, rpy
-        +Geometry (Simplified Primitives)
-    }
-    class Inertial {
-        +Origin xyz, rpy
-        +Mass value
-        +Inertia (ixx, iyy, izz, ixy, ixz, iyz)
-    }
-
-    Link *-- Visual : "ใช้แสดงผลใน RViz2"
-    Link *-- Collision : "ใช้ตรวจจับการชนใน Gazebo"
-    Link *-- Inertial : "ใช้คำนวณไดนามิกส์ฟิสิกส์"
-```
+![essential-w07-02](../../docs/diagrams/essential-w07-02.svg)
 
 > [!IMPORTANT]
 > **กฎเหล็กของ Collision Geometry:** ในซอฟต์แวร์จำลองฟิสิกส์ (Gazebo Sim) ห้ามนำไฟล์ 3D Mesh ที่มีความละเอียดสูง (High-poly CAD) มาใส่ในแท็ก `<collision>` เป็นอันขาด เพราะอัลกอริทึม Collision Solver (เช่น Bullet หรือ DART) จะต้องคำนวณจุดตัดของสามเหลี่ยมหลายหมื่นชิ้นพร้อมกันในทุกๆ คาบเวลา (1 ms) ส่งผลให้ Real-Time Factor (RTF) ดรอปอย่างรุนแรง ควรใช้เฉพาะ **Geometry Primitives** (Box, Cylinder, Sphere) ห่อหุ้มโครงสร้างเท่านั้น
@@ -144,13 +97,7 @@ $$I = I_{cm} + m d^2$$
 3. คำนวณจลนศาสตร์เดินหน้า (Forward Kinematics) ของทุกๆ ลิงก์ในหุ่นยนต์
 4. กระจายผลลัพธ์พิกัด 3 มิติออกไปยังท็อปปิก `/tf` (สำหรับข้อต่อที่มีการขยับ) และ `/tf_static` (สำหรับข้อต่อแบบ fixed)
 
-```mermaid
-flowchart LR
-    URDF["robot_description<br/>(URDF XML)"] --> RSP["robot_state_publisher"]
-    Joints["/joint_states<br/>(wheel positions)"] --> RSP
-    RSP -->|Transforms เคลื่อนที่| TF["/tf (Dynamic Transforms)"]
-    RSP -->|Transforms คงที่| TFStatic["/tf_static (Latching)"]
-```
+![essential-w07-03](../../docs/diagrams/essential-w07-03.svg)
 
 ---
 

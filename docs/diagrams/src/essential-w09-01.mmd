@@ -1,0 +1,14 @@
+flowchart LR
+    Body["camera_link<br/>(Body Convention)<br/>X: หน้า, Y: ซ้าย, Z: บน"]
+    Optical["camera_optical_link<br/>(Optical Convention)<br/>Z: หน้า, X: ขวา, Y: ล่าง"]
+
+    Body -->|"Roll = -90°, Pitch = 0°, Yaw = -90°"| Optical
+
+    classDef node fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#0f172a
+    classDef sim fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#0f172a
+    classDef hw fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#0f172a
+    classDef sec fill:#ffe4e6,stroke:#e11d48,stroke-width:2px,color:#0f172a
+    classDef bt fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#0f172a
+    classDef tool fill:#ffedd5,stroke:#ea580c,stroke-width:2px,color:#0f172a
+    classDef cfg fill:#f1f5f9,stroke:#64748b,stroke-width:2px,color:#0f172a
+    class Body,Optical hw

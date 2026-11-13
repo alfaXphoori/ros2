@@ -28,31 +28,7 @@
 
 ## 🏛️ สถาปัตยกรรมระบบแบบบูรณาการ (End-to-End System Architecture)
 
-```mermaid
-flowchart TD
-    subgraph LaunchSystem ["One-Click Bringup: final_amr_system.launch.py"]
-        GazeboBringup["Week 10/11: Gazebo World + DiffDrive + LiDAR + ros_gz_bridge"]
-        URDFBringup["Week 07: Robot State Publisher (TF Tree, use_sim_time)"]
-        Nav2Bringup["Week 14: Nav2 Stack (map_server + AMCL + Costmaps + Planner + DWB)<br/>Week 12 map, Week 15 behavior tree"]
-    end
-
-    subgraph MissionControl ["Mission Layer: final_mission_executor.py"]
-        NavAPI["nav2_simple_commander (BasicNavigator)"]
-        WP1["Stage 1: Cargo Pickup Bay (1.5, 1.0, 90°)"]
-        WP2["Stage 2: Dropoff Station (-1.5, -1.0, 180°)"]
-        WP3["Stage 3: Home Charging Base (0.0, 0.0, 0°)"]
-    end
-
-    LaunchSystem --> MissionControl
-    MissionControl -->|"Action: /navigate_to_pose"| Nav2Bringup
-    Nav2Bringup -->|"/cmd_vel"| GazeboBringup
-    GazeboBringup -->|"/scan, /odom, /clock"| Nav2Bringup
-    URDFBringup -->|"/tf, /tf_static"| Nav2Bringup
-
-    style LaunchSystem fill:#e1f5fe,stroke:#0288d1,stroke-width:2px
-    style MissionControl fill:#fff3e0,stroke:#f57c00,stroke-width:2px
-    style Nav2Bringup fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
-```
+![essential-w16](../../docs/diagrams/essential-w16.svg)
 
 ---
 

@@ -1,0 +1,23 @@
+sequenceDiagram
+    autonumber
+    actor Dev as ผู้ใช้งาน / Launch
+    participant NodeA as โหนด Robot Controller (Domain 0)
+    participant Net as เครือข่าย UDP Multicast (Port 7400)
+    participant NodeB as โหนด Motor Driver (Domain 0)
+    participant NodeX as หุ่นยนต์ตัวอื่น (Domain 15)
+
+    Dev->>NodeA: สั่งเปิดโหนด
+    Note over NodeA: เริ่มต้น SPDP (Simple Participant Discovery)
+    NodeA->>Net: ประกาศตัวตนผ่าน SPDP Packet ไปยัง Multicast 239.255.0.1:7400<br/>"ฉันคือ NodeA, IP: 192.168.1.50, GUID Prefix: 01.0f..."
+    Net->>NodeB: ส่งต่อแพ็กเก็ตไปยังสมาชิก Domain 0
+    Net--xNodeX: ถูกคัดกรองทิ้ง (NodeX ฟังอยู่ที่พอร์ต 11150 ของ Domain 15)
+    Note over NodeB: บันทึกข้อมูล NodeA ลงในตาราง Participant Cache
+    NodeB->>NodeA: ส่งตอบกลับแบบ Unicast SPDP ยืนยันการมีตัวตน
+
+    rect rgb(240, 248, 255)
+        Note over NodeA,NodeB: เริ่มต้น SEDP (Simple Endpoint Discovery Protocol)
+        NodeA->>NodeB: SEDP แลกเปลี่ยนรายการ Topic, QoS Profile, Data Types
+        NodeB->>NodeA: SEDP ยืนยันการจับคู่ Publisher/Subscriber (Matched)
+    end
+
+    Note over NodeA,NodeB: สร้างการเชื่อมต่อแบบ Peer-to-Peer ตรงกัน (Data Streaming เริ่มต้น)

@@ -1,0 +1,16 @@
+flowchart TD
+    subgraph Security_Triad ["เสาหลักของ DDS-Security ที่ SROS 2 ตั้งค่าให้"]
+        Auth["1. Authentication<br>ใบรับรอง X.509 ของแต่ละ enclave ลงนามโดย Identity CA ของ keystore"]
+        Access["2. Access Control<br>governance.xml (กติกาทั้ง domain) + permissions.xml (enclave นี้ pub/sub อะไรได้ บน domain ใด)"]
+        Crypto["3. Cryptographic<br>เข้ารหัส/ลงนามข้อความด้วย AES-GCM / GMAC (builtin plugin DDS:Crypto:AES-GCM-GMAC)"]
+    end
+
+    classDef node fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#0f172a
+    classDef sim fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#0f172a
+    classDef hw fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#0f172a
+    classDef sec fill:#ffe4e6,stroke:#e11d48,stroke-width:2px,color:#0f172a
+    classDef bt fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#0f172a
+    classDef tool fill:#ffedd5,stroke:#ea580c,stroke-width:2px,color:#0f172a
+    classDef cfg fill:#f1f5f9,stroke:#64748b,stroke-width:2px,color:#0f172a
+    class Auth,Crypto node
+    class Access cfg

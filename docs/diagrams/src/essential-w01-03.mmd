@@ -1,0 +1,16 @@
+flowchart TD
+    Underlay["Underlay: ระบบแกนกลาง (/opt/ros/jazzy/setup.bash)<br/>บรรจุไลบรารีมาตรฐาน rclpy, rclcpp, nav2, gazebo"]
+    Overlay["Overlay: พื้นที่พัฒนาของผู้ใช้ (~/ros2_ws/install/setup.bash)<br/>บรรจุแพ็กเกจที่เราพัฒนาเองใน src/"]
+
+    Underlay -->|"source /opt/ros/jazzy/setup.bash"| Overlay
+    Overlay -->|"AMENT_PREFIX_PATH ค้นหาที่ Overlay ก่อน"| Executable["โหนดที่ถูกประมวลผล"]
+
+    classDef node fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#0f172a
+    classDef sim fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#0f172a
+    classDef hw fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#0f172a
+    classDef sec fill:#ffe4e6,stroke:#e11d48,stroke-width:2px,color:#0f172a
+    classDef bt fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#0f172a
+    classDef tool fill:#ffedd5,stroke:#ea580c,stroke-width:2px,color:#0f172a
+    classDef cfg fill:#f1f5f9,stroke:#64748b,stroke-width:2px,color:#0f172a
+    class Underlay sim
+    class Overlay cfg

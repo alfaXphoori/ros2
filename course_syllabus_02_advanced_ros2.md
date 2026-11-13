@@ -27,40 +27,7 @@
 
 ## 📅 ตารางแผนการสอนรายสัปดาห์ (16-Week Course Schedule)
 
-```mermaid
-flowchart TD
-    subgraph Part1 ["ตอนที่ 1: การควบคุมฮาร์ดแวร์จริง (W1-W3)"]
-        W1["W1: ros2_control Architecture"]
-        W2["W2: Hardware Interfaces & Loops"]
-        W3["W3: micro-ROS (MCU & Closed-loop PID)"]
-    end
-
-    subgraph Part2 ["ตอนที่ 2: ระบบการมองเห็นและการรับรู้ด้วย AI (W4-W8)"]
-        W4["W4: ROS 2 Vision Pipeline (cv_bridge)"]
-        W5["W5: Deep Learning YOLO Detection"]
-        W6["W6: Visual Marker (AprilTag Docking)"]
-        W7["W7: 3D Point Cloud Processing (PCL)"]
-        W8["W8: 🔴 สอบปฏิบัติการกลางภาค (Midterm)"]
-    end
-
-    subgraph Part3 ["ตอนที่ 3: ระบบนำทางแม่นยำสูงและพฤติกรรมอัตโนมัติ (W9-W11)"]
-        W9["W9: Nav2 Precision Docking Server"]
-        W10["W10: Advanced Nav2 Behavior Trees"]
-        W11["W11: Costmap Filters & Restricted Zones"]
-    end
-
-    subgraph Part4 ["ตอนที่ 4: ฝูงหุ่นยนต์และความปลอดภัยระดับอุตสาหกรรม (W12-W16)"]
-        W12["W12: Multi-Robot Fleet & Namespacing"]
-        W13["W13: Open-RMF Fleet Management Core"]
-        W14["W14: Lifecycle Nodes (Deterministic States)"]
-        W15["W15: SROS 2 Cybersecurity & CI/CD Testing"]
-        W16["W16: 🏆 Capstone Showcase & Final Defense"]
-    end
-
-    Part1 --> Part2
-    Part2 --> Part3
-    Part3 --> Part4
-```
+![syllabus-advanced](docs/diagrams/syllabus-advanced.svg)
 
 ### 🧭 การจับคู่สัปดาห์กับโมดูลแล็บใน repo (ตรวจสอบเมื่อ 2026-10-29)
 แผน 16 สัปดาห์นี้สอนบนแล็บ 6 โมดูลใน [`Advanced_ROS/`](Advanced_ROS/README.md) ทุกโมดูลเป็น ROS 2 package

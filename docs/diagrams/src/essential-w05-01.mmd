@@ -1,0 +1,19 @@
+graph TD
+    subgraph ROS1_Arch ["ROS 1 Architecture (Centralized)"]
+        Master["roscore (Parameter Server)"]
+        R1Node1["Node 1"] -->|Get/Set| Master
+        R1Node2["Node 2"] -->|Get/Set| Master
+    end
+
+    subgraph ROS2_Arch ["ROS 2 Architecture (Decentralized & Event-Driven)"]
+        R2Node1["Node: /amr_01/motor_controller<br/>[Owns: max_speed, kp, ki]"]
+        R2Node2["Node: /amr_01/laser_filter<br/>[Owns: scan_angle, range_min]"]
+        CLI["CLI / GUI Manager"]
+
+        CLI -->|~/set_parameters Service| R2Node1
+        CLI -->|~/set_parameters Service| R2Node2
+        R2Node1 -.->|/parameter_events Topic| CLI
+    end
+
+    style ROS1_Arch fill:#ffebee,stroke:#c62828,stroke-width:2px
+    style ROS2_Arch fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px

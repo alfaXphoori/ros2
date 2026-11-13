@@ -39,75 +39,13 @@
     2. **`FAILURE`**: โหนดประมวลผลล้มเหลวหรือไม่ผ่านเงื่อนไข
     3. **`RUNNING`**: โหนดยังประมวลผลไม่เสร็จ (เช่น หุ่นยนต์กำลังอยู่ระหว่างขับเคลื่อน) จะถูก Tick ซ้ำในรอบเวลาถัดไป
 
-```mermaid
-graph TD
-    subgraph FSM_Problem ["FSM: ข้อจำกัด State Explosion"]
-        S1["Navigating"] <--> S2["Obstacle Avoidance"]
-        S2 <--> S3["Recovery Spin"]
-        S3 <--> S1
-        S1 <--> S4["Emergency Stop"]
-        S2 <--> S4
-        S3 <--> S4
-        S4 <--> S5["Recharging"]
-        S1 <--> S5
-    end
-
-    subgraph BT_Solution ["Behavior Tree: ลำดับชั้นแบบโมดูลาร์"]
-        Root["Root: RecoveryNode"]
-        NavSeq["Sequence: Nav Loop"]
-        Plan["Action: ComputePath"]
-        Control["Action: FollowPath"]
-        RecovFall["Fallback: Recoveries"]
-        Clear["ClearCostmap"]
-        Spin["Spin 360°"]
-
-        Root --> NavSeq
-        NavSeq --> Plan
-        NavSeq --> Control
-        Root --> RecovFall
-        RecovFall --> Clear
-        RecovFall --> Spin
-    end
-
-    style FSM_Problem fill:#ffebee,stroke:#c62828,stroke-width:2px
-    style BT_Solution fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
-```
+![essential-w15-01](../../docs/diagrams/essential-w15-01.svg)
 
 ---
 
 ### 2. ชนิดของโหนดใน Behavior Tree (BehaviorTree.CPP Taxonomy)
 
-```mermaid
-classDiagram
-    class TreeNode {
-        +tick() NodeStatus
-        +status: SUCCESS | FAILURE | RUNNING
-    }
-    class ControlNode {
-        +children: List[TreeNode]
-    }
-    class DecoratorNode {
-        +child: TreeNode
-    }
-    class LeafNode {
-    }
-    class ActionNode {
-        +execute()
-    }
-    class ConditionNode {
-        +check() bool
-    }
-
-    TreeNode <|-- ControlNode
-    TreeNode <|-- DecoratorNode
-    TreeNode <|-- LeafNode
-    LeafNode <|-- ActionNode
-    LeafNode <|-- ConditionNode
-    ControlNode <|-- Sequence
-    ControlNode <|-- Fallback
-    ControlNode <|-- ReactiveSequence
-    ControlNode <|-- RecoveryNode
-```
+![essential-w15-02](../../docs/diagrams/essential-w15-02.svg)
 
 #### ก. Control Nodes (โหนดควบคุมลำดับการประมวลผล):
 1. **`Sequence` ($\rightarrow$):** ประมวลผลโหนดลูกทีละตัวจากซ้ายไปขวา
@@ -136,22 +74,7 @@ classDiagram
 ### 3. สถาปัตยกรรมภารกิจลาดตระเวน (Waypoint Patrol Architecture)
 ในการใช้งานหุ่นยนต์จริงในคลังสินค้า หุ่นยนต์จะต้องเดินทางเป็นลำดับผ่านจุดตรวจที่กำหนดไว้ล่วงหน้า (Waypoints Mission):
 
-```mermaid
-stateDiagram-v2
-    [*] --> Station1 : เริ่มต้นภารกิจ (Start Mission)
-    Station1 --> Station2 : เดินทางสำเร็จ & Dwell 3s (โหลดสินค้า)
-    Station2 --> Station3 : เดินทางสำเร็จ & Dwell 3s (ตรวจสอบสต็อก)
-    Station3 --> Station4 : เดินทางสำเร็จ & Dwell 3s (ส่งมอบสินค้า)
-    Station4 --> Station5 : เดินทางสำเร็จ & Dwell 3s (จุดชาร์จไฟ)
-    Station5 --> [*] : จบภารกิจสมบูรณ์ (Mission Complete)
-
-    Station1 --> Recovery : เกิดสิ่งกีดขวางติดขัด
-    Station2 --> Recovery : เกิดสิ่งกีดขวางติดขัด
-    Station3 --> Recovery : เกิดสิ่งกีดขวางติดขัด
-    Station4 --> Recovery : เกิดสิ่งกีดขวางติดขัด
-    Recovery --> Station1 : แก้ไขสำเร็จ รันต่อ
-    Recovery --> Station2 : แก้ไขสำเร็จ รันต่อ
-```
+![essential-w15-03](../../docs/diagrams/essential-w15-03.svg)
 
 ---
 

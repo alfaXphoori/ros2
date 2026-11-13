@@ -7,14 +7,7 @@
 
 ## 📋 มิติการประเมินผล 5 ด้านหลัก (Assessment Dimensions)
 
-```mermaid
-pie title สัดส่วนคะแนนการสอบปฏิบัติการปลายภาค (100%)
-    "1. Autonomous Localization" : 20
-    "2. Dynamic Obstacle Avoidance" : 25
-    "3. Transit Precision & Dwell Time" : 20
-    "4. Return to Home Dock" : 15
-    "5. Oral Defense & Architecture" : 20
-```
+![essential-w16-rubric](../../docs/diagrams/essential-w16-rubric.svg)
 
 ---
 

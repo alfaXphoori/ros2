@@ -20,34 +20,7 @@
 
 ใน **ROS 2** เฟรมเวิร์ก **`ros2_control`** ได้รับการพัฒนาขึ้นเป็นมาตรฐานสากล เพื่อแยกซอฟต์แวร์ระดับบน (High-Level Navigation) ออกจากไดรเวอร์ฮาร์ดแวร์ระดับล่าง (Low-Level Motor Drivers) อย่างเป็นระบบ:
 
-```mermaid
-flowchart TD
-    subgraph ROS2_User_Space ["High-Level ROS 2 Ecosystem"]
-        Nav2["Nav2 Stack / Teleop"] -->|"/diff_drive_controller/cmd_vel (TwistStamped)"| DDC["diff_drive_controller"]
-        JSB["joint_state_broadcaster"] -->|"/joint_states"| RSP["robot_state_publisher"]
-        RSP --> TF["TF2 (/tf)"]
-    end
-
-    subgraph Controller_Manager ["Controller Manager (Deterministic Real-time Loop: 50-1000 Hz)"]
-        DDC
-        JSB
-        RM["Resource Manager (Memory Safety & Lifecycle)"]
-    end
-
-    subgraph Hardware_Interface ["C++ Hardware Interface Plugin (SystemInterface)"]
-        HI["DiffDriveHardwareSystem / mock_components/GenericSystem / gz_ros2_control/GazeboSimSystem"]
-        HI -->|"read(position, velocity)"| StateBuf["State Buffers"]
-        CmdBuf["Command Buffers"] -->|"write(velocity)"| HI
-    end
-
-    subgraph Physical_Hardware ["Physical Actuators & Sensors"]
-        HI <==>|"CAN Bus / UART Serial / EtherCAT"| MotorDrivers["BLDC Motor Drivers & Optical Encoders"]
-    end
-
-    DDC <--> RM
-    JSB <--> RM
-    RM <--> HI
-```
+![advanced-m01-01](../../docs/diagrams/advanced-m01-01.svg)
 
 ---
 
@@ -95,27 +68,7 @@ colcon test --base-paths Advanced_ROS --packages-select amr_adv01 && colcon test
 2. **`SensorInterface`:** สำหรับอ่านค่าเซนเซอร์ที่ไม่มีคำสั่งควบคุม (เช่น IMU, Force-Torque Sensor)
 3. **`SystemInterface`:** สำหรับระบบหุ่นยนต์ที่มีทั้งมอเตอร์และเซนเซอร์เชื่อมโยงกัน (เช่น หุ่นยนต์ล้อต่างความเร็ว Differential Drive AMR หรือแขนกลอุตสาหกรรม)
 
-```mermaid
-sequenceDiagram
-    autonumber
-    participant CM as Controller Manager Loop (100 Hz)
-    participant HI as Hardware Interface (C++)
-    participant MCU as Real Motor / MCU
-    participant DDC as DiffDriveController
-
-    loop ทุกๆ คาบเวลา T = 10 ms
-        CM->>HI: read(time, period)
-        HI->>MCU: ส่งคำสั่งถามค่า Encoders ผ่าน Serial/CAN
-        MCU-->>HI: ส่งค่า Encoder Ticks ล่าสุดกลับมา
-        HI-->>CM: อัปเดตตำแหน่ง (Position) และความเร็ว (Velocity) ใน State Buffer
-        
-        CM->>DDC: update(time, period)
-        DDC->>CM: คำนวณความเร็วล้อซ้าย-ขวาจาก ~/cmd_vel (TwistStamped) และเขียนใส่ Command Buffer
-        
-        CM->>HI: write(time, period)
-        HI->>MCU: ส่งคำสั่ง Target Velocity (rad/s) ไปยัง Motor Drivers
-    end
-```
+![advanced-m01-02](../../docs/diagrams/advanced-m01-02.svg)
 
 ---
 
@@ -155,25 +108,7 @@ $$u[k] = K_p e[k] + K_i \sum_{j=0}^{k} e[j] \Delta t + K_d \frac{e[k] - e[k-1]}{
 
 สำหรับระบบ AMR ที่ใช้ไมโครคอนโทรลเลอร์ยอดนิยม เช่น **ESP32** หรือ **STM32F4** สื่อสารกับคอมพิวเตอร์ออนบอร์ด (เช่น Jetson Orin หรือ Raspberry Pi 5):
 
-```mermaid
-flowchart LR
-    subgraph SBC ["Single-Board Computer (Ubuntu 24.04)"]
-        ROS2_App["ROS 2 jazzy nodes"] <--> DDS_Layer["Fast DDS Middleware"]
-        DDS_Layer <--> UROS_Agent["micro_ros_agent Node"]
-    end
-
-    subgraph Embedded_MCU ["Microcontroller (FreeRTOS)"]
-        UROS_Client["micro-ROS Client (rclc)"]
-        PID_Loop["Hardware Timer PID Loop (1000 Hz)"]
-        Enc_ISR["Encoder Interrupts (Quadrature QEI)"]
-        PWM_Gen["Hardware PWM Generation"]
-    end
-
-    UROS_Agent <==>|"USB CDC Serial / UART (921600 baud)"| UROS_Client
-    UROS_Client <--> PID_Loop
-    Enc_ISR --> PID_Loop
-    PID_Loop --> PWM_Gen
-```
+![advanced-m01-03](../../docs/diagrams/advanced-m01-03.svg)
 
 ### คำสั่งรัน micro-ROS Agent บนคอมพิวเตอร์ออนบอร์ด:
 > แพ็กเกจ `micro_ros_agent` ไม่ได้ติดตั้งใน image `ros:lab-runner` (ต้อง build จาก [micro-ROS](https://micro.ros.org/) บนเครื่องที่ต่อกับบอร์ดจริง) คำสั่งด้านล่างจึงเป็นตัวอย่างสำหรับฮาร์ดแวร์จริง
