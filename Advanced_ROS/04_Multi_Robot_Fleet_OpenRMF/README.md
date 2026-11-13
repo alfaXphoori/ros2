@@ -1,12 +1,11 @@
 # 📖 บทที่ 4: ระบบบริหารจัดการฝูงหุ่นยนต์คลังสินค้าด้วย Open-RMF
-**รหัสวิชา:** AMR-201 Advanced ROS 2 & Industrial Fleet Robotics  
-**เวลาเรียน:** บรรยาย 2 ชั่วโมง | ปฏิบัติการ 3 ชั่วโมง | ทบทวนและค้นคว้าด้วยตนเอง 5 ชั่วโมง  
+**เส้นทางการเรียนรู้:** Advanced ROS 2 (ระดับใช้งานจริงและระบบฝูงหุ่นยนต์)  
 **เอกสารปฏิบัติการ:** [ใบงานแล็บปฏิบัติการที่ 4](Lab_Exercises.md)  
 **แพ็กเกจ ROS 2:** `amr_adv04` (ament_python, โฟลเดอร์นี้) — ใช้ URDF จาก `amr_week07`
 
 ---
 
-## 🎯 วัตถุประสงค์การเรียนรู้เชิงพฤติกรรม (Measurable Learning Objectives)
+## 🎯 สิ่งที่คุณจะได้เรียนรู้ (Learning Objectives)
 1. **เข้าใจหลักการ Namespacing และ TF Frame Prefixing:** สามารถจัดสรรกลุ่ม Node, Topic, และ TF Frame สำหรับหุ่นยนต์หลายตัวในเครือข่ายเดียวกันโดยไม่เกิดการชนกันของชื่อ (Name Collision) และอธิบายได้ว่าอะไร "แยก" และอะไร "ใช้ร่วมกัน"
 2. **เข้าใจสถาปัตยกรรม Open-RMF (Robotics Middleware Framework):** อธิบายหน้าที่ของ Traffic Schedule, Traffic Negotiation, Fleet Adapter, Task Dispatcher และการเชื่อมโยงระบบอาคาร (Doors/Lifts)
 3. **วิเคราะห์คณิตศาสตร์การแก้ปัญหาการชนกันเชิงมิติเวลา (Space-Time Trajectory Conflict Resolution):** คำนวณระยะเว้นปลอดภัยระหว่างเส้นทางของหุ่นยนต์ 2 ตัวตามแกนเวลา

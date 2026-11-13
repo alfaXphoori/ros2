@@ -1,12 +1,11 @@
 # 📖 Week 11: การต่อเชื่อมมอเตอร์ เซนเซอร์ และระบบ ros_gz_bridge
-**เวลาเรียน:** บรรยาย 2 ชั่วโมง | ปฏิบัติการ 3 ชั่วโมง | ศึกษาค้นคว้าด้วยตนเอง 4 ชั่วโมง  
 **วิชาบังคับก่อน:** [สัปดาห์ที่ 10: สภาพแวดล้อมจำลอง 3 มิติด้วย Gazebo Sim (Harmonic)](../Week_10_Gazebo_Sim_Harmonic/Readme.md)  
 **เอกสารปฏิบัติการ:** [ใบงานแล็บสัปดาห์ที่ 11](Lab_Exercises.md)
 
 ---
 
 ## 🎯 วัตถุประสงค์การเรียนรู้ (Learning Objectives)
-เมื่อจบบทเรียนนี้ ผู้เรียนจะสามารถ:
+เมื่อจบบทเรียนนี้ คุณจะสามารถ:
 1. **วิเคราะห์สถาปัตยกรรมการแปลงโปรโตคอล** ระหว่าง Google Protobuf (Gazebo Transport) และ Common Data Representation / CDR (ROS 2 DDS) ผ่านสะพาน `ros_gz_bridge`
 2. **กำหนดทิศทางการเชื่อมต่อ (Bridge Direction)**: `ROS_TO_GZ`, `GZ_TO_ROS`, และ `BIDIRECTIONAL` ในไฟล์ YAML ได้อย่างถูกต้องและปลอดภัย
 3. **กำหนดค่าปลั๊กอินควบคุมการขับเคลื่อนสองล้อ (Gazebo DiffDrive Plugin)** พร้อมเชื่อมโยงการอ่านค่า Odometry และความเร็วรอบล้อกลับเข้าสู่ ROS 2
@@ -15,7 +14,7 @@
 
 ---
 
-## ⏱️ แผนการสอน 2 ชั่วโมง (Lecture Outline)
+## ⏱️ แผนการสอน (Lecture Outline)
 | ช่วงเวลา | หัวข้อ | กิจกรรมการเรียนรู้ |
 | :---: | :--- | :--- |
 | **00:00 - 00:30** | สถาปัตยกรรม ros_gz_bridge: การจับคู่ Serialization Protobuf $\leftrightarrow$ CDR | บรรยายพร้อมตารางจับคู่ ROS 2 Type vs Gazebo Msg Type และบทบาทของ `parameter_bridge` |

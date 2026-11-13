@@ -1,6 +1,5 @@
 # 🛠️ ใบงานปฏิบัติการสัปดาห์ที่ 16: การซักซ้อมการสาธิตปลายภาค (Final Demonstration Rehearsal)
-**วิชา:** AMR-101 Essential ROS 2 for Autonomous Mobile Robots  
-**เวลาปฏิบัติการ:** 3 ชั่วโมง  
+**เส้นทางการเรียนรู้:** Essential ROS 2 (ปูพื้นฐานสู่หุ่นยนต์เคลื่อนที่อัตโนมัติ)  
 **ระดับ:** บูรณาการขั้นสูง (Capstone Integration)  
 **เอกสารประกอบการบรรยาย:** [คู่มือบรรยายสัปดาห์ที่ 16](Readme.md) | [เกณฑ์การประเมินผล](Evaluation_Rubric.md)
 

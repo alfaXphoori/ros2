@@ -1,12 +1,11 @@
 # 📖 Week 10: สภาพแวดล้อมจำลอง 3 มิติด้วย Gazebo Sim 8 (Harmonic) และ SDF World
-**เวลาเรียน:** บรรยาย 2 ชั่วโมง | ปฏิบัติการ 3 ชั่วโมง | ศึกษาค้นคว้าด้วยตนเอง 4 ชั่วโมง  
 **วิชาบังคับก่อน:** [สัปดาห์ที่ 7: การสร้างแบบจำลอง 3 มิติ (URDF) และ Inertia Matrix](../Week_07_URDF_Robot_Modeling/Readme.md)  
 **เอกสารปฏิบัติการ:** [ใบงานแล็บสัปดาห์ที่ 10](Lab_Exercises.md)
 
 ---
 
 ## 🎯 วัตถุประสงค์การเรียนรู้ (Learning Objectives)
-เมื่อจบบทเรียนนี้ ผู้เรียนจะสามารถ:
+เมื่อจบบทเรียนนี้ คุณจะสามารถ:
 1. **วิเคราะห์สถาปัตยกรรมแบบ Entity Component System (ECS)** ใน Gazebo Sim 8 (Harmonic) และเปรียบเทียบข้อได้เปรียบกับสถาปัตยกรรม Monolithic ของ Gazebo Classic ได้อย่างลึกซึ้ง
 2. **สร้างและปรับแต่งโลกจำลอง 3 มิติ** ด้วยไฟล์ Simulation Description Format (SDF Version 1.8+) สำหรับโรงงานและคลังสินค้าอัตโนมัติ
 3. **คำนวณและปรับแต่งพารามิเตอร์ของ Physics Engine** (`max_step_size`, `real_time_factor`, Solver Iterations) ให้สมดุลระหว่างความแม่นยำและการใช้ทรัพยากร CPU
@@ -15,7 +14,7 @@
 
 ---
 
-## ⏱️ แผนการสอน 2 ชั่วโมง (Lecture Outline)
+## ⏱️ แผนการสอน (Lecture Outline)
 | ช่วงเวลา | หัวข้อ | กิจกรรมการเรียนรู้ |
 | :---: | :--- | :--- |
 | **00:00 - 00:30** | สถาปัตยกรรม Gazebo Harmonic: ECS Pattern vs Classic | บรรยายการแบ่งหน้าที่ระหว่าง Entities, Components, และ Systems Plugins |

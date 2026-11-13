@@ -1,11 +1,10 @@
 # 📖 บทที่ 2: ระบบการมองเห็นและการรับรู้ด้วยปัญญาประดิษฐ์ (Vision & AI Perception)
-**รหัสวิชา:** AMR-201 Advanced ROS 2 & Industrial Fleet Robotics  
-**เวลาเรียน:** บรรยาย 2 ชั่วโมง | ปฏิบัติการ 3 ชั่วโมง | ทบทวนและค้นคว้าด้วยตนเอง 5 ชั่วโมง  
+**เส้นทางการเรียนรู้:** Advanced ROS 2 (ระดับใช้งานจริงและระบบฝูงหุ่นยนต์)  
 **เอกสารปฏิบัติการ:** [ใบงานแล็บปฏิบัติการที่ 2](Lab_Exercises.md)
 
 ---
 
-## 🎯 วัตถุประสงค์การเรียนรู้เชิงพฤติกรรม (Measurable Learning Objectives)
+## 🎯 สิ่งที่คุณจะได้เรียนรู้ (Learning Objectives)
 1. **เข้าใจสถาปัตยกรรม ROS 2 Image Transport และ `cv_bridge`:** สามารถแปลงข้อมูลระหว่าง `sensor_msgs/msg/Image` ของ ROS 2 และ Mat Array ของ OpenCV โดยไม่มีการรั่วไหลของหน่วยความจำ (Memory Leak)
 2. **บูรณาการตัวตรวจจับวัตถุเข้ากับ ROS 2:** แปลงผลการตรวจจับ (Bounding Boxes) เป็นข้อความมาตรฐาน **`vision_msgs/msg/Detection2DArray`** โดยคง `header` (stamp + frame) ของภาพต้นฉบับ — ในแล็บใช้ตัวตรวจจับแบบ Classical CV ที่รันบน CPU ได้ทุกเครื่อง และมีแบบฝึกหัดเสริมสลับไปใช้โมเดล Deep Learning (Ultralytics YOLOv8/YOLO11)
 3. **เข้าใจคณิตศาสตร์ Perspective-n-Point (PnP) สำหรับ Visual Markers:** คำนวณหาตำแหน่งและทิศทาง 6-DoF ($X, Y, Z, \text{Roll}, \text{Pitch}, \text{Yaw}$) ของแท่นชาร์จจาก AprilTag / ArUco ผ่าน Camera Matrix

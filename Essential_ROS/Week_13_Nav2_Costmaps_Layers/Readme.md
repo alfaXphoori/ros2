@@ -1,12 +1,11 @@
 # 📖 Week 13: สถาปัตยกรรม Nav2 Stack และระบบ Costmap 2D แบบหลายชั้น (Costmap Layers)
-**เวลาเรียน:** บรรยาย 2 ชั่วโมง | ปฏิบัติการ 3 ชั่วโมง | ศึกษาค้นคว้าด้วยตนเอง 4 ชั่วโมง  
 **วิชาบังคับก่อน:** [สัปดาห์ที่ 12: การสร้างแผนที่ 2 มิติด้วย SLAM Toolbox และ Ceres Solver](../Week_12_SLAM_Mapping_Ceres/Readme.md)  
 **เอกสารปฏิบัติการ:** [ใบงานแล็บสัปดาห์ที่ 13](Lab_Exercises.md)
 
 ---
 
 ## 🎯 วัตถุประสงค์การเรียนรู้ (Learning Objectives)
-เมื่อจบบทเรียนนี้ ผู้เรียนจะสามารถ:
+เมื่อจบบทเรียนนี้ คุณจะสามารถ:
 1. **วิเคราะห์สถาปัตยกรรมระบบนำทาง Nav2 Stack** และการควบคุมสถานะโหนดผ่าน Lifecycle Manager (Unconfigured, Inactive, Active, Finalized)
 2. **เข้าใจโครงสร้างแบบซ้อนทับหลายชั้นของ Costmap 2D (Layered Costmap Pipeline)**: Static Layer, Obstacle Layer, Voxel Layer, และ Inflation Layer
 3. **จำแนกความหมายของระดับต้นทุนอันตราย (Cost Values)** ทั้ง 5 ระดับ ($0, 1-252, 253, 254, 255$) และผลกระทบต่ออัลกอริทึมวางแผนเส้นทาง
@@ -15,7 +14,7 @@
 
 ---
 
-## ⏱️ แผนการสอน 2 ชั่วโมง (Lecture Outline)
+## ⏱️ แผนการสอน (Lecture Outline)
 | ช่วงเวลา | หัวข้อ | กิจกรรมการเรียนรู้ |
 | :---: | :--- | :--- |
 | **00:00 - 00:30** | สถาปัตยกรรม Nav2: Lifecycle Nodes, Action Servers และ Costmap 2D | บรรยายภาพรวมการประสานงานระหว่าง Planner, Controller, และ Behavior Tree |

@@ -1,12 +1,11 @@
 # 📖 Week 07: การสร้างแบบจำลอง 3 มิติ (URDF) และ Inertia Matrix
-**เวลาเรียน:** บรรยาย 2 ชั่วโมง | ปฏิบัติการ 3 ชั่วโมง | ศึกษาค้นคว้าด้วยตนเอง 4 ชั่วโมง  
 **วิชาบังคับก่อน:** [สัปดาห์ที่ 6: มาตรฐานวิศวกรรมพิกัด (REP 103/105) และจลนศาสตร์ AMR](../Week_06_Kinematics_REP_Standards/Readme.md)  
 **เอกสารปฏิบัติการ:** [ใบงานแล็บสัปดาห์ที่ 7](Lab_Exercises.md)
 
 ---
 
 ## 🎯 วัตถุประสงค์การเรียนรู้ (Learning Objectives)
-เมื่อจบบทเรียนนี้ ผู้เรียนจะสามารถ:
+เมื่อจบบทเรียนนี้ คุณจะสามารถ:
 1. **ออกแบบและสร้างไฟล์ Unified Robot Description Format (URDF)** สำหรับหุ่นยนต์ขับเคลื่อนสองล้อ (AMR) ตามโครงสร้างไวยากรณ์ภาษา XML มาตรฐานของ ROS 2
 2. **วิเคราะห์ความแตกต่างและบทบาทเฉพาะของแท็ก 3 มิติ**: `<visual>` (การเรนเดอร์ใน RViz2), `<collision>` (การคำนวณการชนใน Physics Engine), และ `<inertial>` (มวลและเทนเซอร์ความเฉื่อย)
 3. **จำแนกประเภทข้อต่อหุ่นยนต์ 6 ชนิด** (`fixed`, `continuous`, `revolute`, `prismatic`, `planar`, `floating`) และเลือกใช้แกนหมุน (`<axis>`) ได้ถูกต้องตามหลักกลศาสตร์
@@ -15,7 +14,7 @@
 
 ---
 
-## ⏱️ แผนการสอน 2 ชั่วโมง (Lecture Outline)
+## ⏱️ แผนการสอน (Lecture Outline)
 | ช่วงเวลา | หัวข้อ | กิจกรรมการเรียนรู้ |
 | :---: | :--- | :--- |
 | **00:00 - 00:30** | โครงสร้างไวยากรณ์ URDF และทฤษฎีต้นไม้ข้อต่อ (Link-Joint Tree) | วิเคราะห์ข้อกำหนด XML, ความสัมพันธ์ Parent-Child, และประเภทข้อต่อ 6 ชนิด |
@@ -144,7 +143,7 @@ $$I = I_{cm} + m d^2$$
 ### 2. [`display_urdf.launch.py`](launch/display_urdf.launch.py)
 - หาไฟล์ URDF/RViz ผ่าน `get_package_share_directory('amr_week07')` (ไม่อ้างพาธแบบ `__file__`) เพื่อให้สัปดาห์ถัดไป (Gazebo, SLAM, Nav2) นำไปใช้ซ้ำได้
 - โหลดไฟล์ URDF เข้าสู่พารามิเตอร์ `robot_description` ของโหนด `robot_state_publisher`
-- เปิดใช้งานโหนด `joint_state_publisher_gui` เพื่อให้ผู้เรียนสามารถทดลองลาก Slider ปรับหมุนล้อได้แบบ Interactive
+- เปิดใช้งานโหนด `joint_state_publisher_gui` เพื่อให้คุณสามารถทดลองลาก Slider ปรับหมุนล้อได้แบบ Interactive
 - สั่งเปิดโปรแกรมแสดงผลภาพ 3 มิติ RViz2 พร้อมโหลดคอนฟิก [`rviz/robot_model.rviz`](rviz/robot_model.rviz) (RobotModel + TF, Fixed Frame = `base_footprint`)
 - Launch arguments:
 

@@ -8,7 +8,6 @@
 > [`course_syllabus_01_essential_ros2.md`](course_syllabus_01_essential_ros2.md) (Essential_ROS, Week 01–16) และ
 > [`course_syllabus_02_advanced_ros2.md`](course_syllabus_02_advanced_ros2.md) (Advanced_ROS, โมดูล 01–06)
 
-**รหัสหลักสูตร:** ROS2-AMR-MASTER  
 **ระดับ:** Beginner -> Intermediate -> Advanced (16-Week Intensive Roadmap)  
 **เป้าหมาย:** พัฒนาวิศวกรหุ่นยนต์และระบบอัตโนมัติให้มีความเชี่ยวชาญในการออกแบบ พัฒนา และใช้งานระบบ Autonomous Mobile Robot (AMR) ด้วย ROS 2 (Humble / Jazzy)
 

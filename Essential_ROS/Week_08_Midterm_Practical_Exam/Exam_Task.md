@@ -1,6 +1,5 @@
 # 📝 ใบสั่งงานข้อสอบปฏิบัติการกลางภาค (Midterm Exam Task Specification)
-**วิชา:** AMR-101 Essential ROS 2 for Autonomous Mobile Robots  
-**เวลาสอบ:** 3 ชั่วโมง (180 นาที)  
+**เส้นทางการเรียนรู้:** Essential ROS 2 (ปูพื้นฐานสู่หุ่นยนต์เคลื่อนที่อัตโนมัติ)  
 **โจทย์สถานการณ์:** การพัฒนาระบบหุ่นยนต์ขนส่งเวชภัณฑ์ในโรงพยาบาล (Hospital Logistics AMR)
 
 ---

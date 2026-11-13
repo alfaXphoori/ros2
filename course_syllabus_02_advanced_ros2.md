@@ -1,15 +1,13 @@
-# 🎓 แผนการสอนรายวิชา: Advanced ROS 2 & Industrial Fleet Robotics
-**รหัสวิชา:** AMR-201 (3 หน่วยกิต: บรรยาย 2 ชม. / ปฏิบัติการ 3 ชม. / ศึกษาด้วยตนเอง 4 ชม. ต่อสัปดาห์)  
-**ระดับการศึกษา:** ปริญญาตรีชั้นปีที่ 4 / ปริญญาโท (Senior Undergraduate / Graduate) / วิศวกรอุตสาหกรรม  
-**วิชาบังคับก่อน:** AMR-101 (Essential ROS 2 for Autonomous Mobile Robots) หรือเทียบเท่า  
-**ระยะเวลาเรียน:** 16 สัปดาห์ (1 ภาคการศึกษา)  
+# 🗺️ แผนการเรียนรู้: Advanced ROS 2 & Industrial Fleet Robotics
+**เส้นทางการเรียนรู้:** Advanced ROS 2 (ระดับใช้งานจริงและระบบฝูงหุ่นยนต์)  
+**พื้นฐานที่แนะนำ:** ผ่านเนื้อหา [Essential ROS 2](course_syllabus_01_essential_ros2.md) หรือมีพื้นฐาน ROS 2 มาก่อน  
 **มาตรฐานซอฟต์แวร์:** ROS 2 Jazzy Jalisco (LTS) | Gazebo Sim 8.15 | ros2_control | Open-RMF | SROS 2  
 
 > 📖 **คู่มือเนื้อหาบรรยายและขั้นตอนแล็บฉบับเต็ม:** ดูรายละเอียดทฤษฎี โค้ดแล็บ และคำสั่งรันทุกสัปดาห์ได้ที่ [`Advanced_ROS/docs/weekly_lectures_and_labs.md`](Advanced_ROS/docs/weekly_lectures_and_labs.md)
 
 ---
 
-## 🎯 คำอธิบายรายวิชา (Course Description)
+## 🎯 ภาพรวมเนื้อหา (Overview)
 ศึกษาและปฏิบัติการขั้นสูงเกี่ยวกับการพัฒนาระบบหุ่นยนต์เคลื่อนที่อัตโนมัติระดับอุตสาหกรรม (Production-Grade AMR), เฟรมเวิร์กการควบคุมฮาร์ดแวร์จริงด้วย `ros2_control` (Controller Manager, Hardware Interface, DiffDriveController), การต่อเชื่อมไมโครคอนโทรลเลอร์ควบคุมมอเตอร์แบบปิดลูปด้วย micro-ROS (STM32 / ESP32), การประมวลผลภาพขั้นสูงและการฝังโมเดลปัญญาประดิษฐ์ (Deep Learning Object Detection ด้วย YOLOv8/11, การตรวจจับ Visual Marker ด้วย AprilTag / ArUco), การประมวลผลข้อมูล 3D Point Cloud ด้วย PCL, ระบบการเข้าแท่นชาร์จอัตโนมัติความแม่นยำสูง (Nav2 Precision Docking Server), การปรับแต่ง Nav2 Behavior Trees ขั้นสูง, ระบบบริหารจัดการฝูงหุ่นยนต์คลังสินค้า (Multi-Robot Fleet) ด้วย Open-RMF, การออกแบบโหนดแบบ Managed Lifecycle Nodes เพื่อความปลอดภัยของระบบ, การรักษาความมั่นคงปลอดภัยไซเบอร์ด้วย SROS 2 (DDS Security, Keystores, Encryption) และการทดสอบระบบอัตโนมัติในกระบวนการ CI/CD ด้วย `launch_testing`
 
 ---
@@ -42,7 +40,7 @@
 | 5 | Object detection | `amr_adv02` (`object_detector`) | ✅ classical CV → `vision_msgs/Detection2DArray`; 🟡 YOLO (ultralytics) เป็นแบบฝึกหัดเสริม ติดตั้งเองใน venv |
 | 6 | AprilTag pose estimation | `amr_adv02` (`apriltag_dock_tracker`) | ✅ วัดจริง 0.99 mm / 0.23° ที่ 0.8 m |
 | 7 | 3D Point Cloud (PCL) | — | 🟡 บรรยายเท่านั้น (ยังไม่มีแล็บ/แพ็กเกจ PCL ใน image) |
-| 8 | Midterm | โมดูล 01 + 02 | ✅ ใช้แล็บ 01–02 เป็นฐาน (วัด CPU/latency บนเครื่องผู้เรียน ไม่กำหนดให้ใช้ GPU) |
+| 8 | Midterm | โมดูล 01 + 02 | ✅ ใช้แล็บ 01–02 เป็นฐาน (วัด CPU/latency บนเครื่องคุณ ไม่กำหนดให้ใช้ GPU) |
 | 9 | Nav2 Docking | [03 Docking](Advanced_ROS/03_Nav2_Precision_Docking/README.md) `amr_adv03` | ✅ `opennav_docking` จริง + vision ในลูป, วัดจริง 11.4–14.5 mm |
 | 10 | Behavior Trees | `amr_adv03` (`dock_and_charge_bt.xml`, `check_bt`) + Essential [Week 15](Essential_ROS/Week_15_Waypoint_Patrol_BT/Readme.md) | ✅ BT ผ่านการตรวจกับ node ที่ติดตั้งจริง; custom BT โหลดใน `bt_navigator` จริงใน Week 15 |
 | 11 | Costmap Filters | Essential [Week 13](Essential_ROS/Week_13_Nav2_Costmaps_Layers/Readme.md) (`amr_week13`) | ✅ `costmap_filters_demo.launch.py` (`KeepoutFilter` + `SpeedFilter` พร้อม mask จริงและ `test_costmap_filters.py`) |
@@ -55,11 +53,11 @@
 ---
 
 ### สัปดาห์ที่ 1: สถาปัตยกรรมเฟรมเวิร์ก `ros2_control` และการจัดการทรัพยากร
-- **บรรยาย (2 ชม.):**
+- **บรรยาย:**
   - ข้อจำกัดของการใช้ Topic `/cmd_vel` แบบดิบ และความสำคัญของ `ros2_control`
   - สถาปัตยกรรม: `controller_manager`, `hardware_interface`, `controllers`
   - การใช้งาน `diff_drive_controller` และ `joint_state_broadcaster`
-- **ปฏิบัติการ (3 ชม.):**
+- **ปฏิบัติการ:**
   - วิเคราะห์ไฟล์คอนฟิกคอนโทรลเลอร์ [`diff_drive_controller.yaml`](Advanced_ROS/01_ros2_control_Hardware/config/diff_drive_controller.yaml)
   - เขียนแท็ก `<ros2_control>` ใน URDF/Xacro ใน [`diff_drive_ros2_control.xacro`](Advanced_ROS/01_ros2_control_Hardware/urdf/diff_drive_ros2_control.xacro)
 - **การบ้าน/แบบฝึกหัด:** กำหนด Acceleration Limits และ Wheel Multipliers เพื่อชดเชยการลื่นไถล
@@ -67,11 +65,11 @@
 ---
 
 ### สัปดาห์ที่ 2: การพัฒนา Custom Hardware Interface สำหรับหุ่นยนต์จริง
-- **บรรยาย (2 ชม.):**
+- **บรรยาย:**
   - โครงสร้างคลาส `hardware_interface::SystemInterface` ในภาษา C++
   - ฟังก์ชันวงรอบควบคุม: `on_init()`, `on_activate()`, `read()`, `write()`, `on_deactivate()`
   - การจัดการความปลอดภัย Real-time: หลีกเลี่ยง Dynamic Memory Allocation ภายในลูปควบคุม
-- **ปฏิบัติการ (3 ชม.):**
+- **ปฏิบัติการ:**
   - เขียนและคอมไพล์ Hardware Interface จำลองการส่งคำสั่งผ่าน Serial Communication
   - ทดสอบโหลดและสลับการทำงานของคอนโทรลเลอร์ผ่าน `ros2 control` CLI
 - **การบ้าน/แบบฝึกหัด:** ออกแบบระบบ Fail-safe ตัดกำลังขับมอเตอร์เมื่อขาดการติดต่อเกิน 100 ms
@@ -79,11 +77,11 @@
 ---
 
 ### สัปดาห์ที่ 3: การเชื่อมต่อไมโครคอนโทรลเลอร์ควบคุมมอเตอร์ด้วย micro-ROS
-- **บรรยาย (2 ชม.):**
+- **บรรยาย:**
   - สถาปัตยกรรมของ micro-ROS (Client บน Microcontroller <-> Agent บน Single Board Computer)
   - โปรโตคอลการสื่อสาร: XRCE-DDS ผ่าน UART Serial / CAN Bus
   - การอ่านสัญญาณ Quadrature Encoder และลูปควบคุมความเร็ว PID บน ESP32 / STM32
-- **ปฏิบัติการ (3 ชม.):**
+- **ปฏิบัติการ:**
   - ติดตั้งและรัน `micro_ros_agent` ผ่านพอร์ต Serial
   - เชื่อมโยงข้อมูลความเร็วล้อจริงเข้าสู่ระบบ ROS 2 ผ่าน Topic `/joint_states`
 - **การบ้าน/แบบฝึกหัด:** ปรับจูนค่า $K_p, K_i, K_d$ ของมอเตอร์กระแสตรงในเฟิร์มแวร์ micro-ROS
@@ -91,11 +89,11 @@
 ---
 
 ### สัปดาห์ที่ 4: ระบบการประมวลผลภาพใน ROS 2 และการคาลิเบรตกล้อง
-- **บรรยาย (2 ชม.):**
+- **บรรยาย:**
   - โครงสร้างข้อมูลภาพ: `sensor_msgs/msg/Image`, `CompressedImage`, `CameraInfo`
   - สถาปัตยกรรม `image_transport` เพื่อลดภาระแบนด์วิดท์เครือข่าย
   - แบบจำลองกล้องรูเข็ม (Pinhole Camera Model), พารามิเตอร์ Intrinsic & Extrinsic
-- **ปฏิบัติการ (3 ชม.):**
+- **ปฏิบัติการ:**
   - การใช้งาน `cv_bridge` แปลงภาพระหว่าง ROS 2 และ OpenCV (`imgmsg_to_cv2`)
   - รันการคาลิเบรตกล้องด้วยตารางหมากรุก (Checkerboard Calibration) และบันทึกไฟล์ `.yaml`
 - **การบ้าน/แบบฝึกหัด:** เขียนโหนดคำนวณและแสดงค่าฮิสโตแกรมของภาพแบบเรียลไทม์
@@ -103,11 +101,11 @@
 ---
 
 ### สัปดาห์ที่ 5: การประมวลผลภาพด้วยปัญญาประดิษฐ์ (Deep Learning with YOLO)
-- **บรรยาย (2 ชม.):**
+- **บรรยาย:**
   - การเชื่อมโยงโมเดล Deep Learning (YOLOv8 / YOLO11) เข้ากับ ROS 2 Node
   - สถาปัตยกรรม Inference Engine: PyTorch, ONNX Runtime, TensorRT สำหรับ Edge AI
   - การสร้าง Custom Detection Messages และการส่งพิกัด Bounding Boxes
-- **ปฏิบัติการ (3 ชม.):**
+- **ปฏิบัติการ:**
   - ศึกษาและรันโหนดตรวจจับวัตถุ [`object_detector_node.py`](Advanced_ROS/02_Vision_AI_Perception/src/object_detector_node.py)
   - ทดสอบจำลองการตรวจจับพาเลทสินค้าและกรวยจราจรในคลังสินค้า
 - **การบ้าน/แบบฝึกหัด:** เพิ่มตัวกรองความเชื่อมั่น (Confidence Threshold Filter) คัดกรองเฉพาะวัตถุที่มั่นใจเกิน 80%
@@ -115,11 +113,11 @@
 ---
 
 ### สัปดาห์ที่ 6: การตรวจจับ Visual Marker และการประมาณตำแหน่ง 3 มิติ
-- **บรรยาย (2 ชม.):**
+- **บรรยาย:**
   - การทำงานของ Fiducial Markers (AprilTag และ ArUco)
   - การแก้ปัญหา Perspective-n-Point (PnP Algorithm) เพื่อหาตำแหน่ง $[X, Y, Z]$ และมุม $[Roll, Pitch, Yaw]$
   - การแปลงพิกัดจาก Camera Optical Frame สู่ Base Link Frame
-- **ปฏิบัติการ (3 ชม.):**
+- **ปฏิบัติการ:**
   - รันโหนดตรวจจับแท่นชาร์จ [`apriltag_dock_tracker.py`](Advanced_ROS/02_Vision_AI_Perception/src/apriltag_dock_tracker.py)
   - Publish ข้อมูล `geometry_msgs/PoseStamped` ไปยังระบบนำทาง
 - **การบ้าน/แบบฝึกหัด:** ทดสอบการหมุนกล้องในมุมเอียงและบันทึกความคลาดเคลื่อนของการประมาณตำแหน่ง
@@ -127,11 +125,11 @@
 ---
 
 ### สัปดาห์ที่ 7: การประมวลผลข้อมูล 3D Point Cloud ด้วย PCL
-- **บรรยาย (2 ชม.):**
+- **บรรยาย:**
   - โครงสร้างข้อความ `sensor_msgs/msg/PointCloud2` และ Point Field Layout
   - เฟรมเวิร์ก Point Cloud Library (PCL): PassThrough Filter, VoxelGrid Downsampling
   - RANSAC Plane Segmentation สำหรับการตัดระนาบพื้น (Ground Plane Removal)
-- **ปฏิบัติการ (3 ชม.):**
+- **ปฏิบัติการ:**
   - เขียนโหนดแปลงภาพ Depth Camera เป็น Point Cloud
   - กรองพ้อยท์คลาวด์ตัดระนาบพื้นออกเพื่อส่งเฉพาะสิ่งกีดขวางเข้า Costmap 2D
 - **การบ้าน/แบบฝึกหัด:** ปรับค่า Leaf Size ของ Voxel Grid เพื่อลดขนาดข้อมูลลง 70% โดยไม่สูญเสียรูปทรงสิ่งกีดขวาง
@@ -147,11 +145,11 @@
 ---
 
 ### สัปดาห์ที่ 9: ระบบเข้าแท่นชาร์จอัตโนมัติความแม่นยำสูง (Nav2 Precision Docking)
-- **บรรยาย (2 ชม.):**
+- **บรรยาย:**
   - ข้อจำกัดของ AMCL ในการระบุตำแหน่งละเอียดระดับมิลลิเมตร
   - สถาปัตยกรรม Nav2 Docking Server (`opennav_docking`) ใน ROS 2 Jazzy
   - ลำดับขั้นตอน: Staging Pose -> Detector Plugin -> Closed-Loop Servoing -> Charging Contact
-- **ปฏิบัติการ (3 ชม.):**
+- **ปฏิบัติการ:**
   - ปรับแต่งค่าพารามิเตอร์ของ Docking Server ใน [`docking_server_params.yaml`](Advanced_ROS/03_Nav2_Precision_Docking/config/docking_server_params.yaml)
   - ทดสอบจำลองการเข้าชาร์จที่ความเร็วต่ำ 0.05 m/s พร้อมระบบตรวจเช็คการชน
 - **การบ้าน/แบบฝึกหัด:** กำหนดระยะ Staging Offset เพิ่มเติมเป็น 0.8 ม. สำหรับแท่นชาร์จขนาดใหญ่
@@ -159,11 +157,11 @@
 ---
 
 ### สัปดาห์ที่ 10: การออกแบบ Nav2 Behavior Trees ขั้นสูง
-- **บรรยาย (2 ชม.):**
+- **บรรยาย:**
   - โครงสร้างและทฤษฎี Behavior Trees (BT): Control Nodes, Action Nodes, Condition Nodes, Decorators
   - การเขียน Pipeline การทำงาน: ComputePath -> FollowPath -> Recovery Actions
   - การสร้าง Custom C++ Action Plugins สำหรับขยายขีดความสามารถของ Nav2
-- **ปฏิบัติการ (3 ชม.):**
+- **ปฏิบัติการ:**
   - ศึกษาและทดสอบ Behavior Tree ชาร์จไฟอัตโนมัติ [`dock_and_charge_bt.xml`](Advanced_ROS/03_Nav2_Precision_Docking/behavior_trees/dock_and_charge_bt.xml)
   - เพิ่มเงื่อนไขตรวจสอบระดับแบตเตอรี่ก่อนเริ่มภารกิจ
 - **การบ้าน/แบบฝึกหัด:** เพิ่ม Recovery Node ให้หุ่นยนต์ถอยหลัง 0.3 เมตรเมื่อพบทางตันก่อนสั่ง Clear Costmap
@@ -171,11 +169,11 @@
 ---
 
 ### สัปดาห์ที่ 11: การควบคุมพื้นที่ด้วย Nav2 Costmap Filters & Speed Restricted Zones
-- **บรรยาย (2 ชม.):**
+- **บรรยาย:**
   - Costmap Filter Architecture (Filter Masks และ Information Masks)
   - Keep-out Zones (พื้นที่ห้ามเข้าสำหรับหุ่นยนต์)
   - Speed Restricted Zones (พื้นที่ควบคุมความเร็ว เช่น ทางม้าลาย หรือจุดที่มีคนพลุกพล่าน)
-- **ปฏิบัติการ (3 ชม.):**
+- **ปฏิบัติการ:**
   - สร้างภาพแผนที่ Mask กำหนดพื้นที่ห้ามเข้าและพื้นที่ลดความเร็ว
   - ทดสอบสั่งหุ่นยนต์นำทางผ่านพื้นที่ที่ถูกจำกัดความเร็วและสังเกตพฤติกรรม
 - **การบ้าน/แบบฝึกหัด:** สร้าง Keep-out Zone ป้องกันหุ่นยนต์วิ่งเข้าไปในเขตกำลังซ่อมบำรุง
@@ -183,11 +181,11 @@
 ---
 
 ### สัปดาห์ที่ 12: สถาปัตยกรรมระบบฝูงหุ่นยนต์ (Multi-Robot Fleet Architecture)
-- **บรรยาย (2 ชม.):**
+- **บรรยาย:**
   - ความท้าทายในระบบฝูงหุ่นยนต์: การชนกันของ TF Frames, การแย่งใช้ Bandwidth เครือข่าย
   - เทคนิค ROS 2 Namespacing และการใช้ `frame_prefix` (`/amr_01/odom`, `/amr_02/odom`)
   - การเชื่อมต่อเครือข่ายความเร็วสูงด้วย Zenoh Protocol
-- **ปฏิบัติการ (3 ชม.):**
+- **ปฏิบัติการ:**
   - รัน Launch File สปอว์นหุ่นยนต์ 2 ตัวแยก Namespace ใน [`multi_robot_fleet.launch.py`](Advanced_ROS/04_Multi_Robot_Fleet_OpenRMF/launch/multi_robot_fleet.launch.py)
   - สั่งการควบคุมหุ่นยนต์แต่ละตัวแยกอิสระผ่าน CLI
 - **การบ้าน/แบบฝึกหัด:** เพิ่มหุ่นยนต์ตัวที่ 3 เข้าสู่ Launch File พร้อมกำหนด Namespace `amr_03`
@@ -195,11 +193,11 @@
 ---
 
 ### สัปดาห์ที่ 13: ระบบจัดการจราจรและงานส่วนกลางด้วย Open-RMF
-- **บรรยาย (2 ชม.):**
+- **บรรยาย:**
   - สถาปัตยกรรม Open-RMF (Robotics Middleware Framework)
   - Traffic Deconfliction (การแก้ปัญหาการแย่งทางแยกและการสวนทางกัน)
   - การเชื่อมต่อระบบอาคารอัจฉริยะ (Smart Infrastructure: การเรียกใช้ลิฟต์และประตูปิด-เปิดอัตโนมัติ)
-- **ปฏิบัติการ (3 ชม.):**
+- **ปฏิบัติการ:**
   - ปรับแต่งคอนฟิก Open-RMF Fleet Adapter ใน [`fleet_adapter_config.yaml`](Advanced_ROS/04_Multi_Robot_Fleet_OpenRMF/config/fleet_adapter_config.yaml)
   - จำลองสถานการณ์หุ่นยนต์ 2 ตัวเดินสวนกันในทางแคบ และดูผลการจัดตารางทางเดิน
 - **การบ้าน/แบบฝึกหัด:** กำหนดจุดชาร์จไฟสำรอง (Secondary Charger) ในคอนฟิก Open-RMF
@@ -207,11 +205,11 @@
 ---
 
 ### สัปดาห์ที่ 14: วิศวกรรมระบบระดับ Production ด้วย Managed Lifecycle Nodes
-- **บรรยาย (2 ชม.):**
+- **บรรยาย:**
   - วงจรชีวิตของโหนด: Unconfigured -> Inactive -> Active -> Finalized
   - การป้องกันอุบัติเหตุมอเตอร์กระชากขณะระบบปฏิบัติการยังบูตไม่เสร็จ
   - การเขียน Lifecycle Publisher และ Lifecycle State Machine
-- **ปฏิบัติการ (3 ชม.):**
+- **ปฏิบัติการ:**
   - ศึกษาและรันโหนดเซนเซอร์แบบ Lifecycle [`lifecycle_laser_sensor.py`](Advanced_ROS/05_Production_CI_CD_Security/src/lifecycle_laser_sensor.py)
   - สั่ง Transition สถานะของโหนดผ่าน `ros2 lifecycle` CLI
 - **การบ้าน/แบบฝึกหัด:** เขียนโหนด Motor Controller แบบ Lifecycle และดักจับ Error ให้ Transition กลับสู่ Inactive อัตโนมัติ
@@ -219,11 +217,11 @@
 ---
 
 ### สัปดาห์ที่ 15: ความมั่นคงปลอดภัยไซเบอร์ (SROS 2) และการทดสอบระบบอัตโนมัติ (CI/CD)
-- **บรรยาย (2 ชม.):**
+- **บรรยาย:**
   - ภัยคุกคามไซเบอร์ในระบบหุ่นยนต์อุตสาหกรรม (Man-in-the-Middle, Unauthorized Control)
   - มาตรฐานความปลอดภัย SROS 2 (DDS Security: Authentication, Access Control, Encryption)
   - Automated Integration Testing ด้วยเฟรมเวิร์ก `launch_testing` และ GitHub Actions
-- **ปฏิบัติการ (3 ชม.):**
+- **ปฏิบัติการ:**
   - สร้าง Keystores และ Enclaves สำหรับเข้ารหัสข้อความของหุ่นยนต์
   - รันชุดทดสอบความสมบูรณ์ของระบบ [`test_lifecycle_launch.py`](Advanced_ROS/05_Production_CI_CD_Security/test/test_lifecycle_launch.py)
 - **การบ้าน/แบบฝึกหัด:** สร้างไฟล์ GitHub Actions Workflow `.github/workflows/ci.yml` รันการทดสอบอัตโนมัติเมื่อมีการเปิด Pull Request

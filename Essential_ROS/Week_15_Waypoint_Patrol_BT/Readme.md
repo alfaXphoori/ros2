@@ -1,12 +1,11 @@
 # 📖 Week 15: ระบบลาดตระเวนจุดตรวจอัตโนมัติ (Waypoint Patrol) และ Behavior Trees
-**เวลาเรียน:** บรรยาย 2 ชั่วโมง | ปฏิบัติการ 3 ชั่วโมง | ศึกษาค้นคว้าด้วยตนเอง 4 ชั่วโมง  
 **วิชาบังคับก่อน:** [สัปดาห์ที่ 14: การวางแผนเส้นทาง, คอนโทรลเลอร์ และ AMCL Localization](../Week_14_Path_Planning_AMCL/Readme.md)  
 **เอกสารปฏิบัติการ:** [ใบงานแล็บสัปดาห์ที่ 15](Lab_Exercises.md)
 
 ---
 
 ## 🎯 วัตถุประสงค์การเรียนรู้ (Learning Objectives)
-เมื่อจบบทเรียนนี้ ผู้เรียนจะสามารถ:
+เมื่อจบบทเรียนนี้ คุณจะสามารถ:
 1. **วิเคราะห์ข้อได้เปรียบทางสถาปัตยกรรมของ Behavior Trees (BTs)** เหนือ Finite State Machines (FSM) ในการขจัดปัญหาการระเบิดของจำนวนสถานะ (State Explosion Problem)
 2. **เข้าใจกลไกการส่งสัญญาณกระตุ้น (Tick Propagation)** และสถานะการคืนค่า 3 รูปแบบ (`SUCCESS`, `FAILURE`, `RUNNING`)
 3. **จำแนกประเภทและตรรกะการประมวลผลของโหนดใน Behavior Tree**: Control Nodes (`Sequence`, `Fallback`, `ReactiveSequence`, `RecoveryNode`), Decorators, และ Action/Condition Nodes
@@ -15,7 +14,7 @@
 
 ---
 
-## ⏱️ แผนการสอน 2 ชั่วโมง (Lecture Outline)
+## ⏱️ แผนการสอน (Lecture Outline)
 | ช่วงเวลา | หัวข้อ | กิจกรรมการเรียนรู้ |
 | :---: | :--- | :--- |
 | **00:00 - 00:35** | วิวัฒนาการจาก Finite State Machines สู่ Behavior Trees (BTs) | เปรียบเทียบข้อจำกัดของ State Explosion ใน FSM กับความยืดหยุ่นของ BTs |

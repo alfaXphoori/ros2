@@ -1,12 +1,11 @@
 # 📖 Week 05: Dynamic Parameters และสถาปัตยกรรม Python Launch System
-**เวลาเรียน:** บรรยาย 2 ชั่วโมง | ปฏิบัติการ 3 ชั่วโมง | ศึกษาค้นคว้าด้วยตนเอง 4 ชั่วโมง  
 **วิชาบังคับก่อน:** [สัปดาห์ที่ 4: Action Protocol สำหรับงานระยะยาว และการยกเลิกเป้าหมาย](../Week_04_Actions_Preemption/Readme.md)  
 **เอกสารปฏิบัติการ:** [ใบงานแล็บสัปดาห์ที่ 5](Lab_Exercises.md)
 
 ---
 
 ## 🎯 วัตถุประสงค์การเรียนรู้ (Learning Objectives)
-เมื่อจบบทเรียนนี้ ผู้เรียนจะสามารถ:
+เมื่อจบบทเรียนนี้ คุณจะสามารถ:
 1. **อธิบายสถาปัตยกรรมพารามิเตอร์ระดับโหนด (Node-Level Parameters)** ใน ROS 2 และเปรียบเทียบข้อแตกต่างเชิงลึกกับระบบ Parameter Server กลางใน ROS 1
 2. **วิเคราะห์กลไกบริการเบื้องหลัง (Under-the-Hood Services)** 6 รายการที่ ROS 2 สร้างให้อัตโนมัติในทุกๆ โหนดสำหรับการจัดการพารามิเตอร์
 3. **เขียนโปรแกรมตรวจสอบความถูกต้องแบบไดนามิก (Dynamic Parameter Callback)** ด้วย `add_on_set_parameters_callback` และกำหนดเงื่อนไขความปลอดภัย (Safety Boundaries)
@@ -15,7 +14,7 @@
 
 ---
 
-## ⏱️ แผนการสอน 2 ชั่วโมง (Lecture Outline)
+## ⏱️ แผนการสอน (Lecture Outline)
 | ช่วงเวลา | หัวข้อ | กิจกรรมการเรียนรู้ |
 | :---: | :--- | :--- |
 | **00:00 - 00:30** | พารามิเตอร์ระดับโหนด (Node-Level) vs ROS 1 Parameter Server | บรรยายวิวัฒนาการ, Strongly-typed system, และ 6 DDS Services ภายใต้ Parameter Interface |

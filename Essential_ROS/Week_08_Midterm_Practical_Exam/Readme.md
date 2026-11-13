@@ -1,6 +1,5 @@
 # 🔴 Week 08: การสอบปฏิบัติการกลางภาค (Midterm Practical Examination)
-**วิชา:** AMR-101 Essential ROS 2 for Autonomous Mobile Robots  
-**เวลาสอบ:** 3 ชั่วโมงเต็ม (180 นาที)  
+**เส้นทางการเรียนรู้:** Essential ROS 2 (ปูพื้นฐานสู่หุ่นยนต์เคลื่อนที่อัตโนมัติ)  
 **สัดส่วนคะแนน:** 20% ของคะแนนรวมทั้งภาคการศึกษา (100 คะแนนเต็ม)  
 **เอกสารข้อสอบฉบับเต็ม:** [ใบสั่งงานข้อสอบกลางภาค (Exam Task Specification)](Exam_Task.md)  
 **ไฟล์เฉลยอ้างอิง:** [โฟลเดอร์แนวทางเฉลย (Official Solution)](solution/)  
@@ -9,7 +8,7 @@
 ---
 
 ## 🎯 วัตถุประสงค์การวัดผล (Assessment Objectives)
-การสอบกลางภาคเป็นการประเมินทักษะเชิงวิศวกรรมแบบบูรณาการ (Integrated Engineering Competencies) ที่ผู้เรียนได้ฝึกฝนตลอด 7 สัปดาห์แรก โดยครอบคลุม 4 มิติหลัก:
+การสอบกลางภาคเป็นการประเมินทักษะเชิงวิศวกรรมแบบบูรณาการ (Integrated Engineering Competencies) ที่คุณได้ฝึกฝนตลอด 7 สัปดาห์แรก โดยครอบคลุม 4 มิติหลัก:
 1. **DDS & Node Communication Infrastructure (Weeks 01–03):** ความสามารถในการจัดโครงสร้างโหนด OOP ในภาษา Python, การเลือกใช้ QoS Profile, และการบริหารจัดการ Topics/Services
 2. **Action Protocol & Long-Running Tasks (Week 04):** ความเข้าใจในการบริหารจัดการสถานะ Goal และกระบวนการยกเลิกงานอย่างปลอดภัย
 3. **Dynamic Parameters & Modular Launch (Week 05):** การป้องกันระบบด้วย Parameter Callbacks และการสร้าง Automation Script ด้วย Python Launch System
@@ -17,7 +16,7 @@
 
 ---
 
-## ⏱️ กำหนดการและตารางเวลาสอบ 3 ชั่วโมง (Exam Timeline)
+## ⏱️ กำหนดการและตารางเวลาสอบ (Exam Timeline)
 | ช่วงเวลา | กิจกรรม | รายละเอียดและคำแนะนำในการบริหารเวลา |
 | :---: | :--- | :--- |
 | **00:00 - 00:15** | ตรวจสอบสภาพแวดล้อมและชี้แจงโจทย์ | นักศึกษารัน `domain_check.sh`, ตรวจสอบพอร์ต DDS, และอ่านทำความเข้าใจความต้องการของโจทย์ |

@@ -1,13 +1,12 @@
 # 📖 Week 01: สภาพแวดล้อม สถาปัตยกรรม ROS 2 และระบบเครือข่าย Data Distribution Service (DDS)
-**รหัสวิชา:** AMR-101 Essential ROS 2 for Autonomous Mobile Robots  
-**เวลาเรียน:** บรรยาย 2 ชั่วโมง | ปฏิบัติการ 3 ชั่วโมง | ทบทวนและค้นคว้าด้วยตนเอง 5 ชั่วโมง  
+**เส้นทางการเรียนรู้:** Essential ROS 2 (ปูพื้นฐานสู่หุ่นยนต์เคลื่อนที่อัตโนมัติ)  
 **วิชาบังคับก่อน:** ความรู้พื้นฐานระบบปฏิบัติการ Linux (Ubuntu/Debian), Shell Commands, และแนวคิดพื้นฐานของ Docker Container  
 **เอกสารปฏิบัติการประจำสัปดาห์:** [ใบงานแล็บสัปดาห์ที่ 1](Lab_Exercises.md)
 
 ---
 
-## 🎯 วัตถุประสงค์การเรียนรู้เชิงพฤติกรรม (Measurable Learning Objectives)
-เมื่อผ่านการศึกษาบทเรียนและฝึกปฏิบัติการในสัปดาห์นี้ ผู้เรียนจะมีความสามารถดังต่อไปนี้:
+## 🎯 สิ่งที่คุณจะได้เรียนรู้ (Learning Objectives)
+หลังจบบทนี้ คุณจะสามารถ:
 1. **วิเคราะห์ความแตกต่างเชิงสถาปัตยกรรม:** จำแนกข้อแตกต่างระดับรากฐานระหว่างระบบรวมศูนย์ (Centralized Master Node) ใน ROS 1 กับระบบกระจายศูนย์แบบเพียร์ทูเพียร์ (Decentralized Peer-to-Peer) บนมาตรฐาน OMG DDS ใน ROS 2 ได้อย่างลึกซึ้ง
 2. **อธิบายโครงสร้างซอฟต์แวร์หลายชั้น (Layered Software Stack):** อธิบายความสัมพันธ์และหน้าที่ของแต่ละชั้นเลเยอร์ ได้แก่ Application Layer (`rclpy`/`rclcpp`), ROS Client Library (`rcl`), ROS Middleware Interface (`rmw`), และ Data Distribution Service (DDS Vendors)
 3. **ถอดรหัสโปรโตคอลการค้นพบของ DDS (DDS Discovery):** อธิบายกลไกของ **Simple Participant Discovery Protocol (SPDP)** และ **Simple Endpoint Discovery Protocol (SEDP)** ผ่านเครือข่าย UDP Multicast และ Unicast
@@ -17,7 +16,7 @@
 
 ---
 
-## ⏱️ แผนการจัดการเรียนรู้ 2 ชั่วโมง (Detailed Lecture Schedule)
+## ⏱️ ภาพรวมเนื้อหาในบทนี้ (Topic Overview)
 | ช่วงเวลา (นาที) | หัวข้อการบรรยาย | กิจกรรมและสื่อการเรียนรู้ | จุดเน้นสำคัญ (Key Takeaways) |
 | :---: | :--- | :--- | :--- |
 | **00:00 - 00:25** | **วิวัฒนาการจาก ROS 1 สู่ ROS 2:** ปัญหาจุดล้มเหลวเดี่ยว (Single Point of Failure) | บรรยายเปรียบเทียบสถาปัตยกรรม roscore กับ DDS | ทำไมอุตสาหกรรมหุ่นยนต์และยานยนต์ไร้คนขับจึงต้องเปลี่ยนผ่านสู่ ROS 2 |

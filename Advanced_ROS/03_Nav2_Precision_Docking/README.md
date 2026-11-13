@@ -1,11 +1,10 @@
 # 📖 บทที่ 3: ระบบการเข้าแท่นชาร์จความแม่นยำสูง (Nav2 Precision Docking)
-**รหัสวิชา:** AMR-201 Advanced ROS 2 & Industrial Fleet Robotics  
-**เวลาเรียน:** บรรยาย 2 ชั่วโมง | ปฏิบัติการ 3 ชั่วโมง | ทบทวนและค้นคว้าด้วยตนเอง 5 ชั่วโมง  
+**เส้นทางการเรียนรู้:** Advanced ROS 2 (ระดับใช้งานจริงและระบบฝูงหุ่นยนต์)  
 **เอกสารปฏิบัติการ:** [ใบงานแล็บปฏิบัติการที่ 3](Lab_Exercises.md)
 
 ---
 
-## 🎯 วัตถุประสงค์การเรียนรู้เชิงพฤติกรรม (Measurable Learning Objectives)
+## 🎯 สิ่งที่คุณจะได้เรียนรู้ (Learning Objectives)
 1. **เข้าใจสถาปัตยกรรม 4 ลำดับขั้นของ Nav2 Docking Server:** อธิบายกระบวนการ Coarse Navigation, Staging Area, Fine Perception Alignment, และ Contact Verification ได้อย่างเป็นลำดับ
 2. **ออกแบบและกำหนดค่า Docking Plugins:** กำหนด dock database, พารามิเตอร์ `docking_threshold`, `staging_x_offset`, และการรับ `detected_dock_pose` จาก External Vision Detector (AprilTag tracker ของบทที่ 2)
 3. **สร้างและปรับแต่ง Nav2 Behavior Trees ขั้นสูง:** เขียนเงื่อนไขการตรวจจับระดับแบตเตอรี่ (`IsBatteryLow`) และผูกเข้ากับ Action Node สำหรับการชาร์จไฟอัตโนมัติ

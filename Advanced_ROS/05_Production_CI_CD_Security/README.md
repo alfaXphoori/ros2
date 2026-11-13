@@ -1,12 +1,11 @@
 # 📖 บทที่ 5: สถาปัตยกรรมการผลิต ความปลอดภัยไซเบอร์ (SROS 2) และ CI/CD
-**รหัสวิชา:** AMR-201 Advanced ROS 2 & Industrial Fleet Robotics  
-**เวลาเรียน:** บรรยาย 2 ชั่วโมง | ปฏิบัติการ 3 ชั่วโมง | ทบทวนและค้นคว้าด้วยตนเอง 5 ชั่วโมง  
+**เส้นทางการเรียนรู้:** Advanced ROS 2 (ระดับใช้งานจริงและระบบฝูงหุ่นยนต์)  
 **เอกสารปฏิบัติการ:** [ใบงานแล็บปฏิบัติการที่ 5](Lab_Exercises.md)  
 **แพ็กเกจ ROS 2:** `amr_adv05` (ament_python, โฟลเดอร์นี้)
 
 ---
 
-## 🎯 วัตถุประสงค์การเรียนรู้เชิงพฤติกรรม (Measurable Learning Objectives)
+## 🎯 สิ่งที่คุณจะได้เรียนรู้ (Learning Objectives)
 1. **เข้าใจเครื่องจักรสถานะของ Lifecycle Nodes (ROS 2 Managed Nodes):** อธิบายความแตกต่างระหว่าง Primary States (`Unconfigured`, `Inactive`, `Active`, `Finalized`) และ Transition Callbacks และจัดการทรัพยากรให้ถูกต้องในทุกเส้นทางของ state machine
 2. **เข้าใจการรักษาความมั่นคงปลอดภัยด้วย SROS 2:** อธิบายกลไก DDS Security (Authentication, Access Control, Encryption) สร้าง Keystore/Enclave และรันโหนดในโหมด `Enforce` ได้จริง
 3. **ออกแบบกระบวนการทดสอบอัตโนมัติ (Automated Integration Testing):** พัฒนาชุดทดสอบระบบด้วย `launch_testing` และ `pytest` ที่ตรวจพฤติกรรมจริงบนกราฟ ROS เพื่อเชื่อมต่อกับระบบ CI/CD (GitHub Actions)

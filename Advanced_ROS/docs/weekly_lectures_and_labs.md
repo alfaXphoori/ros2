@@ -4,9 +4,9 @@
 > `Readme.md` / `Lab_Exercises.md` ของแต่ละโฟลเดอร์ โมดูล `0N_*` (ดูตารางใน [`../README.md`](../README.md)) หากข้อความตรงไหน
 > ขัดกัน ให้ยึดไฟล์ของสัปดาห์นั้นเป็นหลัก คำสั่ง `ros2 run/launch amr_adv0N ...` ต้อง `make build` ก่อน
 
-## วิชา: AMR-201 Advanced ROS 2 & Industrial Fleet Robotics
+## เส้นทาง: Advanced ROS 2 & Industrial Fleet Robotics
 
-คู่มือนี้ประกอบด้วยเนื้อหาการบรรยายเชิงวิศวกรรมขั้นสูง (Advanced Lecture Notes) และขั้นตอนการปฏิบัติการแล็บระดับอุตสาหกรรม (Industrial Lab Guides) ครบทั้ง 16 สัปดาห์ สำหรับผู้สอนและผู้เรียน
+คู่มือนี้ประกอบด้วยเนื้อหาการบรรยายเชิงวิศวกรรมขั้นสูง (Advanced Lecture Notes) และขั้นตอนการปฏิบัติการแล็บระดับอุตสาหกรรม (Industrial Lab Guides) ครบทั้ง 16 สัปดาห์ สำหรับผู้สอนและคุณ
 
 ---
 

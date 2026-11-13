@@ -1,11 +1,10 @@
 # 📖 บทที่ 1: การควบคุมฮาร์ดแวร์จริงด้วย ros2_control และ micro-ROS
-**รหัสวิชา:** AMR-201 Advanced ROS 2 & Industrial Fleet Robotics  
-**เวลาเรียน:** บรรยาย 2 ชั่วโมง | ปฏิบัติการ 3 ชั่วโมง | ทบทวนและค้นคว้าด้วยตนเอง 5 ชั่วโมง  
+**เส้นทางการเรียนรู้:** Advanced ROS 2 (ระดับใช้งานจริงและระบบฝูงหุ่นยนต์)  
 **เอกสารปฏิบัติการ:** [ใบงานแล็บปฏิบัติการที่ 1](Lab_Exercises.md)
 
 ---
 
-## 🎯 วัตถุประสงค์การเรียนรู้เชิงพฤติกรรม (Measurable Learning Objectives)
+## 🎯 สิ่งที่คุณจะได้เรียนรู้ (Learning Objectives)
 1. **เข้าใจสถาปัตยกรรมระดับแกนกลางของ `ros2_control`:** อธิบายความสัมพันธ์ระหว่าง `Controller Manager`, `Resource Manager`, `Hardware Interface`, และ `Controllers` ได้อย่างละเอียด
 2. **ออกแบบและกำหนดค่าคอนโทรลเลอร์ขับเคลื่อนสองล้อ:** ปรับแต่งไฟล์คอนฟิก YAML สำหรับ `diff_drive_controller` และ `joint_state_broadcaster` พร้อมกำหนดค่าความเร่งสูงสุดและความเร็วปลอดภัย
 3. **เขียน URDF/Xacro สำหรับ Hardware Interfaces:** กำหนด `<command_interface>` และ `<state_interface>` สำหรับข้อต่อมอเตอร์ตามมาตรฐาน ROS 2
