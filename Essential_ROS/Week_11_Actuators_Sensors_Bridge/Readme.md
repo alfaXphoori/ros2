@@ -33,6 +33,10 @@ Gazebo Sim (Harmonic) ใช้ระบบเครือข่ายภาย�
 
 ![essential-w11-01](../../docs/diagrams/essential-w11-01.svg)
 
+### 🎬 ภาพเคลื่อนไหวการส่งข้อมูลสองทางระหว่าง Gazebo และ ROS 2
+
+![anim-gazebo-bridge](../../docs/diagrams/anim-gazebo-bridge.svg)
+
 ---
 
 ### 2. บทบาทสำคัญของ `/clock` และพารามิเตอร์ `use_sim_time`

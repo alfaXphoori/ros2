@@ -78,6 +78,10 @@ def timer_callback(self):
 
 ![essential-w03-02](../../docs/diagrams/essential-w03-02.svg)
 
+### 🎬 ภาพเคลื่อนไหวการเกิด Service Deadlock และทางแก้ด้วย MultiThreadedExecutor
+
+![anim-service-deadlock](../../docs/diagrams/anim-service-deadlock.svg)
+
 #### ทำไมจึงเกิดการติดหล่ม (Deadlock)?
 1. **มีเพียง 1 Thread เท่านั้น:** `SingleThreadedExecutor` มีทรัพยากรการประมวลผลเพียง 1 เธรดคอยวนลูปทำงานทีละ Callback
 2. **เธรดถูกยึดครอง:** เมื่อ `timer_callback()` ทำงาน เธรดนี้จะถูกยึดครองไว้จนกว่าฟังก์ชันจะทำงานเสร็จสมบูรณ์ (Return)

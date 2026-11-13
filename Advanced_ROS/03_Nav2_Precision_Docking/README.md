@@ -20,6 +20,10 @@
 
 ![advanced-m03-01](../../docs/diagrams/advanced-m03-01.svg)
 
+### 🎬 ภาพเคลื่อนไหว Vision-in-the-Loop Precision Docking (`Camera → ArUco PnP → Docking`)
+
+![anim-vision-docking](../../docs/diagrams/anim-vision-docking.svg)
+
 ---
 
 ## 📐 จลนศาสตร์และการควบคุมการถอยเข้าจอด (Precision Reversing Control)

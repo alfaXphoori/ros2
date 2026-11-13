@@ -21,6 +21,10 @@
 
 ![readme](docs/diagrams/readme.svg)
 
+### 🎬 ภาพรวมการทำงานของระบบ AMR (Animated Mission Flow)
+
+![anim-capstone-mission](docs/diagrams/anim-capstone-mission.svg)
+
 ---
 
 ## 📘 1. Essential ROS Track

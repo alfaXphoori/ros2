@@ -71,6 +71,10 @@ SLAM Toolbox ทำงานบนสถาปัตยกรรม **Graph-base
 
 ![essential-w12-02](../../docs/diagrams/essential-w12-02.svg)
 
+### 🎬 ภาพเคลื่อนไหว Scan Matching, Pose Graph และ Loop Closure
+
+![anim-slam-loop](../../docs/diagrams/anim-slam-loop.svg)
+
 #### ฟังก์ชันเป้าหมายความคลาดเคลื่อน (Objective Cost Function):
 $$\min_{\mathbf{x}} J(\mathbf{x}) = \sum_{(i,j) \in \mathcal{E}} \mathbf{e}_{ij}(\mathbf{x}_i, \mathbf{x}_j)^T \mathbf{\Omega}_{ij} \mathbf{e}_{ij}(\mathbf{x}_i, \mathbf{x}_j)$$
 

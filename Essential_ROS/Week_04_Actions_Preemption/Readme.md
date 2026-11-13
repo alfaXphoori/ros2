@@ -52,6 +52,10 @@ ROS 2 ไม่ได้มี DDS Primitive ชนิดพิเศษชื�
 
 ![essential-w04-02](../../docs/diagrams/essential-w04-02.svg)
 
+### 🎬 ภาพเคลื่อนไหววงจร Action Goal, Feedback และ Preemption
+
+![anim-action-preempt](../../docs/diagrams/anim-action-preempt.svg)
+
 #### คุณลักษณะของแต่ละแชนเนล:
 1. **`/action_name/_action/send_goal` (ROS 2 Service):**
    - Type: `<ActionType>_SendGoal`

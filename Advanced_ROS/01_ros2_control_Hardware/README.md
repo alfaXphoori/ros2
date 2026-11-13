@@ -21,6 +21,10 @@
 
 ![advanced-m01-01](../../docs/diagrams/advanced-m01-01.svg)
 
+### 🎬 ภาพเคลื่อนไหวลูปควบคุม Real-Time 50 Hz (`read → update → write`)
+
+![anim-ros2-control](../../docs/diagrams/anim-ros2-control.svg)
+
 ---
 
 > [!IMPORTANT]

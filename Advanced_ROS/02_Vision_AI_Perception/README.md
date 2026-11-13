@@ -18,6 +18,10 @@
 
 ![advanced-m02](../../docs/diagrams/advanced-m02.svg)
 
+### 🎬 ภาพเคลื่อนไหว Vision Pipeline (`Camera → ArUco PnP → Docking`)
+
+![anim-vision-docking](../../docs/diagrams/anim-vision-docking.svg)
+
 ---
 
 ## 📐 คณิตศาสตร์การประมาณท่าทาง 6-DoF จากมาร์กเกอร์ (Perspective-n-Point Problem)

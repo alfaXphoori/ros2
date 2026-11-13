@@ -46,6 +46,10 @@
 
 ![advanced-m04-01](../../docs/diagrams/advanced-m04-01.svg)
 
+### 🎬 ภาพเคลื่อนไหวการจัดจราจรฝูงหุ่นยนต์ผ่าน Open-RMF Traffic Schedule
+
+![anim-openrmf-fleet](../../docs/diagrams/anim-openrmf-fleet.svg)
+
 - **Traffic Schedule** เป็น **โหนดกลางเพียงโหนดเดียว** (`rmf_traffic_ros2/rmf_traffic_schedule`) ที่เก็บ itinerary (เส้นทาง + เวลา) ของทุก participant; Fleet Adapter แต่ละตัวถือ **Schedule Mirror** (สำเนาที่ได้รับ patch จากโหนดกลาง) ไว้วางแผนเส้นทางในเครื่องของตัวเอง — จึงเป็นระบบ "รวมศูนย์ + มิเรอร์" ไม่ใช่ฐานข้อมูลแบบกระจาย (ระบบ production มักเปิด schedule node สำรองไว้ทำ fail-over)
 - **Fleet Adapter** แปลงคำสั่งระดับ RMF (ไป waypoint, เทียบท่า, ชาร์จ) เป็น API ของหุ่นยนต์แต่ละยี่ห้อ และรายงานตำแหน่ง/แบตเตอรี่กลับ
 - **Door/Lift** ถูกควบคุมผ่าน door/lift supervisor โดย Fleet Adapter ร้องขอเมื่อเส้นทางผ่านประตูหรือลิฟต์ ไม่ได้ผ่านตัว negotiation

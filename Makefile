@@ -46,6 +46,7 @@ lint:
 
 diagrams:
 	./scripts/render_diagrams.sh
+	python3 scripts/render_animated_diagrams.py
 
 check: lint test
 

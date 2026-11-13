@@ -45,6 +45,10 @@
 
 ![advanced-m06-02](../../docs/diagrams/advanced-m06-02.svg)
 
+### 🎬 ภาพเคลื่อนไหววงจรภารกิจอัตโนมัติ E2E (Undock → Navigate → Dock)
+
+![anim-capstone-mission](../../docs/diagrams/anim-capstone-mission.svg)
+
 > หมายเหตุ: ไม่มีแบตเตอรี่จำลองในโครงงานนี้ (`use_battery_status: false` ใน docking server) "ชาร์จ" จึงหมายถึงเทียบแท่นสำเร็จตาม `docking_threshold` 0.015 m
 
 ---

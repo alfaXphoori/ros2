@@ -71,6 +71,10 @@ $$\mathbf{q}_{\text{optical}} = [-0.5, 0.5, -0.5, 0.5]$$
 
 ![essential-w09-02](../../docs/diagrams/essential-w09-02.svg)
 
+### 🎬 ภาพเคลื่อนไหวการ Lookup Transform (`map → odom → base_footprint`)
+
+![anim-tf2-transform](../../docs/diagrams/anim-tf2-transform.svg)
+
 #### ทำไม Time Travel จึงจำเป็น?
 หากหุ่นยนต์เคลื่อนที่ด้วยความเร็ว $1.5\text{ m/s}$ และการประมวลผลระบบจำแนกภาพ (Deep Learning) ใช้เวลาหน่วง $200\text{ ms}$:
 - หากแปลงพิกัดโดยใช้พิกัดปัจจุบัน (Current Time): ตำแหน่งสิ่งกีดขวางจะคลาดเคลื่อนไป $1.5 \times 0.2 = \mathbf{0.30\text{ m}}$ (30 เซนติเมตร!) ซึ่งมากพอที่จะทำให้หุ่นยนต์ชนสิ่งกีดขวาง

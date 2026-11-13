@@ -57,6 +57,9 @@
 ---
 
 ### 3. กลไกการค้นพบของ DDS (DDS Discovery Protocol Deep Dive)
+
+![anim-ros2-dds](../../docs/diagrams/anim-ros2-dds.svg)
+
 เมื่อโหนดใน ROS 2 ถูกสร้างขึ้นในระบบเครือข่ายที่ไม่มีโหนด Master กลลวงที่ทำให้โหนดสามารถมองเห็นกันได้คือโปรโตคอล **RTPS Discovery** ซึ่งแบ่งออกเป็น 2 ขั้นตอนสำคัญ:
 
 ![essential-w01-02](../../docs/diagrams/essential-w01-02.svg)

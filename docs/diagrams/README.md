@@ -1,12 +1,18 @@
-# 🖼️ แผนภาพของหลักสูตร (Course Diagrams)
+# 🖼️ แผนภาพของโปรเจกต์ (Project Diagrams)
 
-แผนภาพทุกภาพในหลักสูตร (Flowchart, Sequence Diagram, State Diagram) เป็นไฟล์ SVG สไตล์การ์ด (กล่องมุมโค้ง สีพาสเทล เงาบาง ป้ายหัวกลุ่มสีทึบ) ที่ render จากต้นฉบับ Mermaid ในโฟลเดอร์ [`src/`](src/) ส่วนตาราง ผลลัพธ์จาก terminal โค้ด และผังไดเรกทอรีคงเป็นข้อความ Markdown เพื่อให้ค้นหาและ copy ได้
+แผนภาพทั้งหมดในโปรเจกต์แบ่งออกเป็น 2 กลุ่ม:
+
+1. **แผนภาพสถาปัตยกรรมแบบนิ่ง (`*.svg`):** สไตล์การ์ด (กล่องมุมโค้ง สีพาสเทล เงาบาง ป้ายหัวกลุ่มสีทึบ) render จากต้นฉบับ Mermaid ในโฟลเดอร์ [`src/`](src/)
+2. **แผนภาพแอนิเมชัน (`anim-*.svg`):** แผนภาพเคลื่อนไหวสไตล์ ByteByteGo (Pure SVG + CSS `@keyframes` พร้อมตารางลำดับขั้นตอนด้านล่าง, ไม่ใช้ JavaScript จึงแสดงผลแอนิเมชันได้บน GitHub) สร้างจากสคริปต์ [`../../scripts/render_animated_diagrams.py`](../../scripts/render_animated_diagrams.py)
+
+ส่วนตาราง ผลลัพธ์จาก terminal โค้ด และผังไดเรกทอรีคงเป็นข้อความ Markdown เพื่อให้ค้นหาและ copy ได้
 
 ## แก้ไขแผนภาพ
 
-1. แก้ไฟล์ `src/<ชื่อ>.mmd` (ไวยากรณ์ Mermaid ปกติ: `flowchart`, `sequenceDiagram`, `stateDiagram-v2`)
-2. รัน `make diagrams` ที่ root ของ repo หรือ `scripts/render_diagrams.sh <ชื่อ>` เพื่อ render เฉพาะภาพนั้น
-3. เปิดไฟล์ `docs/diagrams/<ชื่อ>.svg` ดูผล แล้ว commit ทั้ง `.mmd` และ `.svg`
+1. **แผนภาพนิ่ง:** แก้ไฟล์ `src/<ชื่อ>.mmd` (ไวยากรณ์ Mermaid ปกติ: `flowchart`, `sequenceDiagram`, `stateDiagram-v2`)
+2. **แผนภาพแอนิเมชัน:** แก้ฟังก์ชัน builder ใน [`../../scripts/render_animated_diagrams.py`](../../scripts/render_animated_diagrams.py) (หรือตัวช่วยกลางใน [`../../scripts/anim_svg_ui.py`](../../scripts/anim_svg_ui.py))
+3. รัน `make diagrams` ที่ root ของ repo (จะรันทั้ง `scripts/render_diagrams.sh` และ `scripts/render_animated_diagrams.py`)
+4. เปิดไฟล์ `docs/diagrams/<ชื่อ>.svg` ดูผล แล้ว commit ทั้งไฟล์ต้นฉบับและ `.svg`
 
 อย่าแก้ไฟล์ `.svg` ด้วยมือ เพราะจะถูกเขียนทับในการ render ครั้งถัดไป
 

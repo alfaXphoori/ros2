@@ -56,6 +56,9 @@ while not rospy.is_shutdown():
 ---
 
 ### 2. สถาปัตยกรรม Publish-Subscribe และการไหลของข้อมูล (Data Pipeline)
+
+![anim-topic-qos](../../docs/diagrams/anim-topic-qos.svg)
+
 การสื่อสารแบบ Topics เป็นหัวใจของระบบสตรีมมิงข้อมูลความถี่สูงของหุ่นยนต์:
 - **Asynchronous Many-to-Many:** โหนด Publisher หลายตัวสามารถส่งเข้าท็อปปิกเดียวกันได้ และมีโหนด Subscriber หลายตัวมารอฟังได้พร้อมกัน
 - **Decoupled in Time and Space:** ผู้ส่งและผู้รับไม่จำเป็นต้องรู้ IP Address หรือตำแหน่งของกันและกัน และไม่จำเป็นต้องเปิดทำงานพร้อมกัน (ขึ้นอยู่กับนโยบาย Durability)

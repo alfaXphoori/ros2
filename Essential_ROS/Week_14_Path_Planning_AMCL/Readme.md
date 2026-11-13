@@ -31,6 +31,10 @@
 
 ![essential-w14-01](../../docs/diagrams/essential-w14-01.svg)
 
+### 🎬 ภาพเคลื่อนไหวการระบุตำแหน่ง AMCL และการนำทาง Nav2
+
+![anim-nav2-amcl](../../docs/diagrams/anim-nav2-amcl.svg)
+
 #### ก. โมเดลการเคลื่อนที่เชิงสถิติ (Odometry Motion Model Noise $\alpha_1 - \alpha_4$):
 เมื่อหุ่นยนต์เคลื่อนที่จากสถานะ $\mathbf{x} = [x, y, \theta]^T$ ไปยัง $\mathbf{x}' = [x', y', \theta']^T$ คำสั่งจะถูกแบ่งออกเป็น 3 จังหวะ:
 1. การหมุนตัวครั้งที่ 1 ($\delta_{\text{rot1}}$)
