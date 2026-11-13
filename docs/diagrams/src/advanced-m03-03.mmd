@@ -1,4 +1,4 @@
-flowchart LR
+flowchart TD
     Base["fake_base<br/>cmd_vel → odom + TF odom→base_footprint"] -->|TF| Cam["synthetic_tag_camera (mode tf)<br/>ภาพแท็กตามท่าทางหุ่นปัจจุบัน"]
     Cam -->|"/camera/image_raw + camera_info"| Trk["apriltag_dock_tracker (amr_adv02)"]
     Trk -->|"/detected_dock_pose (PoseStamped, optical frame)"| DS["docking_server (opennav_docking)<br/>SimpleChargingDock + dock DB"]

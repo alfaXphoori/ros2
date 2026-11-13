@@ -1,4 +1,4 @@
-flowchart LR
+flowchart TD
     R1["หุ่นยนต์ 1: Trajectory T_1(t)"] --> ConflictDetector["Conflict Detection"]
     R2["หุ่นยนต์ 2: Trajectory T_2(t)"] --> ConflictDetector
     ConflictDetector -->|"พบการตัดกันของวิถี ณ เวลา t = t_c"| Negotiator["Traffic Negotiation"]

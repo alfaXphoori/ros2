@@ -12,6 +12,6 @@ sequenceDiagram
     Client->>DDSNet: ส่งแพ็กเก็ต Request ออกไปทางเครือข่าย
     DDSNet->>Server: Server รับคำขอและประมวลผลเสร็จสิ้น
     Server-->>DDSNet: Server ส่ง Response กลับมาแล้ว!
-    DDSNet->>Thread: ⚠️ มีแพ็กเก็ต Response มาถึงแล้ว ช่วยมารับและถอดรหัสที!
+    DDSNet->>Thread: ⚠️ มีแพ็กเก็ต Response มาถึงแล้ว<br/>ช่วยมารับและถอดรหัสที!
 
     Note over Thread: 💥 DEADLOCK! เธรดยังคงหลับ (Block) รอผลลัพธ์ของ cli.call()<br/>แต่การหยิบ Response จาก DDS เข้ามาต้องใช้เธรดเดียวกันนี้!<br/>ต่างฝ่ายต่างรอซึ่งกันและกัน โปรแกรมค้างชั่วนิรันดร์

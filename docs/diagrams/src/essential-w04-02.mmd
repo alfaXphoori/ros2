@@ -1,17 +1,25 @@
 graph TD
     subgraph ClientNode ["Action Client Node"]
         AC_Goal["Send Goal Client"]
+        AC_Goal ~~~ AC_Cancel
         AC_Cancel["Cancel Goal Client"]
+        AC_Cancel ~~~ AC_Result
         AC_Result["Get Result Client"]
+        AC_Result ~~~ AC_FB
         AC_FB["Feedback Subscriber"]
+        AC_FB ~~~ AC_Status
         AC_Status["Status Subscriber"]
     end
 
     subgraph ServerNode ["Action Server Node"]
         AS_Goal["Send Goal Service"]
+        AS_Goal ~~~ AS_Cancel
         AS_Cancel["Cancel Goal Service"]
+        AS_Cancel ~~~ AS_Result
         AS_Result["Get Result Service"]
+        AS_Result ~~~ AS_FB
         AS_FB["Feedback Publisher"]
+        AS_FB ~~~ AS_Status
         AS_Status["Status Publisher"]
     end
 

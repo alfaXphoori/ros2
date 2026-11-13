@@ -1,4 +1,4 @@
-flowchart LR
+flowchart TD
     subgraph SBC ["Single-Board Computer (Ubuntu 24.04)"]
         ROS2_App["ROS 2 jazzy nodes"] <--> DDS_Layer["Fast DDS Middleware"]
         DDS_Layer <--> UROS_Agent["micro_ros_agent Node"]
@@ -6,8 +6,11 @@ flowchart LR
 
     subgraph Embedded_MCU ["Microcontroller (FreeRTOS)"]
         UROS_Client["micro-ROS Client (rclc)"]
+        UROS_Client ~~~ PID_Loop
         PID_Loop["Hardware Timer PID Loop (1000 Hz)"]
+        PID_Loop ~~~ Enc_ISR
         Enc_ISR["Encoder Interrupts (Quadrature QEI)"]
+        Enc_ISR ~~~ PWM_Gen
         PWM_Gen["Hardware PWM Generation"]
     end
 

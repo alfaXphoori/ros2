@@ -1,14 +1,19 @@
 flowchart TD
     subgraph LaunchSystem ["One-Click Bringup: final_amr_system.launch.py"]
         GazeboBringup["Week 10/11: Gazebo World + DiffDrive + LiDAR + ros_gz_bridge"]
+        GazeboBringup ~~~ URDFBringup
         URDFBringup["Week 07: Robot State Publisher (TF Tree, use_sim_time)"]
+        URDFBringup ~~~ Nav2Bringup
         Nav2Bringup["Week 14: Nav2 Stack (map_server + AMCL + Costmaps + Planner + DWB)<br/>Week 12 map, Week 15 behavior tree"]
     end
 
     subgraph MissionControl ["Mission Layer: final_mission_executor.py"]
         NavAPI["nav2_simple_commander (BasicNavigator)"]
+        NavAPI ~~~ WP1
         WP1["Stage 1: Cargo Pickup Bay (1.5, 1.0, 90°)"]
+        WP1 ~~~ WP2
         WP2["Stage 2: Dropoff Station (-1.5, -1.0, 180°)"]
+        WP2 ~~~ WP3
         WP3["Stage 3: Home Charging Base (0.0, 0.0, 0°)"]
     end
 

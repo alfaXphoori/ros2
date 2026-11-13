@@ -12,7 +12,7 @@ flowchart TD
     end
 
     subgraph Hardware_Interface ["C++ Hardware Interface Plugin (SystemInterface)"]
-        HI["DiffDriveHardwareSystem / mock_components/GenericSystem / gz_ros2_control/GazeboSimSystem"]
+        HI["DiffDriveHardwareSystem<br/>mock_components/GenericSystem<br/>gz_ros2_control/GazeboSimSystem"]
         HI -->|"read(position, velocity)"| StateBuf["State Buffers"]
         CmdBuf["Command Buffers"] -->|"write(velocity)"| HI
     end

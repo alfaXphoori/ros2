@@ -1,4 +1,4 @@
-flowchart LR
+flowchart TD
     Dev["วิศวกร: make check (ก่อน git push)"] --> Action["container ros:lab-runner (หรือ CI runner)"]
     Action --> Build["colcon build"]
     Build --> Unit["pytest unit tests"]

@@ -12,11 +12,17 @@ graph TD
 
     subgraph BT_Solution ["Behavior Tree: ลำดับชั้นแบบโมดูลาร์"]
         Root["Root: RecoveryNode"]
+        Root ~~~ NavSeq
         NavSeq["Sequence: Nav Loop"]
+        NavSeq ~~~ Plan
         Plan["Action: ComputePath"]
+        Plan ~~~ Control
         Control["Action: FollowPath"]
+        Control ~~~ RecovFall
         RecovFall["Fallback: Recoveries"]
+        RecovFall ~~~ Clear
         Clear["ClearCostmap"]
+        Clear ~~~ Spin
         Spin["Spin 360°"]
 
         Root --> NavSeq

@@ -11,12 +11,11 @@ flowchart TD
     end
 
     subgraph A_Path ["Advanced Track (6 Modules)"]
-        A1["01: ros2_control & Hardware"]
-        A2["02: Vision & AI Perception"]
-        A3["03: Precision Docking"]
-        A4["04: Multi-Robot Open-RMF"]
-        A5["05: Production & SROS2"]
-        A6["06: Capstone Warehouse AMR<br>(Nav2 + Docking + E-stop KPIs)"]
+        A1["01: ros2_control & Hardware"] ~~~ A2["02: Vision & AI Perception"]
+        A2 ~~~ A3["03: Precision Docking"]
+        A3 ~~~ A4["04: Multi-Robot Open-RMF"]
+        A4 ~~~ A5["05: Production & SROS2"]
+        A5 ~~~ A6["06: Capstone Warehouse AMR<br>(Nav2 + Docking + E-stop KPIs)"]
     end
 
     Essential --> E_Path

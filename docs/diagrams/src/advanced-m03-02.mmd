@@ -1,4 +1,4 @@
-flowchart LR
+flowchart TD
     Robot["AMR Pose (x, y, θ)"] -- "Tracking Error (e_lat, e_yaw)" --> Controller["Docking Controller"]
     Dock["Dock Pose (x_d, y_d, θ_d)"] --> Controller
     Controller -->|"Linear Velocity v < 0 (ถอยหลังช้าๆ)"| Motors["ล้อมอเตอร์"]

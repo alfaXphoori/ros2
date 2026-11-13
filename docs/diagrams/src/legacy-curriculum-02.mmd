@@ -1,4 +1,4 @@
-flowchart LR
+flowchart TD
     MissionCtrl["Mission Dispatcher Node"] -->|"Action Goal"| Nav2["Nav2 Stack (BT Navigator)"]
     Nav2 -->|"cmd_vel"| BaseController["Robot Base Controller"]
     BaseController -->|"TF / Odom"| EKF["robot_localization (EKF)"]

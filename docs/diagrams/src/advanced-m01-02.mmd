@@ -12,7 +12,7 @@ sequenceDiagram
         HI-->>CM: อัปเดตตำแหน่ง (Position) และความเร็ว (Velocity) ใน State Buffer
 
         CM->>DDC: update(time, period)
-        DDC->>CM: คำนวณความเร็วล้อซ้าย-ขวาจาก ~/cmd_vel (TwistStamped) และเขียนใส่ Command Buffer
+        DDC->>CM: คำนวณความเร็วล้อซ้าย-ขวา<br/>จาก ~/cmd_vel (TwistStamped)<br/>และเขียนใส่ Command Buffer
 
         CM->>HI: write(time, period)
         HI->>MCU: ส่งคำสั่ง Target Velocity (rad/s) ไปยัง Motor Drivers

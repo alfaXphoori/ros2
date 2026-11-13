@@ -1,26 +1,34 @@
 flowchart TD
     subgraph Gazebo_Harmonic ["1. Digital Twin (Gazebo Sim 8, physics: DART)"]
         World["Warehouse world (amr_week10)"]
+        World ~~~ Robot
         Robot["Robot URDF (amr_week07): DiffDrive + JointStatePublisher plugins, gpu_lidar 10 Hz"]
     end
 
     subgraph Middleware_Bridge ["2. Middleware"]
         Bridge["ros_gz_bridge (แปลง gz.msgs <-> ROS msgs: /cmd_vel /odom /scan /tf /joint_states /clock)"]
+        Bridge ~~~ GT
         GT["ground_truth_tf (amr_adv06): gz-transport -> /ground_truth/pose + TF base_footprint->sim_world"]
     end
 
     subgraph Perception ["3. TF2 & Perception"]
         RSP["robot_state_publisher"] --> TF["TF: map->odom->base_footprint->camera_optical_link"]
         Cam["synthetic_tag_camera (amr_adv02): render AprilTag from TRUE pose"]
+        Cam ~~~ Tracker
         Tracker["apriltag_dock_tracker (amr_adv02) -> /detected_dock_pose"]
     end
 
     subgraph Nav2 ["4. Nav2 (amr_week14 bringup, params + capstone overrides)"]
         AMCL["map_server + AMCL (real Week 12 map)"]
+        AMCL ~~~ BT
         BT["bt_navigator (Week 15 BT)"]
+        BT ~~~ Ctrl
         Ctrl["planner / controller (DWB) / smoother / behavior_server"]
+        Ctrl ~~~ Dock
         Dock["docking_server (opennav_docking, amr_adv03 params)"]
+        Dock ~~~ VS
         VS["velocity_smoother 20 Hz"]
+        VS ~~~ CM
         CM["collision_monitor: StopZone (stop) + FootprintApproach"]
     end
 

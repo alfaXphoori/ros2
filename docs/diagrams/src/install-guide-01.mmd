@@ -1,8 +1,11 @@
-flowchart LR
+flowchart TD
     subgraph Spec ["🖥️ Recommended Hardware Specification"]
         CPU["CPU: 4-Core Intel/AMD (แนะนำ 8-Core ขึ้นไป)"]
+        CPU ~~~ RAM
         RAM["RAM: ขั้นต่ำ 8 GB (แนะนำ 16-32 GB สำหรับ Gazebo/Nav2)"]
+        RAM ~~~ Disk
         Disk["Storage: 40 GB Free Disk Space (SSD แนะนำ NVMe)"]
+        Disk ~~~ GPU
         GPU["GPU: NVIDIA GTX 1650 หรือใหม่กว่า (รองรับ OpenGL 3.3+)"]
     end
 

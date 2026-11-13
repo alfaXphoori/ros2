@@ -1,4 +1,4 @@
-flowchart LR
+flowchart TD
     Host["🖥️ Host OS (Linux/WSL)"] -- "X11 Display Socket & Network" --> Container["🐳 Docker Container (ros:lab-runner)"]
     Container -- "Mount Volume (/workspace)" --> Code["📁 โค้ดโปรเจกต์ (โฟลเดอร์ที่ clone repo นี้)"]
 

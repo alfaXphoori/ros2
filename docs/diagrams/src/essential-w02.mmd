@@ -2,14 +2,19 @@ flowchart TD
     subgraph OSProcess ["Operating System Process (Python Runtime)"]
         subgraph ExecutorLoop ["Executor (SingleThreadedExecutor Event Loop)"]
             TimerQueue["Timer Queue (e.g. 2 Hz Clock)"]
+            TimerQueue ~~~ SubQueue
             SubQueue["Subscription Message Queue"]
         end
 
         subgraph CustomNodeClass ["class SensorQoSPublisher(Node)"]
             Constructor["__init__(): ประกาศ Topic, QoS, Timers"]
+            Constructor ~~~ PublisherA
             PublisherA["self.pub_sensor (/sensor/temperature)"]
+            PublisherA ~~~ PublisherB
             PublisherB["self.pub_state (/robot/state)"]
+            PublisherB ~~~ TimerCallback
             TimerCallback["def timer_callback(self): ประมวลผลและส่งข้อมูล"]
+            TimerCallback ~~~ MemberVars
             MemberVars["ตัวแปรสถานะ: self.counter, self.battery"]
         end
     end

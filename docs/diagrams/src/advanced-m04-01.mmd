@@ -5,11 +5,13 @@ flowchart TD
 
     subgraph RMF_Core ["Open-RMF Traffic"]
         Schedule["rmf_traffic_schedule<br>(Traffic Schedule แบบรวมศูนย์ 1 โหนด)"]
+        Schedule ~~~ Negotiation
         Negotiation["Traffic Negotiation<br>(/rmf_traffic/negotiation_*)"]
     end
 
     subgraph Fleet_Adapters ["Fleet Adapters (แต่ละตัวมี Schedule Mirror)"]
         AdapterA["Fleet Adapter A (EasyFullControl)"]
+        AdapterA ~~~ AdapterB
         AdapterB["Fleet Adapter B (Forklift)"]
     end
 
