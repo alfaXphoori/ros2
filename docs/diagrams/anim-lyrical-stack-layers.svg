@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1020" width="1000" height="1020" role="img">
+<title>ROS 2 Lyrical Luth network stack: user space, kernel space, between hosts</title>
+<style>.march{stroke-dasharray:6 6;animation:m 1s linear infinite}@keyframes m{to{stroke-dashoffset:-24}}.pulse{animation:p 1.6s ease-in-out infinite}@keyframes p{50%{opacity:.35}}</style>
+<rect x="0" y="0" width="1000" height="1020" rx="18" fill="#f6f8fa" stroke="none" stroke-width="1.2" />
+<text x="40" y="46" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="24" font-weight="700" fill="#0f2239" text-anchor="start" >ROS 2 Lyrical Luth · network stack</text>
+<text x="40" y="70" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="12.5" font-weight="400" fill="#8c959f" text-anchor="start" >user space → syscalls → kernel → wire → other hosts   (Fast DDS 3.6 default · Cyclone 11 · Zenoh · Connext 7.7)</text>
+<rect x="30" y="92" width="940" height="480" rx="14" fill="#ffffff" stroke="#d0d7de" stroke-width="1.5" />
+<rect x="30" y="92" width="250" height="30" rx="14" fill="#f86b1d" stroke="none" stroke-width="1.2" />
+<rect x="30" y="106" width="250" height="16" rx="0" fill="#f86b1d" stroke="none" stroke-width="1.2" />
+<text x="46" y="113" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="700" fill="#fff" text-anchor="start" >USER SPACE · node process</text>
+<rect x="150" y="138" width="700" height="42" rx="8" fill="#ffffff" stroke="#d0d7de" stroke-width="1.2" />
+<text x="164" y="156" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="13.5" font-weight="700" fill="#0f2239" text-anchor="start" >Application code</text>
+<text x="164" y="172" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11.5" font-weight="400" fill="#57606a" text-anchor="start" >rclcpp / rclpy · topics · services · actions</text>
+<rect x="150" y="190" width="700" height="42" rx="8" fill="#ffffff" stroke="#d0d7de" stroke-width="1.2" />
+<text x="164" y="208" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="13.5" font-weight="700" fill="#0f2239" text-anchor="start" >Executor</text>
+<text x="164" y="224" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11.5" font-weight="400" fill="#57606a" text-anchor="start" >SingleThreaded · MultiThreaded · EventsExecutor · EventsCBGExecutor (new)</text>
+<rect x="150" y="242" width="700" height="42" rx="8" fill="#eef1f4" stroke="#d0d7de" stroke-width="1.2" />
+<text x="164" y="260" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="13.5" font-weight="700" fill="#0f2239" text-anchor="start" >rcl</text>
+<text x="164" y="276" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11.5" font-weight="400" fill="#57606a" text-anchor="start" >graph · QoS · wait set · guard condition · CFT capability query (new)</text>
+<rect x="150" y="294" width="700" height="42" rx="8" fill="#fde3cd" stroke="#d0d7de" stroke-width="1.2" />
+<text x="164" y="312" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="13.5" font-weight="700" fill="#0f2239" text-anchor="start" >rmw</text>
+<text x="164" y="328" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11.5" font-weight="400" fill="#57606a" text-anchor="start" >C ABI: rmw_publish · rmw_take · rmw_wait · rmw_borrow_loaned_message</text>
+<rect x="150" y="346" width="700" height="42" rx="8" fill="#fde3cd" stroke="#d0d7de" stroke-width="1.2" />
+<text x="164" y="364" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="13.5" font-weight="700" fill="#0f2239" text-anchor="start" >rosidl typesupport</text>
+<text x="164" y="380" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11.5" font-weight="400" fill="#57606a" text-anchor="start" >serialize → CDR  (Fast-CDR 2.3.x · Cyclone serdata · Zenoh CDR)</text>
+<rect x="150" y="398" width="700" height="42" rx="8" fill="#d9f0e8" stroke="#d0d7de" stroke-width="1.2" />
+<text x="164" y="416" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="13.5" font-weight="700" fill="#0f2239" text-anchor="start" >rosidl::Buffer backend</text>
+<text x="164" y="432" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11.5" font-weight="400" fill="#57606a" text-anchor="start" >CPU | CUDA | …  → send a descriptor (≤ 4096 B) instead of the payload  (new)</text>
+<path d="M146 150 C 60 142, 60 176, 146 170" fill="none" stroke="#8250df" stroke-width="2" class="march"/>
+<text x="44" y="208" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11.5" font-weight="700" fill="#8250df" text-anchor="start" >intra-process</text>
+<text x="44" y="223" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11" font-weight="400" fill="#8250df" text-anchor="start" >unique_ptr</text>
+<text x="44" y="238" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11" font-weight="400" fill="#8250df" text-anchor="start" >skips rmw</text>
+<circle r="5" fill="#8250df"><animateMotion dur="1.6s" repeatCount="indefinite" path="M146 150 C 60 142, 60 176, 146 170"/></circle>
+<rect x="864" y="138" width="92" height="302" rx="8" fill="#fdecdd" stroke="#f6c9a8" stroke-width="1.2" />
+<text x="910" y="162" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12" font-weight="700" fill="#dc5812" text-anchor="middle" >Lyrical</text>
+<text x="910" y="178" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12" font-weight="700" fill="#dc5812" text-anchor="middle" >changes</text>
+<text x="910" y="208" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11" font-weight="400" fill="#57606a" text-anchor="middle" >EventsCBG</text>
+<text x="910" y="224" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11" font-weight="400" fill="#57606a" text-anchor="middle" >executor</text>
+<text x="910" y="240" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11" font-weight="400" fill="#57606a" text-anchor="middle" ></text>
+<text x="910" y="256" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11" font-weight="400" fill="#57606a" text-anchor="middle" >CFT query</text>
+<text x="910" y="272" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11" font-weight="400" fill="#57606a" text-anchor="middle" ></text>
+<text x="910" y="288" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11" font-weight="400" fill="#57606a" text-anchor="middle" >uint8[] →</text>
+<text x="910" y="304" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11" font-weight="400" fill="#57606a" text-anchor="middle" >rosidl::</text>
+<text x="910" y="320" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11" font-weight="400" fill="#57606a" text-anchor="middle" >Buffer</text>
+<line x1="50" y1="460" x2="950" y2="460" stroke="#d0d7de" stroke-width="1.5"/>
+<text x="50" y="486" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="700" fill="#0f2239" text-anchor="start" >Middleware</text>
+<rect x="150" y="470" width="160" height="44" rx="8" fill="#fff" stroke="#f86b1d" stroke-width="1.8" />
+<text x="164" y="490" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="13.5" font-weight="700" fill="#f86b1d" text-anchor="start" >Fast DDS 3.6</text>
+<text x="164" y="506" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11" font-weight="400" fill="#57606a" text-anchor="start" >default</text>
+<rect x="322" y="470" width="160" height="44" rx="8" fill="#fff" stroke="#2c5f9e" stroke-width="1.8" />
+<text x="336" y="490" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="13.5" font-weight="700" fill="#2c5f9e" text-anchor="start" >Cyclone DDS 11</text>
+<text x="336" y="506" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11" font-weight="400" fill="#57606a" text-anchor="start" >+ iceoryx</text>
+<rect x="494" y="470" width="160" height="44" rx="8" fill="#fff" stroke="#e2962a" stroke-width="1.8" />
+<text x="508" y="490" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="13.5" font-weight="700" fill="#e2962a" text-anchor="start" >Zenoh (zenoh-c)</text>
+<text x="508" y="506" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11" font-weight="400" fill="#57606a" text-anchor="start" >router 7447</text>
+<rect x="666" y="470" width="160" height="44" rx="8" fill="#fff" stroke="#57606a" stroke-width="1.8" />
+<text x="680" y="490" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="13.5" font-weight="700" fill="#57606a" text-anchor="start" >Connext 7.7</text>
+<text x="680" y="506" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11" font-weight="400" fill="#57606a" text-anchor="start" >not arm64</text>
+<text x="50" y="542" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="700" fill="#0f2239" text-anchor="start" >Transports</text>
+<text x="160" y="542" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="12" font-weight="400" fill="#57606a" text-anchor="start" >UDPv4/v6 · TCP · SHM · Data-sharing   |   Zenoh: tcp · udp · quic · tls · shm</text>
+<line x1="260" y1="572" x2="260" y2="660" stroke="#2c5f9e" stroke-width="3" class="march"/>
+<line x1="857" y1="572" x2="857" y2="660" stroke="#27a689" stroke-width="3" class="march"/>
+<text x="274" y="594" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="12" font-weight="700" fill="#2c5f9e" text-anchor="start" >sendmsg / sendmmsg · recvmsg</text>
+<text x="274" y="612" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="12" font-weight="400" fill="#2c5f9e" text-anchor="start" >epoll_wait · setsockopt</text>
+<text x="843" y="600" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="12" font-weight="700" fill="#27a689" text-anchor="end" >mmap(/dev/shm) · futex</text>
+<text x="843" y="618" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="12" font-weight="400" fill="#27a689" text-anchor="end" >eventfd / semaphore</text>
+<line x1="30" y1="640" x2="970" y2="640" stroke="#dc5812" stroke-width="1.5" stroke-dasharray="8 6" opacity=".7"/>
+<rect x="410" y="630" width="180" height="20" rx="10" fill="#fdecdd" stroke="#f6c9a8" stroke-width="1.2" />
+<text x="500" y="644" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11.5" font-weight="700" fill="#dc5812" text-anchor="middle" >user / kernel boundary</text>
+<rect x="30" y="660" width="940" height="200" rx="14" fill="#ffffff" stroke="#d0d7de" stroke-width="1.5" />
+<rect x="30" y="660" width="200" height="30" rx="14" fill="#2c5f9e" stroke="none" stroke-width="1.2" />
+<rect x="30" y="674" width="200" height="16" rx="0" fill="#2c5f9e" stroke="none" stroke-width="1.2" />
+<text x="46" y="681" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="700" fill="#fff" text-anchor="start" >KERNEL SPACE</text>
+<rect x="50" y="706" width="40" height="40" rx="8" fill="#2c5f9e" stroke="none" stroke-width="1.2" />
+<text x="70" y="731" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="700" fill="#fff" text-anchor="middle" >TX</text>
+<rect x="100" y="706" width="650" height="40" rx="8" fill="#e3ecf7" stroke="#c4d4ea" stroke-width="1.2" />
+<text x="112" y="731" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.1" font-weight="400" fill="#0f2239" text-anchor="start" >socket (sk_buff · SO_SNDBUF) → UDP / TCP → IPv4/IPv6 (fragment) → netfilter → qdisc → driver → NIC DMA</text>
+<rect x="50" y="758" width="40" height="40" rx="8" fill="#3a6aa6" stroke="none" stroke-width="1.2" />
+<text x="70" y="783" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="700" fill="#fff" text-anchor="middle" >RX</text>
+<rect x="100" y="758" width="650" height="40" rx="8" fill="#e3ecf7" stroke="#c4d4ea" stroke-width="1.2" />
+<text x="112" y="783" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.1" font-weight="400" fill="#0f2239" text-anchor="start" >NIC → IRQ → NAPI poll → GRO → ip_rcv (reassembly) → udp_rcv → socket queue (SO_RCVBUF) → wake epoll</text>
+<rect x="760" y="706" width="190" height="92" rx="8" fill="#d9f0e8" stroke="#27a689" stroke-width="1.5" />
+<text x="855" y="742" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="13.5" font-weight="700" fill="#17765f" text-anchor="middle" >tmpfs / shm pages</text>
+<text x="855" y="762" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11" font-weight="400" fill="#17765f" text-anchor="middle" >no socket · no copy_to_user</text>
+<text x="855" y="780" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11" font-weight="400" fill="#17765f" text-anchor="middle" >same host only</text>
+<text x="50" y="840" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11.5" font-weight="400" fill="#57606a" text-anchor="start" >drops show up as  UdpRcvbufErrors · ReasmFails · kfree_skb(reason)</text>
+<line x1="260" y1="860" x2="260" y2="910" stroke="#0f2239" stroke-width="4"/>
+<text x="276" y="890" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="12.5" font-weight="700" fill="#0f2239" text-anchor="start" >Ethernet · Wi-Fi · TSN · 5G</text>
+<rect x="30" y="910" width="940" height="92" rx="14" fill="#ffffff" stroke="#d0d7de" stroke-width="1.5" />
+<rect x="30" y="910" width="210" height="30" rx="14" fill="#0f2239" stroke="none" stroke-width="1.2" />
+<rect x="30" y="924" width="210" height="16" rx="0" fill="#0f2239" stroke="none" stroke-width="1.2" />
+<text x="46" y="931" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="700" fill="#fff" text-anchor="start" >BETWEEN HOSTS</text>
+<text x="260" y="931" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11.5" font-weight="400" fill="#57606a" text-anchor="start" >L2 switch (IGMP snooping) · L3 router (no multicast without PIM) · VPN / NAT</text>
+<rect x="50" y="952" width="440" height="36" rx="8" fill="#fdecdd" stroke="#f6c9a8" stroke-width="1.2" />
+<text x="64" y="975" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11.5" font-weight="700" fill="#dc5812" text-anchor="start" >DDS: SPDP multicast 239.255.0.1:7400 + unicast</text>
+<rect x="510" y="952" width="440" height="36" rx="8" fill="#fdf1dc" stroke="#f0cf94" stroke-width="1.2" />
+<text x="524" y="975" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11.5" font-weight="700" fill="#9a5b00" text-anchor="start" >Zenoh: router ↔ router TCP 7447 (gossip)</text>
+<circle cx="485" cy="970" r="4" fill="none" stroke="#f86b1d" stroke-width="2"><animate attributeName="r" values="4;16" dur="1.6s" repeatCount="indefinite"/><animate attributeName="opacity" values="1;0" dur="1.6s" repeatCount="indefinite"/></circle>
+<path d="M180 159 L138 159 L138 526 L260 526 L260 704 L750 704 L750 758 L260 758 L260 970 L485 970" fill="none" stroke="#f86b1d" stroke-width="1.5" stroke-dasharray="2 6" opacity=".5"/>
+<circle r="11" fill="#f86b1d" opacity=".25"><animateMotion dur="7s" repeatCount="indefinite" path="M180 159 L138 159 L138 526 L260 526 L260 704 L750 704 L750 758 L260 758 L260 970 L485 970"/></circle>
+<circle r="7" fill="#f86b1d" stroke="#fff" stroke-width="2"><animateMotion dur="7s" repeatCount="indefinite" path="M180 159 L138 159 L138 526 L260 526 L260 704 L750 704 L750 758 L260 758 L260 970 L485 970"/><animate attributeName="fill" dur="7s" repeatCount="indefinite" values="#f86b1d;#e2962a;#e2962a" keyTimes="0;0.16;1"/></circle>
+<circle r="6" fill="#27a689" stroke="#fff" stroke-width="2"><animateMotion dur="5s" repeatCount="indefinite" path="M850 315 L857 315 L857 720 L857 315 L850 315"/></circle>
+</svg>

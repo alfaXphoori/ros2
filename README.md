@@ -27,6 +27,34 @@
 
 ---
 
+## 🌐 ROS 2 Lyrical Luth: Network Stack เทียบกับ OSI 7 Layer
+
+> เอกสารเชิงลึก: [**ROS 2 Lyrical Luth Network Stack Deep Dive**](docs/ros2_lyrical_network_stack_deep_dive.md) · แล็บ 3D แบบ interactive: [**Lyrical Packet Lab**](https://alfaxphoori.github.io/ros2/docs/interactive/lyrical-packet-lab.html)
+
+### 🧅 OSI 7 Layer vs ROS 2 Lyrical (Animated Encapsulation)
+
+ภาพนี้ไล่ message หนึ่งก้อนลงทีละชั้นฝั่งส่ง (TX: ห่อ header เพิ่ม) แล้วขึ้นทีละชั้นฝั่งรับ (RX: แกะ header ออก) โดยแถบขวาแสดงว่าแต่ละชั้นทำงานใน user space, kernel หรือ hardware
+
+![anim-osi-vs-ros2-lyrical](docs/diagrams/anim-osi-vs-ros2-lyrical.svg)
+
+| OSI | ชั้นใน ROS 2 Lyrical | ข้อมูลที่อยู่บนสาย | ทำงานที่ |
+|---|---|---|---|
+| 7 Application | App · rclcpp / rclpy · rcl (topic, service, action, executor) | message (struct) | user space |
+| 6 Presentation | rosidl typesupport: serialize เป็น CDR, descriptor ของ `rosidl::Buffer` | CDR bytes | user space |
+| 5 Session | Middleware (DDS-RTPS / Zenoh): discovery SPDP/SEDP, QoS matching, HEARTBEAT/ACKNACK | RTPS + CDR | user space |
+| 4 Transport | UDP / TCP (ports 7400 + 250·domain, Zenoh TCP 7447), SHM ข้ามชั้นนี้ไปเลย | UDP + RTPS + CDR | kernel |
+| 3 Network | IPv4 / IPv6, fragment ตาม MTU, multicast 239.255.0.1 | IP + … | kernel |
+| 2 Data Link | driver · NIC · switch (NAPI, GRO, VLAN, TSN) | Ethernet frame | kernel / NIC |
+| 1 Physical | PHY · สาย LAN · Wi-Fi · 5G | bits | hardware |
+
+> การเทียบชั้นนี้เป็นค่าโดยประมาณ ในทางปฏิบัติ DDS-RTPS ครอบคลุม OSI ชั้น 5–7 และ reliability ของ RTPS ทำงานใน user space บน UDP ไม่ได้พึ่ง TCP
+
+### 🧱 Network Stack ของ Lyrical: user space → kernel → ระหว่างเครื่อง
+
+![anim-lyrical-stack-layers](docs/diagrams/anim-lyrical-stack-layers.svg)
+
+---
+
 ## 📘 1. Essential ROS Track
 > เหมาะสำหรับผู้เริ่มต้น วิศวกร และนักวิจัยที่ต้องการสร้างแบบจำลอง ทำแผนที่ และระบบนำทางพื้นฐาน
 

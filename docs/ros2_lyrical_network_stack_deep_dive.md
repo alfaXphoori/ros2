@@ -36,6 +36,11 @@
 > **Interactive 3D lab:** [`interactive/lyrical-packet-lab.html`](interactive/lyrical-packet-lab.html) จำลอง 4 hosts ต่อผ่าน switch มี 14 บทเรียน (ภาพรวม, intra-process, serialize, syscall, kernel TX/RX, loopback, SHM, `rosidl::Buffer`, **service**, **action**, DDS discovery, Zenoh router mesh, observability) หมุน/ซูมฉากได้ คลิก layer เพื่อดูรายละเอียด และกด Run เพื่อดู trace console ตัวอย่าง
 > **เปิดออนไลน์:** https://alfaxphoori.github.io/ros2/docs/interactive/lyrical-packet-lab.html (ต้องใช้เบราว์เซอร์ที่รองรับ WebGL)
 
+![anim-lyrical-stack-layers](diagrams/anim-lyrical-stack-layers.svg)
+
+<details>
+<summary>ASCII version</summary>
+
 ```
 ┌──────────────────────────── USER SPACE (process ของ node) ────────────────────────────┐
 │ Application code                                                                       │
@@ -64,6 +69,14 @@
 │ DDS: SPDP multicast 239.255.0.1 + unicast │ Zenoh: router-to-router TCP 7447             │
 └────────────────────────────────────────────────────────────────────────────────────────┘
 ```
+
+</details>
+
+### 1.1 เทียบกับ OSI 7 Layer
+
+![anim-osi-vs-ros2-lyrical](diagrams/anim-osi-vs-ros2-lyrical.svg)
+
+การเทียบชั้นนี้เป็นค่าโดยประมาณ [K] ชั้น 5–7 อยู่ใน user space (rclcpp/rcl → typesupport/CDR → DDS-RTPS หรือ Zenoh) ชั้น 2–4 อยู่ใน kernel (UDP/TCP → IP → driver) และชั้น 1 เป็น hardware ส่วน SHM, loaned messages และ `rosidl::Buffer` backend ข้ามชั้น 1–4 ไปได้เมื่อส่งระหว่าง process บนเครื่องเดียวกัน
 
 ---
 
