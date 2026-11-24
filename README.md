@@ -29,7 +29,7 @@
 
 ## 🌐 ROS 2 Lyrical Luth: Network Stack เทียบกับ OSI 7 Layer
 
-> เอกสารเชิงลึก: [**ROS 2 Lyrical Luth Network Stack Deep Dive**](docs/ros2_lyrical_network_stack_deep_dive.md) · แล็บ 3D แบบ interactive: [**Lyrical Packet Lab**](https://alfaxphoori.github.io/ros2/docs/interactive/lyrical-packet-lab.html)
+> เอกสารเชิงลึก: [**ภาค 1: Network Stack Deep Dive**](docs/ros2_lyrical_network_stack_deep_dive.md) · [**ภาค 2: wire format, reliability, kernel accounting, latency budget**](docs/ros2_lyrical_network_stack_deeper.md) · แล็บ 3D แบบ interactive: [**Lyrical Packet Lab**](https://alfaxphoori.github.io/ros2/docs/interactive/lyrical-packet-lab.html)
 
 ### 🧅 OSI 7 Layer vs ROS 2 Lyrical (Animated Encapsulation)
 

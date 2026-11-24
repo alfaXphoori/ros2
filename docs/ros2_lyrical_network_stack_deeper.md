@@ -1,0 +1,995 @@
+# ROS 2 Lyrical Luth: Network Stack เชิงลึก ภาค 2 (wire format, reliability, Fast DDS internals, Zenoh framing, kernel accounting, latency budget)
+
+> เอกสารต่อยอดจาก `ros2_lyrical_network_stack_deep_dive.md` (ต่อไปเรียกว่า "ภาค 1") ไม่ทำซ้ำเนื้อหาเดิม
+> ร่างโดย Claude Fable 5.2 แล้วตรวจทานและแก้ไขโดย Claude Opus 5.5 · สถานะ ณ 2026-11-24 · เครื่องที่ใช้ตรวจ: Ubuntu 26.04.1, Linux 7.0.0-43-generic, NIC `r8169` (RTL8168h), CPU Intel i3-12100
+
+## 0. วิธีอ่านเอกสารนี้
+
+**ระดับความเชื่อมั่น**
+
+- **[V: แหล่ง]** ตรวจกับ source code หรือเครื่องจริงแล้ว ระบุแหล่งไว้ในวงเล็บ รายการ commit อยู่ในหัวข้อ 10
+- **[K]** ความรู้มาตรฐานที่ยังไม่ได้ตรวจกับ source ของเวอร์ชันนี้
+- **ประมาณการ** ตัวเลขที่คำนวณหรือประเมินเอง แสดงเหตุผลกำกับทุกครั้ง ไม่ใช่ผลวัด
+
+**ข้อจำกัดสำคัญของการตรวจรอบนี้**
+
+1. เครื่องที่ใช้ตรวจ**ไม่มี ROS 2 ติดตั้ง** (`/opt/ros` ไม่มี) จึง**ไม่มี packet capture จริง**แม้แต่ชิ้นเดียว ทุกข้อที่ติด [V] ในส่วน wire format หมายถึง "ตรงกับโค้ดที่ serialize/parse field นั้น" ไม่ใช่ "เห็นบนสายแล้ว"
+2. OMG DDSI-RTPS 2.5 PDF ไม่ได้เปิดอ่านโดยตรง ค่าคงที่ของ protocol ตรวจไขว้ 2 แหล่งแทน คือ Wireshark `packet-rtps.c` และ header ของ Fast DDS 3.6.x
+3. พฤติกรรมของ Fast DDS ขึ้นกับ option ตอน build สองตัว (`SECURITY`, `FASTDDS_STATISTICS`) ซึ่งเปลี่ยน byte บนสายจริง ดูหัวข้อ 3.7 เอกสารนี้ระบุทั้งสองกรณีเมื่อผลต่างกัน
+4. คำสั่ง `bpftrace`/`perf` ในเอกสารยังไม่ได้รัน (ต้องใช้ root) ตรวจแล้วเฉพาะว่า symbol และ tracepoint ที่อ้างมีอยู่ใน `/proc/kallsyms` ของเครื่องนี้
+
+---
+
+## 1. Discovery บนสาย ระดับ byte
+
+### 1.1 โครงสร้างร่วม: ParameterList
+
+ข้อมูล discovery ทั้ง SPDP และ SEDP เป็น `DATA` submessage (id `0x15`) ที่ payload ไม่ใช่ CDR ธรรมดา แต่เป็น **ParameterList**
+
+```
+serializedPayload:
+  00 03 00 00              encapsulation = PL_CDR_LE (0x0003), options = 0
+  repeat:
+    u16 parameterId (LE)   u16 length (LE, หาร 4 ลงตัว)   value[length]
+  01 00 00 00              PID_SENTINEL (0x0001), length 0
+```
+
+- encapsulation id: `CDR_BE 0x0000`, `CDR_LE 0x0001`, `PL_CDR_BE 0x0002`, `PL_CDR_LE 0x0003`, `CDR2_LE 0x0007`, `D_CDR2_LE 0x0009`, `PL_CDR2_LE 0x000b` [V: Wireshark `packet-rtps.c` `ENCAPSULATION_*`]
+- Fast DDS เขียน header นี้ด้วย `ParameterList::writeEncapsulationToCDRMsg` คือ octet 0, octet `PL_CDR_LE - msg_endian`, u16 0 [V: Fast DDS `src/cpp/fastdds/core/policy/ParameterList.cpp`]
+- ปิดท้ายด้วย `PID_SENTINEL` เสมอ [V: `ParticipantProxyData.cpp` เรียก `add_parameter_sentinel` เป็นบรรทัดสุดท้าย]
+
+### 1.2 SPDP `DATA(p)`: ประกาศ participant
+
+**ซองนอก**
+
+| field | ค่า | สถานะ |
+|---|---|---|
+| ปลายทาง | UDP multicast `239.255.0.1`, port `7400 + 250·domain` | [V: `UDPv4Transport.h` `DEFAULT_METATRAFFIC_MULTICAST_ADDRESS`, `PortParameters.hpp` portBase 7400, domainIDGain 250] |
+| writerId | `0x000100c2` (SPDP builtin participant writer) | [V: Fast DDS `EntityId_t.hpp`, Wireshark `ENTITYID_BUILTIN_PARTICIPANT_WRITER`] |
+| readerId | `0x000100c7` หรือ `ENTITYID_UNKNOWN` | ค่า `0x000100c7` [V] ส่วนว่า Fast DDS ใส่ค่าใดจริง [K] |
+| entity kind byte สุดท้าย | `0xc2` = builtin writer with key, `0xc7` = builtin reader with key | [V: Wireshark `ENTITYKIND_BUILTIN_*`] |
+| ความน่าเชื่อถือ | best-effort, ส่งซ้ำตามคาบ | [K: spec] |
+
+**ลำดับ parameter ที่ Fast DDS 3.6.x เขียนจริง** (เรียงตามลำดับในฟังก์ชัน `ParticipantProxyData::write_to_cdr_message`) [V: ลำดับและเงื่อนไขจาก `src/cpp/rtps/builtin/data/ParticipantProxyData.cpp`; PID จาก `ParameterTypes.hpp` ตรวจไขว้กับ Wireshark; ความยาวจาก `PARAMETER_*_LENGTH`]
+
+| # | PID | ค่า | value length | ขนาดบนสาย (รวม header 4 B) | เนื้อหา |
+|---|---|---|---|---|---|
+| 1 | `PID_PROTOCOL_VERSION` | `0x0015` | 4 | 8 | major, minor, pad 2 |
+| 2 | `PID_VENDORID` | `0x0016` | 4 | 8 | `01 0f` = eProsima, pad 2 |
+| 3 | `PID_PRODUCT_VERSION` | `0x8000` | 4 | 8 | vendor-specific (bit 15 = 1) |
+| 4 | `PID_DOMAIN_ID` | `0x000f` | 4 | 8 | domain id |
+| 5 | `PID_EXPECTS_INLINE_QOS` | `0x0043` | 4 | 8 | เขียนเฉพาะเมื่อเป็น true |
+| 6 | `PID_PARTICIPANT_GUID` | `0x0050` | 16 | 20 | guidPrefix 12 B + entityId `00 00 01 c1` |
+| 7 | `PID_NETWORK_CONFIGURATION_SET` | `0x8007` | 4 | 8 | vendor-specific |
+| 8 | `PID_MACHINE_ID` | `0x8003` | แปรผัน | แปรผัน | string, เขียนเมื่อไม่ว่าง |
+| 9 | `PID_METATRAFFIC_MULTICAST_LOCATOR` | `0x0033` | 24 | 28 ต่อ locator | kind 4 + port 4 + address 16 |
+| 10 | `PID_METATRAFFIC_UNICAST_LOCATOR` | `0x0032` | 24 | 28 ต่อ locator | ปลายทางของ SEDP |
+| 11 | `PID_DEFAULT_UNICAST_LOCATOR` | `0x0031` | 24 | 28 ต่อ locator | ปลายทางของ user data |
+| 12 | `PID_DEFAULT_MULTICAST_LOCATOR` | `0x0048` | 24 | 28 ต่อ locator | |
+| 13 | `PID_PARTICIPANT_LEASE_DURATION` | `0x0002` | 8 | 12 | seconds i32 + fraction u32 |
+| 14 | `PID_BUILTIN_ENDPOINT_SET` | `0x0058` | 4 | 8 | bitmask ดูด้านล่าง |
+| 15 | `PID_ENTITY_NAME` | `0x0062` | แปรผัน | แปรผัน | ชื่อ participant |
+| 16 | `PID_USER_DATA` | `0x002c` | แปรผัน | แปรผัน | ROS 2 ใส่ enclave ที่นี่ |
+| 17 | `PID_PROPERTY_LIST` | `0x0059` | แปรผัน | แปรผัน | เขียนเมื่อมี property |
+| 18 | `PID_IDENTITY_TOKEN` / `PID_PERMISSIONS_TOKEN` / `PID_PARTICIPANT_SECURITY_INFO` | `0x1001` / `0x1002` / `0x1005` | แปรผัน | แปรผัน | เฉพาะเมื่อเปิด DDS-Security |
+| 19 | `PID_WIREPROTOCOL_CONFIG` | `0x8300` | แปรผัน | แปรผัน | เฉพาะเมื่อส่ง optional QoS |
+| 20 | `PID_SENTINEL` | `0x0001` | 0 | 4 | |
+
+รายละเอียดที่ควรรู้
+
+- **Locator = 24 B** เสมอ ทั้ง IPv4/IPv6 โดย IPv4 อยู่ 4 byte ท้ายของ address 16 B [V: `CDRMessage::add_locator` เขียน `kind` i32, `port` u32, `address[16]`] เครื่องที่มีหลาย interface จึงเพิ่ม 28 B ต่อ interface ต่อชนิด locator
+- **SHM locator**: Fast DDS ใช้ `LOCATOR_KIND_SHM = 16 + FASTDDS_VERSION_MAJOR` = 19 ใน 3.x [V: `static_assert` ใน `SharedMemGlobal.hpp`] ส่วน Wireshark รู้จัก `LOCATOR_KIND_SHMEM = 0x01000000` ซึ่งเป็นของ RTI [V: `packet-rtps.c`] Wireshark จึงไม่แสดง locator SHM ของ Fast DDS ว่าเป็น SHM
+- **`PID_BUILTIN_ENDPOINT_SET`** บิตที่เกี่ยวข้อง [V: Fast DDS `BuiltinEndpoints.hpp`]: bit 0/1 participant announcer/detector, bit 2/3 publication announcer/detector, bit 4/5 subscription announcer/detector, bit 10/11 participant message writer/reader (ใช้ทำ liveliness), bit 12–15 TypeLookup service, bit 16–21 และ 26–27 เป็นชุด secure ค่าที่คาดว่าจะเห็นใน simple discovery ที่ไม่มี security คือ `0x00000c3f` หรือมากกว่าถ้ามี TypeLookup [K: ผลรวมบิตยังไม่ได้ยืนยันด้วย capture]
+- **enclave ของ ROS 2**: `rmw_fastrtps` เขียน `USER_DATA` เป็นสตริง `"enclave=%s;"` พร้อม NUL ปิดท้าย และตั้งชื่อ participant (`PID_ENTITY_NAME`) เป็นค่า enclave เช่นกัน [V: `rmw_fastrtps_shared_cpp/src/participant.cpp` บรรทัด 287–297] enclave default `/` จะได้ `enclave=/;\0` = 11 B ขนาดบนสายของ parameter นี้ = 4 (header) + 4 (sequence length) + 11 + 1 (pad) = 20 B (คำนวณจากกฎ alignment; ยังไม่ได้ยืนยันด้วย capture)
+- **ROS_AUTOMATIC_DISCOVERY_RANGE** เปลี่ยนเนื้อหา SPDP โดยตรง: `LOCALHOST` และ `OFF` ล้าง `metatrafficMulticastLocatorList` แล้วใส่ unicast locator เปล่าเพื่อกันไม่ให้สร้าง multicast locator default และ `OFF` จำกัด participant ไว้ที่ 1 [V: `participant.cpp` บรรทัด 189–215]
+
+**ขนาดรวมและคาบการส่ง**
+
+- ขนาด: ส่วนคงที่ (รายการ 1–4, 6, 7, 13, 14, 20) = 8+8+8+8+20+8+12+8+4 = 84 B บวก locator 28 B ต่อรายการ บวก string/property ประมาณการว่า `DATA(p)` ของ node ทั่วไปบนเครื่อง 1 interface อยู่ราว 250–400 B (ประมาณการจากผลรวมข้างต้นบวก machine id และ property list ซึ่งยังไม่ได้วัดขนาด)
+- คาบ: `leaseDuration` = 20 s, `leaseDuration_announcementperiod` = 3 s, initial announcements 5 ครั้ง ห่างกัน 100 ms [V: `RTPSParticipantAttributes.hpp` บรรทัด 231–277]
+- ผลตามมา: participant ที่หายไปเงียบ ๆ (ไฟดับ, สายหลุด) จะถูกตัดออกจาก graph หลังผ่านไปได้ถึง 20 s ตามค่า default
+
+### 1.3 SEDP `DATA(w)` / `DATA(r)`: ประกาศ endpoint
+
+| | publication | subscription | สถานะ |
+|---|---|---|---|
+| writerId | `0x000003c2` | `0x000004c2` | [V: `EntityId_t.hpp`, Wireshark] |
+| readerId | `0x000003c7` | `0x000004c7` | [V] |
+| ความน่าเชื่อถือ | reliable + transient-local ผ่าน unicast ไปยัง `METATRAFFIC_UNICAST_LOCATOR` | เหมือนกัน | [K: spec] |
+
+parameter หลักของ `DATA(w)` ตามลำดับใน `WriterProxyData::write_to_cdr_message` [V: `src/cpp/rtps/builtin/data/WriterProxyData.cpp`; PID จาก `ParameterTypes.hpp`]
+
+| PID | ค่า | ตัวอย่างสำหรับ talker บน `/chatter` |
+|---|---|---|
+| `PID_ENDPOINT_GUID` | `0x005a` | guidPrefix + entityId ลงท้าย `03` (user writer, no key) |
+| `PID_NETWORK_CONFIGURATION_SET` | `0x8007` | |
+| `PID_UNICAST_LOCATOR` / `PID_MULTICAST_LOCATOR` | `0x002f` / `0x0030` | เฉพาะเมื่อ endpoint มี locator ของตัวเอง |
+| `PID_PARTICIPANT_GUID` | `0x0050` | |
+| `PID_TOPIC_NAME` | `0x0005` | `"rt/chatter"` |
+| `PID_TYPE_NAME` | `0x0007` | `"std_msgs::msg::dds_::String_"` |
+| `PID_KEY_HASH` | `0x0070` | |
+| `PID_TYPE_MAX_SIZE_SERIALIZED` | `0x0060` | |
+| `PID_PROTOCOL_VERSION`, `PID_VENDORID` | `0x0015`, `0x0016` | |
+| `PID_DURABILITY` | `0x001d` | เขียนเมื่อ `should_be_sent` |
+| `PID_DEADLINE`, `PID_LATENCY_BUDGET`, `PID_LIVELINESS` | `0x0023`, `0x0027`, `0x001b` | เขียนเมื่อไม่ใช่ default |
+| `PID_RELIABILITY` | `0x001a` | kind: `BEST_EFFORT = 1`, `RELIABLE = 2` [V: `QosPolicies.hpp`] |
+| `PID_LIFESPAN`, `PID_OWNERSHIP`, `PID_DESTINATION_ORDER`, `PID_PRESENTATION`, `PID_PARTITION` | `0x002b`, `0x001f`, `0x0025`, `0x0021`, `0x0029` | เขียนเมื่อไม่ใช่ default |
+| `PID_USER_DATA` | `0x002c` | ROS 2 ใส่ type hash ที่นี่ |
+| `PID_DATASHARING` | `0x8006` | เขียนเมื่อเปิด data-sharing |
+| `PID_TYPE_INFORMATION` | `0x0075` | XTypes TypeInformation |
+| `PID_PROPERTY_LIST` | `0x0059` | |
+| `PID_DATA_REPRESENTATION` | `0x0073` | |
+| `PID_HISTORY` | `0x0040` | |
+| `PID_SENTINEL` | `0x0001` | |
+
+- **ชื่อ topic**: prefix `rt` (topic), `rq` (service request), `rr` (service reply) [V: `rmw_fastrtps_shared_cpp/src/namespace_prefix.cpp`]
+- **ชื่อ type**: `<package>::<msg|srv>::dds_::<Name>_` [V: `TypeSupport_impl.cpp` บรรทัด 311–314]
+- **การเข้ารหัส string**: u32 ความยาวรวม NUL + ตัวอักษร + pad ให้ครบ 4 [K: CDR] ดังนั้น `"rt/chatter"` = 4 + 11 + 1 = 16 B (parameter รวม 20 B) และ `"std_msgs::msg::dds_::String_"` (28 ตัวอักษร) = 4 + 29 + 3 = 36 B (parameter รวม 40 B) (คำนวณ)
+- **type hash**: `rmw_dds_common` เข้ารหัสเป็น `"typehash=RIHS01_<hex 64 ตัว>;"` ลงใน `USER_DATA` ของ endpoint [V: `rmw_dds_common/src/qos.cpp` บรรทัด 715] ความยาว 9 + 71 + 1 = 81 ตัวอักษร ทุก endpoint จึงแบกเพิ่มราว 90 B (คำนวณ)
+
+### 1.4 ROS graph ขี่อยู่บน DDS อย่างไร: `ros_discovery_info`
+
+SPDP/SEDP รู้จักแค่ participant กับ endpoint ไม่รู้จัก "node" ROS 2 จึงเพิ่ม topic ผู้ใช้ธรรมดาอีกหนึ่งตัวเพื่อบอกว่า endpoint ใดเป็นของ node ใด
+
+| รายการ | ค่า | สถานะ |
+|---|---|---|
+| ชื่อ topic บน DDS | `ros_discovery_info` (ไม่มี prefix `rt/` เพราะ `avoid_ros_namespace_conventions = true`) | [V: `rmw_fastrtps_cpp/src/init_rmw_context_impl.cpp`] |
+| QoS ฝั่ง publisher | RELIABLE, TRANSIENT_LOCAL, KEEP_LAST depth 1 | [V: ไฟล์เดียวกัน] |
+| QoS ฝั่ง subscription | RELIABLE, TRANSIENT_LOCAL, KEEP_ALL (comment ในโค้ดระบุว่าถ้ารองรับ keyed topic จะใช้ KEEP_LAST 1 ได้) | [V] |
+| type | `rmw_dds_common/msg/ParticipantEntitiesInfo` | [V: ไฟล์ `.msg`] |
+| ผู้อ่าน | thread เฉพาะใน rmw (`std::thread(node_listener, context)`) เรียก `__rmw_take` แล้วอัปเดต graph cache | [V: `rmw_fastrtps_shared_cpp/src/listener_thread.cpp`] |
+
+```
+ParticipantEntitiesInfo:  Gid gid;  NodeEntitiesInfo[] node_entities_info_seq
+NodeEntitiesInfo:         string<=256 node_namespace;  string<=256 node_name;
+                          Gid[] reader_gid_seq;  Gid[] writer_gid_seq
+Gid:                      char[16] data
+```
+[V: `rmw_dds_common/msg/*.msg` branch `lyrical`]
+
+**แบบจำลองขนาด (ประมาณการ)** สำหรับ process ที่มี node `N` ตัว แต่ละตัวมี reader `R` และ writer `W`:
+
+```
+size ≈ 4 (encapsulation) + 16 (gid) + 4 (seq len)
+       + N × [ (4 + |ns| + 1 + pad) + (4 + |name| + 1 + pad) + 4 + 16·R + 4 + 16·W ]
+```
+
+เนื่องจาก topic นี้ไม่มี key และเก็บ KEEP_LAST 1 ข้อความแต่ละฉบับจึงต้องบรรจุ**สถานะทั้งหมดของ participant** [V: QoS และ type] ส่วนที่ว่า rmw ส่งฉบับใหม่ทุกครั้งที่สร้าง/ทำลาย node หรือ endpoint เป็น [K] (ยังไม่ได้ไล่โค้ด `rmw_dds_common::Context`) ถ้าเป็นจริง ต้นทุนช่วง startup จะเป็น O(E²) byte ต่อ participant เมื่อ E คือจำนวน endpoint: process ที่มี 20 node × 20 endpoint (E = 400) จะส่งราว 400 ฉบับ ขนาดเฉลี่ยราว 3.3 KB รวมประมาณ 1.3 MB ต่อผู้รับหนึ่งราย (ประมาณการ: Σ 16·k สำหรับ k = 1..400 ≈ 1.28 MB ไม่รวมชื่อ node) ดูข้อเสนอวิจัย R6
+
+### 1.5 สรุป traffic ของ discovery ต่อ participant
+
+| ชั้น | อะไรวิ่ง | ความถี่ | ต้นทุนเติบโตตาม |
+|---|---|---|---|
+| SPDP | `DATA(p)` 250–400 B (ประมาณการ) | ทุก 3 s + 5 ครั้งแรกทุก 100 ms [V] | จำนวน participant (multicast) |
+| SEDP | `DATA(w)`/`DATA(r)` ต่อ endpoint + HEARTBEAT/ACKNACK | ครั้งเดียวต่อคู่ participant แล้ว heartbeat ตามคาบ | participant² × endpoint [K] |
+| ROS graph | `ParticipantEntitiesInfo` ทั้งก้อน | ทุกครั้งที่ graph เปลี่ยน [K] | endpoint² ต่อ participant (ประมาณการ) |
+
+---
+
+## 2. Reliable protocol บนสาย
+
+### 2.1 ค่าคงที่ของ submessage
+
+| submessage | id | flag (bit 0 = E endianness ทุกตัว) | สถานะ |
+|---|---|---|---|
+| `PAD` | `0x01` | | [V: Fast DDS `RTPS_messages.hpp` `SubmessageId`, Wireshark `SUBMESSAGE_*`] |
+| `ACKNACK` | `0x06` | F final = `0x02` | [V: Wireshark `FLAG_ACKNACK_F`; Fast DDS `AckNackMsg.hpp` ใช้ `BIT(1)`] |
+| `HEARTBEAT` | `0x07` | F final = `0x02`, L liveliness = `0x04` | [V: `HeartbeatMsg.hpp` `BIT(1)`, `BIT(2)`; Wireshark `FLAG_HEARTBEAT_F`] |
+| `GAP` | `0x08` | | [V] |
+| `INFO_TS` | `0x09` | I invalidate = `0x02` | [V: Wireshark `FLAG_INFO_TS_T`] |
+| `INFO_SRC` | `0x0c` | | [V] |
+| `INFO_DST` | `0x0e` | | [V] |
+| `NACK_FRAG` | `0x12` | | [V] |
+| `HEARTBEAT_FRAG` | `0x13` | | [V] |
+| `DATA` | `0x15` | Q inline QoS = `0x02`, D data = `0x04`, K key = `0x08` | [V: Wireshark `FLAG_RTPS_DATA_*`] |
+| `DATA_FRAG` | `0x16` | Q = `0x02`, K = `0x04` | [V: Wireshark `FLAG_RTPS_DATA_FRAG_*`] |
+| `SEC_BODY`/`SEC_PREFIX`/`SEC_POSTFIX`/`SRTPS_PREFIX`/`SRTPS_POSTFIX` | `0x30`–`0x34` | | [V: Wireshark] |
+| vendor-specific | `0x80` ขึ้นไป | Fast DDS ใช้ `0x80` เป็น statistics submessage (หัวข้อ 3.7) | [V: `RTPSStatisticsMessages.hpp`] |
+
+ทุก submessage ขึ้นต้นด้วย header 4 B: `id` u8, `flags` u8, `octetsToNextHeader` u16 [V: `RTPSMESSAGE_SUBMESSAGEHEADER_SIZE = 4`]
+
+### 2.2 Layout ทีละ field
+
+ขนาดด้านล่างนับจากลำดับการเรียก `CDRMessage::add*` ในโค้ด Fast DDS 3.6.x [V: `src/cpp/rtps/messages/submessages/*.hpp`, `CDRMessage.cpp`]
+
+**HEARTBEAT (32 B)**: writer บอกว่ามี sequence number ช่วงใดให้ขอได้
+```
+07 fl len16 | readerId 4 | writerId 4 | firstSN 8 | lastSN 8 | count 4
+```
+ตรงกับค่าคงที่ `heartbeat_message_length = 32` ใน `BaseWriter::calculate_max_payload_size` [V]
+
+**ACKNACK (28–56 B)**: reader ตอบว่าได้ครบถึงไหนและขาดตัวใด
+```
+06 fl len16 | readerId 4 | writerId 4 | SequenceNumberSet | count 4
+SequenceNumberSet = bitmapBase 8 | numBits 4 | bitmap 4 × ceil(numBits/32)
+```
+- `bitmapBase` = SN แรกที่ยังไม่ได้รับ ทุก SN ที่ต่ำกว่านี้ถือว่า ack แล้ว บิตที่เป็น 1 = ขอให้ส่งซ้ำ [K: spec]
+- Fast DDS จำกัด bitmap ที่ 8 word = 256 บิต [V: `std::array<uint32_t, 8>` ใน `CDRMessage::addSequenceNumberSet`] ACKNACK หนึ่งฉบับจึงขอซ้ำได้ไม่เกิน 256 sample ติดกัน
+- set ว่าง: เขียน `numBits = 0` และไม่มี bitmap [V] จึงได้ขนาดต่ำสุด 4 + 8 + 12 + 4 = 28 B
+
+**GAP**: writer บอกว่า SN ช่วงนี้จะไม่มีวันส่ง (เช่นถูกลบออกจาก history แล้ว)
+```
+08 fl len16 | readerId 4 | writerId 4 | gapStart 8 | gapList (SequenceNumberSet)
+```
+ความหมาย: `[gapStart, gapList.base)` ไม่เกี่ยวข้องทั้งช่วง บวกกับ SN ที่บิตเป็น 1 ใน `gapList` [K: spec; ลำดับ field V]
+
+**DATA_FRAG header (36 B)**
+```
+16 fl len16 | extraFlags 2 | octetsToInlineQos 2 (= 28) | readerId 4 | writerId 4 | writerSN 8
+            | fragmentStartingNum 4 (เริ่มที่ 1) | fragmentsInSubmessage 2 | fragmentSize 2 | sampleSize 4
+            | [inlineQos] | fragment data
+```
+- `octetsToInlineQos` = 28 สำหรับ DATA_FRAG และ 16 สำหรับ DATA [V: `RTPSMESSAGE_OCTETSTOINLINEQOS_DATAFRAGSUBMSG`, `..._DATASUBMSG` ใน `CDRMessage_t.hpp`]
+- Fast DDS ส่ง**หนึ่ง fragment ต่อหนึ่ง submessage เสมอ** (`addUInt16(msg, 1)` พร้อม comment `we are sending one fragment`) [V: `DataMsg.hpp` บรรทัด 110]
+- `fragmentSize` เป็น **u16** fragment จึงใหญ่ได้ไม่เกิน 65535 B ตามรูปแบบบนสาย [V: `addUInt16(msg, change->getFragmentSize())`]
+- `sampleSize` = ความยาว serialized payload ทั้งก้อน [V: `addUInt32(msg, change->serializedPayload.length)`]
+- ตรงกับค่าคงที่ `data_frag_submessage_header_length = 36` [V]
+
+**NACK_FRAG**: reader ขอ fragment ที่ขาดของ sample เดียว
+```
+12 fl len16 | readerId 4 | writerId 4 | writerSN 8 | FragmentNumberSet | count 4
+FragmentNumberSet = bitmapBase 4 | numBits 4 | bitmap 4 × ceil(numBits/32)   (สูงสุด 256 บิต)
+```
+[V: `AckNackMsg.hpp` `addSubmessageNackFrag`, `CDRMessage::addFragmentNumberSet`]
+
+### 2.3 ค่าเวลา default ของ Fast DDS 3.6.x
+
+| พารามิเตอร์ | default | ที่มา |
+|---|---|---|
+| writer `heartbeat_period` | **3 s** | [V: `WriterAttributes.hpp` บรรทัด 63] |
+| writer `initial_heartbeat_delay` | 12 ms | [V: บรรทัด 61] |
+| writer `nack_response_delay` | 5 ms | [V: บรรทัด 65] |
+| writer `nack_supression_duration` | 0 | [V: บรรทัด 67] |
+| reader `heartbeat_response_delay` | 5 ms | [V: `ReaderAttributes.hpp` บรรทัด 51] |
+| reader `initial_acknack_delay` | 70 ms | [V: บรรทัด 49] |
+| `ReliabilityQosPolicy.max_blocking_time` | 100 ms | [V: `QosPolicies.hpp` บรรทัด 580] |
+
+ใน `rmw_fastrtps_cpp/src/publisher.cpp`, `rmw_fastrtps_shared_cpp/src/qos.cpp`, `participant.cpp` และ `utils.cpp` ของ branch `lyrical` ไม่พบโค้ดที่แก้ค่า heartbeat เหล่านี้ [V: grep คำว่า `heartbeat` ในไฟล์ทั้งสี่ ได้ 0 รายการ] จึงคาดว่า ROS 2 ใช้ค่า default ข้างต้น เว้นแต่ผู้ใช้ตั้งผ่าน XML profile
+
+**เงื่อนไขการแนบ HEARTBEAT ไปกับ DATA** [V: `StatefulWriter::send_heartbeat_piggyback_nts_`, `StatefulWriter.cpp` บรรทัด 1919–1941]
+
+เมื่อ `separate_sending = false` (default [V: `WriterAttributes.hpp` บรรทัด 131]) writer จะแนบ HEARTBEAT ท้าย DATA ก็ต่อเมื่อข้อใดข้อหนึ่งเป็นจริง
+1. `history_->isFull()`
+2. `next_all_acked_notify_sequence_ < get_seq_num_min()`
+3. จำนวนครั้งที่ message group เกิน send buffer เปลี่ยนไปจากรอบก่อน
+
+นอกเหนือจากนี้ reader จะได้ HEARTBEAT จาก timer ตามคาบเท่านั้น ข้อสังเกตนี้นำไปสู่สมมติฐาน R2: เวลากู้คืนหลัง packet หายของ topic RELIABLE ที่ส่งไม่ถี่อาจถูกกำหนดด้วย `heartbeat_period` 3 s มากกว่าด้วยเครือข่าย (ยังไม่ได้วัด และยังไม่ได้ไล่ทุกเส้นทางที่เรียก `send_heartbeat_nts_`)
+
+### 2.4 ตัวอย่างคำนวณ: `sensor_msgs/Image` 640×480 `rgb8`
+
+**ขนาด payload** (XCDR1 little-endian, สมมติ `frame_id = "camera"`)
+
+| field | byte |
+|---|---|
+| encapsulation header | 4 |
+| `header.stamp` (i32 + u32) | 8 |
+| `header.frame_id` = u32 len + `"camera\0"` + pad 1 | 12 |
+| `height`, `width` | 8 |
+| `encoding` = u32 len + `"rgb8\0"` | 9 |
+| `is_bigendian` + pad 2 | 3 |
+| `step` | 4 |
+| `data` = u32 len + 921 600 | 921 604 |
+| **รวม (`sampleSize`)** | **921 652** |
+
+(คำนวณจากกฎ alignment ของ CDR; สมมติว่า `serializedPayload.length` นับรวม encapsulation 4 B ซึ่งเป็น [K] ถ้าไม่นับ ผลลัพธ์ต่างกัน 4 B และจำนวน fragment ไม่เปลี่ยน)
+
+**ขนาด fragment ที่ Fast DDS เลือก** [V: `BaseWriter::get_max_allowed_payload_size` + `calculate_max_payload_size` + `RTPSParticipantImpl::calculateMaxDataSize`]
+
+```
+maxMessageSize (UDP และ SHM default)            = 65 500   [V: s_maximumMessageSize, TransportInterface.hpp]
+− RTPS header                                   =     20   → 65 480
+− INFO_DST 16 − INFO_TS 12 − DATA_FRAG hdr 36 − HEARTBEAT 32 = 96
+− statistics submessage (ถ้า build ด้วย FASTDDS_STATISTICS)  = 60
+ปัดลงให้หาร 4 ลงตัว (& ~3)
+```
+
+| build | fragment size | จำนวน DATA_FRAG | fragment สุดท้าย |
+|---|---|---|---|
+| `FASTDDS_STATISTICS=OFF` | 65 384 | **15** (14 เต็ม + 1) | 6 276 B |
+| `FASTDDS_STATISTICS=ON` (default ของ CMake upstream) | 65 324 | **15** (14 เต็ม + 1) | 7 116 B |
+
+**ต่อหนึ่ง DATA_FRAG เต็ม** (กรณีส่งถึง participant เดียวจึงมี INFO_DST)
+
+- RTPS message = 20 + 16 + 12 + 36 + fragment (+ 60) = **65 468 B** ทั้งสอง build (ส่วน 32 B ที่กันไว้ให้ HEARTBEAT จะถูกใช้เมื่อเข้าเงื่อนไขในหัวข้อ 2.3 แล้วได้ 65 500 B พอดี)
+- UDP datagram = 65 476 B → IP payload ต่อ fragment ที่ MTU 1500 = 1480 B → **45 IP fragment** (44 × 1480 + 356)
+- DATA_FRAG สุดท้าย (6 360 หรือ 7 260 B) → 5 IP fragment
+- **รวมทั้งภาพ: 14 × 45 + 5 = 635 Ethernet frame**
+- byte-time บนสาย = UDP 923 032 B + 635 × (IP 20 + Ethernet 14 + FCS 4 + preamble 8 + IFG 12) = **959 862 B** (กรณีไม่มี statistics; มี statistics = 960 762 B)
+- เวลาบนสาย: **7.68 ms ที่ 1 GbE**, 76.8 ms ที่ 100 Mb/s; ที่ 30 fps ใช้ 230 Mb/s; เพดานที่ 1 GbE ≈ 130 fps (คำนวณ)
+
+หมายเหตุ: link ของเครื่องที่ใช้ตรวจ negotiate ได้ 100 Mb/s [V: `ethtool enp2s0`] ภาพ 640×480 rgb8 ที่ 30 fps (230 Mb/s) จึงส่งผ่าน link นี้ไม่ได้
+
+### 2.5 ถ้า IP fragment หายหนึ่งชิ้น
+
+**ชั้น kernel ฝั่งรับ**
+
+1. fragment อีก 44 ชิ้นค้างอยู่ใน reassembly queue (`ip_defrag` → `ip_frag_queue`) [V: symbol มีใน kallsyms]
+2. queue หมดอายุเมื่อครบ `ipfrag_time` = **30 s** บนเครื่องนี้ [V: `sysctl net.ipv4.ipfrag_time`; `IP_FRAG_TIME (30 * HZ)` ใน `include/net/ip.h` v7.0] แล้ว `ip_expire` ทิ้งทั้ง queue
+3. หน่วยความจำที่ค้าง: comment ใน kernel ระบุว่า "A 64K fragment consumes 129736 bytes (44*2944)+200" [V: `net/ipv4/ip_fragment.c` v7.0 บรรทัด 667–668] เพดาน `ipfrag_high_thresh` = 4 MiB [V: sysctl และโค้ดบรรทัด 674] จึงรองรับ datagram 64K ที่ประกอบไม่เสร็จได้พร้อมกันราว 4 194 304 / 129 736 ≈ **32 ก้อน** (คำนวณ)
+4. `ipfrag_max_dist` = 64 [V: sysctl และโค้ดบรรทัด 683]
+
+ผลที่ตามมา (ประมาณการ): ที่ 30 fps มี 450 datagram/s ถ้า loss ต่อ frame p = 0.1% datagram 65 KB จะเสีย 1 − (1 − p)^45 = 4.4% คือราว 20 ก้อน/s แต่ละก้อนค้าง 30 s จึงชนเพดาน 32 ก้อนภายในราว 1.6 s หลังจากนั้น fragment ใหม่มีโอกาสถูกปฏิเสธจนกว่า queue เก่าจะหมดอายุ (พฤติกรรมตอนเกิน `high_thresh` เป็น [K]) นี่คือเหตุผลเชิงปริมาณของคำแนะนำ `ipfrag_time=3` และเพิ่ม `ipfrag_high_thresh` ในภาค 1
+
+**ชั้น RTPS**
+
+| QoS | สิ่งที่หาย | เส้นทางกู้คืน |
+|---|---|---|
+| BEST_EFFORT | **ทั้ง sample 921 652 B** reader ทิ้ง sample ที่ประกอบไม่ครบเมื่อ fragment ของ SN ที่ใหม่กว่ามาถึง แล้วเรียก `on_sample_lost` [V: `StatelessReader::process_data_frag_msg` บรรทัด 780–801] | ไม่มี |
+| RELIABLE | DATA_FRAG 1 ก้อน (65 384 B) | (1) reader เก็บ fragment ที่ได้ด้วย `add_fragments` (memcpy ลง payload ของ CacheChange) [V: `StatefulReader::process_data_frag_msg`, `CacheChange.hpp`] (2) เมื่อ HEARTBEAT มาถึง ตั้ง timer `heartbeat_response_delay` 5 ms (3) `StatefulReader::send_acknack` ตรวจว่า SN ที่ขาดเป็น sample ที่ประกอบค้างหรือไม่ ถ้าใช่ส่ง `NACK_FRAG(SN, ชุด fragment ที่ขาด)` แล้วตามด้วย `ACKNACK` [V: `StatefulReader.cpp` บรรทัด 1690–1735] (4) writer รอ `nack_response_delay` 5 ms แล้ว `perform_nack_response` ส่งกลับเข้า flow controller ด้วย `add_old_sample` [V: `StatefulWriter.cpp` บรรทัด 1944–1960] (5) ส่ง DATA_FRAG ซ้ำ = **45 IP fragment** |
+
+**ตัวขยายความเสียหาย (คำนวณ)**
+
+| loss ต่อ frame (p) | P(datagram 65 KB รอด) = (1−p)^45 | P(ภาพรอดแบบ best-effort) = (1−p)^635 | จำนวน DATA_FRAG ที่ต้องส่งซ้ำต่อภาพโดยเฉลี่ย (reliable) |
+|---|---|---|---|
+| 0.001% | 99.96% | 99.4% | 0.006 |
+| 0.01% | 99.55% | 93.8% | 0.063 |
+| 0.1% | 95.6% | 53.0% | 0.62 |
+| 1% | 63.6% | 0.17% | 5.1 |
+
+- frame 1514 B หายหนึ่งชิ้น ทำให้ต้องส่งซ้ำ 65 468 B: ตัวขยาย **45 เท่า**
+- เวลากู้คืนขั้นต่ำ ≈ เวลารอ HEARTBEAT ถัดไป + 5 ms + 5 ms + เวลาส่ง 45 frame (0.54 ms ที่ 1 GbE) (ประมาณการจากค่า default ในหัวข้อ 2.3)
+
+---
+
+## 3. Fast DDS 3.6.x ส่วนที่แตะ OS
+
+### 3.1 เส้นทางส่ง: class และ syscall
+
+```
+rmw_publish                                      [tracepoint rmw_publish: V rmw_fastrtps_shared_cpp/src/rmw_publish.cpp]
+ └ DataWriter::write → DataWriterImpl → WriterHistory::set_fragments   (ตัดสินว่าต้อง fragment หรือไม่)
+    └ FlowController (sync: ส่งใน thread ผู้เรียก)
+       └ StatefulWriter / StatelessWriter::deliver_sample_nts
+          └ RTPSMessageGroup::add_data / add_data_frag  (ประกอบ header + INFO_DST + INFO_TS + submessage)
+             └ SenderResource → UDPTransportInterface::send
+                ├ setsockopt(SOL_SOCKET, SO_SNDTIMEO)        ← ทุกครั้งที่ส่ง
+                └ asio socket.send_to(buffers, endpoint)     ← gather send
+```
+[V: ชื่อ class/ไฟล์ทั้งหมดมีใน tree ของ branch `3.6.x`; ลำดับการเรียกช่วงบนเป็น [K] ยกเว้นส่วนที่อ้างบรรทัด]
+
+ข้อเท็จจริงที่ตรวจแล้ว
+
+1. **ROS 2 Lyrical ส่งแบบ synchronous เป็น default**: `publishing_mode_t publishing_mode = publishing_mode_t::SYNCHRONOUS;` เปลี่ยนได้ด้วย `RMW_FASTRTPS_PUBLICATION_MODE=ASYNCHRONOUS` [V: `rmw_fastrtps_shared_cpp/src/participant.cpp` บรรทัด 300–327] ดังนั้น `sendmsg` ถูกเรียกจาก **thread ของผู้ใช้ที่เรียก `publish()`** ไม่ใช่ thread ภายใน และคาดว่า `publish()` ของภาพ 1 MB จะ block จนส่งครบ 15 datagram (ข้อสรุปจากโหมด sync; ยังไม่ได้วัด)
+2. **syscall สองครั้งต่อ datagram**: `UDPTransportInterface::send` เรียก `setsockopt(..., SO_SNDTIMEO, ...)` ก่อน `send_to` ทุกครั้งบน non-Windows [V: `UDPTransportInterface.cpp` บรรทัด 608–619]
+3. **gather send**: `send_to` รับ `std::vector<NetworkBuffer>` payload ถูกอ้างอิงเป็น buffer แยก ไม่ถูกคัดลอกมาต่อกับ header ใน user space เมื่อ payload มี `payload_owner` (`copy_data = (nullptr == change.serializedPayload.payload_owner)`) [V: `RTPSMessageGroup.cpp` บรรทัด 599] ส่วนว่า asio แปลงเป็น `sendmsg` + `iovec` เป็น [K] (ไม่ได้อ่าน source ของ asio)
+4. **ปฏิเสธ datagram ที่ใหญ่กว่า send buffer**: `if (total_bytes > configuration()->sendBufferSize) return false;` [V: บรรทัด 582]
+5. **ไม่ใช้ non-blocking โดย default**: `non_blocking_send = false` [V: `BuiltinTransports.hpp`, `UDPTransportInterface.cpp` บรรทัด 293] ถ้าเปิดแล้ว socket buffer เต็ม โค้ดจะ log "UDP send would have blocked. Packet is dropped." [V: บรรทัด 625]
+6. **memory policy**: rmw ตั้ง `PREALLOCATED_WITH_REALLOC_MEMORY_MODE` ให้ทั้ง writer, reader และ builtin endpoint [V: `publisher.cpp` บรรทัด 252, `subscription.cpp` บรรทัด 413, `participant.cpp` บรรทัด 333–336]
+7. **`transport_priority` ไม่ถูกใช้ทั้ง UDP และ TCP**: พารามิเตอร์ถูก comment ชื่อทิ้งในทั้งสอง transport (`const int32_t /* transport_priority */`) และ grep `IP_TOS|IPV6_TCLASS|SO_PRIORITY|dscp|DSCP` ใน `src/` กับ `include/` ของ 3.6.x ได้ 0 รายการ [V: `UDPTransportInterface.cpp` บรรทัด 543, `TCPTransportInterface.cpp` บรรทัด 1498] ดูหัวข้อ 8
+
+### 3.2 Thread model
+
+ชื่อ thread ด้านล่างเป็น format string ที่ส่งให้ `create_thread` จึงมองเห็นได้ใน `top -H`, `ps -L`, `perf sched` [V: grep `create_thread` ใน 3.6.x]
+
+| ชื่อ thread | จำนวน | หน้าที่ | ที่มา |
+|---|---|---|---|
+| `dds.udp.<port>` | 1 ต่อ input locator (port) | วน `receive_from` แบบ blocking แล้วเรียก `MessageReceiver::OnDataReceived` ใน thread เดียวกัน | [V: `UDPChannelResource.cpp` บรรทัด 50, 62–79] |
+| `dds.shm.<port>` | 1 ต่อ SHM port | รอ descriptor จาก port ring buffer | [V: `SharedMemChannelResource.hpp` บรรทัด 178] |
+| `dds.shm.wdog` | 1 ต่อ process | watchdog ตรวจ port ที่ค้าง | [V: `SharedMemWatchdog.hpp` บรรทัด 126] |
+| `dds.ev.<id>` | 1 ต่อ participant | timer event: periodic heartbeat, nack response, heartbeat response, SPDP announce, lease | [V: `RTPSParticipantImpl.cpp` บรรทัด 595] |
+| `dds.asyn.<participant>.<index>` | 1 ต่อ async flow controller | ส่งแบบ asynchronous และ**ส่งซ้ำ** (`add_old_sample`) | [V: `FlowControllerImpl.hpp` บรรทัด 1116–1119] |
+| `dds.dsha.<id>` | 1 ต่อ reader ที่ใช้ data-sharing | รอ notification | [V: `DataSharingListener.cpp` บรรทัด 107–110] |
+| (thread ของ rmw) | 1 ต่อ context | อ่าน `ros_discovery_info` | [V: `listener_thread.cpp`] |
+
+ข้อสังเกต
+- การ parse RTPS, การประกอบ fragment และ callback `on_data_available` ทำงานใน `dds.udp.<port>` thread เดียวต่อ port ถ้า callback ช้า socket buffer ของ port นั้นจะไม่ถูกระบาย
+- `ThreadSettings` (scheduling policy, priority, affinity, stack size) ตั้งแยกต่อชนิด thread ได้ [V: มี `include/fastdds/rtps/attributes/ThreadSettings.hpp` และ `get_thread_config_for_port`] รายละเอียด field เป็น [K]
+
+### 3.3 ขนาด socket buffer ที่ Fast DDS ขอจริง
+
+- `sendBufferSize` และ `receiveBufferSize` default = **0** [V: `SocketTransportDescriptor.hpp` บรรทัด 59–60]
+- เมื่อเป็น 0: อ่านค่าปัจจุบันของ socket (ค่า default ของระบบ) ถ้าต่ำกว่า `maxMessageSize` ให้ยกขึ้นเป็น `maxMessageSize` แล้วพยายาม `set_option` ถ้าไม่สำเร็จให้ลดลงครึ่งหนึ่งไปเรื่อย ๆ จนถึงค่าต่ำสุด [V: `asio_helpers.hpp` `configure_buffer_size`, `try_setting_buffer_size`]
+- บนเครื่องนี้ `net.core.rmem_default = wmem_default = 212992`, `rmem_max = 4194304` [V: sysctl] socket รับของ Fast DDS จึงเริ่มที่ราว 208 KiB ผลต่อการรับภาพอยู่ในหัวข้อ 5.3
+
+### 3.4 SHM transport ในระดับ OS
+
+**ชื่อ object** (domain ของ SHM manager คือสตริง `"fastdds"` [V: `SharedMemTransport.cpp` `#define SHM_MANAGER_DOMAIN ("fastdds")`]; directory คือ `/dev/shm` บน Linux [V: `SharedDir.hpp`])
+
+| object | ชื่อ | บทบาท | ที่มา |
+|---|---|---|---|
+| port segment | `fastdds_port<port_id>` | `PortNode` + ring buffer ของ descriptor | [V: `SharedMemGlobal.hpp` บรรทัด 1050] |
+| port mutex | `fastdds_port<port_id>_mutex` | named mutex ตอนเปิด/สร้าง port | [V: บรรทัด 1079] |
+| port lock file | `fastdds_port<port_id>_el` (exclusive) หรือ `_sl` (shared) | ตรวจ zombie port ด้วย file lock | [V: บรรทัด 928–984] |
+| data segment | `fastdds_<uuid hex>` 1 ต่อ participant | buffer ของ datagram ที่ participant นี้ส่ง | [V: `SharedMemManager.hpp` บรรทัด 540] |
+| segment lock | `fastdds_<uuid>_el` | บอกว่าเจ้าของยังมีชีวิต | [V: บรรทัด 546] |
+
+`port_id` ใช้สูตรเดียวกับ UDP (`getUnicastPort(domainId, i)`) [V: `SharedMemTransport.cpp` บรรทัด 732] จึงเห็นไฟล์ชื่อเช่น `fastdds_port7411` (ตัวอย่างชื่อคำนวณจากสูตร; ยังไม่ได้ `ls /dev/shm` บนเครื่องที่รัน ROS)
+
+**ค่าคงที่** [V: `SharedMemTransportDescriptor.hpp`, `SharedMemGlobal.hpp`]
+
+| ค่า | default |
+|---|---|
+| segment size | **512 KiB** (`shm_implicit_segment_size = 512 * 1024` เมื่อ descriptor ระบุ 0) |
+| port queue capacity | 512 descriptor |
+| healthy check timeout | 1000 ms |
+| `maxMessageSize` | **65 500** (constructor ตั้ง `maxMessageSize = s_maximumMessageSize`) |
+| ABI version | 5 (`CURRENT_ABI_VERSION`, มี `static_assert` = 2 + major) |
+| listener สูงสุดต่อ port | 1024 (`LISTENERS_STATUS_SIZE`) |
+
+**กลไก**
+
+1. ฝั่งส่ง `SharedMemTransport::send` เรียก `copy_to_shared_buffer` ซึ่ง `alloc_buffer` จาก data segment ของตัวเอง แล้ว **`memcpy` ทุก NetworkBuffer ลง segment** หนึ่งครั้ง ไม่ว่าจะมีผู้รับกี่ port (comment `Only copy the first time`) [V: `SharedMemTransport.cpp` บรรทัด 464–523]
+2. จากนั้น push `BufferDescriptor { source_segment_id, buffer_node_offset, validity_id }` ลง ring buffer ของแต่ละ port ปลายทาง [V: `SharedMemGlobal.hpp` บรรทัด 71–90, `Port::try_push`]
+3. ring buffer เป็น multi-producer multi-consumer ใช้ `std::atomic` กับ compare-exchange บนคู่ `(write_p, free_cells)` และ ref counter ต่อ cell = จำนวน listener [V: `MultiProducerConsumerRingBuffer.hpp`]
+4. การปลุกผู้รับใช้ `RobustInterprocessCondition` ซึ่งสร้างจาก `boost::interprocess::interprocess_semaphore` pool 512 ตัว และ `interprocess_mutex` [V: `RobustInterprocessCondition.hpp`, `SharedMemSegment.hpp`] การที่ semaphore/mutex เหล่านี้ลงไปเป็น `futex` เป็น [K]
+5. ผู้ส่งกู้คืน buffer ที่ผู้รับตายคาได้ด้วย `validity_id` (24 บิต), `enqueued_count`, `processing_count` (อย่างละ 20 บิต) ที่อัดอยู่ใน atomic 64 บิตตัวเดียว [V: `SharedMemManager.hpp` `BufferNode::Status`]
+6. เมื่อ segment เต็มและกู้คืนไม่ได้ `alloc_buffer` โยน exception แล้ว `send` ถือว่าสำเร็จ (comment `Segment overflow with discard policy doesn't return error`) [V: `SharedMemTransport.cpp` บรรทัด 534–543] คือ**ทิ้งเงียบ**
+
+**นัยสำหรับข้อความใหญ่** (ประมาณการจากค่าข้างต้น): เพราะ SHM ก็ใช้ `maxMessageSize` 65 500 ภาพ 921 652 B จึงยังถูกตัดเป็น 15 DATA_FRAG เหมือน UDP แต่ละก้อนถูกจองใน segment 512 KiB ซึ่งจุได้ราว 8 ก้อน ถ้าผู้รับระบายไม่ทัน ก้อนที่ 9 เป็นต้นไปเสี่ยงถูกทิ้งตามข้อ 6 ดูสมมติฐาน R5
+
+### 3.5 Data-sharing delivery
+
+- segment ของ payload pool: `fast_datasharing_<guidPrefix>_<entityId>` ของ writer; segment ของ notification: ชื่อรูปแบบเดียวกันจาก GUID ของ reader [V: `DataSharingPayloadPool.hpp` บรรทัด 89–91, 350–360; `DataSharingNotification.hpp` บรรทัด 94–125]
+- writer แจ้ง reader ด้วย `new_data.store(true)` แล้ว `notification_cv.notify_all()` [V: `DataSharingNotification.hpp` บรรทัด 58–61]
+- data-sharing ไม่ส่ง fragment (comment ใน `StatefulReader::process_data_frag_msg`: `Datasharing communication will never send fragments`) [V]
+- **ใน ROS 2 Lyrical data-sharing ถูกปิดเป็น default**: `rmw_fastrtps_cpp` เรียก `writer_qos.data_sharing().off()` และ `reader_qos.data_sharing().off()` เมื่อไม่ได้ตั้ง `RMW_FASTRTPS_USE_QOS_FROM_XML` (`leave_middleware_default_qos == false`) [V: `publisher.cpp` บรรทัด 245–256, `subscription.cpp` บรรทัด 412–417 และ 684–688] ดูหัวข้อ 8
+
+### 3.6 Flow controller
+
+- descriptor: `name` (default `"FastDDSFlowControllerDefault"`), `scheduler` (default `FIFO`), `max_bytes_per_period` (default 0 = ไม่จำกัด), `period_ms` (default 100), `sender_thread` [V: `FlowControllerDescriptor.hpp`, `FlowControllerConsts.cpp`]
+- scheduler policy: `FIFO`, `ROUND_ROBIN`, `HIGH_PRIORITY`, `PRIORITY_WITH_RESERVATION` [V: `FlowControllerSchedulerPolicy.hpp`]
+- implementation เป็น template `FlowControllerImpl<PublishMode, SampleScheduler>` มี publish mode 4 แบบ: PureSync, Sync, Async, LimitedAsync [V: `FlowControllerFactory.cpp`, `FlowControllerImpl.hpp`] comment ระบุว่า PureSync ใช้กับ writer แบบ volatile best-effort
+- เมื่อจำกัด bandwidth ขนาด fragment จะถูกบีบตาม: `get_max_payload()` คืน `max_bytes_per_period` สำหรับ LimitedAsync และ `BaseWriter::get_max_allowed_payload_size` ใช้ค่าน้อยสุดระหว่าง flow controller, participant และ writer [V: `FlowControllerImpl.hpp` บรรทัด 1531–1543, `BaseWriter.cpp` บรรทัด 176–188]
+- ผลข้างเคียง: flow controller ที่ตั้ง `max_bytes_per_period` เล็กกว่า MTU จะบังคับให้ fragment ระดับ RTPS เล็กพอที่ไม่เกิด IP fragmentation ซึ่งเป็นวิธีแก้ปัญหาหัวข้อ 2.5 ที่ทำได้ด้วย config ล้วน (ข้อสรุปจากโค้ด; ยังไม่ได้ทดลอง)
+
+### 3.7 Build option ที่เปลี่ยน byte บนสาย
+
+| option (CMake) | default upstream 3.6.x | ผลบนสาย | ที่มา |
+|---|---|---|---|
+| `SECURITY` | **OFF** | protocol version ใน RTPS header: **2.3 เมื่อ ON, 2.2 เมื่อ OFF** (`#if HAVE_SECURITY ... ProtocolVersion_t(2, 3) #else ... (2, 2)`; comment อ้าง DDSSEC11-93) | [V: `CMakeLists.txt` บรรทัด 278, `include/fastdds/rtps/common/Types.hpp` บรรทัด 108–117] |
+| `FASTDDS_STATISTICS` | **ON** | ทุก RTPS message ที่ส่งมี submessage id `0x80` ยาว **60 B** ต่อท้าย (header 4 + `StatisticsSubmessageData` 56) และ fragment size ลดลง 60 B | [V: `CMakeLists.txt` บรรทัด 428, `RTPSStatisticsMessages.hpp`, `RTPSMessageGroup.cpp` บรรทัด 973–984, `BaseWriter.cpp`] |
+| `SHM_TRANSPORT_DEFAULT` | ON | มี SHM ใน builtin transport | [V: `CMakeLists.txt` บรรทัด 326] |
+
+- ขนาด 56 B ของ `StatisticsSubmessageData` คำนวณจาก layout: `Locator_t` 24 + `TimeStamp` 8 + `Sequence` (u64, u64, u16 + padding) 24 (คำนวณจากนิยาม struct; ยังไม่ได้ compile `sizeof`)
+- `colcon.pkg` ของ Fast DDS ไม่มี cmake-args เพิ่ม [V] การ build จาก `ros2.repos` ด้วย colcon โดยไม่ใส่ flag จึงได้ SECURITY=OFF, STATISTICS=ON
+- **binary `.deb` ของ Lyrical build ด้วย `-DSECURITY=ON`** และไม่ได้แตะ `FASTDDS_STATISTICS` (จึงเป็น ON ตาม default) [V: `ros2-gbp/fastdds-release` branch `debian/lyrical/resolute/fastdds` ไฟล์ `debian/rules`] ผู้ที่ติดตั้งจาก apt จึงควรเห็น protocol version **2.3** และ statistics submessage `0x80` ต่อท้าย ส่วนผู้ที่ build จาก source ด้วย colcon โดยไม่ใส่ flag จะได้ 2.2 ยังควรยืนยันด้วย capture: ดู 2 byte หลัง `"RTPS"` และดูว่า datagram ลงท้ายด้วย submessage `0x80` หรือไม่
+- `add_stats_submsg()` ถูกเรียกเมื่อ compile ด้วย `FASTDDS_STATISTICS` ทุกครั้งที่ส่ง (ยกเว้น DATA ที่ไม่ fragment และเกิน 65 kB) ไม่ขึ้นกับว่าเปิด statistics module ตอน runtime หรือไม่ [V: `RTPSMessageGroup.cpp` บรรทัด 393–400]
+
+**ผลต่อ frame ตัวอย่างของภาค 1** (`std_msgs/String "Hello World: 1"`, CDR 24 B) (คำนวณ)
+
+| ส่วนประกอบ | UDP payload | Ethernet frame |
+|---|---|---|
+| RTPS 20 + INFO_TS 12 + DATA 24 + payload 24 (ตามภาค 1) | 80 | 122 |
+| + INFO_DST 16 (เมื่อผู้รับทั้งหมดอยู่ใน participant เดียว) | 96 | 138 |
+| + statistics 60 | 140 | 182 |
+| + ทั้งสองอย่าง | 156 | 198 |
+
+`INFO_DST` ถูกเพิ่มเมื่อ `current_dst_ != destination_guid_prefix` โดย `current_dst_` เริ่มที่ `c_GuidPrefix_Unknown` [V: `RTPSMessageGroup.cpp` บรรทัด 429, 520–524] เงื่อนไขที่ `destination_guid_prefix()` คืนค่าที่ไม่ใช่ unknown เป็น [K]
+
+---
+
+## 4. `rmw_zenoh_cpp` บนสาย
+
+เวอร์ชันที่ตรวจ: `zenoh_cpp_vendor/CMakeLists.txt` ของ branch `lyrical` pin zenoh-c commit `07b0d43…` พร้อม comment "This corresponds to zenoh-c 1.10.1 plus few fixes" [V] source ของ protocol อ่านจาก tag `1.10.1` ของ `eclipse-zenoh/zenoh` ส่วน "few fixes" ไม่ได้ตรวจ
+
+### 4.1 ชั้นของ message
+
+Zenoh แบ่ง 3 ชั้น แต่ละชั้นมี header 1 byte ที่ 5 บิตล่างเป็น id และ 3 บิตบนเป็น flag [V: แผนภาพใน doc comment ของ `commons/zenoh-protocol/src/transport/frame.rs`, `network/push.rs`, `zenoh/put.rs`]
+
+| ชั้น | message id | ที่มา |
+|---|---|---|
+| Transport | `OAM 0x00`, `INIT 0x01`, `OPEN 0x02`, `CLOSE 0x03`, `KEEP_ALIVE 0x04`, `FRAME 0x05`, `FRAGMENT 0x06`, `JOIN 0x07` | [V: `transport/mod.rs` `pub mod id`] |
+| Network | `INTEREST 0x19`, `RESPONSE_FINAL 0x1a`, `RESPONSE 0x1b`, `REQUEST 0x1c`, `PUSH 0x1d`, `DECLARE 0x1e`, `OAM 0x1f` | [V: `network/mod.rs`] |
+| Zenoh (body) | `OAM 0x00`, `PUT 0x01`, `DEL 0x02`, `QUERY 0x03`, `REPLY 0x04`, `ERR 0x05` | [V: `zenoh/mod.rs`] |
+
+- protocol version byte = `0x09` [V: `zenoh-protocol/src/lib.rs` `VERSION`]
+- จำนวนเต็มเข้ารหัสแบบ variable-length 7 บิตต่อ byte, บิตสูง = มี byte ต่อ, สูงสุด 9 byte สำหรับ u64 [V: `zenoh-codec/src/core/zint.rs`]
+
+### 4.2 Framing บน TCP
+
+```
+TCP stream:  [len u16 LE] [batch ≤ 65535 B]  [len u16 LE] [batch] ...
+batch:       FRAME hdr 1 | seq num (varint) | [exts] | NetworkMessage, NetworkMessage, ...
+```
+
+- stream transport ไม่รักษาขอบเขต message จึงนำหน้าทุก batch ด้วยความยาว 16 บิต little-endian [V: doc comment ใน `frame.rs`, `fragment.rs`, `keepalive.rs`]
+- batch สูงสุด 65535 B: `BatchSize = u16`, `batch_size::UNICAST = u16::MAX`; config ของ ROS ตั้ง `batch_size: 65535` [V: `transport/mod.rs`; `DEFAULT_RMW_ZENOH_SESSION_CONFIG.json5`]
+- `FRAME` flag: `R` reliable channel, `Z` มี extension; หนึ่ง FRAME บรรจุหลาย NetworkMessage ที่ใช้ sequence number ร่วมกันได้ [V: `frame.rs`]
+- `FRAGMENT` flag: `R`, `M` more, `Z`; ใช้เมื่อ NetworkMessage ใหญ่กว่า batch หรือ MTU ของ link มี extension Start และ Stop (Stop = fragment ที่เหลือถูกทิ้ง) [V: `fragment.rs`]
+- `KEEP_ALIVE`: ไม่ต้องส่งถ้ามี data อื่นวิ่งในช่วงนั้น [V: `keepalive.rs`] ROS ตั้ง `lease: 60000` ms และ `keep_alive: 2` [V: config] คาบ keep-alive จึงเป็น 30 s (คำนวณจาก lease / keep_alive ตามคำอธิบายใน config)
+- sequence number resolution 32 บิต [V: config]
+- TCP socket ตั้ง `TCP_NODELAY` [V: `zenoh-link-tcp/src/unicast.rs` บรรทัด 56–57] และรองรับ `so_sndbuf`, `so_rcvbuf`, DSCP ผ่าน config ของ endpoint [V: `zenoh-link-tcp/src/utils.rs`]
+- batching แบบ adaptive เปิดอยู่ (`batching.enabled: true`, `time_limit: 1` ms) ทำงานเมื่อมี back-pressure [V: config] tx queue ต่อ priority = 2 batch, 8 priority [V: config]
+- rx `buffer_size: 65535`, defragmentation สูงสุด `max_message_size: 1073741824` (1 GiB) [V: config]
+- lifecycle ของ session: `INIT` (syn/ack) → `OPEN` (syn/ack) → `FRAME`/`FRAGMENT`/`KEEP_ALIVE` → `CLOSE` [V: id และมีไฟล์ `init.rs`, `open.rs`; ลำดับ handshake [K]]
+
+### 4.3 Key expression ที่ `rmw_zenoh_cpp` ใช้
+
+[V: `docs/design.md` branch `lyrical`]
+
+- **topic / service**: `<domain_id>/<fully_qualified_name>/<type_name>/<type_hash>`
+  ```
+  0/chatter/std_msgs::msg::dds_::String_/RIHS01_df668c740482bbd48fb39d76a70dfd4bd59db1288021743503259e948f6b1a18
+  ```
+- **liveliness token ของ node**:
+  ```
+  @ros2_lv/<domain_id>/<session_id>/<node_id>/<node_id>/NN/<mangled_enclave>/<mangled_namespace>/<node_name>
+  ```
+- **liveliness token ของ endpoint** (`MP` publisher, `MS` subscription, `SS` service server, `SC` service client):
+  ```
+  @ros2_lv/<domain_id>/<session_id>/<node_id>/<entity_id>/<kind>/<mangled_enclave>/<mangled_namespace>/<node_name>/<mangled_qualified_name>/<type_name>/<type_hash>/<qos>[/<backends>]
+  @ros2_lv/0/8b20917502ee955ac4476e0266340d5c/0/10/MP/%/%/talker/%chatter/std_msgs::msg::dds_::String_/RIHS01_df66…1a18/::,7:,:,:,,
+  ```
+  mangle = แทน `/` ด้วย `%`; `@ros2_lv` เป็น hermetic namespace ที่ `*` และ `**` ไม่ match
+- **ช่องเพิ่มสำหรับ `rosidl::Buffer`**: `<topic key>/_buf_cpu` (กลุ่ม CPU ร่วม) และ `<topic key>/_buf/<gid>` (ต่อ subscriber) [V: `design.md` บรรทัด 593–608]
+
+เทียบกับ DDS: ข้อมูลที่ SEDP + `ros_discovery_info` ส่งเป็น ParameterList และ CDR นั้น Zenoh อัดลงในสตริง key ของ liveliness token ทั้งหมด token หนึ่งตัวของ endpoint ยาวราว 200 ตัวอักษร (นับจากตัวอย่างข้างบน) และไม่มีข้อความ "ทั้ง participant" ที่โตตามจำนวน endpoint แบบหัวข้อ 1.4
+
+### 4.4 หนึ่ง `publish()` กลายเป็นอะไร
+
+`rmw_zenoh_cpp` เรียก `AdvancedPublisher::put(payload, options)` โดย [V: `rmw_zenoh_cpp/src/detail/rmw_publisher_data.cpp`, `design.md`]
+
+- payload = CDR ที่ serialize ด้วย Fast-CDR (`CdrVersion::DDS_CDR`) [V: `detail/cdr.cpp`]
+- **attachment 33 B**: sequence number i64 LE (8) + source timestamp ns i64 LE (8) + ความยาว GID 1 byte (ปัจจุบัน 16 เสมอ) + GID 16 [V: `design.md` บรรทัด 361–365, `attachment_helpers.cpp`]
+- QoS → Zenoh: RELIABLE → `Z_RELIABILITY_RELIABLE`; default `Z_CONGESTION_CONTROL_DROP`; RELIABLE + KEEP_ALL → `Z_CONGESTION_CONTROL_BLOCK` [V: `rmw_publisher_data.cpp` `create_publisher_endpoint`]
+- TRANSIENT_LOCAL → เปิด publication cache (`max_samples = depth`) และถ้า RELIABLE ด้วยจะเปิด sample-miss detection แบบ `HeartbeatSporadic` คาบ 500 ms [V: `SAMPLE_MISS_DETECTION_HEARTBEAT_PERIOD 500`]
+- timestamping เปิดทุก mode เพราะ publication cache ต้องใช้ [V: config พร้อม comment `ROS setting`] ทุก `PUT` จึงมี flag `T` และ timestamp
+- SHM: ถ้าเปิดและขนาด ≥ threshold จะ `alloc_gc_defrag` จาก SHM provider ถ้าล้มเหลว fallback เป็น allocation ปกติ [V: `rmw_publisher_data.cpp` บรรทัด 534–550]
+
+**โครงของ byte** (ลำดับ field [V: `zenoh-codec` `network/push.rs`, `zenoh/put.rs`]; ขนาดแต่ละ field เป็นประมาณการเพราะเป็น varint และไม่มี capture)
+
+```
+len16 | FRAME hdr | sn | PUSH hdr | key_scope [key_suffix] | [QoS ext] | PUT hdr | timestamp | [encoding]
+      | [sinfo ext] | attachment ext (33 B + header) | payload len (varint) | CDR payload
+```
+
+| ส่วน | ขนาด (ประมาณการ) | เหตุผล |
+|---|---|---|
+| length prefix | 2 | [V] |
+| FRAME header + sequence number | 2–6 | header 1 + varint ของ u32 |
+| PUSH header + key scope | 2–4 | key ที่ declare แล้วส่งเป็น id ตัวเลข [K] |
+| QoS extension | 0–3 | เขียนเมื่อไม่ใช่ `QoSType::DEFAULT` [V: codec] |
+| PUT header | 1 | |
+| timestamp | 10–26 | เวลา varint ของ u64 (สูงสุด 9) + ZenohId ความยาว 1 + สูงสุด 16 [K: รูปแบบ ZenohId] |
+| attachment extension | ≈ 35–36 | 33 B + ext header + ความยาว |
+| payload length | 1 | varint ของ 24 |
+| CDR ของ `"Hello World: 1"` | 24 | เท่ากับ RTPS |
+| **รวม TCP payload** | **≈ 77–103** | |
+
+เทียบกับ RTPS/UDP ของข้อความเดียวกัน (UDP payload 80–156 B ตามหัวข้อ 3.7) (ประมาณการทั้งคู่)
+
+| | RTPS/UDP (Fast DDS) | Zenoh/TCP |
+|---|---|---|
+| L4 header | UDP 8 | TCP 20 + options (โดยทั่วไป 12 สำหรับ timestamp [K]) |
+| middleware overhead ต่อ sample เล็ก | 56–132 B | ≈ 53–79 B |
+| ACK | ACKNACK ระดับ RTPS เมื่อมี HEARTBEAT | TCP ACK ของ kernel (delayed ACK) |
+| หลาย sample ต่อ packet | message grouping ต่อ writer | FRAME รวมข้าม topic ได้ใน session เดียว + adaptive batching |
+
+สรุป: สำหรับข้อความเล็ก overhead ต่อ sample ของสองระบบอยู่ในระดับเดียวกัน ข้อได้เปรียบของ Zenoh อยู่ที่ชั้น discovery และพฤติกรรมกับข้อความใหญ่มากกว่า
+
+### 4.5 ภาพ 921 652 B ผ่าน Zenoh/TCP (ประมาณการ)
+
+- NetworkMessage ใหญ่กว่า batch → ตัดเป็น `FRAGMENT` ราว **15 batch** (ceil(≈921.7 KB / 65.5 KB))
+- TCP ตัดเป็น segment ตาม MSS: ที่ MTU 1500 พร้อม timestamp option ได้ 1448 B → ราว **637 segment** ใกล้เคียง 635 frame ของ RTPS
+- ความต่างอยู่ที่ loss: TCP ส่งซ้ำ **1 segment (1448 B)** ต่อ frame ที่หาย ไม่ใช่ 45 frame และไม่มี IP fragmentation จึงไม่แตะ `ipfrag_*`
+- ต้นทุนที่แลกมา: head-of-line blocking ทุก topic ที่ใช้ session และ priority เดียวกันรอ segment ที่หาย และ congestion control ของ TCP ลด rate หลัง loss [K]
+- ฝั่ง kernel: TCP ใช้ TSO/GSO และ GRO ได้เต็มที่ NIC ของเครื่องนี้เปิด `tx-tcp-segmentation: on` [V: `ethtool -k enp2s0`] ขณะที่ `tx-udp-segmentation: off [fixed]` [V: `ethtool -k enp2s0`]
+
+---
+
+## 5. Kernel ลึกกว่าชื่อฟังก์ชัน
+
+### 5.1 `struct sk_buff` เฉพาะ field ที่กำหนดพฤติกรรมของ ROS traffic
+
+ขนาดบนเครื่องนี้: `sizeof(struct sk_buff)` = **232 B**, `sizeof(struct skb_shared_info)` = **320 B**, `CONFIG_MAX_SKB_FRAGS` = 17, cache line 64 B [V: `bpftool btf dump file /sys/kernel/btf/vmlinux`, `/boot/config-7.0.0-43-generic`]
+
+```
+head ──► ┌──────────────┐
+         │ headroom     │  ที่ว่างให้ชั้นล่างเติม header (skb_push)
+data ──► ├──────────────┤
+         │ linear data  │  len − data_len byte
+tail ──► ├──────────────┤
+         │ tailroom     │
+end  ──► ├──────────────┤
+         │ skb_shared_info: nr_frags, frags[17], frag_list, gso_size, gso_segs, gso_type, dataref
+         └──────────────┘
+```
+
+| field | ความหมาย | เกี่ยวกับ ROS อย่างไร |
+|---|---|---|
+| `head`, `data`, `tail`, `end` | ขอบเขต buffer เชิงเส้น | [V: `include/linux/skbuff.h` v7.0 บรรทัด 1092–1095] |
+| `len`, `data_len` | ความยาวรวม และส่วนที่อยู่นอก linear area (ใน `frags[]` หรือ `frag_list`) | datagram ที่ประกอบจาก IP fragment มีข้อมูลกระจายหลายชิ้น `recvmsg` ต้องเดินทุกชิ้น [V: field; K: ผลต่อ recvmsg] |
+| `truesize` | หน่วยความจำจริงที่ skb นี้กิน = data buffer + `sk_buff` + `skb_shared_info` (`SKB_TRUESIZE(X) = X + SKB_DATA_ALIGN(232) + SKB_DATA_ALIGN(320)` = X + 576 บนเครื่องนี้) | **ตัวที่ถูกหักจาก `SO_RCVBUF`** ไม่ใช่ `len` ดูหัวข้อ 5.3 [V: macro บรรทัด 273–275; 576 คำนวณจากขนาดใน BTF] |
+| `ip_summed` | `CHECKSUM_NONE 0`, `CHECKSUM_UNNECESSARY 1`, `CHECKSUM_COMPLETE 2`, `CHECKSUM_PARTIAL 3` | TX: `PARTIAL` = ให้ NIC คำนวณ ใช้ได้เฉพาะ datagram ที่ไม่ถูก IP fragment (หัวข้อ 5.2) RX: r8169 ตั้ง `UNNECESSARY` เมื่อ hardware ตรวจผ่าน [V: บรรทัด 248–251; `r8169_main.c` บรรทัด 4759] |
+| `csum_start`, `csum_offset` | ตำแหน่งที่ NIC ต้องเริ่มคำนวณและเขียน checksum | [V: บรรทัด 1042–1043] |
+| `shinfo->gso_size`, `gso_segs`, `gso_type` | ขนาด segment เมื่อเป็น GSO; UDP ใช้ `SKB_GSO_UDP_L4 = 1 << 17` | [V: บรรทัด 598–606, 705] |
+| `shinfo->frag_list` | สาย skb ลูก ใช้กับ IP reassembly และ GRO แบบ fraglist | [V: บรรทัด 601] |
+| `napi_id` | NAPI instance ที่รับ packet ใช้โดย busy polling | [V: บรรทัด 1058] |
+| `tstamp`, `priority`, `mark`, `hash` | timestamp, qdisc class, netfilter mark, flow hash (RPS/RFS) | [V] `priority` มาจาก `SO_PRIORITY` ซึ่ง Fast DDS 3.6.x ไม่ตั้ง (หัวข้อ 3.1 ข้อ 7) |
+
+### 5.2 Checksum, GSO, GRO และ zero-copy กับ RTPS
+
+**ทำไม datagram 65 KB ของ RTPS เสีย offload ทุกอย่าง** [V: `net/ipv4/ip_output.c` v7.0 `__ip_append_data` บรรทัด 999–1003, `ip_generic_getfrag` บรรทัด 933–947]
+
+```c
+if (transhdrlen &&
+    length + fragheaderlen <= mtu &&
+    rt->dst.dev->features & (NETIF_F_HW_CSUM | NETIF_F_IP_CSUM) &&
+    (!(flags & MSG_MORE) || cork->gso_size) && ...)
+        csummode = CHECKSUM_PARTIAL;
+```
+
+1. datagram ที่ใหญ่กว่า MTU ไม่ผ่านเงื่อนไข `length + fragheaderlen <= mtu` จึงไม่ได้ `CHECKSUM_PARTIAL`
+2. เมื่อไม่ใช่ `CHECKSUM_PARTIAL` การ copy จาก user ใช้ `csum_and_copy_from_iter_full` คือ **คำนวณ checksum ด้วย CPU ไปพร้อมกับ copy** ทุก byte
+3. `MSG_ZEROCOPY` ต้องการทั้ง `NETIF_F_SG` และ `csummode == CHECKSUM_PARTIAL` (บรรทัด 1007–1030) datagram ที่ต้อง fragment จึง**ใช้ zero-copy ไม่ได้** kernel จะ copy ตามปกติ
+
+**UDP GSO / GRO**
+
+| รายการ | ค่า | ที่มา |
+|---|---|---|
+| `UDP_SEGMENT` | 103 (setsockopt หรือ cmsg, ค่าเป็น u16 = ขนาด segment) | [V: `include/uapi/linux/udp.h`, `udp.c` `__udp_cmsg_send`] |
+| `UDP_GRO` | 104 | [V] |
+| `UDP_MAX_SEGMENTS` | 128 (`1 << 7`) | [V: `include/linux/udp.h` บรรทัด 133] |
+| เงื่อนไข GSO | `hlen + min(datalen, gso_size) > fragsize` → error; `datalen > gso_size * UDP_MAX_SEGMENTS` → error | [V: `udp_send_skb` บรรทัด 1139–1164] |
+| UDP GRO ฝั่งรับทำงานเมื่อ | socket เปิด `UDP_GRO`, หรือ device มี `NETIF_F_GRO_FRAGLIST`, หรือไม่มี socket และมี `NETIF_F_GRO_UDP_FWD` | [V: `net/ipv4/udp_offload.c` บรรทัด 809–813] |
+| NIC ของเครื่องนี้ | `tx-udp-segmentation: off [fixed]`, `rx-gro-list: off`, `rx-udp-gro-forwarding: off`, `generic-segmentation-offload: on` | [V: `ethtool -k enp2s0`] |
+
+ความหมาย: UDP GSO ไม่ได้ส่ง "datagram ใหญ่หนึ่งก้อน" แต่ส่ง**หลาย datagram ขนาด `gso_size`** ด้วย syscall และการเดิน stack ครั้งเดียว แต่ละ datagram เป็น UDP สมบูรณ์ที่มี header ของตัวเอง middleware ที่จะใช้ต้องตั้ง fragment ระดับ RTPS ให้เท่ากับ `gso_size` (ไม่เกิน MTU − 28) และทำให้ทุก segment เป็น RTPS message ที่ parse ได้ด้วยตัวเอง
+
+**middleware ใน Lyrical ใช้หรือไม่** [V: grep `UDP_SEGMENT|UDP_GRO|MSG_ZEROCOPY|SO_ZEROCOPY|io_uring|sendmmsg|recvmmsg|SO_BUSY_POLL` ใน source]
+
+| โครงการ | ผล |
+|---|---|
+| Fast DDS 3.6.x (`src/`, `include/`) | **0 รายการ** |
+| Cyclone DDS `releases/11.0.x` (`src/`) | **0 รายการ** |
+| Zenoh 1.10.1 (repo หลัก, `*.rs`) | ไม่พบ `UDP_SEGMENT`/`UDP_GRO`/`ZEROCOPY`/`sendmmsg`/`recvmmsg`/`BUSY_POLL`; มี feature `uring` (crate `zenoh-uring`, ใช้ `io-uring = 0.7.10`) สำหรับฝั่ง RX แต่ไม่อยู่ใน default features และ `zenoh_cpp_vendor` build ด้วย `--features=shared-memory zenoh/transport_serial` เท่านั้น |
+
+ข้อจำกัดของการตรวจ: grep ครอบคลุมเฉพาะ repo ที่ระบุ ไม่รวม dependency (asio, tokio, quinn) และไม่ได้ตรวจ Connext ซึ่งเป็น closed source
+
+**`MSG_ZEROCOPY`** [V: `Documentation/networking/msg_zerocopy.rst`, `net/core/sock.c` v7.0 บรรทัด 1590–1605]
+
+- `SO_ZEROCOPY` ตั้งได้กับ socket ตระกูล INET/INET6 ที่เป็น TCP หรือ UDP (`SOCK_DGRAM` + `IPPROTO_UDP`) และตระกูล RDS; เอกสาร kernel ระบุว่า feature นี้ implement สำหรับ TCP, UDP และ VSOCK
+- เอกสาร kernel ระบุว่า "Copy avoidance is not a free lunch" และได้ผลกับ write ที่ใหญ่กว่าราว 10 KB
+- การแจ้งว่า kernel เลิกใช้ page แล้วมาทาง error queue ของ socket (`recvmsg(MSG_ERRQUEUE)`)
+- เหตุที่ RTPS stack ยังไม่ใช้ (วิเคราะห์): (ก) datagram ใหญ่ถูก IP fragment จึงไม่เข้าเงื่อนไขตามข้อ 3 ข้างบน (ข) payload ต้องคงอยู่และห้ามแก้จนกว่าจะได้ notification ซึ่งต้องผูกกับอายุของ CacheChange ใน history (ค) ต้องเพิ่ม thread หรือ poll สำหรับ error queue
+
+**io_uring zero-copy receive (zcrx)** [V: `Documentation/networking/iou-zcrx.rst`, `io_uring/zcrx.c` v7.0]
+
+- โค้ดรับผ่าน `tcp_read_sock` และเอกสารอธิบายเฉพาะ TCP (flow steering ตัวอย่างเป็น `flow-type tcp6`) ต้องการ header/data split, flow steering และ RSS จาก NIC
+- จึงใช้กับ RTPS/UDP ไม่ได้ในเวอร์ชันนี้ ผู้ที่อาจใช้ได้คือ transport แบบ TCP (Zenoh, Fast DDS `LARGE_DATA`) บน NIC ระดับ server การที่ r8169 ไม่รองรับ header/data split เป็น [K]
+
+### 5.3 `SO_RCVBUF` นับอะไร และทำไมภาพหายทั้งที่ CPU ว่าง
+
+**กฎ** [V: `net/core/sock.c` v7.0 `__sock_set_rcvbuf` บรรทัด 974–993; `net/ipv4/udp.c` `__udp_enqueue_schedule_skb` บรรทัด 1700–1775]
+
+1. `setsockopt(SO_RCVBUF, val)`: kernel เก็บ `sk_rcvbuf = max(min(val, rmem_max) × 2, SOCK_MIN_RCVBUF)` comment ในโค้ดอธิบายว่าคูณ 2 เพื่อชดเชย overhead ของ `struct sk_buff` ค่า default จาก `rmem_default` **ไม่ถูกคูณ 2**
+2. ตอน enqueue ใช้ `size = skb->truesize` แล้วตรวจ
+   ```c
+   if (rmem + size > rcvbuf) {
+           if (rcvbuf > INT_MAX >> 1) goto drop;
+           /* Accept the packet if queue is empty. */
+           if (rmem) goto drop;
+   }
+   ```
+   คือทิ้งทันทีเมื่อเกิน ยกเว้นคิวว่างซึ่งรับได้หนึ่ง packet เสมอ
+3. เมื่อ `rmem > rcvbuf / 2` kernel เรียก `skb_condense` เพื่อลด `truesize`
+4. Linux 7.0 มีคิวกลางต่อ NUMA node (`udp_prod_queue`, `llist`) ก่อนย้ายเข้า `sk_receive_queue` ภายใต้ lock ครั้งเดียว [V: บรรทัด 1717–1760; `struct udp_prod_queue` ขนาด 64 B ใน BTF] โครงสร้างนี้ต่างจาก kernel 6.x รุ่นก่อน ชื่อ symbol และจุด probe จึงควรตรวจใหม่ตามเวอร์ชัน
+5. tracepoint ที่ยิงตอนทิ้ง: `udp:udp_fail_queue_rcv_skb`, `sock:sock_rcvqueue_full`, `skb:kfree_skb` พร้อม reason [V: `__traceiter_*` มีใน kallsyms]
+
+**packet เล็กกินบัฟเฟอร์เร็วกว่าที่คิด (ประมาณการ)**
+
+- `truesize` ต่ำสุดเชิงทฤษฎี = 576 B + data buffer แม้ payload มีไม่กี่สิบ byte
+- frame 122–198 B ของ `"Hello World: 1"`: data buffer มาจาก small-head cache ของ `__alloc_skb` (เข้าเงื่อนไข `len <= SKB_WITH_OVERHEAD(SKB_SMALL_HEAD_CACHE_SIZE)` ใน `napi_alloc_skb` [V: `net/core/skbuff.c` v7.0 บรรทัด 850–856]) ประมาณการ `truesize` ราว 768–1024 B
+- `sk_rcvbuf` default 212 992 B จึงรับได้ราว 200–280 packet ซึ่งบรรจุ CDR จริงเพียง 5–7 KB หรือราว 3% ของบัฟเฟอร์
+- ตัวเลขนี้ต้องวัดจริง: `sudo bpftrace -e 'kprobe:__udp_enqueue_schedule_skb { @ts = hist(((struct sk_buff *)arg1)->truesize); }'` (ยังไม่ได้รัน)
+
+**datagram 65 KB กินเท่าไร (ประมาณการ)**
+
+| แหล่งของตัวเลข `truesize` ต่อ fragment 1500 B | ต่อ datagram 45 fragment | จำนวน datagram ที่ `sk_rcvbuf` 212 992 รับได้ |
+|---|---|---|
+| comment ใน kernel: 2944 B [V: `ip_fragment.c` บรรทัด 668] | 132 480 B | **1** |
+| คำนวณสำหรับ r8169: `napi_alloc_skb(1514)` → `SKB_DATA_ALIGN(1514 + 64) + SKB_DATA_ALIGN(320) + SKB_DATA_ALIGN(232)` = 1600 + 320 + 256 = 2176 B | 97 920 B | **2** |
+
+(ค่า `NET_SKB_PAD` = 64 และ `NET_IP_ALIGN` = 0 บน x86-64 เป็น [K]; การที่ `truesize` ของ skb หลัง reassembly เท่ากับผลรวมของทุก fragment เป็น [K] โดยมี `inet_frag_reasm_finish` ปรับ `truesize` [V: symbol และโค้ด `inet_fragment.c` บรรทัด 503–553])
+
+ผลตามมาสำหรับภาพ 15 datagram: ที่ 1 GbE datagram เต็มมาถึงห่างกันราว 545 µs (คำนวณ: (65 476 + 45 × 58) × 8 / 10⁹) socket ที่ค่า default รองรับได้ 1–2 ก้อน thread `dds.udp.<port>` จึงต้อง `recvmsg` ให้ทันภายใน 0.5–1 ms ทุกรอบ ถ้า thread ถูกหน่วงนานกว่านั้นครั้งเดียว (ถูก preempt, callback ผู้ใช้ทำงานใน thread เดียวกัน, page fault) DATA_FRAG จะถูกทิ้งที่ socket ทั้งที่ CPU เฉลี่ยยังว่าง นี่เป็นคำอธิบายเชิงกลไกของอาการ "ภาพหายเมื่อใช้ค่า default" ที่ต้องยืนยันด้วยการทดลอง R4
+
+### 5.4 softirq budget และ ksoftirqd
+
+| พารามิเตอร์ | ค่าบนเครื่องนี้ | ความหมาย | ที่มา |
+|---|---|---|---|
+| `net.core.netdev_budget` | 300 | packet สูงสุดต่อรอบ `net_rx_action` รวมทุก NAPI | [V: sysctl; `Documentation/admin-guide/sysctl/net.rst`] |
+| `net.core.netdev_budget_usecs` | 2000 | เวลาสูงสุดต่อรอบ (µs) | [V: sysctl; `dev.c` v7.0 บรรทัด 7893–7896] |
+| `net.core.dev_weight` | 64 | budget ต่อ NAPI ต่อครั้ง (backlog device) | [V: sysctl] ค่า weight 64 ของ NAPI driver เป็น [K] |
+| `time_squeeze` | ตัวนับใน `softnet_data` | เพิ่มเมื่อ budget หรือเวลาหมดทั้งที่ยังมีงาน | [V: `dev.c` บรรทัด 7935–7938] อ่านได้จากคอลัมน์ที่ 3 ของ `/proc/net/softnet_stat` [K] |
+| `MAX_SOFTIRQ_TIME` | 2 ms | เพดานเวลาของ `handle_softirqs` ก่อนส่งต่อให้ ksoftirqd | [V: `kernel/softirq.c` v7.0 บรรทัด 543] |
+| `MAX_SOFTIRQ_RESTART` | 10 | จำนวนรอบ restart สูงสุด | [V: บรรทัด 544] |
+| `gro_flush_timeout` ของ `enp2s0` | 20 000 ns | software IRQ coalescing | [V: `/sys/class/net/enp2s0/gro_flush_timeout`] |
+| `napi_defer_hard_irqs` ของ `enp2s0` | 1 | | [V: sysfs] |
+| `net.core.gro_normal_batch` | 8 | | [V: sysctl] |
+
+- r8169 เปิด software coalescing เองตอน probe: `netdev_sw_irq_coalesce_default_on(dev)` ซึ่งตั้ง `gro_flush_timeout` = 20000 [V: `r8169_main.c` บรรทัด 5758; `dev.c` บรรทัด 12005] ค่าบน sysfs ตรงกัน ผลคือ packet ที่มาถึงเดี่ยว ๆ อาจถูกหน่วงเพิ่มได้ถึงราว 20 µs ก่อนส่งขึ้น stack (ขนาดของผลเป็นประมาณการจากค่า timer; ยังไม่ได้วัด)
+- ภาพหนึ่งภาพ = 635 frame มากกว่า `netdev_budget` 300 จึงใช้ `net_rx_action` อย่างน้อย 3 รอบ (คำนวณ) ถ้า softirq ทำงานต่อเนื่องเกิน 2 ms หรือ restart ครบ 10 รอบ งานที่เหลือย้ายไป `ksoftirqd/N` ซึ่งเป็น thread ปกติที่ต้องแย่ง CPU กับ thread ของผู้ใช้ [V: ค่าคงที่; K: ผลต่อ latency]
+- เครื่องนี้ build ด้วย `CONFIG_PREEMPT_LAZY=y`, `CONFIG_PREEMPT_DYNAMIC=y`, `CONFIG_HZ=1000`, ไม่ใช่ `PREEMPT_RT` [V: `/boot/config-7.0.0-43-generic`]
+- บน PREEMPT_RT: softirq ถูก preempt ได้ (comment `PREEMPT_RT makes BH preemptible` [V: `softirq.c` บรรทัด 135]) และ IRQ handler เป็น thread ถ้า thread ของแอปมี priority แบบ real-time สูงกว่า thread ที่ประมวลผล NET_RX แอปจะแย่ง CPU จากเส้นทางรับ packet ของตัวเองได้ [K] ต้องออกแบบ priority ของ IRQ thread, `dds.udp.*` และ executor ร่วมกัน
+
+### 5.5 จาก `sock_def_readable` ถึง thread ของผู้ใช้
+
+```
+__udp_enqueue_schedule_skb
+ └ sk->sk_data_ready = sock_def_readable                   [tracepoint sock:sk_data_ready]
+    └ skwq_has_sleeper(wq) ? wake_up_interruptible_sync_poll(&wq->wait, EPOLLIN|...)
+       └ __wake_up_sync_key → __wake_up_common → เรียก func ของแต่ละ wait entry
+          ├ blocking recvmsg:  receiver_wake_function → autoremove_wake_function → try_to_wake_up
+          └ epoll:             ep_poll_callback → ปลุกผู้รอใน ep_poll → ep_send_events
+             try_to_wake_up → select_task_rq_fair → ttwu_do_activate → wakeup_preempt
+                                                    [sched:sched_waking, sched:sched_wakeup]
+ ... context switch [sched:sched_switch] ...
+ __skb_recv_udp คืน skb → udp_recvmsg → skb_copy_datagram_iter → กลับ user space
+```
+[V: เนื้อ `sock_def_readable` จาก `sock.c` v7.0 บรรทัด 3602–3615; ทุก symbol ในแผนภาพมีใน kallsyms ของเครื่องนี้; ลำดับการเรียกระหว่าง symbol เป็น [K]]
+
+- Fast DDS ใช้ blocking `receive_from` ต่อ port [V: `UDPChannelResource.cpp`] จึงเป็นกิ่ง `receiver_wake_function` ไม่ใช่ epoll ส่วน Zenoh ใช้ async runtime ของ Rust ซึ่งคาดว่าเป็นกิ่ง epoll [K]
+- คำว่า `sync` ใน `wake_up_interruptible_sync_poll` เป็น hint ถึง scheduler ว่าผู้ปลุกกำลังจะหยุดทำงาน [K]
+- จาก packet ถึง callback ของผู้ใช้มี wakeup **สองครั้ง**: (1) softirq → `dds.udp.<port>` ผ่าน socket wait queue (2) `dds.udp.<port>` → executor thread ผ่าน condition variable ของ rmw (futex) [K: ครั้งที่สอง]
+- latency ของ wakeup แต่ละครั้ง = เวลาออกจาก idle state ของ CPU ปลายทาง + เวลารอใน run queue + context switch ตัวแปรที่คุมได้: C-state (`cpuidle`), affinity, scheduling class, และ PREEMPT_RT [K]
+
+### 5.6 Busy polling
+
+- `CONFIG_NET_RX_BUSY_POLL=y`; `net.core.busy_read = 0`, `net.core.busy_poll = 0` (ปิด) [V: config, sysctl]
+- socket ใหม่ทุกตัวรับค่าเริ่มต้นจาก sysctl: `sk->sk_ll_usec = READ_ONCE(sysctl_net_busy_read)` [V: `sock.c` v7.0 บรรทัด 3748] และตั้งรายตัวได้ด้วย `SO_BUSY_POLL`, `SO_PREFER_BUSY_POLL`, `SO_BUSY_POLL_BUDGET` [V: `sock.c` บรรทัด 1233–1243]
+- เส้นทางรับของ UDP เรียก `sk_busy_loop` เมื่อ `sk_can_busy_loop(sk)` ก่อนจะหลับรอ [V: `udp.c` v7.0 บรรทัด 2025–2028] และ UDP บันทึก NAPI id ด้วย `sk_mark_napi_id` [V: บรรทัด 2364]
+- นัย: เพราะ Fast DDS ใช้ blocking read ต่อ port การตั้ง `sysctl -w net.core.busy_read=50` น่าจะเปิด busy polling ให้ thread `dds.udp.*` ได้**โดยไม่แก้โค้ด middleware** แลกกับ CPU หนึ่ง core ต่อ thread ที่กำลังรอ (ข้อสรุปจากโค้ด; ยังไม่ได้ทดลอง ดู R7)
+
+### 5.7 ข้อเท็จจริงเฉพาะ driver `r8169` ที่กระทบผลวัด
+
+- เส้นทางรับ**คัดลอกทุก packet**: `rtl_rx` เรียก `napi_alloc_skb(&tp->napi, pkt_size)` แล้ว `skb_copy_to_linear_data(skb, rx_buf, pkt_size)` จาก buffer DMA ขนาด 16 KiB − 1 (`R8169_RX_BUF_SIZE`) ที่จองด้วย `alloc_pages_node` ไม่ได้ใช้ page pool [V: `drivers/net/ethernet/realtek/r8169_main.c` v7.0 บรรทัด 72, 4162, 4816–4827]
+- ยังเรียก `napi_gro_receive()` ซึ่งใน v7.0 เป็น `static inline` ห่อ `gro_receive_skb(&napi->gro, skb)` [V: `include/linux/netdevice.h` v7.0 บรรทัด 4251–4255; kallsyms มี `gro_receive_skb` ไม่มี `napi_gro_receive`]
+- ผลวัด latency/CPU บน r8169 จึงรวม copy เพิ่มหนึ่งรอบและ coalescing 20 µs ซึ่ง NIC ระดับ server (เช่นที่ใช้ page pool) ไม่มี ไม่ควรนำตัวเลขไปเทียบข้าม driver โดยตรง
+
+---
+
+## 6. แบบจำลอง latency / CPU / memory bandwidth
+
+**ทุกตัวเลขในหัวข้อนี้เป็นประมาณการ** ไม่ใช่ผลวัด ใช้เพื่อบอกว่าช่วงใดน่าจะเป็นคอขวดและควรวางเครื่องมือวัดตรงไหน สมมติฐานของแบบจำลอง: CPU desktop รุ่นปัจจุบันที่ความถี่คงที่, 1 GbE, MTU 1500, Fast DDS UDP (ไม่ใช้ SHM), sync publish, kernel ไม่ใช่ RT, ระบบว่าง
+
+ค่าพื้นฐานที่ใช้ (ทั้งหมด [K] ระดับ order of magnitude)
+
+| สัญลักษณ์ | ค่า | เหตุผล |
+|---|---|---|
+| `B_copy` | ≈ 10 GB/s | memcpy ของ buffer ที่ใหญ่กว่า L2 บน DDR4/DDR5 single thread; buffer เล็กใน L1 เร็วกว่านี้หลายเท่า |
+| `B_csum` | ≈ 5–10 GB/s | copy พร้อมคำนวณ checksum |
+| `t_sys` | ≈ 0.1–0.3 µs | เข้า-ออก syscall เปล่า (รวม mitigation) |
+| `t_pkt_tx` | ≈ 0.5–1.5 µs/packet | UDP → IP → qdisc → driver ต่อ skb |
+| `t_pkt_rx` | ≈ 0.5–2 µs/packet | driver poll → GRO → IP → UDP enqueue ต่อ skb |
+| `t_wake` | ≈ 2–50 µs | ขึ้นกับ C-state ของ CPU ปลายทาง; idle ลึกอาจเกิน 100 µs |
+| wire | 8 ns/byte ที่ 1 GbE | |
+
+### 6.1 ข้อความเล็ก: CDR ≈ 100 B (frame ≈ 206–282 B ตาม build)
+
+| # | ช่วง | ประมาณการ | เหตุผล | วัดด้วย |
+|---|---|---|---|---|
+| 1 | serialize | 0.1–0.5 µs | field ไม่กี่ตัว + memcpy 100 B | `rclcpp_publish` → `rmw_publish` (ros2_tracing) |
+| 2 | Fast DDS writer + ประกอบ message | 1–5 µs | lock ของ history, เพิ่ม change, RTPSMessageGroup | `rmw_publish` → `sys_enter_sendmsg` |
+| 3 | `setsockopt(SO_SNDTIMEO)` | 0.2–0.5 µs | syscall เพิ่มตามหัวข้อ 3.1 | `syscalls:sys_enter_setsockopt` |
+| 4 | `sendmsg` ถึง driver | 1–3 µs | `t_sys` + `t_pkt_tx` + copy 200 B | `sys_enter_sendmsg` → `net:net_dev_xmit` |
+| 5 | สาย + switch | 2–2.5 µs + store-and-forward | 230–306 byte-time × 8 ns; switch เพิ่มอย่างน้อยหนึ่ง frame time | timestamp ของ NIC หรือ capture สองจุด |
+| 6 | IRQ → softirq → socket | 2–25 µs | `t_pkt_rx` + coalescing 0–20 µs (r8169) | `irq:irq_handler_entry` → `sock:sk_data_ready` |
+| 7 | ปลุก `dds.udp.*` | 2–50 µs | `t_wake` | `sched:sched_waking` → `sched:sched_switch` |
+| 8 | `recvmsg` + parse RTPS + เข้า history | 1–5 µs | | `sys_exit_recvmsg` → `rmw_take` |
+| 9 | ปลุก executor | 2–50 µs | `t_wake` ครั้งที่สอง | `sched:*` กรองตาม tid |
+| 10 | take + deserialize | 0.5–2 µs | | `rmw_take` → `callback_start` |
+| | **รวม** | **≈ 15–150 µs** | ผลรวมขอบล่างและขอบบน | `rclcpp_publish` → `callback_start` ข้ามเครื่อง (ต้อง sync นาฬิกา) |
+
+ข้อสรุปของแบบจำลอง: สำหรับข้อความเล็ก wakeup สองครั้ง (ข้อ 7, 9) และ coalescing (ข้อ 6) กินสัดส่วนมากที่สุด การ serialize และ copy แทบไม่มีผล มาตรการที่ควรทดลองจึงเป็น busy polling, affinity, C-state และ executor แบบ event ไม่ใช่ zero-copy
+
+### 6.2 ข้อความใหญ่: ภาพ 921 652 B (15 DATA_FRAG, 635 frame)
+
+| # | ช่วง | ประมาณการ | เหตุผล |
+|---|---|---|---|
+| 1 | serialize | ≈ 90–150 µs | copy 0.92 MB ที่ `B_copy` (อาจเร็วกว่าถ้าต้นทางอยู่ใน cache) |
+| 2 | `sendmsg` × 15 | ≈ 0.5–1.2 ms | ต่อ datagram: copy + checksum 65 KB (7–13 µs) + จอง 45 skb + `t_pkt_tx` × 45 (22–68 µs) |
+| 3 | สาย | **7.68 ms** | คำนวณในหัวข้อ 2.4; ผู้ส่งถูก back-pressure ที่ qdisc/driver เพราะสร้าง packet ได้เร็วกว่าสาย |
+| 4 | softirq รับ 635 frame | ≈ 0.4–1.5 ms | `t_pkt_rx` × 635 + copy ใน r8169 (0.92 MB ≈ 90 µs) + reassembly |
+| 5 | `recvmsg` × 15 | ≈ 0.1–0.2 ms | copy 0.92 MB + เดิน frag list |
+| 6 | Fast DDS ประกอบ fragment | ≈ 0.1 ms | memcpy 0.92 MB ลง CacheChange |
+| 7 | wakeup | ≈ 0.01–0.1 ms | เหมือนข้อความเล็ก ไม่มีนัยสำคัญที่ขนาดนี้ |
+| 8 | deserialize | ≈ 0.1–0.4 ms | copy 0.92 MB + จองหน่วยความจำ; ถ้า allocator ขอ page ใหม่จะมี page fault ราว 225 ครั้ง |
+| | **รวม** | **≈ 9–11 ms** | ช่วง 2–5 ซ้อนทับกับช่วง 3 บางส่วน จึงไม่ใช่ผลบวกตรง |
+
+ข้อสรุปของแบบจำลอง: ที่ 1 GbE **เวลาบนสายคิดเป็นราว 70–85%** ของ latency ภาพเดี่ยว การลด copy จึงช่วย latency ได้น้อย แต่ช่วย CPU และ cache ที่ 10 GbE สัดส่วนกลับด้าน (สาย 0.77 ms) และต้นทุนต่อ packet กับ copy กลายเป็นคอขวด
+
+### 6.3 แบบจำลอง copy และ memory bandwidth
+
+**จำนวนรอบที่ payload ถูกแตะด้วย CPU** บนเส้นทาง Fast DDS UDP ข้ามเครื่อง
+
+| # | รอบ | สถานะ |
+|---|---|---|
+| 1 | serialize: message → payload ใน history pool | [K] |
+| 2 | `sendmsg`: user → skb พร้อม checksum | [V: `ip_generic_getfrag`] |
+| 3 | driver RX: buffer DMA → skb (เฉพาะ r8169) | [V: `rtl_rx`] |
+| 4 | `recvmsg`: skb → buffer ของ `dds.udp.*` | [V: ภาค 1 ตรวจชื่อฟังก์ชันแล้ว] |
+| 5 | ประกอบ fragment: buffer รับ → CacheChange (เฉพาะข้อความที่ถูก fragment) | [V: `CacheChange.hpp` `add_fragments` ใช้ `memcpy`] |
+| 6 | deserialize: payload → message | [K] |
+
+ขั้น gather send (หัวข้อ 3.1 ข้อ 3) ไม่เพิ่มรอบ copy ใน user space เทียบกับภาค 1 ซึ่งนับ 4 รอบสำหรับข้อความที่ไม่ fragment (ไม่นับ DMA) ข้อความใหญ่บน r8169 จึงมี **6 รอบ**
+
+**สูตร**
+
+```
+ปริมาณ copy ต่อวินาที   C = N_copy × S × f
+ภาระบน memory bus      ≈ 2 × C          (อ่านต้นทาง + เขียนปลายทาง; มากกว่านี้ถ้ามี read-for-ownership)
+สัดส่วน CPU ที่ใช้ copy  ≈ C / B_copy     (ของหนึ่ง core)
+```
+
+| กรณี | S | f | N_copy | C | สัดส่วนของ core ที่ `B_copy` = 10 GB/s |
+|---|---|---|---|---|---|
+| VGA rgb8 | 0.92 MB | 30 Hz | 6 | 166 MB/s | 1.7% |
+| 1080p rgb8 | 6.2 MB | 30 Hz | 6 | 1.1 GB/s | 11% |
+| 4K rgb8 | 24.9 MB | 30 Hz | 6 | 4.5 GB/s | 45% |
+| point cloud 2 MB | 2 MB | 10 Hz | 6 | 120 MB/s | 1.2% |
+
+(คำนวณจากสูตร; `B_copy` เป็น [K])
+
+ข้อสังเกตเพิ่มเติมที่แบบจำลองเชิงเส้นไม่ครอบคลุม
+- เมื่อ S ใหญ่กว่า L2 ต่อ core (1.25 MiB บน i3-12100: L2 รวม 5 MiB / 4 core [V: `lscpu`]) ทุกรอบ copy ไล่ข้อมูลของ thread นั้นออกจาก L2 ทำให้โค้ดหลัง copy ช้าลงด้วย
+- copy แต่ละรอบเกิดบน thread และอาจคนละ core (ผู้ส่ง, softirq, `dds.udp.*`, executor) ต้นทุนจึงกระจาย ไม่รวมอยู่ใน core เดียว
+- ที่ 4K 30 Hz เวลาบนสาย 1 GbE (≈ 207 ms ต่อภาพ) เกินคาบ 33 ms ไปแล้ว copy จึงไม่ใช่ข้อจำกัดแรก
+
+### 6.4 แผนวัดให้ครบทุกช่วง
+
+tracepoint ของ ros2_tracing ที่ยืนยันว่ามีใน branch `lyrical` [V: `tracetools/include/tracetools/tp_call.h`]: `rclcpp_publish`, `rcl_publish`, `rmw_publish`, `rmw_take`, `rcl_take`, `rclcpp_take`, `callback_start`, `callback_end`, `rclcpp_executor_execute` และ rmw ทั้งสองตัวเรียก `TRACETOOLS_TRACEPOINT(rmw_publish, …)` ก่อนส่ง [V: `rmw_fastrtps_shared_cpp/src/rmw_publish.cpp`, `rmw_zenoh_cpp/src/detail/rmw_publisher_data.cpp`]
+
+| ช่วง | จุดเริ่ม | จุดจบ |
+|---|---|---|
+| user → rmw | `ros2:rclcpp_publish` | `ros2:rmw_publish` |
+| rmw → kernel | `ros2:rmw_publish` | `syscalls:sys_enter_sendmsg` |
+| kernel TX | `syscalls:sys_enter_sendmsg` | `net:net_dev_xmit` |
+| สาย | `net:net_dev_xmit` (เครื่อง A) | `net:netif_receive_skb` (เครื่อง B) ต้องใช้ PTP หรือ hardware timestamp |
+| kernel RX | `net:netif_receive_skb` | `sock:sk_data_ready` |
+| wakeup 1 | `sched:sched_waking` (ปลายทาง `dds.udp.*`) | `sched:sched_switch` เข้า thread นั้น |
+| middleware RX | `syscalls:sys_exit_recvmsg` | `ros2:rmw_take` |
+| wakeup 2 + executor | `sched:sched_waking` (ปลายทาง executor) | `ros2:callback_start` |
+| การทิ้ง | `skb:kfree_skb` (reason), `sock:sock_rcvqueue_full`, `udp:udp_fail_queue_rcv_skb`, kprobe `ip_expire`, `/proc/net/softnet_stat`, `nstat` | |
+
+kernel tracepoint ในตาราง [V: `__traceiter_net_dev_xmit`, `netif_receive_skb`, `sk_data_ready`, `sock_rcvqueue_full`, `udp_fail_queue_rcv_skb`, `kfree_skb`, `napi_poll`, `sched_waking`, `sched_wakeup`, `sched_switch` มีใน kallsyms]
+
+การจับคู่ event ของ packet เดียวกันข้ามชั้น: ใช้ `writerSN` ของ RTPS (offset คงที่ใน DATA/DATA_FRAG ตามหัวข้อ 2.2) หรือ sequence number ใน attachment ของ rmw_zenoh (8 byte แรก) เป็น key ร่วมระหว่าง user-space trace กับ eBPF ที่อ่าน payload ของ skb (แนวทาง; ยังไม่ได้ทำ)
+
+---
+
+## 7. ทิศทางวิจัยที่ตามมาโดยตรงจากหัวข้อ 1–6
+
+ทุกข้อเป็นข้อเสนอ ยังไม่ได้ตรวจว่ามีงานตีพิมพ์แล้วหรือไม่
+
+**R1. RTPS fragment ขนาดไม่เกิน MTU ร่วมกับ UDP GSO/GRO** (จาก 2.4, 2.5, 5.2)
+- สมมติฐาน: ตั้ง fragment ระดับ RTPS ≈ 1 400 B แล้วส่งเป็นชุดด้วย `UDP_SEGMENT` (สูงสุด 128 segment ต่อ syscall) จะ (ก) ลดตัวขยายการส่งซ้ำจาก 45 เหลือ 1 (ข) เลิกพึ่ง IP reassembly (ค) ได้ checksum offload คืน โดยต้นทุน syscall ต่อ byte ไม่แย่กว่า datagram 65 KB
+- วัด: goodput และ p99 latency ของภาพ 0.9/6.2/24.9 MB ที่ loss 0, 0.01, 0.1, 1% (ฉีดด้วย `tc netem`) เทียบ 3 แบบ: default 65 KB, fragment เล็กโดยไม่มี GSO (ทำได้ทันทีด้วย `maxMessageSize` หรือ flow controller ตามหัวข้อ 3.6), fragment เล็ก + GSO (ต้องแก้ `UDPTransportInterface::send`) นับ `ReasmFails`, DATA_FRAG ที่ส่งซ้ำ, CPU ต่อ MB
+- ข้อควรระวัง: bitmap ของ NACK_FRAG จำกัด 256 บิต ภาพ 0.92 MB จะมีราว 660 fragment ต้องใช้หลาย NACK_FRAG
+
+**R2. เวลากู้คืนของ RELIABLE ถูกกำหนดด้วย `heartbeat_period` หรือไม่** (จาก 2.3)
+- สมมติฐาน: สำหรับ topic RELIABLE ที่ history ไม่เต็ม เวลาตั้งแต่ packet หายจนได้ sample มีการกระจายกว้างถึง 3 s และลดลงเป็นสัดส่วนเมื่อลด `heartbeat_period`
+- วัด: ทิ้ง packet ที่เลือกด้วย eBPF/`tc` ตาม `writerSN` บันทึกเวลาระหว่าง `rmw_publish` กับ `callback_start` ของ SN นั้น แปรค่า `heartbeat_period` (3 s, 500 ms, 100 ms, 20 ms), อัตราส่ง, history depth และนับ HEARTBEAT/ACKNACK ต่อวินาทีเป็นต้นทุน
+
+**R3. ผลของ build option ต่อ overhead บนสาย** (จาก 3.7)
+- สมมติฐาน: `FASTDDS_STATISTICS=ON` เพิ่ม 60 B ต่อ datagram ซึ่งเป็น 30–40% ของ frame สำหรับข้อความเล็ก และเพิ่มงานต่อ send (ค้น locator ใน collection) แต่ไม่มีผลวัดได้กับข้อความใหญ่
+- วัด: capture เพื่อยืนยันว่า binary `.deb` ของ Lyrical build แบบใด (ขั้นแรกที่ต้องทำก่อนอ้างตัวเลขใด ๆ จากเอกสารนี้) แล้วเทียบ throughput ของข้อความ 16–256 B ที่อัตราสูงระหว่างสอง build
+
+**R4. ขนาด socket buffer ขั้นต่ำเชิงทฤษฎีจาก `truesize`** (จาก 5.3)
+- สมมติฐาน: อัตราทิ้งที่ socket ของภาพขนาด S ทำนายได้จากแบบจำลอง `sk_rcvbuf / (truesize ต่อ datagram)` กับการกระจายของเวลาที่ `dds.udp.*` ถูกหน่วง และค่า `SO_RCVBUF` ที่พอดีคือ (จำนวน DATA_FRAG ต่อ sample × truesize ต่อ datagram × จำนวน sample ที่ต้องการรองรับ)
+- วัด: histogram ของ `skb->truesize` ที่ `__udp_enqueue_schedule_skb` แยกตาม driver (r8169 เทียบ NIC ที่ใช้ page pool), `sock:sock_rcvqueue_full`, scheduling delay ของ `dds.udp.*` จาก `perf sched timehist`, แปร `rmem_default` ตั้งแต่ 208 KiB ถึง 32 MiB
+
+**R5. SHM transport กับข้อความที่ใหญ่กว่า segment** (จาก 3.4)
+- สมมติฐาน: ที่ค่า default (segment 512 KiB, `maxMessageSize` 65 500) การส่งข้อความ > 512 KiB ผ่าน SHM มีการทิ้ง fragment แบบเงียบเมื่อผู้รับช้า และ latency ไม่ดีกว่า UDP loopback อย่างที่คาด เพราะยัง fragment และ copy เท่าเดิม
+- วัด: latency, loss และ `overflows_count` (มี log ตอนปิด segment) ของข้อความ 64 KiB–32 MiB เทียบ 4 แบบ: SHM default, SHM ที่ขยาย `segment_size` และ `maxMessageSize`, UDP loopback, data-sharing (ต้องเปิดเองตามหัวข้อ 3.5)
+
+**R6. ต้นทุน discovery และ graph เมื่อขยายขนาดระบบ** (จาก 1.4, 1.5, 4.3)
+- สมมติฐาน: byte รวมที่ใช้ให้ graph ลู่เข้าของ DDS โตแบบกำลังสองตามจำนวน endpoint ต่อ participant (`ros_discovery_info`) และตามจำนวน participant (SEDP) ขณะที่ liveliness token ของ Zenoh โตเชิงเส้น
+- วัด: นับ byte และเวลาจนกว่า `ros2 node list` ครบ สำหรับ node 10–500 ตัว จัดเป็น 1 node/process เทียบ component container ที่รวมหลาย node ใน participant เดียว แยกนับ SPDP, SEDP, `ros_discovery_info`, liveliness token
+
+**R7. Busy polling โดยไม่แก้ middleware** (จาก 5.6, 6.1)
+- สมมติฐาน: `net.core.busy_read` 50–200 µs ลด p99 latency ของข้อความเล็กบน Fast DDS UDP ได้ใกล้เคียงกับผลรวมของช่วง 6–7 ในตาราง 6.1 โดยแลกกับ CPU หนึ่ง core ต่อ port ที่ active และไม่มีผลกับ rmw_zenoh ถ้า runtime ใช้ epoll (ต้องใช้ `net.core.busy_poll` แทน)
+- วัด: p50/p99/p99.9 และ CPU ต่อ thread เทียบ busy_read 0/50/200 บน kernel generic และ PREEMPT_RT ร่วมกับการปิด `gro_flush_timeout` ของ r8169
+
+**R8. `MSG_ZEROCOPY` สำหรับ RTPS หลังทำ R1** (จาก 5.2, 6.3)
+- สมมติฐาน: zero-copy TX ให้ผลเมื่อ S ≥ หลายร้อย KB และ link ≥ 10 GbE เท่านั้น ที่ 1 GbE ผลต่อ latency ต่ำกว่า 5% เพราะสายเป็นคอขวด (ตาราง 6.2) แต่ลด CPU ฝั่งส่งได้ตามสูตรในหัวข้อ 6.3
+- วัด: CPU ต่อ MB และ LLC miss ฝั่งส่งด้วย `perf stat` เทียบ copy กับ zerocopy ที่ S = 64 KiB–32 MiB บน 1 และ 10 GbE; ต้องออกแบบการผูกอายุ payload กับ notification จาก error queue
+
+**R9. ผลของ driver ต่อผล benchmark ของ ROS 2** (จาก 5.7)
+- สมมติฐาน: ผลต่างระหว่าง NIC ระดับ consumer (r8169: copy ทุก packet, sw coalescing 20 µs) กับ NIC ที่ใช้ page pool มีขนาดเทียบได้กับผลต่างระหว่าง RMW ในบาง workload จึงต้องรายงาน driver และค่า coalescing ในทุก benchmark
+- วัด: workload เดียวกันบน NIC สองชนิด พร้อมแปร `gro_flush_timeout`, `napi_defer_hard_irqs`, `ethtool -C`
+
+---
+
+## 8. ข้อที่ขัดหรือควรแก้ในเอกสารภาค 1
+
+| # | ข้อความในภาค 1 | สิ่งที่พบ | หลักฐาน |
+|---|---|---|---|
+| 1 | §3.1 "Data-sharing delivery: zero-copy ระหว่าง DataWriter/DataReader บน host เดียวกัน (ใช้กับ loaned messages)" | ใน `rmw_fastrtps_cpp` ของ Lyrical data-sharing ถูกสั่ง `off()` ทั้ง writer และ reader เป็น default จะเปิดได้ต้องใช้ `RMW_FASTRTPS_USE_QOS_FROM_XML=1` พร้อม XML ควรเพิ่มเงื่อนไขนี้ | `rmw_fastrtps_cpp/src/publisher.cpp` บรรทัด 245–256; `subscription.cpp` บรรทัด 412–417, 684–688 |
+| 2 | §6 ตาราง "QoS ในระดับเครือข่าย: DSCP/`SO_PRIORITY` ผ่าน XML profile" สำหรับ DDS | Fast DDS 3.6.x ไม่มีการตั้ง `IP_TOS`/`SO_PRIORITY` ใน source และทั้ง UDP กับ TCP transport ทิ้งพารามิเตอร์ `transport_priority` ข้อความนี้ไม่เป็นจริงสำหรับ Fast DDS (Cyclone มี field `m_diffserv` ใน `ddsi_udp.c` แต่ยังไม่ได้ไล่ว่าใช้อย่างไร) | grep ใน `src/`, `include/` ได้ 0 รายการ; `UDPTransportInterface.cpp` บรรทัด 543; `TCPTransportInterface.cpp` บรรทัด 1498 |
+| 3 | §5.4 frame ตัวอย่าง: RTPS version `02 03`, 122 B, ไม่มี INFO_DST และไม่มี submessage ท้าย | (ก) version เป็น 2.3 เฉพาะ build ที่ `SECURITY=ON` ซึ่ง**ตรงกับ binary `.deb` ของ Lyrical** (ตรวจเพิ่มภายหลังจาก `debian/rules`) ส่วน build default ของ CMake ได้ 2.2 (ข) build default มี statistics submessage `0x80` ยาว 60 B ต่อท้ายทุก message (ค) unicast ถึง participant เดียวมี INFO_DST frame จริงจึงน่าจะเป็น 138–198 B ไม่ใช่ 122 B ภาค 1 ระบุไว้แล้วว่าเป็นค่าตัวอย่าง แต่ควรระบุ build variant | `Types.hpp` บรรทัด 108–117; `CMakeLists.txt` บรรทัด 278, 428; `RTPSMessageGroup.cpp` บรรทัด 520–524, 973–984 ทั้งหมดยังไม่ได้ยืนยันด้วย capture |
+| 4 | §5.4 "`INFO_DST` (12 B)" | submessage `INFO_DST` รวม header ยาว 16 B (header 4 + guidPrefix 12) | `info_dst_message_length = 16` ใน `BaseWriter.cpp` |
+| 5 | §5.5 RX แถว 1 "DMA frame ลง RX ring (page pool)" และ §2.1 ที่นับ copy ฝั่งรับ 1 รอบใน kernel | สำหรับ r8169 ซึ่งเป็น driver ตัวอย่างของภาค 1: ไม่ใช้ page pool และ**คัดลอกทุก packet** จาก buffer DMA ไป skb ใหม่ จึงมี copy ฝั่งรับใน kernel 2 รอบ | `r8169_main.c` v7.0 บรรทัด 4162, 4816–4827 |
+| 6 | §5.5 "`napi_gro_receive` ในเวอร์ชันนี้กลายเป็น `gro_receive_skb`" | ถูกต้องในระดับ symbol แต่ควรเสริมว่า `napi_gro_receive()` ยังมีอยู่เป็น `static inline` ที่ห่อ `gro_receive_skb()` และ driver ยังเรียกชื่อเดิม | `include/linux/netdevice.h` v7.0 บรรทัด 4251–4255; `r8169_main.c` บรรทัด 4840 |
+| 7 | §5.5 "… `UDPTransportInterface::send` → asio `send_to()` → `sendmsg()`" | ขาด `setsockopt(SO_SNDTIMEO)` ที่ถูกเรียกก่อน `send_to` ทุกครั้ง: 2 syscall ต่อ datagram | `UDPTransportInterface.cpp` บรรทัด 608–619 |
+| 8 | §3.1 "ชื่อขึ้นต้นด้วย `fastrtps_` / `fastdds_`" [K] | ใน 3.6.x domain ของ SHM transport คือ `fastdds` (`fastdds_port<N>`, `fastdds_<uuid>`) และ data-sharing ใช้ `fast_datasharing_…` ไม่พบ prefix `fastrtps_` ในไฟล์ที่ตรวจ | `SharedMemTransport.cpp` บรรทัด 42; `DataSharingPayloadPool.hpp` บรรทัด 89–91 |
+| 9 | §5.3 "แตกเป็น fragment ราว 44 ชิ้น" | สำหรับ message เต็มของ Fast DDS (UDP 65 476 B) ได้ 45 ชิ้น; 44 เป็นตัวเลขของ comment ใน kernel สำหรับ 64K ต่างกันเล็กน้อย ไม่ใช่ข้อผิดพลาด | คำนวณในหัวข้อ 2.4 |
+| 10 | §4 ตาราง "ส่ง UDP: `sendmsg` / `sendmmsg` (บาง impl)" | ไม่พบ `sendmmsg`/`recvmmsg` ใน Fast DDS 3.6.x, Cyclone 11.0.x และ Zenoh 1.10.1 (เฉพาะ repo หลัก) | grep หัวข้อ 5.2 |
+
+ไม่พบข้อขัดแย้งในส่วน kernel function chain, สูตร port, และค่าของ Zenoh config ที่ภาค 1 อ้าง
+
+---
+
+## 9. สิ่งที่ยังไม่ได้ verify
+
+1. **ไม่มี packet capture**: ทุก layout ในหัวข้อ 1, 2, 3.7, 4.4 มาจากการอ่านโค้ด ต้องยืนยันด้วย `tcpdump` + Wireshark บนเครื่องที่ติดตั้ง Lyrical
+2. ~~build option ของ binary `.deb`~~ ตรวจแล้ว: `debian/rules` ของ Lyrical ใส่ `-DSECURITY=ON` และไม่ได้ปิด `FASTDDS_STATISTICS` (ยังต้องยืนยันผลบนสายด้วย capture)
+3. **OMG DDSI-RTPS 2.5** ไม่ได้อ่านต้นฉบับ ความหมายของ field (เช่น ความหมายของ bitmap, GAP) เป็น [K]
+4. พฤติกรรมของ `rmw_dds_common::Context` ว่าส่ง `ParticipantEntitiesInfo` เมื่อใดบ้าง (หัวข้อ 1.4)
+5. เส้นทางเต็มของ HEARTBEAT ใน `StatefulWriter` (ตรวจเฉพาะ `send_heartbeat_piggyback_nts_` และค่า default) ข้อสรุปเรื่องเวลากู้คืน 3 s เป็นสมมติฐาน
+6. รายละเอียดการส่งซ้ำเฉพาะ fragment ที่ขอใน NACK_FRAG ฝั่ง writer (ตรวจถึง `perform_nack_response` → `add_old_sample`)
+7. source ของ asio (ว่า `send_to` แบบหลาย buffer ลงเป็น `sendmsg` + iovec) และพฤติกรรมของ `get_option` ต่อ `SO_RCVBUF` บน Linux
+8. `sizeof(StatisticsSubmessageData)` = 56 คำนวณจากนิยาม struct ไม่ได้ compile
+9. ขนาดจริงของ `PUT` ของ Zenoh บนสาย, รูปแบบ ZenohId ใน timestamp, handshake INIT/OPEN, และ "few fixes" ที่ vendor เพิ่มจาก 1.10.1
+10. `truesize` จริงของ packet แต่ละขนาดบนเครื่องนี้ และพฤติกรรมเมื่อ frag memory เกิน `ipfrag_high_thresh`
+11. คำสั่ง `bpftrace`/`perf` ทั้งหมดยังไม่ได้รัน
+12. ตัวเลขทั้งหมดในหัวข้อ 6 เป็นประมาณการ
+13. Cyclone DDS และ Connext ไม่ได้วิเคราะห์ในระดับเดียวกับ Fast DDS; Connext เป็น closed source
+14. Wireshark dissector อ่านจาก branch `master` ไม่ใช่ release ที่มากับ Ubuntu 26.04
+
+---
+
+## 10. Sources (ตรวจเมื่อ 2026-11-24)
+
+**Fast DDS** — `eProsima/Fast-DDS` branch `3.6.x`, commit `daf9116dd83fc321c5eaedfb8e6fde98dec8e355`, `package.xml` version 3.6.2
+https://github.com/eProsima/Fast-DDS/tree/3.6.x
+- `CMakeLists.txt`, `colcon.pkg`
+- `include/fastdds/rtps/common/{Types,CDRMessage_t,EntityId_t,VendorId_t,PortParameters,CacheChange}.hpp`
+- `include/fastdds/rtps/messages/RTPS_messages.hpp`
+- `include/fastdds/dds/core/policy/{ParameterTypes,QosPolicies}.hpp`
+- `include/fastdds/rtps/builtin/data/BuiltinEndpoints.hpp`
+- `include/fastdds/rtps/attributes/{RTPSParticipantAttributes,WriterAttributes,ReaderAttributes,BuiltinTransports,ThreadSettings}.hpp`
+- `include/fastdds/rtps/transport/{TransportInterface,TransportDescriptorInterface,SocketTransportDescriptor}.hpp`, `shared_mem/SharedMemTransportDescriptor.hpp`
+- `include/fastdds/rtps/flowcontrol/{FlowControllerDescriptor,FlowControllerSchedulerPolicy}.hpp`
+- `src/cpp/rtps/messages/{RTPSMessageGroup,CDRMessage}.cpp`, `submessages/{DataMsg,HeartbeatMsg,AckNackMsg,GapMsg}.hpp`
+- `src/cpp/rtps/writer/{BaseWriter,StatefulWriter}.cpp`, `src/cpp/rtps/reader/{StatefulReader,StatelessReader,WriterProxy}.cpp`, `src/cpp/rtps/history/WriterHistory.cpp`
+- `src/cpp/rtps/participant/RTPSParticipantImpl.cpp`
+- `src/cpp/rtps/builtin/data/{ParticipantProxyData,WriterProxyData}.cpp`, `src/cpp/fastdds/core/policy/ParameterList.cpp`
+- `src/cpp/rtps/transport/{UDPTransportInterface,UDPChannelResource,TCPTransportInterface}.cpp`, `UDPv4Transport.h`, `asio_helpers.hpp`
+- `src/cpp/rtps/transport/shared_mem/{SharedMemGlobal,SharedMemManager,MultiProducerConsumerRingBuffer,SharedMemChannelResource}.hpp`, `SharedMemTransport.cpp`, `SharedMemTransportDescriptor.cpp`
+- `src/cpp/utils/shared_memory/{SharedMemSegment,SharedDir,RobustInterprocessCondition,SharedMemWatchdog}.hpp`
+- `src/cpp/rtps/DataSharing/{DataSharingPayloadPool,DataSharingNotification}.hpp`, `DataSharingListener.cpp`
+- `src/cpp/rtps/flowcontrol/{FlowControllerImpl.hpp,FlowControllerFactory.cpp,FlowControllerConsts.cpp}`
+- `src/cpp/statistics/rtps/messages/{RTPSStatisticsMessages,OutputTrafficManager}.hpp`
+
+**rmw_fastrtps** — `ros2/rmw_fastrtps` branch `lyrical`, commit `c7b3078f8fc8347bb5d4743538dd8f63f8f22c84`
+- `rmw_fastrtps_shared_cpp/src/{participant,rmw_publish,namespace_prefix,listener_thread,TypeSupport_impl,qos,utils}.cpp`
+- `rmw_fastrtps_cpp/src/{publisher,subscription,init_rmw_context_impl}.cpp`
+
+**rmw_dds_common** — `ros2/rmw_dds_common` branch `lyrical`, commit `2f00e6e9208e925d61330ea92f857b2e67d595ab`
+- `rmw_dds_common/msg/{ParticipantEntitiesInfo,NodeEntitiesInfo,Gid}.msg`, `rmw_dds_common/src/qos.cpp`
+
+**rmw_zenoh** — `ros2/rmw_zenoh` branch `lyrical`, commit `f21083b3fafb93454412c4840fff2468724954a9`
+- `docs/design.md`, `zenoh_cpp_vendor/CMakeLists.txt`
+- `rmw_zenoh_cpp/config/DEFAULT_RMW_ZENOH_SESSION_CONFIG.json5`
+- `rmw_zenoh_cpp/src/detail/{rmw_publisher_data,rmw_subscription_data,attachment_helpers,cdr}.cpp`
+
+**Zenoh** — `eclipse-zenoh/zenoh` tag `1.10.1`, commit `1211779c3647f5a96713dade452c546a07823580`
+- `commons/zenoh-protocol/src/lib.rs`, `transport/{mod,frame,fragment,keepalive}.rs`, `network/{mod,push}.rs`, `zenoh/{mod,put}.rs`, `core/wire_expr.rs`
+- `commons/zenoh-codec/src/core/zint.rs`, `network/push.rs`, `zenoh/put.rs`
+- `io/zenoh-links/zenoh-link-tcp/src/{lib,unicast,utils}.rs`, `io/zenoh-transport/src/uring.rs`, `zenoh/Cargo.toml`, `io/zenoh-transport/Cargo.toml`, `Cargo.toml`
+
+**Cyclone DDS** — `eclipse-cyclonedds/cyclonedds` branch `releases/11.0.x`, commit `c6fbafb7d45fb3c32f65b8f1f858df1c980dfaaf` (ใช้เฉพาะ grep ในหัวข้อ 5.2 และ 8)
+
+**ros2_tracing** — `ros2/ros2_tracing` branch `lyrical`, commit `1bbbcfd0570f575e2adaa85d6df45d69db08eab8`: `tracetools/include/tracetools/tp_call.h`
+
+**ros2.repos** — https://github.com/ros2/ros2/blob/lyrical/ros2.repos (ยืนยัน branch ของแต่ละ repo)
+
+**Wireshark** — `wireshark/wireshark` branch `master`, `epan/dissectors/packet-rtps.c` (commit ล่าสุดของไฟล์ `f9832b3355ecab9744a8a618357cb025d1a2653d`, 2026-11-15)
+
+**Linux kernel** — `torvalds/linux` tag `v7.0`
+https://github.com/torvalds/linux/tree/v7.0
+- `include/linux/skbuff.h`, `include/linux/netdevice.h`, `include/linux/udp.h`, `include/uapi/linux/udp.h`, `include/net/{sock,ip,busy_poll}.h`
+- `net/ipv4/{udp,udp_offload,ip_output,ip_fragment,inet_fragment}.c`
+- `net/core/{sock,dev,skbuff,datagram}.c`, `kernel/softirq.c`, `io_uring/zcrx.c`
+- `drivers/net/ethernet/realtek/r8169_main.c`
+- `Documentation/networking/ip-sysctl.rst`, `Documentation/admin-guide/sysctl/net.rst` (tag `v7.0`); `Documentation/networking/msg_zerocopy.rst`, `Documentation/networking/iou-zcrx.rst` (อ่านจาก `master` ซึ่งขณะนั้นเป็น 7.4-rc4 ไม่ใช่ v7.0)
+
+**เครื่องที่ใช้ตรวจ** (Linux 7.0.0-43-generic, Ubuntu 26.04.1)
+- `/proc/kallsyms` (การมีอยู่ของ symbol และ `__traceiter_*`)
+- `bpftool btf dump file /sys/kernel/btf/vmlinux` (ขนาด struct)
+- `/boot/config-7.0.0-43-generic`
+- `sysctl net.core.*`, `net.ipv4.ipfrag_*`
+- `ethtool`, `ethtool -k`, `ethtool -i enp2s0`; `/sys/class/net/enp2s0/{gro_flush_timeout,napi_defer_hard_irqs}`; `lscpu`
+
+**ROS release packaging** — `ros2-gbp/fastdds-release` branch `debian/lyrical/resolute/fastdds`, `debian/rules` (`-DSECURITY=ON`)

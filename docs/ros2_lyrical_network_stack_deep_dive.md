@@ -9,6 +9,8 @@
 
 ---
 
+> **ภาค 2 (ลึกกว่า):** [ros2_lyrical_network_stack_deeper.md](ros2_lyrical_network_stack_deeper.md) ครอบคลุม discovery ระดับ byte, reliable protocol และ DATA_FRAG, Fast DDS internals, Zenoh framing, การนับ `SO_RCVBUF`, latency/CPU budget และหัวข้อวิจัย R1–R9
+
 ## 0. ข้อเท็จจริงหลักของ Lyrical ที่เกี่ยวกับ network [V]
 
 | หัวข้อ | ค่าใน Lyrical | แหล่ง |
@@ -98,6 +100,7 @@
 | 2 | CDR buffer → sk_buff | kernel (`copy_from_user` ใน sendmsg) |
 | 3 | sk_buff → NIC (DMA, ไม่นับ CPU copy) / loopback ข้าม skb | kernel |
 | 4 | sk_buff → user buffer | kernel (`copy_to_user` ใน recvmsg) |
+| 4′ | RX DMA buffer → skb ใหม่ | kernel driver ที่ copy ทุก packet เช่น `r8169` ไม่ใช้ page pool จึงมี copy ฝั่งรับใน kernel 2 รอบ [แก้ไข 2026-11-24 ตามภาค 2] |
 | 5 | CDR → message C++ | rmw (deserialize) |
 
 ถ้าส่งผ่าน DDS history (KEEP_LAST/RELIABLE) อาจมี copy เพิ่มเข้า history cache ด้วย ขึ้นกับ implementation
@@ -164,10 +167,10 @@ User unicast     = 7400 + 250·domain + 11 + 2·participantId
 **Transports ของ Fast DDS**
 - `UDPv4` (default) และ `SHM` (default บนเครื่องเดียวกัน: Fast DDS เปิด SHM transport ให้อัตโนมัติ)
 - `FASTDDS_BUILTIN_TRANSPORTS=DEFAULT|UDPv4|SHM|LARGE_DATA|...` โดย `LARGE_DATA` ใช้ TCP สำหรับ user data + UDP สำหรับ discovery + SHM ช่วยแก้ปัญหา IP fragmentation ของข้อความใหญ่
-- **Data-sharing delivery**: zero-copy ระหว่าง DataWriter/DataReader บน host เดียวกัน (ใช้กับ loaned messages)
+- **Data-sharing delivery**: zero-copy ระหว่าง DataWriter/DataReader บน host เดียวกัน แต่ `rmw_fastrtps_cpp` ของ Lyrical **สั่ง `data_sharing().off()` เป็นค่าเริ่มต้น** ทั้ง writer และ reader จะเปิดได้ต้องตั้ง `RMW_FASTRTPS_USE_QOS_FROM_XML=1` พร้อม XML profile [แก้ไข 2026-11-24 ตามภาค 2]
 - Native Buffers / `rosidl::Buffer` integration [V] (ข่าวจาก eProsima และ release notes)
 
-**SHM ในระดับ OS** [K]: Fast DDS สร้าง segment ใน `/dev/shm` (ชื่อขึ้นต้นด้วย `fastrtps_` / `fastdds_`) แล้ว map ด้วย `mmap` ใช้ named semaphore/futex แจ้งเตือน และมี port file ไว้ประกาศ "SHM port" ถ้า process crash อาจมีไฟล์ค้าง ล้างได้ด้วย `fastdds shm clean`
+**SHM ในระดับ OS** [K]: Fast DDS 3.6.x สร้าง segment ใน `/dev/shm` ชื่อ `fastdds_port<N>` และ `fastdds_<uuid>` (data-sharing ใช้ `fast_datasharing_…`) [แก้ไข 2026-11-24 ตามภาค 2] แล้ว map ด้วย `mmap` ใช้ named semaphore/futex แจ้งเตือน และมี port file ไว้ประกาศ "SHM port" ถ้า process crash อาจมีไฟล์ค้าง ล้างได้ด้วย `fastdds shm clean`
 
 ### 3.2 `rmw_cyclonedds_cpp` + Cyclone DDS 11.0.x [V: เวอร์ชัน · K: รายละเอียด]
 - ตั้งค่าผ่าน XML ใน `CYCLONEDDS_URI` (เช่น `General/Interfaces`, `Internal/SocketReceiveBufferSize`, `General/MaxMessageSize`)
@@ -217,7 +220,7 @@ shared_memory: {
 
 | การทำงาน | syscall / กลไก | ข้อสังเกต |
 |---|---|---|
-| ส่ง UDP | `sendmsg` / `sendmmsg` (บาง impl) | 1 syscall ต่อ datagram หรือต่อ batch |
+| ส่ง UDP | `setsockopt(SO_SNDTIMEO)` + `sendmsg` | Fast DDS 3.6.x เรียก 2 syscall ต่อ datagram ไม่พบ `sendmmsg` ใน Fast DDS, Cyclone หรือ Zenoh [แก้ไข 2026-11-24 ตามภาค 2] |
 | รับ UDP | `recvmsg` ใน receive thread แบบ blocking หรือ `epoll` | Fast DDS ใช้ thread ต่อ locator |
 | ส่ง/รับ TCP | `send`/`recv`, `epoll` | Zenoh, Fast DDS TCP/LARGE_DATA |
 | SHM | `shm_open` + `mmap` (`/dev/shm`, tmpfs) | ข้อมูลไม่ผ่าน kernel network stack |
@@ -252,7 +255,7 @@ recvmsg() → skb_copy_datagram_iter (copy_to_user)
 
 ### 5.3 คอขวดคลาสสิกของ ROS 2 ในระดับ kernel
 
-1. **IP fragmentation**: RTPS ส่ง datagram ได้ใหญ่ถึงประมาณ 64 KB ซึ่งแตกเป็น fragment ราว 44 ชิ้นที่ MTU 1500 ถ้าหายแม้ชิ้นเดียว ทั้ง datagram จะถูกทิ้ง และถ้า reassembly buffer เต็มก็จะทิ้งเช่นกัน
+1. **IP fragmentation**: RTPS ส่ง datagram ได้ใหญ่ถึงประมาณ 64 KB ซึ่งแตกเป็น fragment 45 ชิ้นที่ MTU 1500 (datagram เต็มของ Fast DDS = UDP 65 476 B) ถ้าหายแม้ชิ้นเดียว ทั้ง datagram จะถูกทิ้ง และถ้า reassembly buffer เต็มก็จะทิ้งเช่นกัน
 2. **Socket receive buffer overflow** จากรูปภาพ/point cloud ที่มาเป็น burst
 3. **Wakeup latency** ของ receive thread → executor (เกิด context switch 2 ครั้ง)
 4. **Wi-Fi multicast** ถูกส่งที่ basic rate ทำให้ SPDP ช้าหรือหาย
@@ -277,6 +280,8 @@ cat /proc/net/snmp ; ss -uamp ; ethtool -S <iface> | grep -i drop
 ### 5.4 Packet จริงระดับ byte: หนึ่ง sample บนสาย
 
 ![anim-rtps-packet-anatomy](diagrams/anim-rtps-packet-anatomy.svg)
+
+> **หมายเหตุ build variant [แก้ไข 2026-11-24 ตามภาค 2]:** frame 122 B นี้เป็นแบบ**น้อยที่สุด** (ไม่มี INFO_DST และ statistics submessage) binary `.deb` ของ Lyrical build Fast DDS ด้วย `-DSECURITY=ON` (RTPS version 2.3 ตามตัวอย่างนี้) และเปิด `FASTDDS_STATISTICS` ตามค่าเริ่มต้น frame จริงจึงน่าจะมี statistics submessage 60 B ต่อท้าย และอาจมี INFO_DST 16 B รวมเป็น 182–198 B ผู้ที่ build จาก source โดยไม่ใส่ flag จะได้ version 2.2 รายละเอียดอยู่ใน[ภาค 2 §3.7](ros2_lyrical_network_stack_deeper.md#37-build-option-ที่เปลี่ยน-byte-บนสาย)
 
 ตัวอย่างนี้คือ `demo_nodes_cpp talker` ส่ง `std_msgs/String` ค่า `"Hello World: 1"` บน topic `/chatter` ผ่าน `rmw_fastrtps_cpp` แบบ UDPv4 unicast ไปยัง listener ที่ domain 0, participant 0 frame ทั้งก้อนสร้างด้วยสคริปต์ที่คำนวณ IP และ UDP checksum ให้ถูกต้องจริง ส่วนค่า MAC, IP, guidPrefix และ timestamp เป็นค่าตัวอย่าง
 
@@ -303,7 +308,7 @@ cat /proc/net/snmp ; ss -uamp ; ethtool -S <iface> | grep -i drop
 
 ข้อสังเกตสำหรับงานวิจัย
 - **Overhead:** ข้อความจริงยาว 14 ตัวอักษร แต่ใช้ 146 byte-times บนสาย (122 + FCS 4 + preamble 8 + IFG 12) ข้อความเล็กจึงเปลือง header เกือบทั้งหมด การรวมหลาย sample ไว้ในข้อความ RTPS เดียวกัน (Fast DDS ทำ message grouping) จึงช่วยได้มาก [K]
-- **Submessage ที่อาจเพิ่มเข้ามา:** `INFO_DST` (12 B) เมื่อส่งเฉพาะ participant, `HEARTBEAT` / `ACKNACK` เมื่อเป็น RELIABLE, `DATA_FRAG` เมื่อข้อมูลใหญ่เกินขนาด datagram, และ inline QoS (เช่น key hash เมื่อ type มี key) [K]
+- **Submessage ที่อาจเพิ่มเข้ามา:** `INFO_DST` (16 B รวม header) เมื่อส่งเฉพาะ participant, statistics submessage `0x80` (60 B) เมื่อ Fast DDS ถูก compile ด้วย `FASTDDS_STATISTICS` (ค่าเริ่มต้นและใน binary `.deb` ของ Lyrical), `HEARTBEAT` / `ACKNACK` เมื่อเป็น RELIABLE, `DATA_FRAG` เมื่อข้อมูลใหญ่เกินขนาด datagram, และ inline QoS (เช่น key hash เมื่อ type มี key) [K]
 - ค่าใน field ขึ้นกับ implementation และเวอร์ชัน ควรยืนยันกับ capture จริงก่อนอ้างอิง
 
 ```bash
@@ -317,10 +322,10 @@ tshark -r chatter.pcap -Y rtps -x | head -40                  # hex dump
 
 ![anim-linux-kernel-packet-path](diagrams/anim-linux-kernel-packet-path.svg)
 
-ชื่อฟังก์ชันทุกตัวด้านล่างตรวจแล้วว่ามีอยู่ใน `/proc/kallsyms` ของ Linux 7.0.0 (Ubuntu 26.04 generic) ฟังก์ชันที่ถูก inline จะไม่ปรากฏใน kallsyms และชื่อฟังก์ชันอาจเปลี่ยนตามเวอร์ชัน kernel เช่น `napi_gro_receive` ในเวอร์ชันนี้กลายเป็น `gro_receive_skb` ตัวอย่าง driver ใช้ `r8169` (Realtek)
+ชื่อฟังก์ชันทุกตัวด้านล่างตรวจแล้วว่ามีอยู่ใน `/proc/kallsyms` ของ Linux 7.0.0 (Ubuntu 26.04 generic) ฟังก์ชันที่ถูก inline จะไม่ปรากฏใน kallsyms และชื่อฟังก์ชันอาจเปลี่ยนตามเวอร์ชัน kernel เช่น symbol `napi_gro_receive` ไม่มีแล้ว (ยังเป็น `static inline` ที่ห่อ `gro_receive_skb` และ driver ยังเรียกชื่อเดิม) ตัวอย่าง driver ใช้ `r8169` (Realtek)
 
 **User space ก่อนถึง kernel (Fast DDS 3.6) [K: ตรวจ symbol ด้วย `perf`/`gdb` อีกครั้ง]**
-`rclcpp::Publisher::publish` → `rcl_publish` → `rmw_publish` (`rmw_fastrtps_shared_cpp`) → serialize ด้วย typesupport → `DataWriter::write` → writer history → `RTPSMessageGroup` (ประกอบ RTPS header + INFO_TS + DATA) → `UDPTransportInterface::send` → asio `send_to()` → **`sendmsg()`**
+`rclcpp::Publisher::publish` → `rcl_publish` → `rmw_publish` (`rmw_fastrtps_shared_cpp`) → serialize ด้วย typesupport → `DataWriter::write` → writer history → `RTPSMessageGroup` (ประกอบ RTPS header + INFO_TS + DATA) → `UDPTransportInterface::send` → `setsockopt(SO_SNDTIMEO)` → asio `send_to()` → **`sendmsg()`** (publish mode เริ่มต้นเป็น SYNCHRONOUS จึงรันใน thread ที่เรียก `publish()`)
 
 **TX (Host A)**
 
@@ -344,7 +349,7 @@ tshark -r chatter.pcap -Y rtps -x | head -40                  # hex dump
 
 | # | subsystem | ฟังก์ชัน | หน้าที่ | tracepoint |
 |---|---|---|---|---|
-| 1 | NIC | hardware | DMA frame ลง RX ring (page pool) แล้วยิง MSI-X | |
+| 1 | NIC | hardware | DMA frame ลง RX ring แล้วยิง MSI-X (`r8169` ไม่ใช้ page pool และ copy ทุก packet ไป skb ใหม่) | |
 | 2 | driver | `rtl8169_interrupt` | ปิด IRQ, `napi_schedule` | `irq:irq_handler_entry` |
 | 3 | softirq | `net_rx_action` → `__napi_poll` | ทำงานใน `NET_RX_SOFTIRQ` (หรือ ksoftirqd) | `irq:softirq_entry`, `napi:napi_poll` |
 | 4 | driver | `rtl8169_poll` → `rtl_rx` | สร้าง skb, `eth_type_trans` ตั้ง protocol | |
@@ -383,7 +388,7 @@ sudo grep -w -E 'udp_sendmsg|gro_receive_skb|__udp_enqueue_schedule_skb' /proc/k
 | Discovery ข้าม subnet | multicast ข้าม router ไม่ได้ → ต้องใช้ `ROS_STATIC_PEERS`, Discovery Server หรือ initial peers | router ↔ router ผ่าน TCP endpoint |
 | NAT / Internet | ยาก (RTPS ฝัง IP ไว้ใน payload) | ทำได้ (client→router, รองรับ TLS/QUIC) |
 | Security | SROS2 = DDS-Security (PKI auth, access control, AES-GCM) | TLS/mTLS + ACL (`zenoh_security_tools`) |
-| QoS ในระดับเครือข่าย | DSCP/`SO_PRIORITY` ผ่าน XML profile, TSN ทำผ่าน `taprio`/`mqprio` | ระดับ priority ของ Zenoh + DSCP config |
+| QoS ในระดับเครือข่าย | Fast DDS 3.6.x **ไม่ตั้ง DSCP/`SO_PRIORITY`** (ทิ้ง `transport_priority`) [แก้ไข 2026-11-24 ตามภาค 2] ต้องจัดลำดับนอก middleware เช่น `tc`/nftables หรือ `taprio`/`mqprio` สำหรับ TSN | ระดับ priority ของ Zenoh + DSCP config |
 | Wi-Fi | ปัญหา multicast → แนะนำ DS / unicast | เหมาะกว่า |
 
 ภาพรวมเส้นทาง inter-host (DDS, default):

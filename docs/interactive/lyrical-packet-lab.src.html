@@ -634,7 +634,7 @@ ser.<span class="fn">serialize_message</span>(&amp;msg, &amp;out);  <span class=
    }},
  { short:'Packet bytes', sub:'122 B frame', layer:'encapsulation', title:'Packet จริงระดับ byte: ห่อ header ทีละชั้น',
    text:'ตามรอย <code>std_msgs/String "Hello World: 1"</code> ตั้งแต่ CDR payload 24 B ที่ rmw → middleware เพิ่ม DATA, INFO_TS และ RTPS header (80 B) → kernel เพิ่ม UDP (88 B) → IP (108 B) → Ethernet (122 B + FCS) แล้ว Host B แกะออกทีละชั้นจนเหลือ message ดู hex dump ด้านขวาซึ่งไฮไลต์ชั้นที่กำลังทำงานอยู่',
-   facts:[['K','UDP dst port 7411 = 7400 + 250·0 + 11 + 2·0 (user unicast, domain 0, participant 0)'],['K','DATA submessage: id 0x15, flags E|D, writerId …03 = user writer ไม่มี key'],['K','payload: encapsulation 0x0001 (CDR_LE) + uint32 length 15 + "Hello World: 1\\0" + pad']],
+   facts:[['K','UDP dst port 7411 = 7400 + 250·0 + 11 + 2·0 (user unicast, domain 0, participant 0)'],['K','DATA submessage: id 0x15, flags E|D, writerId …03 = user writer ไม่มี key'],['K','payload: encapsulation 0x0001 (CDR_LE) + uint32 length 15 + "Hello World: 1\\0" + pad'],['V','นี่คือแบบน้อยที่สุด: binary .deb ของ Lyrical build Fast DDS ด้วย SECURITY=ON (version 2.3) และ STATISTICS=ON จึงมี submessage 0x80 อีก 60 B และอาจมี INFO_DST 16 B รวม 182–198 B']],
    code:'<div class="hex">' + hexHTML() + '</div>',
    focus:['A.t.*','A.n1','A.sock','A.ip','A.nic','sw','B.*'],
    async run(){
@@ -650,7 +650,7 @@ ser.<span class="fn">serialize_message</span>(&amp;msg, &amp;out);  <span class=
          mw: async () => { await add(['data'], 'data', 'DATA 48 B', 'DATA: 15 05 2c 00 · readerId 0 · writerId 00.00.12.03 · SN=1'); await add(['ts'], 'ts', 'RTPS submsgs 60 B', 'INFO_TS: 09 01 08 00 + timestamp'); await add(['rtps'], 'rtps', 'RTPS 80 B', 'RTPS hdr: "RTPS" 2.3 vendor 01 0f guidPrefix 01.0f.45.d2…'); },
          sock: () => add(['udp'], 'udp', 'UDP 88 B', 'UDP: 52931 → 7411 len=88 csum=0x056d'),
          ip: () => add(['ip'], 'ip', 'IPv4 108 B', 'IPv4: 45 00 len=108 id=0x1c46 DF TTL=64 proto=17 csum=0x9acc'),
-         nic: async () => { await add(['eth'], 'eth', 'Ethernet 122 B', 'Ethernet: 02:00:00:00:00:20 ← 02:00:00:00:00:10 type 0x0800'); addSeg(fr, 'fcs', false); chipEl.textContent = 'on wire 126 B'; log('phy', '+ FCS 4 B · preamble 8 · IFG 12 → 146 byte-times'); },
+         nic: async () => { await add(['eth'], 'eth', 'Ethernet 122 B', 'Ethernet: 02:00:00:00:00:20 ← 02:00:00:00:00:10 type 0x0800'); addSeg(fr, 'fcs', false); chipEl.textContent = 'on wire 126 B'; log('phy', '+ FCS 4 B · preamble 8 · IFG 12 → 146 byte-times'); log('note', 'Lyrical .deb: + statistics 0x80 (60 B), อาจมี INFO_DST (16 B)', 'x'); },
          rxnic: () => rm(['eth','fcs'], 'eth', 'IPv4 108 B', 'NIC/driver: strip Ethernet (eth_type_trans → ETH_P_IP)'),
          rxip: () => rm(['ip'], 'ip', 'UDP 88 B', 'ip_local_deliver: strip IPv4 → proto 17'),
          rxsock: () => rm(['udp'], 'udp', 'RTPS 80 B', 'udp_rcv: port 7411 → socket queue (UDP hdr removed)'),

@@ -94,7 +94,7 @@ h2{margin:6px 0 0;font:700 clamp(26px,3.2vw,34px)/1.1 var(--cond);color:var(--na
 .mods{grid-template-columns:1fr}
 
 /* guides */
-.guides{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.guides{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
 .guide{display:block;text-decoration:none;background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:18px 20px}
 .guide:hover{border-color:var(--accent)}
 .guide .t{font:600 11px/1 var(--cond);letter-spacing:.18em;text-transform:uppercase;color:var(--accent-deep)}
@@ -219,6 +219,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
     <div class="sec-head"><div><div class="eyebrow">Guides</div><h2>คู่มือประกอบ</h2></div></div>
     <div class="guides">
       <a class="guide" href="https://github.com/alfaXphoori/ros2/blob/main/docs/ros2_lyrical_network_stack_deep_dive.md"><div class="t">Research</div><b>Lyrical Network Stack Deep Dive</b><span>RMW ทั้ง 4 ตัว, <code>rosidl::Buffer</code>, packet ระดับ byte, kernel path และ methodology การทดลอง</span></a>
+      <a class="guide" href="https://github.com/alfaXphoori/ros2/blob/main/docs/ros2_lyrical_network_stack_deeper.md"><div class="t">Research · ภาค 2</div><b>Wire format, reliability &amp; kernel accounting</b><span>SPDP/SEDP ระดับ byte, DATA_FRAG ของภาพ 921 KB, SHM ของ Fast DDS, Zenoh framing, <code>SO_RCVBUF</code> truesize และ latency budget</span></a>
       <a class="guide" href="https://github.com/alfaXphoori/ros2/blob/main/docs/ros2_installation_guide.md"><div class="t">Setup</div><b>คู่มือการติดตั้ง ROS 2</b><span>Native, Docker, WSL2 และ macOS พร้อมการตั้งค่าเครือข่าย DDS</span></a>
       <a class="guide" href="https://github.com/alfaXphoori/ros2/blob/main/docs/ros2_developer_toolkit.md"><div class="t">Toolkit</div><b>Developer Toolkit &amp; CLI</b><span>VSCode, colcon workspace และคำสั่ง CLI ที่ใช้บ่อย</span></a>
     </div>
