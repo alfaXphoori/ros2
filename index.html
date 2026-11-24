@@ -156,7 +156,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
     </div>
     <div class="lab">
       <div class="lab-copy">
-        <div class="eyebrow">16 บทเรียน · คลิกเพื่อเปิดบทนั้นโดยตรง</div>
+        <div class="eyebrow">20 บทเรียน · คลิกเพื่อเปิดบทนั้นโดยตรง</div>
         <h3>จาก <code>publish()</code> ลงไปถึง NIC แล้วขึ้นไปถึง callback</h3>
         <p>ทุกบทมีป้ายบอกว่าข้อเท็จจริงไหนตรวจกับต้นฉบับของ Lyrical แล้ว และข้อไหนเป็นความรู้มาตรฐานของ DDS หรือ Linux</p>
         <ol class="lessons" id="lessonList"></ol>
@@ -246,8 +246,8 @@ footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 (() => {
   const GH = 'https://github.com/alfaXphoori/ros2/blob/main/';
   const LAB = 'docs/interactive/lyrical-packet-lab.html#lesson-';
-  const lessons = ['ภาพรวม 4 hosts','Intra-process','Serialize CDR','Syscall','Kernel TX','Kernel RX','Packet bytes','Kernel call path','Loopback','Shared memory','rosidl::Buffer','Service','Action','Discovery','Zenoh','Observability'];
-  const fresh = new Set([7, 8, 11, 12, 13]);
+  const lessons = ['ภาพรวม 4 hosts','Intra-process','Serialize CDR','Syscall','Kernel TX','Kernel RX','Packet bytes','Kernel call path','Loopback','Shared memory','rosidl::Buffer','Service','Action','Discovery','Zenoh','Observability','ทดลองจริง · traffic 14 s','ทดลองจริง · ภาพ RELIABLE','ทดลองจริง · rcvbuf 13/20 → 20/20','ทดลองจริง · Zenoh &amp; SHM'];
+  const fresh = new Set([17, 18, 19, 20]);
   document.getElementById('lessonList').innerHTML = lessons.map((t, i) =>
     `<li${fresh.has(i+1) ? ' class="new"' : ''}><a href="${LAB}${i+1}"><span class="n">${i+1}</span>${t}</a></li>`).join('');
 

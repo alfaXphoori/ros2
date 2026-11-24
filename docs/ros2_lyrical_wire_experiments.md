@@ -1,6 +1,7 @@
 # ROS 2 Lyrical Luth: ผลการทดลองจริงบนสาย (packet capture)
 
 > ภาค 3 ของชุดเอกสาร network stack · ภาค 1: [Deep Dive](ros2_lyrical_network_stack_deep_dive.md) · ภาค 2: [Wire format & kernel accounting](ros2_lyrical_network_stack_deeper.md)
+> ดูแบบ 3D: [Lyrical Packet Lab บทที่ 17–20](https://alfaxphoori.github.io/ros2/docs/interactive/lyrical-packet-lab.html#lesson-17) (packet วิ่งตามจำนวนจริงจาก pcap)
 > ทดลองเมื่อ 2026-11-24 · ไฟล์ pcap ทั้งหมดอยู่ใน [`captures/`](captures/) · ทำซ้ำได้ด้วย [`captures/scripts/run_experiments.sh`](captures/scripts/run_experiments.sh)
 
 เอกสารภาค 1 และภาค 2 สร้างจากการอ่าน source code ภาคนี้คือการ**รันของจริงแล้ว capture packet** เพื่อตรวจว่าที่วิเคราะห์ไว้ตรงกับสิ่งที่เกิดบนสายหรือไม่ ทุกตัวเลขในเอกสารนี้มาจาก pcap หรือจากตัวนับของ kernel (`/proc/net/snmp`) ในการรันจริง และการทดลองชุดเต็มรันซ้ำแล้ว 2 รอบได้ผลตรงกัน

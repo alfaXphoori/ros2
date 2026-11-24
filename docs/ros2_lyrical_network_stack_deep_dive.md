@@ -37,7 +37,7 @@
 
 ![anim-lyrical-packet-path](diagrams/anim-lyrical-packet-path.svg)
 
-> **Interactive 3D lab:** [`interactive/lyrical-packet-lab.html`](interactive/lyrical-packet-lab.html) จำลอง 4 hosts ต่อผ่าน switch มี 16 บทเรียน (ภาพรวม, intra-process, serialize, syscall, kernel TX/RX, **packet bytes (hex dump 122 B)**, **kernel call path**, loopback, SHM, `rosidl::Buffer`, **service**, **action**, DDS discovery, Zenoh router mesh, observability) หมุน/ซูมฉากได้ คลิก layer เพื่อดูรายละเอียด และกด Run เพื่อดู trace console ตัวอย่าง
+> **Interactive 3D lab:** [`interactive/lyrical-packet-lab.html`](interactive/lyrical-packet-lab.html) จำลอง 4 hosts ต่อผ่าน switch มี 20 บทเรียน (ภาพรวม, intra-process, serialize, syscall, kernel TX/RX, **packet bytes (hex dump 198 B จาก capture จริง)**, **kernel call path**, loopback, SHM, `rosidl::Buffer`, **service**, **action**, DDS discovery, Zenoh router mesh, observability และ**ผลการทดลองจริง 4 บท**: traffic breakdown, ภาพ RELIABLE + NACK_FRAG, rcvbuf 13/20 → 20/20, Zenoh & SHM) หมุน/ซูมฉากได้ คลิก layer เพื่อดูรายละเอียด และกด Run เพื่อดู trace console ตัวอย่าง
 > **เปิดออนไลน์:** https://alfaxphoori.github.io/ros2/docs/interactive/lyrical-packet-lab.html (ต้องใช้เบราว์เซอร์ที่รองรับ WebGL)
 
 ![anim-lyrical-stack-layers](diagrams/anim-lyrical-stack-layers.svg)

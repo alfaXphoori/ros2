@@ -70,6 +70,7 @@
 - sample ของ `demo_nodes_cpp talker` บนสายจริงยาว **198 B** ได้แก่ RTPS 2.3 + INFO_DST + INFO_TS + DATA + statistics `0x80`
 - sample เดียวกันผ่าน `rmw_zenoh_cpp` ยาว **161 B** และวิ่ง peer-to-peer ไม่ผ่าน router
 - ภาพ 640×480 แบบ BEST_EFFORT **หาย 35%** เพราะ socket receive buffer เต็ม (`RcvbufErrors = 45`) เมื่อเพิ่ม buffer เป็น 4 MiB ได้ครบ 20/20
+- ดูผลการทดลองแบบ 3D ได้ใน Lyrical Packet Lab บทที่ 17–20: [traffic 14 s](https://alfaxphoori.github.io/ros2/docs/interactive/lyrical-packet-lab.html#lesson-17) · [ภาพ RELIABLE + NACK_FRAG](https://alfaxphoori.github.io/ros2/docs/interactive/lyrical-packet-lab.html#lesson-18) · [rcvbuf 13/20 → 20/20](https://alfaxphoori.github.io/ros2/docs/interactive/lyrical-packet-lab.html#lesson-19) · [Zenoh & SHM](https://alfaxphoori.github.io/ros2/docs/interactive/lyrical-packet-lab.html#lesson-20)
 
 ![anim-capture-rtps-198b](docs/diagrams/anim-capture-rtps-198b.svg)
 

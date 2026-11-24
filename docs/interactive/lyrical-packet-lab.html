@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Lyrical Packet Lab</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -81,6 +81,10 @@ pre.code:has(.hex){max-height:none}
 .hex.on-dst .b-dst{color:#6639ba;font-weight:700}.hex.on-stat .b-stat{color:#57606a;font-weight:700}.hex.cur-dst .b-dst{background:#6639ba;color:#fff}.hex.cur-stat .b-stat{background:#57606a;color:#fff}
 .hex.on-rtps .b-rtps{color:#8250df;font-weight:700}.hex.on-ts .b-ts{color:#a371f7;font-weight:700}.hex.on-data .b-data{color:#bf3989;font-weight:700}.hex.on-cdr .b-cdr{color:#c77d10;font-weight:700}
 .hex.cur-eth .b-eth{background:#0f2239;color:#fff}.hex.cur-ip .b-ip{background:#3a6aa6;color:#fff}.hex.cur-udp .b-udp{background:#2c5f9e;color:#fff}
+pre.code:has(.bars){max-height:none;white-space:normal}
+.bars{font:500 11px/1.35 var(--mono)}.bars .r{display:grid;grid-template-columns:118px 1fr 52px;gap:6px;align-items:center;margin:3px 0}
+.bars .k{color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bars .t{height:10px;background:#eef1f4;border-radius:3px;overflow:hidden}
+.bars .f{display:block;height:100%;border-radius:3px;transition:width .35s}.bars .v{text-align:right;color:var(--navy)}.bars .cm{display:block;color:var(--faint);margin:6px 0 2px}
 .hex.cur-rtps .b-rtps{background:#8250df;color:#fff}.hex.cur-ts .b-ts{background:#a371f7;color:#fff}.hex.cur-data .b-data{background:#bf3989;color:#fff}.hex.cur-cdr .b-cdr{background:#e2962a;color:#fff}
 .chip.frame{font-weight:700;color:#fff;background:#0f2239e6;border-color:#0f2239}
 .code .cm{color:var(--faint);font-style:italic}.code .str{color:#3f8a4f}.code .kw{color:var(--blue)}.code .fn{color:#dc6a2a}
@@ -150,7 +154,7 @@ body.compact .callout{width:170px;font-size:11.5px}
 
 <div class="side" id="side">
   <section class="card lesson" aria-live="polite">
-    <div class="meta"><span id="lnum">บทที่ 1 / 16</span><span class="layer" id="llayer">overview</span></div>
+    <div class="meta"><span id="lnum">บทที่ 1 / 20</span><span class="layer" id="llayer">overview</span></div>
     <h2 id="ltitle"></h2>
     <p id="ltext"></p>
     <ul class="facts" id="lfacts"></ul>
@@ -161,14 +165,14 @@ body.compact .callout{width:170px;font-size:11.5px}
     </div>
     <pre class="code" id="code"></pre>
     <div class="console">
-      <div class="ch"><span>Trace console · ตัวอย่างจำลอง</span><span class="st" id="st"><i></i><em id="stx">Stopped</em></span></div>
+      <div class="ch"><span id="chl">Trace console · ตัวอย่างจำลอง</span><span class="st" id="st"><i></i><em id="stx">Stopped</em></span></div>
       <div id="log"></div>
     </div>
   </section>
 </div>
 
 <nav class="card rail" aria-label="บทเรียน">
-  <div class="prog"><b id="pcount">0/16</b><span>เรียนแล้ว</span><div class="track"><i id="pbar"></i></div></div>
+  <div class="prog"><b id="pcount">0/20</b><span>เรียนแล้ว</span><div class="track"><i id="pbar"></i></div></div>
   <div class="lessons" id="lessons"></div>
 </nav>
 
@@ -540,6 +544,44 @@ async function kfns(pos, title, list, tp){
   if (tp) log(tp, '', 'u');
 }
 
+/* ---------- experiment helpers (บทที่ 17–20 · ค่าจาก docs/captures) ---------- */
+function liveCallout(p, title){
+  callout(p, title, ''); const a = callouts[callouts.length-1];
+  return html => { a.el.innerHTML = `<b>${title}</b>${html}<span class="dot"></span>`; };
+}
+// rows: [label, value, max, color, id?, shown?]
+function barsHTML(title, rows){
+  return `<div class="bars"><span class="cm">${title}</span>` + rows.map(([k,v,max,col,id,shown]) =>
+    `<div class="r"><span class="k">${k}</span><span class="t"><i class="f"${id?` id="bf-${id}"`:''} style="width:${(v/max*100).toFixed(1)}%;background:${col}"></i></span><span class="v"${id?` id="bv-${id}"`:''}>${shown ?? v.toLocaleString('en-US').replace(/,/g,' ')}</span></div>`).join('') + '</div>';
+}
+function setBar(id, v, max, shown){
+  const f = document.getElementById('bf-'+id), t = document.getElementById('bv-'+id);
+  if (f) f.style.width = Math.min(100, v/max*100).toFixed(1)+'%'; if (t) t.textContent = shown ?? v;
+}
+const codeBlock = s => `<div class="code" style="white-space:pre;margin-top:8px;font:400 11.5px/1.6 var(--mono)">${s}</div>`;
+// socket receive-queue gauge (3D) beside a host's socket layer
+function makeGauge(h){
+  const g = new THREE.Group(); g.userData = {dot:true}; scene.add(g);
+  const x = h.x + 2.6, z = kz(h);
+  const shell = new THREE.Mesh(new THREE.BoxGeometry(0.62, 1, 0.62), new THREE.MeshStandardMaterial({color:0x2c5f9e, transparent:true, opacity:0.28, depthWrite:false}));
+  const edge = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(0.62, 1, 0.62)), new THREE.LineBasicMaterial({color:0x2c5f9e}));
+  const fill = new THREE.Mesh(new THREE.BoxGeometry(0.5, 1, 0.5), new THREE.MeshStandardMaterial({color:0x27a689, emissive:0x27a689, emissiveIntensity:0.3}));
+  const box = new THREE.Group(); box.add(shell); box.add(edge); g.add(box); g.add(fill);
+  const base = Y.ip - 0.2; let H0 = 1.6, q = 0;
+  const set = () => { box.scale.y = H0; box.position.set(x, base + H0/2, z); const hh = Math.max(0.001, q*H0*0.98); fill.scale.y = hh; fill.position.set(x, base + hh/2, z);
+    const c = q > 0.97 ? 0xd64545 : q > 0.7 ? 0xe2962a : 0x27a689; fill.material.color.setHex(c); fill.material.emissive.setHex(c); };
+  set();
+  const lbl = chip('SO_RCVBUF', [x, base + H0 + 0.35, z], 'frame'); const a = anchors[anchors.length-1];
+  const api = {
+    get q(){ return q; }, set q(v){ q = Math.max(0, Math.min(1, v)); set(); },
+    top(){ return [x, base + H0 + 0.1, z]; }, inlet: [x, Y.sock, z],
+    height(v){ H0 = v; a.v.set(x, base + H0 + 0.35, z); set(); },
+    label(t){ lbl.textContent = t; },
+    remove(){ lbl.remove(); anchors.splice(anchors.indexOf(a), 1); }
+  };
+  return api;
+}
+
 /* ---------- lessons ---------- */
 const lessons = [
  { short:'ภาพรวม', sub:'4 hosts', layer:'overview', title:'ภาพรวม network stack ของ Lyrical (4 hosts)',
@@ -864,6 +906,175 @@ ZENOH_CONFIG_OVERRIDE=<span class="str">'connect/endpoints=["tcp/hostB:7447","tc
      log('skb:kfree_skb','Host C reason=SOCKET_RCVBUFF','x'); adv(2000);
      log('rosbag2:messages_lost','Host C topic=/camera/image lost=3 (transport)','x');
      await Promise.all([okB, okD]); await sleep(1400); fadeOut(d);
+   }},
+ /* ===== ผลการทดลองจริง (docs/ros2_lyrical_wire_experiments.md) ===== */
+ { short:'ทดลอง 1 · traffic', sub:'ทดลองจริง · 14 s', layer:'capture · exp1', real:true, title:'ผลจริง: 14 วินาทีบนสาย ข้อมูลจริงมีแค่ 3.3%',
+   text:'capture จริงของ <code>talker → listener</code> ข้าม container นาน 14 วินาที ได้ RTPS message 137 frame แต่เป็นข้อมูล chatter แค่ 9 frame (สีส้ม) ที่เหลือคือ discovery ได้แก่ SPDP, SEDP, HEARTBEAT/ACKNACK และ <code>ros_discovery_info</code> ในแอนิเมชันนี้ จุด 1 จุด = 1 frame จริง และกราฟด้านขวานับ byte จริงจาก pcap',
+   facts:[['V','SPDP <code>DATA(p)</code> 610 B ต่อครั้ง รวม 36.5% · SEDP 30.3% · HB/ACKNACK 12.6% · chatter <strong>3.3%</strong>'],['V','privacy: SPDP ประกาศ <code>fastdds.physical_data.user</code> (ชื่อผู้ใช้) และ <code>.process</code> (PID) ผ่าน multicast'],['V','reader ของ <code>ros_discovery_info</code> ใช้ UDP 7000 แยกจาก 7411 · ลำดับและทิศทางของจุดเป็นภาพประกอบ ส่วนจำนวนเป็นค่าจริง']],
+   code: barsHTML('exp1_fastdds_default.pcap · byte ต่อประเภท (14 s)', [
+     ['SPDP DATA(p)', 0, 20000, '#2c5f9e', 'spdp', '0'], ['SEDP DATA(w/r)', 0, 20000, '#27a689', 'sedp', '0'], ['HEARTBEAT/ACKNACK', 0, 20000, '#8250df', 'hb', '0'],
+     ['ros_discovery_info', 0, 20000, '#57606a', 'rdi', '0'], ['อื่นๆ (GAP, packed)', 0, 20000, '#afb8c1', 'oth', '0'], ['chatter DATA', 0, 20000, '#f86b1d', 'dat', '0']]) +
+     codeBlock(`<span class="fn">tshark</span> -r exp1_fastdds_default.pcap -Y rtps \\
+  -T fields -e rtps.sm.id | sort | uniq -c`),
+   focus:['A.t.mw','A.t.rmw','A.n1','A.sock','A.ip','A.nic','sw','B.nic','B.ip','B.sock','B.l.mw','B.l.rmw','B.n1'],
+   async run(){
+     const T = {spdp:[32,19520,PCOL.ctl], sedp:[21,16166,PCOL.desc], hb:[40,6728,PCOL.fb], rdi:[13,4754,0x57606a], oth:[22,4484,0xafb8c1], dat:[9,1782,PCOL.obj]};
+     let seed = 7; const rnd = () => (seed = (seed*16807) % 2147483647) / 2147483647;
+     const ev = []; for (const k of ['spdp','sedp','hb','rdi','oth']) for (let i=0;i<T[k][0];i++) ev.push(k);
+     for (let i=ev.length-1;i>0;i--){ const j = Math.floor(rnd()*(i+1)); [ev[i],ev[j]] = [ev[j],ev[i]]; }
+     for (let i=0;i<4;i++) ev.unshift('spdp'), ev.splice(ev.lastIndexOf('spdp'), 1);
+     for (let i=0;i<9;i++) ev.splice(Math.round(ev.length*(0.42 + i*0.065)), 0, 'dat');
+     const AB = [...down(H.A).slice(4), ...up(H.B).slice(1,7)], BA = [...down(H.B).slice(4), ...up(H.A).slice(1,7)];
+     const n = {}, b = {}; let tot = 0, totB = 0; for (const k in T){ n[k] = 0; b[k] = 0; }
+     const upd = liveCallout([SW[0], 1.1, SW[2]], 'บนสาย (นับจริง)');
+     const show = () => upd(`${tot} / 137 frame · ${Math.round(totB).toLocaleString("en-US")} B<br>chatter <strong style="color:#f86b1d">${n.dat}</strong> frame = ${(totB ? b.dat/totB*100 : 0).toFixed(1)}% ของ byte`);
+     show(); log('tcpdump','-i eth0 (Host B) · 14 s · RTPS เท่านั้น','u');
+     const ps = [];
+     for (let i=0;i<ev.length;i++){
+       const k = ev[i], path = (k === 'dat' || rnd() < 0.5) ? AB : BA;
+       if (k === 'spdp' && i % 3 === 0) ring([SW[0],0.3,SW[2]], 0x2c5f9e, 6, 1.0);
+       ps.push(travel(path, {color:T[k][2], r: k === 'dat' ? 0.17 : 0.09, speed:11}).then(g => { if (!g) return;
+         n[k]++; b[k] += T[k][1]/T[k][0]; tot++; totB += T[k][1]/T[k][0];
+         setBar(k, b[k], 20000, Math.round(b[k]).toLocaleString('en-US').replace(/,/g,' ')); show();
+         if (k === 'dat'){ log('rtps:DATA', `rt/chatter SN=${n.dat} · 198 B "Hello World: ${n.dat}"`, 'g'); adv(1000000); } }));
+       await sleep(k === 'dat' ? 120 : 42);
+     }
+     await Promise.all(ps);
+     log('summary','137 frame · 53 434 B · chatter 1 782 B = 3.3%','u'); adv(10);
+     callout([H.A.x, Y.mw+0.9, tz(H.A)], 'SPDP เปิดเผย', 'PID_PROPERTY_LIST: physical_data.user = root · .process = PID → ทุกเครื่องใน subnet');
+     log('rtps:SPDP','PID_PROPERTY_LIST fastdds.physical_data.user="root" fastdds.physical_data.process=<pid>','x');
+   }},
+ { short:'ทดลอง 2 · ภาพ RELIABLE', sub:'ทดลองจริง · 15 DATA_FRAG', layer:'capture · exp2', real:true, title:'ผลจริง: ภาพ 921 KB แตกเป็น 15 DATA_FRAG และต้อง NACK',
+   text:'ส่ง <code>sensor_msgs/Image</code> 640×480 rgb8 แบบ RELIABLE 5 ภาพ แต่ละภาพ (sampleSize 921 648 B) ถูกแบ่งเป็น 15 DATA_FRAG ขนาด 65 324 B ซึ่งแต่ละก้อนแตกต่อเป็น IP fragment อีก 45 ชิ้น ภาพวิ่งบน topic <code>rt/img/_buf_cpu</code> ไม่ใช่ <code>rt/img</code> kernel ฝั่ง B ทิ้ง datagram ไป 23 ก้อนเพราะ receive buffer เต็ม (สีแดง) reader จึงส่ง NACK_FRAG (สีน้ำเงิน) แล้ว writer ส่ง fragment ซ้ำ 21 ชิ้น ผลคือได้ครบ 5/5 ภาพ แต่ traffic เพิ่มขึ้นราว 28%',
+   facts:[['V','DATA_FRAG ต่อ SN จริง: 17, 21, 15, 15, 28 (= 15 + ส่งซ้ำ 2, 6, 0, 0, 13) · NACK_FRAG 4 ครั้ง'],['V','<code>RcvbufErrors = 23</code>, <code>ReasmOKs = 97</code> จาก /proc/net/snmp ของ Host B'],['V','<code>/_buf_cpu</code> มาจาก rosidl::Buffer (rmw_fastrtps_cpp publisher.cpp) · ตำแหน่ง fragment ที่หายเป็นภาพประกอบ ยกเว้นภาพที่ 1 (frag 4–5 ตาม NACK_FRAG frame 749)']],
+   code: barsHTML('DATA_FRAG ต่อภาพ (15 = ไม่ต้องส่งซ้ำ)', [1,2,3,4,5].map((k,i) => [`SN ${k}`, [17,21,15,15,28][i], 30, [17,21,15,15,28][i] > 15 ? '#d64545' : '#27a689', null, `${[17,21,15,15,28][i]}`])) +
+     codeBlock(`<span class="fn">tshark</span> -r exp2_image_reliable.pcap.gz \\
+  -Y <span class="str">'rtps.sm.id == 0x16'</span> -T fields -e rtps.sm.seqNumber \\
+  | sort | uniq -c        <span class="cm"># 17 21 15 15 28</span>
+<span class="fn">nstat</span> -az UdpRcvbufErrors IpReasmOKs`),
+   focus:['A.t.*','A.n1','A.sock','A.ip','A.nic','sw','B.*'],
+   labels:{'A.n1':'img_pub', 'B.n1':'img_sub'},
+   async run(){
+     const RES = [2,6,0,0,13], NACK = [1,1,0,0,2], DROPS = [[3,4],[1,5,7,9,11,13],[],[],[0,1,2,3,4,5,6,8,9,10,11,12,14]];
+     const AB = [...down(H.A).slice(4), ...up(H.B).slice(1,5)], BA = [...down(H.B).slice(4), ...up(H.A).slice(1,7)];
+     const upd = liveCallout([SW[0], 1.1, SW[2]], 'rt/img/_buf_cpu');
+     let sent = 0, drop = 0, got = 0;
+     const show = (k) => upd(`ภาพ ${k}/5 · DATA_FRAG ส่ง ${sent}<br>kernel drop <strong style="color:#d64545">${drop}</strong> · ได้ ${got}/5`);
+     for (let k=0; k<5; k++){
+       show(k+1);
+       log('ros2:rmw_publish', `f${k} · sampleSize 921 648 B → 15 × DATA_FRAG 65 324 B`, 'u'); adv(400);
+       await travel(down(H.A).slice(0,5), {color:PCOL.obj, r:0.28, speed:9, onTag:(t,g)=>{ if (t==='rmw') setDot(g, PCOL.cdr); }});
+       const ps = [];
+       for (let f=0; f<15; f++){
+         const lost = DROPS[k].includes(f);
+         ps.push(travel(AB, {color:PCOL.frag, r:0.1, speed:10, onTag:(t,g)=>{ if (t==='rxsock' && lost){ setDot(g, PCOL.drop); drop++; show(k+1); } }}));
+         sent++; await sleep(55);
+       }
+       await Promise.all(ps); show(k+1);
+       if (RES[k]){
+         callout([H.B.x, Y.sock+0.1, kz(H.B)+0.1], 'rcvbuf เต็ม', `ทิ้ง ${DROPS[k].length} datagram (45 IP frag ต่อก้อน)`); const cDrop = callouts[callouts.length-1];
+         log('skb:kfree_skb', `Host B ×${DROPS[k].length} reason=SOCKET_RCVBUFF`, 'x'); adv(300);
+         for (let j=0;j<NACK[k];j++){
+           log('rtps:NACK_FRAG', k === 0 ? 'writerSN 1 · bitmapBase 4 · numBits 3 · bitmap 11 (frame 749)' : `writerSN ${k+1} · ขอ fragment ที่หาย`, 'u'); adv(200);
+           await travel(BA, {color:PCOL.ctl, r:0.12, speed:11});
+         }
+         const rs = [];
+         for (let f=0; f<RES[k]; f++){ rs.push(travel(AB, {color:PCOL.frag, r:0.1, speed:10})); sent++; await sleep(55); }
+         await Promise.all(rs); log('rtps:DATA_FRAG', `ส่งซ้ำ ${RES[k]} ชิ้น · SN ${k+1} รวม ${15+RES[k]} DATA_FRAG`, 'u'); adv(200);
+         cDrop.el.remove(); anchors.splice(anchors.indexOf(cDrop), 1); callouts.splice(callouts.indexOf(cDrop), 1);
+       }
+       await travel(up(H.B).slice(4), {color:PCOL.obj, r:0.24, speed:9});
+       got++; show(k+1); log('ros2:callback_start', `img_sub got f${k} 921 600 B`, 'g'); adv(500000);
+     }
+     log('summary', 'ได้ 5/5 · DATA_FRAG 96 (= 75 + ส่งซ้ำ 21) · RcvbufErrors 23 · NACK_FRAG 4', 'u');
+   }},
+ { short:'ทดลอง 5–6 · rcvbuf', sub:'ทดลองจริง · 13/20 → 20/20', layer:'capture · exp5–6', real:true, title:'ผลจริง: receive buffer ตัดสินว่าภาพจะรอดหรือไม่',
+   text:'ส่งภาพแบบ BEST_EFFORT 20 ภาพ (2 Hz) รอบแรกใช้ receive buffer ค่าเริ่มต้น (<code>rb212992</code>) กล่องข้าง socket ของ Host B คือคิวรับ เมื่อ burst ของ datagram 65 KB มาเร็วกว่าที่ thread ของ Fast DDS ดึงออก คิวจะเต็มและ kernel ทิ้งก้อนที่เหลือใน <code>__udp_enqueue_schedule_skb</code> ภาพนั้นจึงหายทั้งภาพ รอบที่สองตั้ง <code>receiveBufferSize</code> 4 MiB (kernel ให้จริง <code>rb8388608</code>) โดยไม่เปลี่ยนอย่างอื่น ผลคือไม่หายเลย',
+   facts:[['V','ค่าเริ่มต้น: ได้ <strong>13/20</strong> (หาย f0, f10, f13, f15, f16, f18, f19) · <code>RcvbufErrors = 45</code>'],['V','4 MiB: ได้ <strong>20/20</strong> · <code>RcvbufErrors = 0</code> · รันซ้ำ 2 รอบได้ตัวเลขเดิม'],['K','capture เห็น DATA_FRAG ครบ 15/15 ทุกภาพ เพราะ tcpdump อยู่ก่อนจุด drop · ระดับน้ำในกล่องและจำนวน drop ต่อภาพเป็นภาพประกอบ ยอดรวม 45 เป็นค่าจริง']],
+   code: barsHTML('ภาพที่ได้รับ (BEST_EFFORT, 20 ภาพ)', [['rb 212 992 (default)', 0, 20, '#d64545', 'r1', '0/20'], ['rb 8 388 608 (4 MiB)', 0, 20, '#27a689', 'r2', '0/20']]) +
+     barsHTML('Udp RcvbufErrors', [['default', 0, 45, '#d64545', 'e1', '0'], ['4 MiB', 0, 45, '#27a689', 'e2', '0']]) +
+     codeBlock(`<span class="fn">ss</span> -uam | grep -o <span class="str">'rb[0-9]*'</span>   <span class="cm"># rb212992 → rb8388608</span>
+<span class="kw">export</span> FASTDDS_DEFAULT_PROFILES_FILE=bigbuf.xml
+<span class="fn">sudo</span> sysctl -w net.core.rmem_max=8388608`),
+   focus:['A.t.mw','A.n1','A.sock','A.ip','A.nic','sw','B.nic','B.ip','B.sock','B.l.mw','B.l.rmw','B.l.app','B.n1'],
+   labels:{'A.n1':'img_pub', 'B.n1':'img_sub'},
+   async run(){
+     const gauge = makeGauge(H.B), tok = runToken;
+     let last = performance.now(), drain = 0.55, alive = true;
+     const tick = (now) => { if (!alive || tok !== runToken) return; const dt = Math.min(0.05, (now-last)/1000); last = now; gauge.q = gauge.q - drain*dt; requestAnimationFrame(tick); };
+     requestAnimationFrame(tick);
+     const AB = [...down(H.A).slice(4), ...up(H.B).slice(1,5)];
+     try {
+       for (const phase of [0, 1]){
+         const LOST = phase ? [] : [0,10,13,15,16,18,19], DR = [6,7,6,7,6,7,6];
+         let got = 0, err = 0;
+         gauge.height(phase ? 3.4 : 1.6); gauge.label(phase ? 'SO_RCVBUF rb8388608' : 'SO_RCVBUF rb212992');
+         const inc = phase ? 0.09/12 : 0.11;
+         clearCallouts();
+         const upd = liveCallout([H.B.x, Y.app+1.5, H.B.z], phase ? 'รอบ 2 · 4 MiB' : 'รอบ 1 · ค่าเริ่มต้น');
+         const show = () => { upd(`ได้รับ <strong>${got}</strong>/20 · RcvbufErrors <strong style="color:${err?'#d64545':'#27a689'}">${err}</strong>`); setBar(phase ? 'r2' : 'r1', got, 20, `${got}/20`); setBar(phase ? 'e2' : 'e1', err, 45, `${err}`); };
+         show(); log('exp', phase ? 'FASTDDS_DEFAULT_PROFILES_FILE=bigbuf.xml → rb8388608' : 'default profile → rb212992 (= rmem_default)', 'u');
+         const imgs = [];
+         for (let k=0; k<20; k++){
+           const li = LOST.indexOf(k), nDrop = li >= 0 ? DR[li] : 0;
+           imgs.push((async () => {
+             const fs = [];
+             for (let f=0; f<15; f++){
+               const dropIt = f >= 15 - nDrop;
+               fs.push(travel(AB, {color:PCOL.frag, r:0.085, speed:12, onTag:(t,g)=>{ if (t !== 'rxsock') return;
+                 if (dropIt){ gauge.q = 1; setDot(g, PCOL.drop); err++; show(); travel([gauge.inlet, [gauge.inlet[0]+0.6, Y.ip-0.4, gauge.inlet[2]+0.6]], {color:PCOL.drop, r:0.08, speed:3}); }
+                 else gauge.q = gauge.q + inc; }}));
+               await sleep(22);
+             }
+             const r = await Promise.all(fs); if (r.some(x => !x)) return;
+             if (nDrop){ log('skb:kfree_skb', `f${k}: ×${nDrop} SOCKET_RCVBUFF → ภาพหาย (best effort)`, 'x'); }
+             else { got++; show(); travel(up(H.B).slice(4), {color:PCOL.obj, r:0.2, speed:9}); log('ros2:callback_start', `got f${k}`, 'g'); }
+           })());
+           adv(500000); await sleep(330);
+           if (tok !== runToken) return;
+         }
+         await Promise.all(imgs); await sleep(900);
+         log('summary', phase ? 'รอบ 2: 20/20 · RcvbufErrors 0' : 'รอบ 1: 13/20 · RcvbufErrors 45', phase ? 'g' : 'x');
+         if (!phase){ await sleep(700); }
+       }
+       callout([SW[0], 1.1, SW[2]], 'สรุป', 'network ไม่ได้ทำ packet หาย kernel ทิ้งที่ socket queue ของปลายทาง');
+     } finally { alive = false; gauge.remove(); }
+   }},
+ { short:'ทดลอง 3–4 · Zenoh & SHM', sub:'ทดลองจริง · 161 B · 0 B', layer:'capture · exp3–4', real:true, title:'ผลจริง: Zenoh 161 B แบบ peer-to-peer และ SHM ที่ไม่ขึ้นสายเลย',
+   text:'การทดลองที่ 3 ใช้ <code>rmw_zenoh_cpp</code> กับ router 1 ตัว (Host D) talker และ listener ใช้ router แค่ตอน discovery (สีน้ำเงิน) แล้วเปิด TCP ตรงถึงกัน sample "Hello World" ยาว 161 B สั้นกว่า RTPS 37 B การทดลองที่ 4 รัน talker และ listener ในเครื่องเดียวกัน capture ทุก interface ไม่เจอ DATA ของ <code>rt/chatter</code> เลย เพราะ Fast DDS ส่งผ่าน <code>/dev/shm</code>',
+   facts:[['V','Zenoh: Eth 14 + IP 20 + TCP 32 + Zenoh 95 = 161 B · batch length <code>5d 00</code> (u16 LE = 93) · attachment 33 B'],['V','SHM: segment <code>fastdds_*</code> 549 408 B ต่อ participant · port ring 52 400 B · thread <code>dds.shm.&lt;port&gt;</code>'],['K','การแยก field FRAME/PUSH/PUT ของ Zenoh ถอดด้วยมือ ยังไม่ได้ตรวจด้วย dissector']],
+   code: barsHTML('ขนาด frame ต่อ 1 sample (byte จริง)', [['RTPS · Fast DDS', 198, 200, '#8250df', null, '198 B'], ['Zenoh · TCP', 161, 200, '#e2962a', null, '161 B'], ['SHM · บนสาย', 0, 200, '#27a689', null, '0 B']]) +
+     codeBlock(`<span class="cm"># exp3: data ไม่ผ่าน router :7447</span>
+<span class="fn">tshark</span> -r exp3_zenoh.pcap -q -z conv,tcp
+<span class="cm"># exp4: ไม่มี rt/chatter บนสาย</span>
+<span class="fn">ls</span> -la /dev/shm | grep fastdds`),
+   focus:['A.t.*','A.l.*','A.n1','A.n3','A.shm','A.sock','A.ip','A.nic','sw','B.*','D.*'],
+   labels:{'A.n1':'talker', 'B.n1':'listener', 'D.n1':'rmw_zenohd'},
+   async run(){
+     log('zenoh:session', 'RMW_IMPLEMENTATION=rmw_zenoh_cpp · connect tcp/zrouter:7447', 'u'); adv(1000);
+     callout([H.D.x, Y.app+1.5, H.D.z], 'router (Host D)', 'ใช้เฉพาะ discovery: liveliness + gossip');
+     await Promise.all([
+       travel(route(H.A,'t',H.D,'t').slice(4, -4), {color:PCOL.ctl, r:0.12, speed:10}),
+       sleep(200).then(() => travel(route(H.B,'t',H.D,'t').slice(4, -4), {color:PCOL.ctl, r:0.12, speed:10}))]);
+     log('zenoh:liveliness', 'talker + listener tokens → router', 'u'); adv(300);
+     await Promise.all([travel(route(H.D,'t',H.A,'t').slice(4, -4), {color:PCOL.router, r:0.12, speed:10}), travel(route(H.D,'t',H.B,'t').slice(4, -4), {color:PCOL.router, r:0.12, speed:10})]);
+     log('zenoh:gossip', 'router บอก locator ของ listener (172.20.0.3:57268) ให้ talker', 'u'); adv(400);
+     clearCallouts(); callout([SW[0], 1.1, SW[2]], 'peer ↔ peer · 161 B', 'TCP ตรง A → B ไม่ผ่าน router');
+     for (let i=1;i<=3;i++){
+       await travel(route(H.A,'t',H.B,'t'), {color:PCOL.router, r:0.16, speed:10, onTag:(t)=>{
+         if (t==='sock' && i===1){ log('net:tcp_sendmsg', 'batch 5d 00 (93 B) · FRAME · PUSH · PUT · attachment 33 B', 'u'); adv(40); }
+         if (t==='cb'){ log('ros2:callback_start', `listener "Hello World: ${i}" · 161 B on wire`, 'g'); adv(1000000); } }});
+     }
+     await sleep(400); clearCallouts();
+     log('exp4', 'talker + listener ใน container เดียวกัน · tcpdump -i any', 'u'); adv(1000);
+     callout([H.A.x, Y.mw+0.7, 0.3], '/dev/shm', 'fastdds_* 549 408 B · port ring 52 400 B');
+     callout([SW[0], 1.1, SW[2]], 'tcpdump -i any', 'DATA rt/chatter = <strong>0</strong> · มีแค่ discovery');
+     const z = tz(H.A), X = H.A.x;
+     for (let i=1;i<=3;i++){
+       await travel([...userOnly(H.A).slice(0,5), P(XT+1.0,Y.mw,0.5), P(X,Y.mw+0.05,0.4), P(XL-1.0,Y.mw,0.5), P(XL,Y.mw,z), P(XL,Y.rmw,z), P(XL,Y.rcl,z), P(XL,Y.app,z), P(XL,Y.app+0.45,0.5)], {speed:7});
+       log('ros2:callback_start', `listener (same host) "Hello World: ${i}" · 0 B on wire`, 'g'); adv(1000000);
+     }
+     log('summary', 'exp4 pcap: DATA(p) 40 · DATA(w) 21 · DATA(r) 17 · HB/ACK 28 · user DATA 0', 'u');
    }}
 ];
 
@@ -900,6 +1111,7 @@ function openLesson(i, user){
   $('#ltext').innerHTML = L.text;
   $('#lfacts').innerHTML = L.facts.map(([v,t]) => `<li><span class="v ${v}" title="${v==='V'?'ตรวจกับต้นฉบับ Lyrical แล้ว':'ความรู้มาตรฐาน DDS/Linux'}">${v==='V'?'LYRICAL':'GENERAL'}</span><span>${t}</span></li>`).join('');
   $('#code').innerHTML = L.code;
+  $('#chl').textContent = L.real ? 'Trace console · ตัวเลขจาก capture จริง' : 'Trace console · ตัวอย่างจำลอง';
   refreshRail();
   $('#ls-'+i).scrollIntoView({block:'nearest', inline:'nearest', behavior: reduced ? 'auto' : 'smooth'});
   if (user){ try{ history.replaceState(null,'','#lesson-'+(i+1)); }catch(e){} }
