@@ -53,6 +53,16 @@
 
 ![anim-lyrical-stack-layers](docs/diagrams/anim-lyrical-stack-layers.svg)
 
+### 🔬 Packet จริงระดับ byte และเส้นทางใน Linux kernel
+
+หนึ่ง sample ของ `std_msgs/String "Hello World: 1"` ที่ส่งผ่าน `rmw_fastrtps_cpp` คือ Ethernet frame ขนาด 122 byte ภาพด้านล่างไฮไลต์ทีละชั้นทั้งในตาราง field และใน hex dump (Ethernet → IPv4 → UDP → RTPS → INFO_TS → DATA → CDR)
+
+![anim-rtps-packet-anatomy](docs/diagrams/anim-rtps-packet-anatomy.svg)
+
+เส้นทางของ datagram นี้ใน Linux kernel ทีละฟังก์ชัน ขา TX ตั้งแต่ `sendmsg()` ลงไปถึง driver และขา RX ตั้งแต่ IRQ/NAPI ขึ้นมาถึง `recvmsg()` ชื่อฟังก์ชันตรวจกับ `/proc/kallsyms` ของ Linux 7.0 พร้อมระบุ tracepoint ที่ใช้วัดผลได้ (รายละเอียดอยู่ใน[หัวข้อ 5.4–5.5 ของเอกสาร](docs/ros2_lyrical_network_stack_deep_dive.md#54-packet-จริงระดับ-byte-หนึ่ง-sample-บนสาย))
+
+![anim-linux-kernel-packet-path](docs/diagrams/anim-linux-kernel-packet-path.svg)
+
 ---
 
 ## 📘 1. Essential ROS Track

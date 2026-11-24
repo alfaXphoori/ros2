@@ -274,6 +274,108 @@ cat /proc/net/snmp ; ss -uamp ; ethtool -S <iface> | grep -i drop
 
 ---
 
+### 5.4 Packet จริงระดับ byte: หนึ่ง sample บนสาย
+
+![anim-rtps-packet-anatomy](diagrams/anim-rtps-packet-anatomy.svg)
+
+ตัวอย่างนี้คือ `demo_nodes_cpp talker` ส่ง `std_msgs/String` ค่า `"Hello World: 1"` บน topic `/chatter` ผ่าน `rmw_fastrtps_cpp` แบบ UDPv4 unicast ไปยัง listener ที่ domain 0, participant 0 frame ทั้งก้อนสร้างด้วยสคริปต์ที่คำนวณ IP และ UDP checksum ให้ถูกต้องจริง ส่วนค่า MAC, IP, guidPrefix และ timestamp เป็นค่าตัวอย่าง
+
+```
+0000  02 00 00 00 00 20 02 00 00 00 00 10 08 00 45 00   Ethernet dst/src/type │ IPv4 →
+0010  00 6c 1c 46 40 00 40 11 9a cc c0 a8 01 0a c0 a8   len=108 id DF TTL=64 proto=17 csum src dst
+0020  01 14 ce c3 1c f3 00 58 05 6d 52 54 50 53 02 03   UDP 52931→7411 len=88 csum │ "RTPS" v2.3
+0030  01 0f 01 0f 45 d2 b3 0c 00 00 01 00 00 00 09 01   vendor 0x010f · guidPrefix │ INFO_TS
+0040  08 00 55 3b 05 6b cc cc cc 4c 15 05 2c 00 00 00   timestamp │ DATA flags=E|D len=44
+0050  10 00 00 00 00 00 00 00 12 03 00 00 00 00 01 00   toInlineQos=16 readerId writerId SN=1
+0060  00 00 00 01 00 00 0f 00 00 00 48 65 6c 6c 6f 20   CDR_LE · len=15 · "Hello "
+0070  57 6f 72 6c 64 3a 20 31 00 00                     "World: 1\0" + pad
+```
+
+| ชั้น | ขนาด | field สำคัญ | ใครเขียน field นี้ |
+|---|---|---|---|
+| Ethernet II | 14 B (+4 FCS) | dst/src MAC, EtherType 0x0800 | kernel `ip_finish_output2` → neighbour/ARP cache; NIC เติม FCS |
+| IPv4 | 20 B | total length 108, ID, DF, TTL 64 (multicast มักตั้ง TTL=1), protocol 17, checksum | kernel `ip_make_skb` / `__ip_append_data` |
+| UDP | 8 B | src port (ephemeral ของ send socket), dst port **7411** = 7400 + 250·0 + 11 + 2·0, length, checksum (หรือ offload ให้ NIC) | kernel `udp_send_skb` |
+| RTPS header | 20 B | `"RTPS"`, version 2.3, vendorId 0x010f (eProsima), guidPrefix 12 B | Fast DDS (`RTPSMessageGroup`) |
+| INFO_TS | 12 B | submessage id 0x09, flag E (little endian), source timestamp | Fast DDS |
+| DATA header | 24 B | id 0x15, flags E\|D, octetsToInlineQos=16, readerId (UNKNOWN), writerId (`…03` = user writer, ไม่มี key), writerSN | Fast DDS writer |
+| serializedPayload | 24 B | encapsulation `0x0001` = CDR_LE (XCDR1), options, CDR body: `uint32` length 15 + `"Hello World: 1\0"` + padding | rmw typesupport (Fast-CDR 2.3.x) |
+
+ข้อสังเกตสำหรับงานวิจัย
+- **Overhead:** ข้อความจริงยาว 14 ตัวอักษร แต่ใช้ 146 byte-times บนสาย (122 + FCS 4 + preamble 8 + IFG 12) ข้อความเล็กจึงเปลือง header เกือบทั้งหมด การรวมหลาย sample ไว้ในข้อความ RTPS เดียวกัน (Fast DDS ทำ message grouping) จึงช่วยได้มาก [K]
+- **Submessage ที่อาจเพิ่มเข้ามา:** `INFO_DST` (12 B) เมื่อส่งเฉพาะ participant, `HEARTBEAT` / `ACKNACK` เมื่อเป็น RELIABLE, `DATA_FRAG` เมื่อข้อมูลใหญ่เกินขนาด datagram, และ inline QoS (เช่น key hash เมื่อ type มี key) [K]
+- ค่าใน field ขึ้นกับ implementation และเวอร์ชัน ควรยืนยันกับ capture จริงก่อนอ้างอิง
+
+```bash
+# capture แล้วเปิดใน Wireshark (มี RTPS dissector ในตัว)
+sudo tcpdump -i <iface> -w chatter.pcap 'udp portrange 7400-7500'
+tshark -r chatter.pcap -Y 'rtps.sm.id == 0x15' -V | less     # DATA submessages
+tshark -r chatter.pcap -Y rtps -x | head -40                  # hex dump
+```
+
+### 5.5 เส้นทางใน Linux kernel ทีละฟังก์ชัน (TX และ RX)
+
+![anim-linux-kernel-packet-path](diagrams/anim-linux-kernel-packet-path.svg)
+
+ชื่อฟังก์ชันทุกตัวด้านล่างตรวจแล้วว่ามีอยู่ใน `/proc/kallsyms` ของ Linux 7.0.0 (Ubuntu 26.04 generic) ฟังก์ชันที่ถูก inline จะไม่ปรากฏใน kallsyms และชื่อฟังก์ชันอาจเปลี่ยนตามเวอร์ชัน kernel เช่น `napi_gro_receive` ในเวอร์ชันนี้กลายเป็น `gro_receive_skb` ตัวอย่าง driver ใช้ `r8169` (Realtek)
+
+**User space ก่อนถึง kernel (Fast DDS 3.6) [K: ตรวจ symbol ด้วย `perf`/`gdb` อีกครั้ง]**
+`rclcpp::Publisher::publish` → `rcl_publish` → `rmw_publish` (`rmw_fastrtps_shared_cpp`) → serialize ด้วย typesupport → `DataWriter::write` → writer history → `RTPSMessageGroup` (ประกอบ RTPS header + INFO_TS + DATA) → `UDPTransportInterface::send` → asio `send_to()` → **`sendmsg()`**
+
+**TX (Host A)**
+
+| # | subsystem | ฟังก์ชัน | หน้าที่ | tracepoint |
+|---|---|---|---|---|
+| 1 | syscall | `__sys_sendmsg` → `____sys_sendmsg` | เข้า kernel, copy `msghdr` | `syscalls:sys_enter_sendmsg` |
+| 2 | socket | `sock_sendmsg` → `inet_sendmsg` | dispatch ตาม protocol family | |
+| 3 | UDP | `udp_sendmsg` | หา route (`ip_route_output_flow`), corking | |
+| 4 | UDP/IP | `ip_make_skb` → `__ip_append_data` | จอง `sk_buff`, **copy_from_user** (`ip_generic_getfrag`) = copy ที่ ② | |
+| 5 | UDP | `udp_send_skb` | เขียน UDP header + checksum (หรือ `CHECKSUM_PARTIAL` ให้ NIC) | |
+| 6 | IPv4 | `ip_send_skb` → `ip_local_out` → `__ip_local_out` | netfilter `NF_INET_LOCAL_OUT` | |
+| 7 | IPv4 | `ip_output` → `ip_finish_output` → `__ip_finish_output` | netfilter `POST_ROUTING`; ถ้าใหญ่กว่า MTU → `ip_do_fragment` | |
+| 8 | neighbour | `ip_finish_output2` → `neigh_resolve_output` | ARP/neighbour cache เขียน Ethernet header | |
+| 9 | net core | `__dev_queue_xmit` → `__dev_xmit_skb` | เข้า qdisc (`fq_codel`, `mqprio`, `taprio`) | `net:net_dev_queue` |
+| 10 | qdisc | `__qdisc_run` → `sch_direct_xmit` → `validate_xmit_skb` | dequeue, GSO, checksum offload (`skb_csum_hwoffload_help`) | `qdisc:qdisc_dequeue` |
+| 11 | net core | `dev_hard_start_xmit` | ส่ง skb ให้ driver | `net:net_dev_start_xmit`, `net:net_dev_xmit` |
+| 12 | driver | `rtl8169_start_xmit` | DMA map → TX descriptor ring → doorbell | |
+| 13 | NIC | hardware | เติม FCS ส่งออกสาย; TX-done IRQ → `napi_consume_skb` คืน skb | `skb:consume_skb` |
+
+**RX (Host B)**
+
+| # | subsystem | ฟังก์ชัน | หน้าที่ | tracepoint |
+|---|---|---|---|---|
+| 1 | NIC | hardware | DMA frame ลง RX ring (page pool) แล้วยิง MSI-X | |
+| 2 | driver | `rtl8169_interrupt` | ปิด IRQ, `napi_schedule` | `irq:irq_handler_entry` |
+| 3 | softirq | `net_rx_action` → `__napi_poll` | ทำงานใน `NET_RX_SOFTIRQ` (หรือ ksoftirqd) | `irq:softirq_entry`, `napi:napi_poll` |
+| 4 | driver | `rtl8169_poll` → `rtl_rx` | สร้าง skb, `eth_type_trans` ตั้ง protocol | |
+| 5 | GRO | `gro_receive_skb` → `dev_gro_receive` → `inet_gro_receive` → `udp4_gro_receive` | รวม packet (UDP GRO ทำงานเมื่อเปิดใช้) | `net:napi_gro_receive_entry` |
+| 6 | net core | `netif_receive_skb_list_internal` → `__netif_receive_skb_list_core` | ส่งให้ AF_PACKET tap (tcpdump เห็น packet ที่จุดนี้) แล้วจึง dispatch ตาม EtherType | `net:netif_receive_skb` |
+| 7 | IPv4 | `ip_list_rcv` → `ip_sublist_rcv` → `ip_rcv_finish` | netfilter `PRE_ROUTING`, `ip_route_input_noref` (เป็น local) | |
+| 8 | IPv4 | `ip_local_deliver` | ถ้าเป็น fragment → `ip_defrag` (คุมด้วย `ipfrag_*`); netfilter `LOCAL_IN` | |
+| 9 | IPv4 | `ip_local_deliver_finish` → `ip_protocol_deliver_rcu` | ส่งให้ protocol 17 | |
+| 10 | UDP | `udp_rcv` → `__udp4_lib_rcv` → `__udp4_lib_lookup` | หา socket จาก dst port 7411 (multicast ใช้เส้นทาง mcast deliver) | |
+| 11 | UDP | `udp_unicast_rcv_skb` → `udp_queue_rcv_skb` → `udp_queue_rcv_one_skb` | ตรวจ checksum, socket filter (BPF) | |
+| 12 | UDP | `__udp_enqueue_schedule_skb` | ถ้า `sk_rcvbuf` เต็ม → `sk_skb_reason_drop` (`SKB_DROP_REASON_SOCKET_RCVBUFF`) | `skb:kfree_skb`, `sock:sock_rcvqueue_full` |
+| 13 | socket | `sock_def_readable` | ปลุก thread ที่รออยู่ใน `recvmsg`/`epoll` | |
+| 14 | syscall | `____sys_recvmsg` → `sock_recvmsg` → `inet_recvmsg` → `udp_recvmsg` → `__skb_recv_udp` → `skb_copy_datagram_iter` | **copy_to_user** = copy ที่ ④ | `syscalls:sys_exit_recvmsg` |
+
+**User space หลัง kernel (Fast DDS 3.6) [K]**
+receive thread ของ `UDPChannelResource` → `MessageReceiver::processCDRMsg` (แยก submessage: INFO_TS → DATA) → reader (`StatefulReader`/`StatelessReader`) → ReaderHistory → listener `on_data_available` → rmw แจ้ง executor (event callback หรือ guard condition) → `rmw_take` → deserialize (copy ที่ ⑤) → callback
+
+**คำสั่งตรวจสอบบนเครื่องจริง**
+```bash
+# 1) call graph ของ udp_sendmsg ใน process talker
+sudo perf ftrace -G udp_sendmsg -p $(pgrep -f demo_nodes_cpp/talker)
+# 2) kernel stack ตอน enqueue ลง socket ฝั่งรับ
+sudo bpftrace -e 'kprobe:__udp_enqueue_schedule_skb { @[kstack(12)] = count(); }'
+# 3) packet ถูกทิ้งที่ไหน เพราะอะไร
+sudo bpftrace -e 'tracepoint:skb:kfree_skb { @[args->reason, ksym(args->location)] = count(); }'
+# 4) latency ของแต่ละช่วงใน kernel (เปิด tracepoint ทั้งชุด)
+sudo perf record -e net:net_dev_queue,net:net_dev_xmit,net:netif_receive_skb,irq:softirq_entry,syscalls:sys_exit_recvmsg -a -- sleep 5
+# 5) ตรวจว่าฟังก์ชันมีอยู่ใน kernel ของคุณ
+sudo grep -w -E 'udp_sendmsg|gro_receive_skb|__udp_enqueue_schedule_skb' /proc/kallsyms
+```
+
 ## 6. ระหว่างเครื่อง (inter-host) [K + V สำหรับ Zenoh]
 
 | ประเด็น | DDS (Fast/Cyclone/Connext) | Zenoh |
