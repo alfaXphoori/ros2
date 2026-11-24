@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 600" width="960" height="600" role="img" font-family="'Barlow Semi Condensed','Segoe UI',Helvetica,Arial,sans-serif">
+<title>ROS 2 Lyrical: message path from user space to kernel and across hosts</title>
+<style>
+.bg{fill:#f8f1e6}
+.host{fill:#fffbf6;stroke:#e5d8c5;stroke-width:1.5}
+.hl{font:700 13px 'Barlow Semi Condensed','Segoe UI',Arial,sans-serif;letter-spacing:.12em;fill:#fff}
+.lay text{font:600 13px 'JetBrains Mono',Menlo,Consolas,monospace}
+.u rect{stroke:#d6c6af;stroke-width:1.2}
+.k rect{stroke:#0f2239;stroke-width:1}
+.note{font:500 12px 'JetBrains Mono',Menlo,Consolas,monospace;fill:#5b6168}
+.note b{fill:#dc5812}
+.tag{font:700 10.5px 'Barlow Semi Condensed','Segoe UI',Arial,sans-serif;letter-spacing:.14em;fill:#dc5812}
+.bound{stroke:#dc5812;stroke-width:1.6;stroke-dasharray:7 6;fill:none;animation:march 1.2s linear infinite}
+@keyframes march{to{stroke-dashoffset:-26}}
+.trail{fill:none;stroke:#f86b1d;stroke-width:2.2;stroke-dasharray:3 7;opacity:.45}
+.halo{animation:halo 1.4s ease-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes halo{0%{opacity:.8;transform:scale(.6)}100%{opacity:0;transform:scale(2.4)}}
+.title{font:700 24px 'Barlow Semi Condensed','Segoe UI',Arial,sans-serif;fill:#0f2239}
+.sub{font:500 12.5px 'JetBrains Mono',Menlo,Consolas,monospace;fill:#a49a8c}
+</style>
+<rect class="bg" width="960" height="600" rx="18"/>
+<text class="title" x="40" y="46">One message, five copies: Lyrical default path (UDP)</text>
+<text class="sub" x="40" y="68">rmw_fastrtps_cpp · Fast DDS 3.6.x · Linux UDP/IP · Host A → Host B</text>
+
+<!-- hosts -->
+<rect class="host" x="40" y="88" width="330" height="440" rx="14"/>
+<rect class="host" x="590" y="88" width="330" height="440" rx="14"/>
+<rect x="56" y="500" width="150" height="22" rx="5" fill="#0f2239"/><text class="hl" x="66" y="516">HOST A · TALKER</text>
+<rect x="606" y="500" width="180" height="22" rx="5" fill="#0f2239"/><text class="hl" x="616" y="516">HOST B · LISTENER</text>
+
+<!-- layer stacks -->
+<g class="lay">
+  <g class="u">
+    <rect x="60" y="104" width="290" height="40" rx="7" fill="#fffbf6"/><text x="76" y="129" fill="#0f2239">app · rclcpp publish()</text>
+    <rect x="60" y="152" width="290" height="40" rx="7" fill="#f3e7d6"/><text x="76" y="177" fill="#0f2239">rcl</text>
+    <rect x="60" y="200" width="290" height="40" rx="7" fill="#fde3cd"/><text x="76" y="225" fill="#0f2239">rmw · typesupport → CDR</text>
+    <rect x="60" y="248" width="290" height="40" rx="7" fill="#f86b1d"/><text x="76" y="273" fill="#fff">Fast DDS · RTPS writer</text>
+    <rect x="610" y="104" width="290" height="40" rx="7" fill="#fffbf6"/><text x="626" y="129" fill="#0f2239">app · callback()</text>
+    <rect x="610" y="152" width="290" height="40" rx="7" fill="#f3e7d6"/><text x="626" y="177" fill="#0f2239">rcl · executor</text>
+    <rect x="610" y="200" width="290" height="40" rx="7" fill="#fde3cd"/><text x="626" y="225" fill="#0f2239">rmw · CDR → struct</text>
+    <rect x="610" y="248" width="290" height="40" rx="7" fill="#f86b1d"/><text x="626" y="273" fill="#fff">Fast DDS · RTPS reader</text>
+  </g>
+  <g class="k">
+    <rect x="60" y="322" width="290" height="40" rx="7" fill="#2c5f9e"/><text x="76" y="347" fill="#fff">socket · UDP</text>
+    <rect x="60" y="370" width="290" height="40" rx="7" fill="#3a6aa6"/><text x="76" y="395" fill="#fff">IP · netfilter · qdisc</text>
+    <rect x="60" y="418" width="290" height="40" rx="7" fill="#0f2239"/><text x="76" y="443" fill="#fff">driver · NIC (DMA)</text>
+    <rect x="610" y="322" width="290" height="40" rx="7" fill="#2c5f9e"/><text x="626" y="347" fill="#fff">socket · rcvbuf queue</text>
+    <rect x="610" y="370" width="290" height="40" rx="7" fill="#3a6aa6"/><text x="626" y="395" fill="#fff">IP · reassembly</text>
+    <rect x="610" y="418" width="290" height="40" rx="7" fill="#0f2239"/><text x="626" y="443" fill="#fff">NIC · IRQ → NAPI → GRO</text>
+  </g>
+</g>
+
+<!-- user/kernel boundary -->
+<line class="bound" x1="52" y1="305" x2="358" y2="305"/>
+<line class="bound" x1="602" y1="305" x2="908" y2="305"/>
+<text class="tag" x="214" y="300">USER ↑  KERNEL ↓</text>
+<text class="tag" x="764" y="300">USER ↑  KERNEL ↓</text>
+
+<!-- wire + switch -->
+<path d="M350 438 C 410 438, 420 478, 455 478 L 505 478 C 540 478, 550 438, 610 438" fill="none" stroke="#4b505c" stroke-width="5" stroke-linecap="round"/>
+<rect x="440" y="464" width="80" height="30" rx="6" fill="#5b6168"/><text x="452" y="484" font-family="'JetBrains Mono',Menlo,monospace" font-size="12" fill="#fff">switch</text>
+
+<!-- copy notes (centre column) -->
+<g class="note">
+  <text x="382" y="214"><tspan fill="#dc5812" font-weight="700">①</tspan> serialize → CDR</text>
+  <text x="382" y="324"><tspan fill="#dc5812" font-weight="700">②</tspan> sendmsg()</text>
+  <text x="382" y="340">copy_from_user</text>
+  <text x="382" y="392">IP fragment</text>
+  <text x="382" y="408">64 KB / MTU 1500</text>
+  <text x="578" y="244" text-anchor="end"><tspan fill="#dc5812" font-weight="700">⑤</tspan> deserialize</text>
+  <text x="578" y="358" text-anchor="end"><tspan fill="#dc5812" font-weight="700">④</tspan> recvmsg()</text>
+  <text x="578" y="374" text-anchor="end">copy_to_user</text>
+  <text x="480" y="530" text-anchor="middle"><tspan fill="#dc5812" font-weight="700">③</tspan> DMA · wire</text>
+</g>
+
+<!-- dotted trail of the path -->
+<path id="route" class="trail" d="M205 124 L205 438 L350 438 C 410 438, 420 478, 455 478 L 505 478 C 540 478, 550 438, 610 438 L755 438 L755 124"/>
+
+<!-- fragments (only meaningful in kernel/wire, drawn small) -->
+<g fill="#f0a53a">
+  <circle r="4"><animateMotion dur="7s" begin="0.18s" repeatCount="indefinite"><mpath href="#route"/></animateMotion><animate attributeName="opacity" dur="7s" begin="0.18s" repeatCount="indefinite" values="0;0;1;1;0;0" keyTimes="0;0.36;0.4;0.72;0.76;1"/></circle>
+  <circle r="4"><animateMotion dur="7s" begin="0.36s" repeatCount="indefinite"><mpath href="#route"/></animateMotion><animate attributeName="opacity" dur="7s" begin="0.36s" repeatCount="indefinite" values="0;0;1;1;0;0" keyTimes="0;0.36;0.4;0.72;0.76;1"/></circle>
+  <circle r="4"><animateMotion dur="7s" begin="0.54s" repeatCount="indefinite"><mpath href="#route"/></animateMotion><animate attributeName="opacity" dur="7s" begin="0.54s" repeatCount="indefinite" values="0;0;1;1;0;0" keyTimes="0;0.36;0.4;0.72;0.76;1"/></circle>
+</g>
+
+<!-- main packet: orange struct → amber CDR bytes → orange struct -->
+<g>
+  <circle r="9" fill="#f86b1d" class="halo" opacity=".5">
+    <animateMotion dur="7s" repeatCount="indefinite"><mpath href="#route"/></animateMotion>
+  </circle>
+  <circle r="8" stroke="#fff" stroke-width="2">
+    <animateMotion dur="7s" repeatCount="indefinite"><mpath href="#route"/></animateMotion>
+    <animate attributeName="fill" dur="7s" repeatCount="indefinite" values="#f86b1d;#f86b1d;#e2962a;#e2962a;#f86b1d;#f86b1d" keyTimes="0;0.11;0.13;0.88;0.9;1"/>
+  </circle>
+</g>
+
+<text class="sub" x="40" y="570">Skip this path: intra-process · SHM / loaned messages · rosidl::Buffer (new)</text>
+</svg>

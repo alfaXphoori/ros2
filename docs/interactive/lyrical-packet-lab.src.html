@@ -1,0 +1,764 @@
+<title>Lyrical Packet Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Semi+Condensed:wght@500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: full-bleed isometric 3D lab; brand top-left, lesson card + code console right, lesson rail bottom. Compact: stage on top, panels stacked below. */
+:root{
+  --bg:#f8f1e6; --bg-deep:#f2e8da; --card:#fffbf6; --card-soft:#fffbf5f2; --panel:#fbf6eedd;
+  --line:#e5d8c5; --line-strong:#d6c6af; --navy:#0f2239; --ink:#5b6168; --muted:#6e7277; --faint:#a49a8c;
+  --accent:#f86b1d; --accent-deep:#dc5812; --accent-soft:#fdecdd; --green:#27a689; --blue:#2c5f9e;
+  --amber:#e2962a; --red:#d64545; --console:#fbf4ea;
+  --shadow:0 12px 28px -20px #6e4e2680;
+  --sans:"Barlow","IBM Plex Sans Thai",system-ui,sans-serif;
+  --cond:"Barlow Semi Condensed","Barlow","IBM Plex Sans Thai",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,"IBM Plex Sans Thai",monospace;
+  color-scheme:light;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55;overflow:hidden}
+*{box-sizing:border-box}
+button{font:inherit;cursor:pointer}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.stage{position:fixed;inset:0}
+#gl{display:block;width:100%;height:100%;cursor:grab}
+#gl:active{cursor:grabbing}
+.labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.chip{position:absolute;transform:translate(-50%,-50%);font:500 10.5px/1 var(--mono);color:var(--navy);background:var(--card-soft);border:1px solid var(--line);padding:4px 7px;border-radius:5px;white-space:nowrap;transition:opacity .3s}
+.chip.k{color:#fff;background:#1d3f6ecc;border-color:#1d3f6e}
+.chip.dim{opacity:.25}
+.chip.host{font:700 12px/1 var(--cond);letter-spacing:.12em;text-transform:uppercase;background:var(--navy);color:#fff;border-color:var(--navy);padding:6px 10px}
+.chip.bound{font:600 10px/1 var(--cond);letter-spacing:.14em;text-transform:uppercase;color:var(--accent-deep);background:var(--accent-soft);border-color:#f6c9a8}
+.callout{position:absolute;width:210px;transform:translate(-50%,calc(-100% - 18px));background:var(--card);border:1.5px solid var(--line);box-shadow:var(--shadow);border-radius:10px;padding:9px 11px;font-size:12.5px;line-height:1.45;animation:pop .35s ease-out both}
+.callout b{display:block;font:700 12px/1.2 var(--cond);letter-spacing:.06em;text-transform:uppercase;color:var(--accent-deep);margin-bottom:3px}
+.callout::after{content:"";position:absolute;left:50%;bottom:-8px;width:12px;height:12px;background:var(--card);border-right:1.5px solid var(--line);border-bottom:1.5px solid var(--line);transform:translateX(-50%) rotate(45deg)}
+.callout .dot{position:absolute;left:50%;bottom:-26px;width:10px;height:10px;margin-left:-5px;border-radius:50%;background:var(--accent)}
+.callout .dot::before{content:"";position:absolute;inset:0;border-radius:50%;background:var(--accent);animation:halo 1.6s ease-out infinite}
+@keyframes halo{0%{opacity:.9;transform:scale(.6)}to{opacity:0;transform:scale(2.6)}}
+@keyframes pop{from{opacity:0;transform:translate(-50%,calc(-100% - 8px))}to{opacity:1}}
+
+.brand{position:absolute;top:calc(18px + env(safe-area-inset-top,0px));left:max(20px,env(safe-area-inset-left,0px));max-width:340px;pointer-events:none}
+.brand .eyebrow{font:600 11px/1 var(--cond);letter-spacing:.2em;text-transform:uppercase;color:var(--accent-deep)}
+.brand h1{margin:6px 0 4px;font:700 34px/1 var(--cond);color:var(--navy);letter-spacing:-.01em;text-wrap:balance}
+.brand p{margin:0;font-size:13.5px;color:var(--muted)}
+.brand .tag{margin-top:8px;font:500 11px/1 var(--mono);color:var(--faint)}
+
+.hint{position:absolute;left:max(20px,env(safe-area-inset-left,0px));bottom:calc(112px + env(safe-area-inset-bottom,0px));font:500 11px/1.4 var(--mono);color:var(--faint);pointer-events:none}
+
+.side{position:absolute;top:calc(16px + env(safe-area-inset-top,0px));right:max(16px,env(safe-area-inset-right,0px));bottom:calc(112px + env(safe-area-inset-bottom,0px));width:380px;display:flex;flex-direction:column;gap:12px;pointer-events:none}
+.card{pointer-events:auto;background:var(--panel);backdrop-filter:blur(8px);border:1.5px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
+.lesson{padding:16px 18px 14px;min-height:0;overflow:auto;flex:0 1 auto}
+.lesson .meta{display:flex;justify-content:space-between;align-items:center;font:600 11px/1 var(--cond);letter-spacing:.16em;text-transform:uppercase;color:var(--faint)}
+.lesson .meta .layer{color:var(--accent-deep)}
+.lesson h2{margin:8px 0 6px;font:700 22px/1.15 var(--cond);color:var(--navy);text-wrap:balance}
+.lesson p{margin:0 0 10px;font-size:14px}
+.facts{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.facts li{display:grid;grid-template-columns:auto 1fr;gap:8px;font-size:13px;align-items:start}
+.facts .v{font:600 9.5px/1 var(--mono);padding:4px 5px 3px;border-radius:4px;margin-top:2px}
+.facts .v.V{background:#d9f0e8;color:#17765f}
+.facts .v.K{background:#e8e2d8;color:#6e6457}
+.facts span{min-width:0;overflow-wrap:anywhere}
+.facts code,.lesson p code{font:500 12px var(--mono);color:var(--navy);background:#f3ebdf;padding:1px 4px;border-radius:4px}
+
+.code-card{display:flex;flex-direction:column;min-height:0;flex:1 1 auto;overflow:hidden}
+.code-head{display:flex;align-items:center;justify-content:space-between;padding:9px 10px 9px 14px;border-bottom:1.5px solid var(--line)}
+.code-head span{font:600 11px/1 var(--cond);letter-spacing:.16em;text-transform:uppercase;color:var(--faint)}
+.btn-run{display:inline-flex;align-items:center;gap:7px;border:0;border-radius:8px;padding:7px 13px;background:linear-gradient(#fb7d33,#f0611a);color:#fff;font:700 12px/1 var(--cond);letter-spacing:.1em;text-transform:uppercase;box-shadow:0 5px 12px -6px #f0611ab3}
+.btn-run[data-state=running]{background:linear-gradient(#e65a45,#cf4532)}
+.btn-run svg{width:10px;height:10px}
+pre.code{margin:0;padding:10px 14px;font:400 12px/1.6 var(--mono);color:var(--navy);background:#fffcf8;overflow:auto;white-space:pre;flex:0 0 auto;max-height:42%}
+.code .cm{color:var(--faint);font-style:italic}.code .str{color:#3f8a4f}.code .kw{color:var(--blue)}.code .fn{color:#dc6a2a}
+.console{flex:1 1 auto;min-height:90px;border-top:1.5px solid var(--line);background:var(--console);display:flex;flex-direction:column;min-width:0}
+.console .ch{display:flex;justify-content:space-between;padding:6px 14px;font:600 10px/1 var(--cond);letter-spacing:.16em;text-transform:uppercase;color:var(--faint)}
+.console .ch .st{display:inline-flex;align-items:center;gap:6px}
+.console .ch .st i{width:7px;height:7px;border-radius:50%;background:var(--faint)}
+.console .ch .st.on i{background:var(--green);animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.35}}
+#log{flex:1;overflow:auto;padding:0 14px 10px;font:400 11px/1.65 var(--mono);color:var(--ink)}
+#log div{white-space:pre-wrap;word-break:break-word;animation:flash .6s ease-out}
+#log .t{color:var(--faint)}#log .tp{color:var(--blue)}#log .tp.u{color:var(--accent-deep)}#log .tp.x{color:var(--red)}#log .tp.g{color:#17765f}
+@keyframes flash{from{background:#f0a53a40}to{background:#f0a53a00}}
+
+.rail{position:absolute;left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px));padding:10px 12px;display:flex;gap:12px;align-items:center}
+.prog{flex:0 0 auto;width:96px}
+.prog b{display:block;font:700 20px/1 var(--cond);color:var(--navy);font-variant-numeric:tabular-nums}
+.prog span{font:600 10px/1 var(--cond);letter-spacing:.16em;text-transform:uppercase;color:var(--faint)}
+.prog .track{margin-top:6px;height:4px;background:#e9dfd1;border-radius:3px;overflow:hidden}
+.prog .track i{display:block;height:100%;background:var(--green);width:0;transition:width .4s}
+.lessons{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;flex:1;min-width:0;padding:2px}
+.lessons::-webkit-scrollbar{display:none}
+.ls{flex:0 0 auto;display:flex;align-items:center;gap:8px;border:1.5px solid var(--line);background:var(--card);border-radius:10px;padding:7px 11px 7px 7px;color:var(--navy);text-align:left}
+.ls .n{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;background:var(--bg-deep);font:700 12px/1 var(--cond);color:var(--ink);font-variant-numeric:tabular-nums}
+.ls .tt{font:600 13px/1.1 var(--cond);white-space:nowrap}
+.ls .tt small{display:block;font:500 10px/1.3 var(--mono);color:var(--faint)}
+.ls.done .n{background:#d9f0e8;color:#17765f}
+.ls.on{border-color:var(--accent);background:var(--accent-soft)}
+.ls.on .n{background:var(--accent);color:#fff}
+
+.insp{position:absolute;width:260px;background:var(--card);border:1.5px solid var(--line-strong);border-radius:12px;box-shadow:var(--shadow);padding:12px 14px;font-size:13px;pointer-events:auto;animation:pop2 .25s ease-out}
+@keyframes pop2{from{opacity:0;transform:translateY(6px)}}
+.insp b{display:block;font:700 15px/1.2 var(--cond);color:var(--navy);margin-bottom:2px}
+.insp .where{font:600 10px/1 var(--cond);letter-spacing:.16em;text-transform:uppercase;color:var(--accent-deep);margin-bottom:6px}
+.insp p{margin:0}
+.insp button{position:absolute;top:6px;right:8px;border:0;background:none;color:var(--faint);font-size:16px}
+
+body.compact{overflow:auto}
+body.compact .stage{position:relative;height:calc(100vw * 0.72 + 120px);max-height:72vh;min-height:300px}
+body.compact .chip:not(.host){font-size:9px;padding:3px 5px}
+body.compact .chip.bound{display:none}
+body.compact .side{position:static;width:auto;padding-inline:max(16px,env(safe-area-inset-left,0px)) max(16px,env(safe-area-inset-right,0px));padding-block:12px}
+body.compact .lesson,body.compact .code-card{flex:none}
+body.compact pre.code{max-height:none}
+body.compact .console{min-height:150px;max-height:220px}
+body.compact .rail{position:sticky;bottom:0;left:auto;right:auto;margin:0 max(16px,env(safe-area-inset-left,0px)) 12px}
+body.compact .brand h1{font-size:26px}
+body.compact .brand p,body.compact .hint{display:none}
+body.compact .callout{width:170px;font-size:11.5px}
+@media (prefers-reduced-motion:reduce){.callout .dot::before,.console .ch .st.on i{animation:none}}
+</style>
+
+<div class="stage" id="stage">
+  <canvas id="gl" aria-label="แบบจำลอง 3 มิติของ ROS 2 network stack: Host A และ Host B"></canvas>
+  <div class="labels" id="labels"></div>
+  <div class="brand">
+    <div class="eyebrow">ROS 2 Lyrical Luth · LTS 2026–2031</div>
+    <h1>Lyrical Packet Lab</h1>
+    <p>ตามรอย message หนึ่งก้อน จาก <code>publish()</code> ลงไปถึง kernel ข้ามสาย LAN แล้วขึ้นไปถึง callback</p>
+    <div class="tag">Fast DDS 3.6 · Cyclone 11 · Zenoh · Connext 7.7</div>
+  </div>
+  <div class="hint">ลาก = หมุน · คลิกขวา/WASD = เลื่อน · Q/E = หมุน · scroll = ซูม · คลิก layer = ดูรายละเอียด</div>
+</div>
+
+<div class="side" id="side">
+  <section class="card lesson" aria-live="polite">
+    <div class="meta"><span id="lnum">บทที่ 1 / 12</span><span class="layer" id="llayer">overview</span></div>
+    <h2 id="ltitle"></h2>
+    <p id="ltext"></p>
+    <ul class="facts" id="lfacts"></ul>
+  </section>
+  <section class="card code-card">
+    <div class="code-head"><span>ลองเอง</span>
+      <button class="btn-run" id="run" data-state="idle"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M1 0l9 5-9 5z" fill="currentColor"/></svg><span id="runlbl">Run</span></button>
+    </div>
+    <pre class="code" id="code"></pre>
+    <div class="console">
+      <div class="ch"><span>Trace console · ตัวอย่างจำลอง</span><span class="st" id="st"><i></i><em id="stx">Stopped</em></span></div>
+      <div id="log"></div>
+    </div>
+  </section>
+</div>
+
+<nav class="card rail" aria-label="บทเรียน">
+  <div class="prog"><b id="pcount">0/12</b><span>เรียนแล้ว</span><div class="track"><i id="pbar"></i></div></div>
+  <div class="lessons" id="lessons"></div>
+</nav>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(() => {
+'use strict';
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const $ = s => document.querySelector(s);
+
+/* ---------- layout mode ---------- */
+function setMode(){ document.body.classList.toggle('compact', innerWidth < 900 || innerWidth/innerHeight < 0.95); }
+setMode();
+
+/* ---------- renderer / scene ---------- */
+const canvas = $('#gl');
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:false});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setClearColor(0xf8f1e6, 1);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputEncoding = THREE.sRGBEncoding;
+const scene = new THREE.Scene();
+const FR = 9;
+const camera = new THREE.OrthographicCamera(-FR, FR, FR, -FR, 0.1, 200);
+camera.position.set(15, 15.5, 21);
+const controls = new THREE.OrbitControls(camera, canvas);
+controls.target.set(-0.8, 2.3, 0);
+controls.enableDamping = true; controls.dampingFactor = 0.08;
+controls.minZoom = 0.55; controls.maxZoom = 3.2;
+controls.maxPolarAngle = Math.PI * 0.47;
+controls.update();
+
+scene.add(new THREE.HemisphereLight(0xfffaf2, 0xd9c8b0, 0.85));
+const sun = new THREE.DirectionalLight(0xffffff, 0.75);
+sun.position.set(8, 20, 12); sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+Object.assign(sun.shadow.camera, {left:-16, right:16, top:16, bottom:-16, near:1, far:60});
+sun.shadow.radius = 4;
+scene.add(sun);
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(120, 120), new THREE.ShadowMaterial({opacity:0.14}));
+ground.rotation.x = -Math.PI/2; ground.position.y = -0.32; ground.receiveShadow = true; scene.add(ground);
+
+/* ---------- geometry constants ---------- */
+const Y = {app:5.0, rcl:4.3, rmw:3.6, mw:2.9, bound:2.4, sock:1.85, ip:1.15, nic:0.45};
+const TZ = 1.32, KZ = 1.82;
+const XT = -7.6, XL = -3.8, XB = 6.0, XAK = -5.7, XSW = 1.0;
+
+/* ---------- layer info ---------- */
+const INFO = {
+  app:{t:'Application · rclcpp / rclpy', w:'user space', d:'โค้ดของคุณ: node, publisher, subscription และ callback โดย executor (เช่น EventsCBGExecutor ที่เพิ่มมาใน Lyrical) เป็นตัวตัดสินว่า callback ไหนจะรันเมื่อไร'},
+  rcl:{t:'rcl', w:'user space', d:'C library กลางที่จัดการ graph, QoS, wait set และ guard condition โดย Lyrical เพิ่ม rcl_subscription_is_cft_supported() มาให้'},
+  rmw:{t:'rmw + typesupport', w:'user space', d:'ABI กลางสำหรับคุยกับ middleware และเป็นจุดที่ serialize message เป็น CDR ส่วน rosidl::Buffer backend จะเข้ามาทำงานที่ชั้นนี้'},
+  mw:{t:'Middleware', w:'user space', d:'Fast DDS 3.6.x (default), Cyclone DDS 11, Zenoh หรือ Connext 7.7 ทำหน้าที่ discovery, reliability (HEARTBEAT/ACKNACK), history cache และเลือก transport'},
+  sock:{t:'Socket · UDP / TCP', w:'kernel', d:'sk_buff กับ SO_RCVBUF/SO_SNDBUF ถ้า receive queue เต็ม packet จะถูกทิ้ง (นับใน UdpRcvbufErrors)'},
+  ip:{t:'IP · netfilter · qdisc', w:'kernel', d:'แตก datagram ที่ใหญ่กว่า MTU ออกเป็น fragment แล้วประกอบกลับฝั่งรับ ซึ่งปรับได้ด้วย net.ipv4.ipfrag_*'},
+  nic:{t:'Driver · NIC', w:'kernel / hardware', d:'DMA ring → IRQ → NAPI poll → GRO ปรับได้ด้วย ethtool -G/-C, IRQ affinity และ RPS/RFS'},
+  shm:{t:'/dev/shm (tmpfs)', w:'shared memory', d:'ใช้โดย Fast DDS SHM/data-sharing, iceoryx ของ Cyclone และ Zenoh SHM (ปิดเป็น default, pool 48 MiB, threshold 512 B)'},
+  gpu:{t:'GPU memory', w:'hardware', d:'CUDA backend ของ rosidl::Buffer เก็บ payload ไว้ใน GPU แล้วส่งแค่ descriptor ขนาดไม่เกิน 4096 B ผ่าน RMW'},
+  router:{t:'rmw_zenohd', w:'user space', d:'Zenoh router ทำ gossip discovery ผ่าน TCP 7447 (multicast scouting ปิดเป็น default)'},
+  sw:{t:'Ethernet switch', w:'network', d:'IGMP snooping มีผลกับ SPDP multicast ส่วน Wi-Fi จะส่ง multicast ที่ basic rate ทำให้ discovery ช้า'},
+  node:{t:'ROS node', w:'user space', d:'node หลายตัวใน process เดียวกันแชร์ context/participant เดียวกัน'}
+};
+
+/* ---------- build ---------- */
+const layers = {};   // key -> {mesh, edges, kind, chip}
+const pickables = [];
+const labelsEl = $('#labels');
+const anchors = [];  // {el, v, key}
+
+function box(key, kind, x, y, z, w, h, d, color, opts={}){
+  const mat = new THREE.MeshStandardMaterial({color, roughness:0.82, metalness:0.02, transparent:true, opacity:1});
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+  m.position.set(x, y, z); m.castShadow = true; m.receiveShadow = true;
+  const e = new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry), new THREE.LineBasicMaterial({color: opts.edge ?? 0x0f2239, transparent:true, opacity:0.32}));
+  m.add(e);
+  m.userData = {key, kind};
+  scene.add(m); pickables.push(m);
+  const L = {mesh:m, edges:e, kind, base:new THREE.Color(color)};
+  layers[key] = L;
+  if (opts.label) L.chip = chip(opts.label, [x + (opts.lx||0), y + (opts.ly||0), z + d/2 + 0.02 + (opts.lz||0)], opts.kcls, key);
+  return L;
+}
+function chip(text, p, cls='', key){
+  const el = document.createElement('div'); el.className = 'chip ' + (cls||''); el.textContent = text;
+  labelsEl.appendChild(el); anchors.push({el, v:new THREE.Vector3(...p), key}); return el;
+}
+
+const COL = {app:0xfffbf6, rcl:0xf3e7d6, rmw:0xfde3cd, mw:0xf86b1d, sock:0x2c5f9e, ip:0x3a6aa6, nic:0x0f2239, plat:0xefe6d8, shm:0x27a689, gpu:0x3b9450, router:0xe2962a, sw:0x5b6168, node:0x1b2c44};
+function tower(prefix, x, showLabels){
+  const s = 2.2, h = 0.5;
+  box(prefix+'.app','app', x, Y.app, 0, s, h, s, COL.app, showLabels && {label:'app · rclcpp'});
+  box(prefix+'.rcl','rcl', x, Y.rcl, 0, s, h, s, COL.rcl, showLabels && {label:'rcl'});
+  box(prefix+'.rmw','rmw', x, Y.rmw, 0, s, h, s, COL.rmw, showLabels && {label:'rmw · CDR'});
+  box(prefix+'.mw','mw', x, Y.mw, 0, s, h, s, COL.mw, showLabels && {label:'middleware'});
+}
+function kernel(prefix, cx, w){
+  const d = 3.2, h = 0.5;
+  box(prefix+'.sock','sock', cx, Y.sock, 0, w, h, d, COL.sock, {label:'socket · UDP', kcls:'k', edge:0xffffff});
+  box(prefix+'.ip','ip', cx, Y.ip, 0, w, h, d, COL.ip, {label:'IP · qdisc', kcls:'k', edge:0xffffff});
+  box(prefix+'.nic','nic', cx, Y.nic, 0, w, h, d, COL.nic, {label:'driver · NIC', kcls:'k', edge:0xffffff});
+}
+function boundary(prefix, cx, w){
+  const g = new THREE.PlaneGeometry(w, 4.8);
+  const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({color:0xf86b1d, transparent:true, opacity:0.07, side:THREE.DoubleSide, depthWrite:false}));
+  m.rotation.x = -Math.PI/2; m.position.set(cx, Y.bound, 0); scene.add(m);
+  const pts = []; const hw = w/2, hd = 2.4;
+  [[-hw,-hd],[hw,-hd],[hw,hd],[-hw,hd],[-hw,-hd]].forEach(([a,b]) => pts.push(new THREE.Vector3(cx+a, Y.bound, b)));
+  const ln = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineDashedMaterial({color:0xdc5812, dashSize:0.25, gapSize:0.18, transparent:true, opacity:0.7}));
+  ln.computeLineDistances(); scene.add(ln);
+  chip('user space ↑  kernel ↓', [cx - hw + 1.1, Y.bound, hd], 'bound');
+}
+
+// platforms
+box('A.plat','plat', XAK, -0.08, 0, 7.4, 0.3, 5.4, COL.plat, {edge:0xd6c6af});
+box('B.plat','plat', XB, -0.08, 0, 4.0, 0.3, 5.4, COL.plat, {edge:0xd6c6af});
+tower('A.t', XT, true); tower('A.l', XL, false); tower('B.l', XB, true);
+kernel('A', XAK, 6.6); kernel('B', XB, 3.2);
+boundary('A', XAK, 7.2); boundary('B', XB, 3.8);
+// nodes on app tops
+box('A.n1','node', XT-0.5, Y.app+0.45, -0.1, 0.62, 0.4, 0.62, COL.node, {label:'talker', ly:0.45, lz:-0.3, edge:0xffffff});
+box('A.n2','node', XT+0.55, Y.app+0.45, -0.1, 0.62, 0.4, 0.62, 0x4b505c, {edge:0xffffff});
+box('A.n3','node', XL, Y.app+0.45, -0.1, 0.62, 0.4, 0.62, COL.node, {label:'listener (เครื่องเดียวกัน)', ly:0.45, lz:-0.3, edge:0xffffff});
+box('B.n1','node', XB, Y.app+0.45, -0.1, 0.62, 0.4, 0.62, COL.node, {label:'listener', ly:0.45, lz:-0.3, edge:0xffffff});
+// shm, gpu, routers, switch
+box('A.shm','shm', XAK, Y.mw, 0, 1.3, 0.5, 1.8, COL.shm, {label:'/dev/shm', ly:0.5, edge:0xffffff});
+box('A.gpu','gpu', XAK, Y.nic, -2.25, 6.6, 0.42, 0.75, COL.gpu, {label:'GPU · CUDA VMM', ly:0.35, lz:-0.4, edge:0xffffff});
+function puck(key, x, z, label){
+  const mat = new THREE.MeshStandardMaterial({color:COL.router, roughness:0.6, transparent:true});
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.36, 32), mat);
+  m.position.set(x, Y.bound+0.2, z); m.castShadow = true; m.userData = {key, kind:'router'};
+  scene.add(m); pickables.push(m);
+  layers[key] = {mesh:m, kind:'router', base:new THREE.Color(COL.router), chip:chip(label, [x, Y.bound+0.75, z], '', key)};
+}
+puck('A.router', XAK, 1.85, 'rmw_zenohd :7447');
+puck('B.router', XB+1.25, 1.85, 'rmw_zenohd');
+box('sw','sw', XSW, 0.25, 0.9, 1.5, 0.5, 1.1, COL.sw, {label:'switch', ly:0.45, edge:0xffffff});
+// cable
+const cablePts = [[-2.4,0.3,0.9],[XSW-0.75,0.3,0.9],[XSW+0.75,0.3,0.9],[4.4,0.3,0.9]].map(p=>new THREE.Vector3(...p));
+const cable = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(cablePts, false, 'catmullrom', 0), 40, 0.06, 8), new THREE.MeshStandardMaterial({color:0x4b505c, roughness:0.5}));
+scene.add(cable);
+chip('HOST A · Ubuntu 26.04', [XAK, -0.1, 2.75], 'host');
+chip('HOST B', [XB, -0.1, 2.75], 'host');
+// zenoh link (hidden until lesson)
+const zlinkCurve = new THREE.QuadraticBezierCurve3(new THREE.Vector3(XAK, Y.bound+0.4, 1.85), new THREE.Vector3(1, 6.4, 1.85), new THREE.Vector3(XB+1.25, Y.bound+0.4, 1.85));
+const zlink = new THREE.Mesh(new THREE.TubeGeometry(zlinkCurve, 60, 0.05, 8), new THREE.MeshStandardMaterial({color:0xe2962a, emissive:0xe2962a, emissiveIntensity:0.4, transparent:true, opacity:0}));
+scene.add(zlink);
+const zchip = chip('tcp/7447 router ↔ router', [1, 5.0, 1.85], 'bound'); zchip.style.opacity = 0;
+// gpu map line
+const gpuLine = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshStandardMaterial({color:0x27a689, emissive:0x27a689, emissiveIntensity:0.5, transparent:true, opacity:0}));
+scene.add(gpuLine);
+const gpuBlob = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.3, 0.55), new THREE.MeshStandardMaterial({color:0x8fe0b8, emissive:0x27a689, emissiveIntensity:0.5, transparent:true, opacity:0}));
+gpuBlob.position.set(XT, Y.nic+0.36, -2.25); scene.add(gpuBlob);
+
+/* ---------- focus / dimming ---------- */
+let focusKeys = null;
+function matchKey(k, list){ return list.some(p => p.endsWith('*') ? k.startsWith(p.slice(0,-1)) : k === p); }
+function setFocus(list){
+  focusKeys = list;
+  for (const [k, L] of Object.entries(layers)){
+    const on = !list || matchKey(k, list) || L.kind === 'plat';
+    const mat = L.mesh.material;
+    mat.opacity = on ? 1 : 0.18;
+    mat.depthWrite = on;
+    if (L.edges) L.edges.material.opacity = on ? 0.32 : 0.08;
+    mat.emissive = new THREE.Color(list && on && L.kind !== 'plat' ? 0xf86b1d : 0x000000);
+    mat.emissiveIntensity = list && on ? 0.08 : 0;
+    if (L.chip) L.chip.classList.toggle('dim', !on);
+  }
+}
+
+/* ---------- packets ---------- */
+const packets = new Set();
+const haloTex = (() => {
+  const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
+  const gr = g.createRadialGradient(64,64,4,64,64,64); gr.addColorStop(0,'rgba(255,255,255,.95)'); gr.addColorStop(.35,'rgba(255,255,255,.35)'); gr.addColorStop(1,'rgba(255,255,255,0)');
+  g.fillStyle = gr; g.fillRect(0,0,128,128); return new THREE.CanvasTexture(c);
+})();
+const PCOL = {obj:0xf86b1d, cdr:0xe2962a, frag:0xf0a53a, desc:0x27a689, ctl:0x2c5f9e, drop:0xd64545, big:0x3b9450};
+function makeDot(color, r){
+  const g = new THREE.Group();
+  const s = new THREE.Mesh(new THREE.SphereGeometry(r, 20, 14), new THREE.MeshStandardMaterial({color, emissive:color, emissiveIntensity:0.55, roughness:0.4}));
+  const h = new THREE.Sprite(new THREE.SpriteMaterial({map:haloTex, color, transparent:true, depthWrite:false, opacity:0.9}));
+  h.scale.setScalar(r*6); g.add(s); g.add(h); g.userData = {s, h};
+  scene.add(g); return g;
+}
+function setDot(g, color, r){
+  g.userData.s.material.color.setHex(color); g.userData.s.material.emissive.setHex(color);
+  g.userData.h.material.color.setHex(color);
+  if (r){ g.userData.s.scale.setScalar(r / g.userData.s.geometry.parameters.radius); g.userData.h.scale.setScalar(r*6); }
+}
+let runToken = 0;
+function travel(pts, {color=PCOL.obj, r=0.2, speed=4.2, onPoint, dot}={}){
+  const tok = runToken;
+  return new Promise(res => {
+    const P = pts.map(p => p instanceof THREE.Vector3 ? p : new THREE.Vector3(...p));
+    const g = dot || makeDot(color, r);
+    g.position.copy(P[0]);
+    const pk = {g, P, i:0, d:0, speed: reduced ? speed*2.2 : speed, onPoint, res, tok, keep:!!dot};
+    packets.add(pk);
+    onPoint && onPoint(0, g);
+  });
+}
+function stepPackets(dt){
+  for (const pk of packets){
+    if (pk.tok !== runToken){ removePk(pk, false); continue; }
+    let move = pk.speed * dt;
+    while (move > 0 && pk.i < pk.P.length - 1){
+      const a = pk.P[pk.i], b = pk.P[pk.i+1], seg = a.distanceTo(b), left = seg - pk.d;
+      if (move < left){ pk.d += move; move = 0; pk.g.position.lerpVectors(a, b, seg ? pk.d/seg : 1); }
+      else { move -= left; pk.i++; pk.d = 0; pk.g.position.copy(b); pk.onPoint && pk.onPoint(pk.i, pk.g); }
+    }
+    const pulse = 1 + 0.12*Math.sin(performance.now()/120);
+    pk.g.userData.h.material.opacity = 0.65 + 0.25*Math.sin(performance.now()/160);
+    if (pk.i >= pk.P.length - 1) removePk(pk, true);
+  }
+}
+function removePk(pk, ok){
+  packets.delete(pk);
+  if (!pk.keep || !ok) fadeOut(pk.g);
+  if (ok) pk.res(pk.g); else pk.res(null);
+}
+function fadeOut(g){
+  const t0 = performance.now();
+  const f = () => { const k = (performance.now()-t0)/350; if (k >= 1){ scene.remove(g); return; }
+    g.scale.setScalar(1 + k*0.8); g.userData.h.material.opacity = 0.9*(1-k); g.userData.s.material.opacity = 1-k; g.userData.s.material.transparent = true; requestAnimationFrame(f); };
+  f();
+}
+const rings = new Set();
+function ring(at, color=0x2c5f9e, max=6, dur=1.8){
+  const m = new THREE.Mesh(new THREE.RingGeometry(0.92, 1, 64), new THREE.MeshBasicMaterial({color, transparent:true, opacity:0.8, side:THREE.DoubleSide, depthWrite:false}));
+  m.rotation.x = -Math.PI/2; m.position.set(...at); scene.add(m);
+  rings.add({m, t:0, max, dur, tok:runToken});
+}
+function stepRings(dt){
+  for (const r of rings){ r.t += dt; const k = r.t / r.dur;
+    if (k >= 1 || r.tok !== runToken){ scene.remove(r.m); rings.delete(r); continue; }
+    r.m.scale.setScalar(0.3 + k*r.max); r.m.material.opacity = 0.8*(1-k); }
+}
+const sleep = ms => new Promise(r => setTimeout(r, reduced ? ms*0.6 : ms));
+
+/* ---------- path builders ---------- */
+const V = (x,y,z) => [x,y,z];
+const userDown = x => [V(x,Y.app,TZ),V(x,Y.rcl,TZ),V(x,Y.rmw,TZ),V(x,Y.mw,TZ),V(x,Y.bound,1.6)];
+const kernDown = x => [V(x,Y.sock,KZ),V(x,Y.ip,KZ),V(x,Y.nic,KZ)];
+const fromNode = (x0,x) => [V(x0,Y.app+0.45,0.5),V(x,Y.app,TZ)];
+const toNode = (x,x1) => [V(x,Y.app,TZ),V(x1,Y.app+0.45,0.5)];
+const wire = [V(-2.6,0.3,KZ),V(-2.3,0.3,0.9),V(XSW,0.3,0.9),V(4.4,0.3,0.9),V(4.7,0.3,KZ)];
+
+/* ---------- callouts ---------- */
+const callouts = [];
+function callout(p, title, text){
+  const el = document.createElement('div'); el.className = 'callout';
+  el.innerHTML = `<b>${title}</b>${text}<span class="dot"></span>`;
+  labelsEl.appendChild(el); const a = {el, v:new THREE.Vector3(...p), co:true}; anchors.push(a); callouts.push(a);
+}
+function clearCallouts(){ while (callouts.length){ const a = callouts.pop(); a.el.remove(); anchors.splice(anchors.indexOf(a),1); } }
+
+/* ---------- console ---------- */
+const logEl = $('#log'); let tUs = 0;
+function log(tp, msg, cls=''){
+  const d = document.createElement('div');
+  const ts = (tUs/1e6).toFixed(6).padStart(10,' ');
+  d.innerHTML = `<span class="t">[${ts}]</span> <span class="tp ${cls}">${tp}</span> ${msg}`;
+  logEl.appendChild(d); logEl.scrollTop = logEl.scrollHeight;
+}
+const adv = us => { tUs += us; };
+function clearLog(){ logEl.innerHTML = ''; tUs = 1000 + Math.floor(Math.random()*900); }
+
+/* ---------- lessons ---------- */
+const lessons = [
+ { k:'overview', short:'ภาพรวม', sub:'stack', layer:'overview', title:'ภาพรวม network stack ของ Lyrical',
+   text:'ROS 2 แบ่ง stack ออกเป็นชั้นที่เปลี่ยนแทนกันได้ โค้ดของคุณเรียก rclcpp ซึ่งเรียก rcl → rmw → middleware แล้วข้ามเส้นประสีส้มลงไปใน kernel ก่อนออกสาย LAN ไปถึงอีกเครื่อง',
+   facts:[['V','Default RMW คือ <code>rmw_fastrtps_cpp</code> (Fast DDS 3.6.x)'],['V','Tier 1 RMW มี 4 ตัว: Fast DDS, Cyclone DDS 11, Zenoh และ Connext 7.7 (Connext ยกเว้น arm64)'],['V','Platform Tier 1: Ubuntu 26.04 (amd64/arm64) และ Windows 11 · C++20']],
+   code:`<span class="cm"># middleware ที่ใช้อยู่ตอนนี้</span>
+<span class="kw">echo</span> $RMW_IMPLEMENTATION   <span class="cm"># ว่าง = rmw_fastrtps_cpp</span>
+<span class="fn">ros2</span> doctor --report | grep -iA3 middleware`,
+   focus:null,
+   async run(){
+     log('ros2:rcl_init','context created, rmw=rmw_fastrtps_cpp','u'); adv(800);
+     await travel([...fromNode(XT-0.5,XT), ...userDown(XT), ...kernDown(XT), ...wire, ...[...kernDown(XB)].reverse(), V(XB,Y.bound,1.6), ...[...userDown(XB)].reverse().slice(1), ...toNode(XB,XB)], {speed:6,
+       onPoint:(i,g)=>{ if(i===3){ setDot(g,PCOL.cdr); log('ros2:rmw_publish','serialized → CDR','u'); adv(40);} if(i===7){log('syscalls:sys_enter_sendmsg','fd=14 len=1184'); adv(15);} if(i===10){log('net:net_dev_xmit','dev=eth0 len=1226'); adv(180);} if(i===14){log('net:netif_receive_skb','dev=eth0 (Host B)'); adv(30);} if(i===21){setDot(g,PCOL.obj); log('ros2:callback_start','listener: "Hello Lyrical"','g');}}});
+   }},
+ { k:'intra', short:'Intra-process', sub:'rclcpp', layer:'app', title:'publish() ใน process เดียวกัน',
+   text:'ถ้า publisher กับ subscription อยู่ใน process เดียวกันและเปิด intra-process ไว้ rclcpp จะส่งต่อ unique_ptr ตรงๆ โดยไม่ serialize และไม่ลงไปถึง rmw หรือ kernel เลย',
+   facts:[['K','ส่งต่อ ownership (unique_ptr) ได้โดยไม่มี copy'],['K','QoS บางแบบ (เช่น transient_local ในบาง version) ยังมีข้อจำกัด'],['V','ใช้ร่วมกับ component container ได้ และ Lyrical เพิ่ม <code>--executor-type events-cbg</code>']],
+   code:`<span class="kw">auto</span> opts = rclcpp::NodeOptions().<span class="fn">use_intra_process_comms</span>(<span class="kw">true</span>);
+<span class="kw">auto</span> pub = node-><span class="fn">create_publisher</span>&lt;Image&gt;(<span class="str">"img"</span>, 10);
+pub-><span class="fn">publish</span>(std::<span class="fn">move</span>(msg));  <span class="cm">// ไม่ serialize</span>`,
+   focus:['A.t.app','A.n1','A.n2'],
+   async run(){
+     callout([XT+0.05, Y.app+1.4, -0.1], 'ไม่มี copy', 'ส่งแค่ pointer ใน process เดียวกัน ไม่ลงไปถึง rmw');
+     for (let n=0;n<3;n++){
+       log('ros2:rclcpp_publish','intra-process: unique_ptr 0x7f3a…','u'); adv(3);
+       await travel([V(XT-0.5,Y.app+0.7,-0.1),V(XT,Y.app+1.5,-0.1),V(XT+0.55,Y.app+0.7,-0.1)],{speed:3});
+       log('ros2:callback_start','node 2 รับ message (latency ≈ µs)','g'); adv(250000); await sleep(250);
+     }
+   }},
+ { k:'ser', short:'Serialize', sub:'rmw · CDR', layer:'rmw', title:'rmw: แปลง message เป็น CDR',
+   text:'ก่อนส่งข้าม process, rmw จะเรียก typesupport เพื่อ serialize struct ของ C++ เป็น byte stream แบบ CDR ซึ่งเป็น copy แรก (ส้ม → เหลือง) ฝั่งรับต้อง deserialize กลับอีกครั้ง',
+   facts:[['V','Fast CDR 2.3.x ทำงานคู่กับ Fast DDS 3.6.x'],['V','ฟิลด์ <code>uint8[]</code> ใน C++ เปลี่ยนเป็น <code>rosidl::Buffer&lt;uint8_t&gt;</code> แล้ว'],['K','copy ที่ 1/5: struct → CDR buffer']],
+   code:`rclcpp::Serialization&lt;sensor_msgs::msg::Image&gt; ser;
+rclcpp::SerializedMessage out;
+ser.<span class="fn">serialize_message</span>(&amp;msg, &amp;out);  <span class="cm">// CDR bytes</span>
+<span class="cm">// out.size() ≈ header + w*h*step</span>`,
+   focus:['A.t.app','A.t.rcl','A.t.rmw','A.n1'],
+   async run(){
+     callout([XT, Y.rmw, TZ+0.2], 'struct → CDR', 'typesupport เรียงฟิลด์เป็น byte ตาม alignment');
+     await travel([...fromNode(XT-0.5,XT), V(XT,Y.rcl,TZ), V(XT,Y.rmw,TZ)], {onPoint:(i)=>{ if(i===1){log('ros2:rclcpp_publish','msg=0x55d1… (sensor_msgs/Image)','u');adv(6);} if(i===2){log('ros2:rcl_publish','publisher=/camera/image','u');adv(4);} }});
+     log('ros2:rmw_publish','serialize 921 664 B (640×480 rgb8) → CDR','u'); adv(310);
+     const g = makeDot(PCOL.cdr, 0.26); g.position.set(XT, Y.rmw, TZ);
+     await travel([V(XT,Y.rmw,TZ),V(XT,Y.mw,TZ)],{dot:g, speed:2});
+     log('fastdds:DataWriter::write','history depth=10, reliable','u'); fadeOut(g);
+   }},
+ { k:'sys', short:'Syscall', sub:'sendmsg', layer:'user → kernel', title:'ข้ามจาก user space ลงสู่ kernel',
+   text:'middleware ส่ง datagram ผ่าน syscall sendmsg() ซึ่ง kernel จะ copy ข้อมูลจาก user buffer ลงใน sk_buff (copy_from_user) นี่คือ copy ที่สอง และเป็นจุดที่ CPU สลับเข้า kernel mode',
+   facts:[['K','Fast DDS ใช้ thread รับต่อ locator ซึ่ง block อยู่บน recvmsg'],['K','การแจ้งเตือนข้าม thread ใช้ futex ทำให้เกิด context switch'],['K','copy ที่ 2/5: user → sk_buff']],
+   code:`<span class="fn">strace</span> -f -e trace=sendmsg,sendmmsg,recvmsg \\
+  ros2 run demo_nodes_cpp talker
+<span class="cm"># sendmsg(14, {msg_name={sin_port=htons(7411)...}</span>`,
+   focus:['A.t.mw','A.sock'],
+   async run(){
+     callout([XT, Y.bound, 1.9], 'sendmsg()', 'ข้ามเส้นประ = เข้า kernel mode และเกิด copy_from_user');
+     await travel([V(XT,Y.mw,TZ),V(XT,Y.bound,1.6),V(XT,Y.sock,KZ)],{color:PCOL.cdr, speed:2.4, onPoint:(i)=>{ if(i===1){log('syscalls:sys_enter_sendmsg','fd=14 dst=192.168.1.20:7411 len=65000');adv(9);} if(i===2){log('net:udp_sendmsg','skb alloc, copy_from_user 65000 B');adv(22);} }});
+     log('syscalls:sys_exit_sendmsg','ret=65000');
+   }},
+ { k:'tx', short:'Kernel TX', sub:'IP fragment', layer:'kernel', title:'Kernel TX: UDP → IP fragmentation → NIC',
+   text:'RTPS datagram อาจใหญ่ได้ถึงประมาณ 64 KB ซึ่งที่ MTU 1500 จะถูก IP แตกเป็น fragment ราว 44 ชิ้น ถ้าหายเพียงชิ้นเดียว ฝั่งรับต้องทิ้งทั้ง datagram นี่คือสาเหตุคลาสสิกที่ภาพหรือ point cloud หายบน Wi-Fi',
+   facts:[['K','<code>net.ipv4.ipfrag_time=3</code>, <code>ipfrag_high_thresh=134217728</code>'],['K','<code>FASTDDS_BUILTIN_TRANSPORTS=LARGE_DATA</code> ใช้ TCP แทนเพื่อเลี่ยง fragmentation'],['K','qdisc (fq_codel, mqprio, taprio/TSN) กำหนดลำดับก่อนเข้า NIC']],
+   code:`<span class="fn">sudo</span> sysctl -w net.ipv4.ipfrag_time=3
+<span class="fn">sudo</span> sysctl -w net.ipv4.ipfrag_high_thresh=134217728
+<span class="fn">nstat</span> -az | grep -E <span class="str">'Frag|Reasm'</span>`,
+   focus:['A.sock','A.ip','A.nic','sw'],
+   async run(){
+     callout([XT+1.4, Y.ip, KZ+0.1], 'IP fragmentation', '65 000 B ÷ MTU 1500 ≈ 44 fragment');
+     await travel([V(XT,Y.sock,KZ),V(XT,Y.ip,KZ)],{color:PCOL.cdr, r:0.28, speed:2});
+     log('net:ip_fragment','len=65028 mtu=1500 → 44 frags'); adv(14);
+     const ps = [];
+     for (let i=0;i<9;i++){
+       ps.push(travel([V(XT,Y.ip,KZ),V(XT,Y.nic,KZ),V(-2.6,0.3,KZ),...wire.slice(1,3)],{color:PCOL.frag, r:0.1, speed:4.5, onPoint:(j)=>{ if(j===1&&i%3===0){log('net:net_dev_xmit',`dev=eth0 frag ${i*5}/44 len=1514`);adv(12);} }}));
+       await sleep(110);
+     }
+     await Promise.all(ps); log('qdisc:fq_codel','dequeue done, 44 pkts', '');
+   }},
+ { k:'rx', short:'Kernel RX', sub:'NAPI · socket', layer:'kernel', title:'Kernel RX ที่ Host B: NAPI → reassembly → socket',
+   text:'NIC DMA ลง ring แล้วยิง IRQ จากนั้น NAPI poll ใน softirq, GRO รวม packet, IP ประกอบ fragment และ UDP นำเข้า receive queue ของ socket ก่อนปลุก thread ที่รอใน recvmsg ถ้าคิวเต็ม packet จะถูกทิ้งทันที',
+   facts:[['K','<code>net.core.rmem_max=2147483647</code> อนุญาตให้ขอ SO_RCVBUF ใหญ่'],['K','ดู drop ด้วย <code>UdpRcvbufErrors</code>, <code>ReasmFails</code>'],['K','copy ที่ 4/5: sk_buff → user (copy_to_user)']],
+   code:`<span class="fn">sudo</span> sysctl -w net.core.rmem_max=2147483647
+<span class="fn">nstat</span> -az | grep -E <span class="str">'UdpRcvbufErrors|ReasmFails'</span>
+<span class="fn">ethtool</span> -S eth0 | grep -i drop`,
+   focus:['sw','B.nic','B.ip','B.sock','B.l.mw'],
+   async run(){
+     callout([XB, Y.nic, KZ+0.1], 'IRQ → NAPI → GRO', 'softirq NET_RX ดึง packet จาก ring');
+     const ps = [];
+     for (let i=0;i<7;i++){ ps.push(travel([...wire.slice(2), V(XB,Y.nic,KZ), V(XB,Y.ip,KZ)],{color:PCOL.frag, r:0.1, speed:4.5, onPoint:(j)=>{ if(j===3&&i===0){log('irq:softirq_entry','vec=3 [action=NET_RX]');adv(6);log('net:netif_receive_skb','dev=eth0 len=1500');adv(40);} }})); await sleep(120); }
+     await Promise.all(ps);
+     log('net:ip_defrag','reassembled 44 frags → 65028 B'); adv(30);
+     await travel([V(XB,Y.ip,KZ),V(XB,Y.sock,KZ)],{color:PCOL.cdr, r:0.28, speed:2});
+     log('net:udp_rcv','enqueue sk_rcvbuf (used 31%)'); adv(8);
+     callout([XB, Y.sock+0.1, KZ+0.1], 'socket queue', 'ถ้าเต็ม → drop และนับ UdpRcvbufErrors');
+     await travel([V(XB,Y.sock,KZ),V(XB,Y.bound,1.6),V(XB,Y.mw,TZ)],{color:PCOL.cdr, r:0.24, speed:2.2, onPoint:(i)=>{ if(i===1){log('syscalls:sys_exit_recvmsg','ret=65000 (copy_to_user)');adv(12);} }});
+     log('fastdds:DataReader','sample received, ACKNACK sent','u');
+   }},
+ { k:'lo', short:'Loopback', sub:'same host UDP', layer:'kernel · lo', title:'เครื่องเดียวกันแต่ปิด SHM: วิ่งผ่าน lo',
+   text:'ถ้าบังคับให้ใช้แค่ UDPv4 การสื่อสารระหว่าง process บนเครื่องเดียวกันจะผ่าน loopback ซึ่งไม่แตะ NIC แต่ยังผ่าน socket และ IP ครบทั้งขาไปและขากลับ จึงยังมีทั้ง serialize, copy_from_user, copy_to_user และ deserialize',
+   facts:[['K','ใช้เป็น baseline ตอน benchmark เทียบกับ SHM'],['K','บน lo, MTU 65536 จึงแทบไม่เกิด fragmentation'],['V','Fast DDS เปิด SHM transport ให้อัตโนมัติถ้าไม่บังคับ']],
+   code:`<span class="kw">export</span> FASTDDS_BUILTIN_TRANSPORTS=UDPv4  <span class="cm"># ปิด SHM</span>
+<span class="fn">ros2</span> run demo_nodes_cpp talker &amp;
+<span class="fn">ros2</span> run demo_nodes_cpp listener`,
+   focus:['A.t.*','A.l.*','A.sock','A.ip','A.n1','A.n3'],
+   async run(){
+     callout([XAK, Y.ip+0.1, KZ+0.1], 'lo (loopback)', 'ไม่ผ่าน NIC แต่ผ่าน stack 2 รอบ');
+     await travel([...fromNode(XT-0.5,XT), ...userDown(XT), V(XT,Y.sock,KZ), V(XT,Y.ip,KZ), V(XL,Y.ip,KZ), V(XL,Y.sock,KZ), V(XL,Y.bound,1.6), ...[...userDown(XL)].reverse().slice(1), ...toNode(XL,XL)],{speed:4.5,
+       onPoint:(i,g)=>{ if(i===3){setDot(g,PCOL.cdr);log('ros2:rmw_publish','serialize 1184 B','u');adv(20);} if(i===6){log('syscalls:sys_enter_sendmsg','dst=127.0.0.1:7413');adv(10);} if(i===8){log('net:net_dev_xmit','dev=lo len=1212');adv(4);} if(i===9){log('net:netif_receive_skb','dev=lo');adv(6);} if(i===11){log('syscalls:sys_exit_recvmsg','ret=1184');adv(9);} if(i===15){setDot(g,PCOL.obj);log('ros2:callback_start','listener (same host)','g');} }});
+   }},
+ { k:'shm', short:'Shared memory', sub:'loaned msg', layer:'/dev/shm', title:'SHM และ loaned messages: ข้าม kernel network stack',
+   text:'บนเครื่องเดียวกัน RMW สามารถวาง message ลงใน shared memory (/dev/shm) แล้วส่งแค่การแจ้งเตือนสั้นๆ ไปให้อีกฝั่ง เมื่อใช้ loaned message กับ plain type จะไม่มี serialize และไม่มี copy ในระดับ socket เลย',
+   facts:[['K','loaned message ใช้ได้กับ type ที่ขนาดคงที่ (plain/bounded) เท่านั้น'],['V','Zenoh SHM ปิดเป็น default · pool 48 MiB · threshold 512 B'],['V','Cyclone ใช้ iceoryx 2.0 (ต้องรัน RouDi)']],
+   code:`<span class="kw">auto</span> loaned = pub-><span class="fn">borrow_loaned_message</span>();
+loaned.<span class="fn">get</span>().data = 42;           <span class="cm">// plain type เท่านั้น</span>
+pub-><span class="fn">publish</span>(std::<span class="fn">move</span>(loaned));  <span class="cm">// อยู่ใน /dev/shm</span>
+<span class="cm"># ค้างหลัง crash: fastdds shm clean</span>`,
+   focus:['A.t.*','A.l.*','A.shm','A.n1','A.n3'],
+   async run(){
+     callout([XAK, Y.mw+0.6, 0.2], '/dev/shm', 'mmap ร่วมกัน ข้อมูลไม่ผ่าน socket');
+     log('ros2:rmw_borrow_loaned_message','chunk 0x7f1c… in fastdds_shm_seg','u'); adv(3);
+     await travel([...fromNode(XT-0.5,XT), V(XT,Y.rcl,TZ), V(XT,Y.rmw,TZ), V(XT,Y.mw,TZ), V(XT+1.0,Y.mw,0.5), V(XAK,Y.mw+0.05,0.4)],{speed:4});
+     log('ros2:rmw_publish','loaned, no serialization','u'); adv(2);
+     const n = travel([V(XAK,Y.mw+0.4,0.4),V(XL,Y.mw+0.4,TZ)],{color:PCOL.ctl, r:0.1, speed:3}); log('futex:wake','notify listener (SHM port)'); await n; adv(6);
+     await travel([V(XAK,Y.mw+0.05,0.4), V(XL-1.0,Y.mw,0.5), V(XL,Y.mw,TZ), V(XL,Y.rmw,TZ), V(XL,Y.rcl,TZ), ...toNode(XL,XL)],{speed:4});
+     log('ros2:callback_start','listener (zero-copy)','g');
+   }},
+ { k:'buf', short:'rosidl::Buffer', sub:'ใหม่ใน Lyrical', layer:'rmw · GPU', title:'rosidl::Buffer: ส่ง descriptor แทน payload',
+   text:'Lyrical เปลี่ยนฟิลด์ uint8[] ให้เป็น rosidl::Buffer ที่เปลี่ยน backend ได้ เช่น CUDA ระบบจะเก็บ payload ไว้ใน GPU แล้วให้ RMW ส่งแค่ descriptor (เขียว) ฝั่งรับจะ map หน่วยความจำ GPU ก้อนเดิมผ่าน CUDA IPC ถ้า peer ใช้ backend นี้ไม่ได้ ระบบจะ fallback ไป serialize แบบ CPU',
+   facts:[['V','Descriptor มีขนาดไม่เกิน <code>rosidl::kMaxBufferDescriptorSize</code> = 4096 B'],['V','รองรับใน <code>rmw_fastrtps_cpp</code> และ <code>rmw_zenoh_cpp</code> · ใช้กับ topic เท่านั้น'],['V','backend ได้รับ hook <code>on_discovering_endpoint</code> เพื่อตัดสินว่ารองรับ peer ไหน']],
+   code:`<span class="cm">// .msg ไม่เปลี่ยน: uint8[] data</span>
+<span class="cm">// C++: msg.data เป็น rosidl::Buffer&lt;uint8_t&gt;</span>
+msg.data.<span class="fn">resize</span>(w * h * 3);   <span class="cm">// CPU backend = vector เดิม</span>
+<span class="cm">// ติดตั้ง backend (เช่น cuda) → RMW ส่ง descriptor</span>
+<span class="cm">// peer ไม่รองรับ → fallback serialize ปกติ</span>`,
+   focus:['A.t.app','A.t.rmw','A.l.app','A.l.rmw','A.gpu','A.shm','A.n1','A.n3'],
+   async run(){
+     gpuBlob.material.opacity = 0.95; gpuBlob.position.x = XT;
+     callout([XT, Y.nic+0.6, -2.25], 'payload 24 MiB', 'อยู่ใน GPU ตลอด ไม่ผ่าน CPU');
+     log('rosidl:BufferBackend','backend=cuda, peer matched (VMM shareable)','u'); adv(20);
+     await travel([...fromNode(XT-0.5,XT), V(XT,Y.rcl,TZ), V(XT,Y.rmw,TZ)],{speed:4});
+     log('rosidl:create_descriptor_with_endpoint','descriptor 212 B (≤ 4096)','u'); adv(15);
+     await travel([V(XT,Y.rmw,TZ),V(XT,Y.mw,TZ),V(XAK,Y.mw+0.05,0.4),V(XL,Y.mw,TZ),V(XL,Y.rmw,TZ)],{color:PCOL.desc, r:0.11, speed:3.6});
+     log('rosidl:from_descriptor_with_endpoint','cuIpcOpenMemHandle → same VMM pages','u'); adv(40);
+     gpuLine.geometry.dispose(); gpuLine.geometry = new THREE.TubeGeometry(new THREE.CatmullRomCurve3([new THREE.Vector3(XL,Y.rmw,-1.1), new THREE.Vector3(XL-0.4,Y.nic+0.9,-2.1), new THREE.Vector3(XT+0.55,Y.nic+0.4,-2.25)]), 40, 0.045, 8);
+     gpuLine.material.opacity = 0.95;
+     callout([XL, Y.rmw, -1.2], 'map ไม่ใช่ copy', 'listener เข้าถึง GPU memory ก้อนเดิม');
+     await travel([V(XL,Y.rmw,TZ),V(XL,Y.rcl,TZ),...toNode(XL,XL)],{color:PCOL.desc, r:0.11, speed:3});
+     log('ros2:callback_start','tensor ready on GPU (0 host copies)','g');
+   }},
+ { k:'disc', short:'Discovery', sub:'SPDP · SEDP', layer:'middleware · net', title:'DDS discovery: SPDP multicast + SEDP',
+   text:'แต่ละ participant ประกาศตัวเป็นระยะด้วย SPDP ผ่าน multicast 239.255.0.1:7400 (domain 0) เมื่อเจอกันแล้วจะแลก endpoint ด้วย SEDP แบบ reliable unicast จนครบทุก topic และ QoS ที่เข้ากันได้จึงจะเริ่มส่งข้อมูล',
+   facts:[['K','พอร์ต = 7400 + 250·domain + offset (SPDP mc +0, unicast +10+2·pid)'],['K','multicast ข้าม router ไม่ได้ ต้องใช้ <code>ROS_STATIC_PEERS</code> หรือ Discovery Server'],['K','<code>ROS_AUTOMATIC_DISCOVERY_RANGE</code> = SUBNET | LOCALHOST | OFF']],
+   code:`<span class="kw">export</span> ROS_AUTOMATIC_DISCOVERY_RANGE=SUBNET
+<span class="kw">export</span> ROS_STATIC_PEERS=192.168.1.20
+<span class="fn">sudo</span> tcpdump -ni eth0 udp portrange 7400-7500
+<span class="cm"># หรือ: fastdds discovery -i 0 (Discovery Server)</span>`,
+   focus:['A.t.mw','B.l.mw','A.nic','B.nic','sw'],
+   async run(){
+     callout([XSW, 1.2, 0.9], '239.255.0.1:7400', 'SPDP announce ทุกเครื่องใน subnet');
+     for (let n=0;n<2;n++){
+       log('rtps:SPDP','DATA(p) → 239.255.0.1:7400  guid=01.0f.a3…'); adv(3000000);
+       ring([XT, Y.mw-0.24, 0], 0xf86b1d, 3, 1.4);
+       await travel([V(XT,Y.mw,TZ),V(XT,Y.bound,1.6),...kernDown(XT),...wire.slice(0,3)],{color:PCOL.ctl, r:0.12, speed:7});
+       ring([XSW,0.3,0.9],0x2c5f9e,9,2.0);
+       await travel([...wire.slice(2),...[...kernDown(XB)].reverse(),V(XB,Y.bound,1.6),V(XB,Y.mw,TZ)],{color:PCOL.ctl, r:0.12, speed:7});
+       ring([XB, Y.mw-0.24, 0], 0x27a689, 3, 1.4);
+     }
+     log('rtps:SEDP','DATA(w) rt/chatter [reliable, volatile] → unicast :7411','u'); adv(900);
+     await travel([V(XB,Y.mw,TZ),V(XB,Y.bound,1.6),...kernDown(XB),...[...wire].reverse(),...[...kernDown(XT)].reverse(),V(XT,Y.bound,1.6),V(XT,Y.mw,TZ)],{color:PCOL.desc, r:0.12, speed:8});
+     log('rtps:match','writer ↔ reader matched (QoS compatible)','g');
+   }},
+ { k:'zenoh', short:'Zenoh', sub:'router · gossip', layer:'rmw_zenoh', title:'rmw_zenoh: router gossip แล้วคุยกันตรง',
+   text:'rmw_zenoh ปิด multicast scouting ไว้เป็นค่าเริ่มต้น แต่ละ session จะต่อไปหา rmw_zenohd บนเครื่องตัวเอง (TCP 7447) แล้วรับข้อมูล discovery ผ่าน gossip ถ้าต้องการข้ามเครื่องให้ตั้ง router ให้ connect หากัน',
+   facts:[['V','<code>ZENOH_ROUTER_CHECK_ATTEMPTS</code>: 0 = รอไม่จำกัด, &lt;0 = ข้าม, &gt;0 = จำนวนครั้ง'],['V','ตั้งค่าผ่าน <code>ZENOH_CONFIG_OVERRIDE="key/path=value;..."</code>'],['V','zenoh-c 1.10.1 ตาม vendor (ตารางในเอกสารระบุ 1.8.0)']],
+   code:`<span class="kw">export</span> RMW_IMPLEMENTATION=rmw_zenoh_cpp
+<span class="cm"># Host A: router ต่อไปหา router ของ Host B</span>
+ZENOH_CONFIG_OVERRIDE=<span class="str">'connect/endpoints=["tcp/192.168.1.20:7447"]'</span> \\
+  ros2 run rmw_zenoh_cpp rmw_zenohd`,
+   focus:['A.router','B.router','A.t.mw','B.l.mw','A.sock','A.ip','A.nic','B.sock','B.ip','B.nic','sw'],
+   async run(){
+     zlink.material.opacity = 0.9; zchip.style.opacity = 1;
+     log('zenoh:session','mode=peer, multicast scouting=off','u'); adv(1200);
+     await travel([V(XT,Y.mw,TZ),V(XT+0.8,Y.bound+0.5,1.85),V(XAK,Y.bound+0.4,1.85)],{color:PCOL.ctl, r:0.12, speed:4});
+     log('zenoh:liveliness','token @ros2_lv/0/…/talker/chatter','u'); adv(500);
+     await travel(zlinkCurve.getPoints(30),{color:PCOL.router, r:0.14, speed:7});
+     log('zenoh:gossip','router B learned talker locator tcp/192.168.1.10:41237'); adv(800);
+     await travel([V(XB+1.25,Y.bound+0.4,1.85),V(XB,Y.mw,TZ)],{color:PCOL.ctl, r:0.12, speed:4});
+     callout([XSW, 1.0, 0.9], 'peer ↔ peer', 'หลัง discovery ข้อมูลวิ่งตรง ไม่ผ่าน router');
+     await travel([V(XT,Y.mw,TZ),V(XT,Y.bound,1.6),...kernDown(XT),...wire,...[...kernDown(XB)].reverse(),V(XB,Y.bound,1.6),V(XB,Y.mw,TZ)],{color:PCOL.cdr, speed:6, onPoint:(i)=>{ if(i===2){log('net:tcp_sendmsg','peer→peer len=1184');adv(150);} }});
+     log('ros2:callback_start','listener on Host B','g');
+   }},
+ { k:'obs', short:'Observability', sub:'หาว่าหายตรงไหน', layer:'tracing', title:'วัดผล: message หายที่ชั้นไหน',
+   text:'ใช้ ros2_tracing วางจุดวัดใน user space (สีส้ม) และ tracepoint ของ kernel (สีน้ำเงิน) ตลอดเส้นทาง แล้วใช้ rosbag2 message-loss events กับ eBPF kfree_skb reason ตอบว่าข้อความหายที่ history ของ rmw, socket queue หรือ IP reassembly',
+   facts:[['V','<code>/events/rosbag2_messages_lost</code> + <code>--stats_max_publishing_rate</code>'],['V','ros2_tracing มีโหมด snapshot และ dual session, ปิดได้ด้วย <code>TRACETOOLS_RUNTIME_DISABLE=1</code>'],['V','<code>ros2 topic bw</code> วัดหลาย topic พร้อมกันได้']],
+   code:`<span class="fn">ros2</span> bag record --all --stats_max_publishing_rate 10 -o run1
+<span class="fn">ros2</span> topic echo /events/rosbag2_messages_lost
+<span class="fn">sudo</span> bpftrace -e <span class="str">'tracepoint:skb:kfree_skb { @[args->reason] = count(); }'</span>`,
+   focus:null,
+   async run(){
+     const path = [...fromNode(XT-0.5,XT), ...userDown(XT), ...kernDown(XT), ...wire, ...[...kernDown(XB)].reverse()];
+     let n=0;
+     await travel(path,{speed:6, onPoint:(i,g)=>{ const tps={1:['ros2:rclcpp_publish','u'],3:['ros2:rmw_publish','u'],7:['net:net_dev_queue',''],8:['net:net_dev_xmit',''],13:['net:netif_receive_skb',''],14:['net:ip_defrag','']}; if(tps[i]){ log(tps[i][0], `t+${(n+=37)} µs`, tps[i][1]); adv(37); ring(path[i], tps[i][1]?0xf86b1d:0x2c5f9e, 1.4, 0.9);} if(i===3) setDot(g,PCOL.cdr); }});
+     setDot(makeDot(PCOL.drop,0.2),PCOL.drop);
+     const d = makeDot(PCOL.drop, 0.2); d.position.set(XB, Y.sock, KZ);
+     callout([XB, Y.sock+0.1, KZ+0.1], 'DROP', 'skb:kfree_skb reason=SOCKET_RCVBUFF');
+     log('skb:kfree_skb','reason=SOCKET_RCVBUFF  dev=eth0','x'); adv(2000);
+     log('rosbag2:messages_lost','topic=/camera/image lost=3 (transport)','x');
+     await sleep(1600); fadeOut(d);
+   }}
+];
+
+/* ---------- UI ---------- */
+let current = 0, running = false;
+const done = new Set();
+try { JSON.parse(localStorage.getItem('lyrical-lab-done')||'[]').forEach(i=>done.add(i)); } catch(e){}
+function saveDone(){ try{ localStorage.setItem('lyrical-lab-done', JSON.stringify([...done])); }catch(e){} }
+const rail = $('#lessons');
+lessons.forEach((L,i) => {
+  const b = document.createElement('button'); b.className = 'ls'; b.id = 'ls-'+i;
+  b.innerHTML = `<span class="n">${i+1}</span><span class="tt">${L.short}<small>${L.sub}</small></span>`;
+  b.addEventListener('click', () => openLesson(i, true));
+  rail.appendChild(b);
+});
+function refreshRail(){
+  lessons.forEach((L,i) => { const b = $('#ls-'+i); b.classList.toggle('on', i===current); b.classList.toggle('done', done.has(i)); b.setAttribute('aria-current', i===current ? 'step' : 'false'); });
+  $('#pcount').textContent = `${done.size}/${lessons.length}`;
+  $('#pbar').style.width = (done.size/lessons.length*100)+'%';
+}
+function resetScene(){
+  runToken++;
+  for (const pk of [...packets]) removePk(pk, false);
+  clearCallouts();
+  zlink.material.opacity = 0; zchip.style.opacity = 0; gpuLine.material.opacity = 0; gpuBlob.material.opacity = 0;
+  scene.children.filter(o => o.isGroup && o.userData.s).forEach(o => scene.remove(o));
+}
+function openLesson(i, user){
+  current = i; const L = lessons[i];
+  $('#lnum').textContent = `บทที่ ${i+1} / ${lessons.length}`;
+  $('#llayer').textContent = L.layer;
+  $('#ltitle').textContent = L.title;
+  $('#ltext').innerHTML = L.text;
+  $('#lfacts').innerHTML = L.facts.map(([v,t]) => `<li><span class="v ${v}" title="${v==='V'?'ตรวจกับต้นฉบับ Lyrical แล้ว':'ความรู้มาตรฐาน DDS/Linux'}">${v==='V'?'LYRICAL':'GENERAL'}</span><span>${t}</span></li>`).join('');
+  $('#code').innerHTML = L.code;
+  refreshRail();
+  $('#ls-'+i).scrollIntoView({block:'nearest', inline:'nearest', behavior: reduced ? 'auto' : 'smooth'});
+  if (user){ try{ history.replaceState(null,'','#lesson-'+(i+1)); }catch(e){} }
+  run();
+}
+async function run(){
+  resetScene(); const tok = runToken; const L = lessons[current];
+  setFocus(L.focus); clearLog();
+  running = true; setRunUI(true);
+  log('# lesson', `${current+1}: ${L.short}`, 'g');
+  try { await L.run(); } catch(e){ console.error(e); }
+  if (tok !== runToken) return;
+  running = false; setRunUI(false);
+  done.add(current); saveDone(); refreshRail();
+}
+function setRunUI(on){
+  $('#run').dataset.state = on ? 'running' : 'idle';
+  $('#runlbl').textContent = on ? 'Running' : 'Run';
+  $('#st').classList.toggle('on', on); $('#stx').textContent = on ? 'Running' : 'Stopped';
+}
+$('#run').addEventListener('click', run);
+
+/* ---------- inspector ---------- */
+const ray = new THREE.Raycaster(), mouse = new THREE.Vector2();
+let insp = null, downAt = null;
+canvas.addEventListener('pointerdown', e => { downAt = [e.clientX, e.clientY]; });
+canvas.addEventListener('pointerup', e => {
+  if (!downAt || Math.hypot(e.clientX-downAt[0], e.clientY-downAt[1]) > 5) return;
+  const r = canvas.getBoundingClientRect();
+  mouse.set(((e.clientX-r.left)/r.width)*2-1, -((e.clientY-r.top)/r.height)*2+1);
+  ray.setFromCamera(mouse, camera);
+  const hit = ray.intersectObjects(pickables, false).find(h => h.object.material.opacity > 0.5 && h.object.userData.kind !== 'plat');
+  insp && insp.remove(); insp = null;
+  if (!hit) return;
+  const info = INFO[hit.object.userData.kind]; if (!info) return;
+  insp = document.createElement('div'); insp.className = 'insp';
+  insp.innerHTML = `<button aria-label="ปิด">×</button><div class="where">${info.w}</div><b>${info.t}</b><p>${info.d}</p>`;
+  insp.querySelector('button').onclick = () => { insp.remove(); insp = null; };
+  const x = Math.min(e.clientX - r.left + 14, r.width - 276), y = Math.min(e.clientY - r.top + 14, r.height - 170);
+  insp.style.left = Math.max(8,x)+'px'; insp.style.top = Math.max(8,y)+'px';
+  $('#stage').appendChild(insp);
+});
+
+/* ---------- keyboard pan/rotate ---------- */
+const keys = new Set();
+addEventListener('keydown', e => { if (e.target.closest && e.target.closest('input,textarea')) return; const k = e.key.toLowerCase(); if ('wasdqe'.includes(k) && k.length===1){ keys.add(k); } if (k==='arrowright') openLesson((current+1)%lessons.length, true); if (k==='arrowleft') openLesson((current-1+lessons.length)%lessons.length, true); });
+addEventListener('keyup', e => keys.delete(e.key.toLowerCase()));
+function stepKeys(dt){
+  if (!keys.size) return;
+  const off = camera.position.clone().sub(controls.target);
+  const fwd = new THREE.Vector3(-off.x, 0, -off.z).normalize(), right = new THREE.Vector3().crossVectors(fwd, new THREE.Vector3(0,1,0));
+  const sp = 7*dt/camera.zoom, mv = new THREE.Vector3();
+  if (keys.has('w')) mv.add(fwd); if (keys.has('s')) mv.sub(fwd); if (keys.has('d')) mv.add(right); if (keys.has('a')) mv.sub(right);
+  mv.multiplyScalar(sp); camera.position.add(mv); controls.target.add(mv);
+  const rot = (keys.has('q')?1:0) - (keys.has('e')?1:0);
+  if (rot){ off.applyAxisAngle(new THREE.Vector3(0,1,0), rot*1.4*dt); camera.position.copy(controls.target).add(off); }
+}
+
+/* ---------- resize & labels ---------- */
+function resize(){
+  setMode();
+  const st = $('#stage'); const w = st.clientWidth, h = st.clientHeight;
+  renderer.setSize(w, h, false);
+  const a = w/h; const compact = document.body.classList.contains('compact');
+  let fr = compact ? 8.6 : 8.2;
+  if (!compact) fr *= 1.0 + Math.max(0, 1.45 - a)*0.5;
+  const shiftX = compact ? 0 : (380/w)*fr*a;   // keep scene clear of side panel
+  camera.left = -fr*a + shiftX; camera.right = fr*a + shiftX; camera.top = fr*(compact?1:1.02); camera.bottom = -fr*(compact?1:0.98) - (compact?0:fr*0.12);
+  if (compact){ const hw = a < 1.2 ? 10.6 : fr*a*1.1; const hh = hw / a; camera.left = -hw - 0.6; camera.right = hw - 0.6; camera.top = hh*1.18; camera.bottom = -hh*0.82; }
+  camera.updateProjectionMatrix();
+}
+addEventListener('resize', resize);
+const tmp = new THREE.Vector3();
+function placeLabels(){
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  for (const a of anchors){
+    tmp.copy(a.v).project(camera);
+    const x = (tmp.x*0.5+0.5)*w, y = (-tmp.y*0.5+0.5)*h;
+    a.el.style.left = x+'px'; a.el.style.top = y+'px';
+    a.el.style.visibility = (tmp.z > 1 || x < -60 || x > w+60 || y < -60 || y > h+60) ? 'hidden' : 'visible';
+  }
+}
+
+/* ---------- loop ---------- */
+let last = performance.now();
+function frame(now){
+  const dt = Math.min(0.05, (now-last)/1000); last = now;
+  stepKeys(dt); controls.update(); stepPackets(dt); stepRings(dt);
+  if (gpuBlob.material.opacity > 0) gpuBlob.material.emissiveIntensity = 0.45 + 0.25*Math.sin(now/220);
+  if (zlink.material.opacity > 0) zlink.material.emissiveIntensity = 0.35 + 0.3*Math.sin(now/200);
+  if (gpuLine.material.opacity > 0) gpuLine.material.emissiveIntensity = 0.4 + 0.3*Math.sin(now/180);
+  renderer.render(scene, camera); placeLabels();
+  requestAnimationFrame(frame);
+}
+resize();
+const m = /^#lesson-(\d+)$/.exec(location.hash||''); const start = m ? Math.min(lessons.length, Math.max(1, +m[1]))-1 : 0;
+openLesson(start, false);
+addEventListener('hashchange', () => { const mm = /^#lesson-(\d+)$/.exec(location.hash||''); if (mm){ const i = +mm[1]-1; if (i>=0 && i<lessons.length && i!==current) openLesson(i,false); } });
+requestAnimationFrame(frame);
+})();
+</script>
