@@ -73,6 +73,15 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .btn-run[data-state=running]{background:linear-gradient(#e65a45,#cf4532)}
 .btn-run svg{width:10px;height:10px}
 pre.code{margin:0;padding:10px 14px;font:400 12px/1.6 var(--mono);color:var(--navy);background:#ffffff;overflow:auto;white-space:pre;flex:0 0 auto;max-height:42%}
+.hex{font:500 9.6px/1.7 var(--mono);white-space:pre;letter-spacing:-.1px}
+pre.code:has(.hex){max-height:none}
+.hex .o{color:var(--faint)}
+.hex .b{color:#c3c9d0;border-radius:3px;padding:0 1px;transition:background .25s,color .25s}
+.hex.on-eth .b-eth{color:#0f2239;font-weight:700}.hex.on-ip .b-ip{color:#3a6aa6;font-weight:700}.hex.on-udp .b-udp{color:#2c5f9e;font-weight:700}
+.hex.on-rtps .b-rtps{color:#8250df;font-weight:700}.hex.on-ts .b-ts{color:#a371f7;font-weight:700}.hex.on-data .b-data{color:#bf3989;font-weight:700}.hex.on-cdr .b-cdr{color:#c77d10;font-weight:700}
+.hex.cur-eth .b-eth{background:#0f2239;color:#fff}.hex.cur-ip .b-ip{background:#3a6aa6;color:#fff}.hex.cur-udp .b-udp{background:#2c5f9e;color:#fff}
+.hex.cur-rtps .b-rtps{background:#8250df;color:#fff}.hex.cur-ts .b-ts{background:#a371f7;color:#fff}.hex.cur-data .b-data{background:#bf3989;color:#fff}.hex.cur-cdr .b-cdr{background:#e2962a;color:#fff}
+.chip.frame{font-weight:700;color:#fff;background:#0f2239e6;border-color:#0f2239}
 .code .cm{color:var(--faint);font-style:italic}.code .str{color:#3f8a4f}.code .kw{color:var(--blue)}.code .fn{color:#dc6a2a}
 .console{flex:1 1 auto;min-height:90px;border-top:1.5px solid var(--line);background:var(--console);display:flex;flex-direction:column;min-width:0}
 .console .ch{display:flex;justify-content:space-between;padding:6px 14px;font:600 10px/1 var(--cond);letter-spacing:.16em;text-transform:uppercase;color:var(--faint)}
@@ -140,7 +149,7 @@ body.compact .callout{width:170px;font-size:11.5px}
 
 <div class="side" id="side">
   <section class="card lesson" aria-live="polite">
-    <div class="meta"><span id="lnum">บทที่ 1 / 14</span><span class="layer" id="llayer">overview</span></div>
+    <div class="meta"><span id="lnum">บทที่ 1 / 16</span><span class="layer" id="llayer">overview</span></div>
     <h2 id="ltitle"></h2>
     <p id="ltext"></p>
     <ul class="facts" id="lfacts"></ul>
@@ -158,7 +167,7 @@ body.compact .callout{width:170px;font-size:11.5px}
 </div>
 
 <nav class="card rail" aria-label="บทเรียน">
-  <div class="prog"><b id="pcount">0/14</b><span>เรียนแล้ว</span><div class="track"><i id="pbar"></i></div></div>
+  <div class="prog"><b id="pcount">0/16</b><span>เรียนแล้ว</span><div class="track"><i id="pbar"></i></div></div>
   <div class="lessons" id="lessons"></div>
 </nav>
 
@@ -396,7 +405,7 @@ function stepPackets(dt){
       if (move < left){ pk.d += move; move = 0; pk.g.position.lerpVectors(a, b, seg ? pk.d/seg : 1); }
       else { move -= left; pk.i++; pk.d = 0; pk.g.position.copy(b); if (pk.onTag && pk.T[pk.i]) pk.onTag(pk.T[pk.i], pk.g, pk.i); }
     }
-    pk.g.userData.h.material.opacity = 0.65 + 0.25*Math.sin(performance.now()/160);
+    if (pk.g.userData.h) pk.g.userData.h.material.opacity = 0.65 + 0.25*Math.sin(performance.now()/160);
     if (pk.i >= pk.P.length - 1) removePk(pk, true);
   }
 }
@@ -408,7 +417,7 @@ function removePk(pk, ok){
 function fadeOut(g){
   const t0 = performance.now();
   const f = () => { const k = (performance.now()-t0)/350; if (k >= 1){ scene.remove(g); return; }
-    g.scale.setScalar(1 + k*0.8); g.userData.h.material.opacity = 0.9*(1-k); g.userData.s.material.opacity = 1-k; g.userData.s.material.transparent = true; requestAnimationFrame(f); };
+    g.scale.setScalar(1 + k*0.8); if (g.userData.h){ g.userData.h.material.opacity = 0.9*(1-k); g.userData.s.material.opacity = 1-k; g.userData.s.material.transparent = true; } else g.traverse(c => { if (c.material){ c.material.transparent = true; c.material.opacity = 1-k; } }); requestAnimationFrame(f); };
   f();
 }
 const rings = new Set();
@@ -473,6 +482,61 @@ function stdTrace(rx='B', {pub='ros2:rclcpp_publish', cb='ros2:callback_start', 
       case 'cb': setDot(g, PCOL.obj); log(cb, `Host ${rx}`, 'g'); break;
     }
   };
+}
+
+
+/* ---------- packet bytes & kernel path helpers ---------- */
+const FRAME = (() => { const h = '02000000002002000000001008004500006c1c46400040119acc' + 'c0a8010ac0a80114' + 'cec31cf30058056d' + '525450530203010f010f45d2b30c000001000000' + '09010800553b056bcccccc4c' + '15052c000000100000000000000012030000000001000000' + '000100000f00000048656c6c6f20576f726c643a20310000'; const b = []; for (let i=0;i<h.length;i+=2) b.push(h.substr(i,2)); return b; })();
+const BL = [['eth',0,14,'Ethernet II',0x0f2239],['ip',14,20,'IPv4',0x3a6aa6],['udp',34,8,'UDP',0x2c5f9e],['rtps',42,20,'RTPS hdr',0x8250df],['ts',62,12,'INFO_TS',0xa371f7],['data',74,24,'DATA hdr',0xbf3989],['cdr',98,24,'CDR payload',0xe2962a]];
+const layerOf = i => BL.find(([k,o,n]) => i >= o && i < o+n)[0];
+function hexHTML(){
+  let out = '<span class="cm">// 122 B frame · ตัวอย่างค่า (checksum คำนวณจริง)</span>\n';
+  for (let r=0; r<FRAME.length; r+=16){
+    out += `<span class="o">${r.toString(16).padStart(4,'0')}</span>  `;
+    for (let i=r; i<Math.min(r+16, FRAME.length); i++) out += `<span class="b b-${layerOf(i)}">${FRAME[i]}</span>` + (i%16===7 ? '  ' : ' ');
+    out += '\n';
+  }
+  return out;
+}
+function hexState(on, cur){
+  const el = document.querySelector('#code .hex'); if (!el) return;
+  el.className = 'hex ' + on.map(k => 'on-'+k).join(' ') + (cur ? ' cur-'+cur : '');
+}
+// a 3D frame made of header segments (width ∝ bytes)
+function makeFrame(){ const g = new THREE.Group(); g.userData = {dot:true, segs:[]}; scene.add(g); return g; }
+function layoutFrame(g){
+  const S = 0.024; let total = g.userData.segs.reduce((a, m) => a + m.userData.bytes*S, 0), x = -total/2;
+  for (const m of g.userData.segs){ const w = m.userData.bytes*S; m.position.x = x + w/2; x += w; }
+}
+function addSeg(g, key, front=true){
+  const L = BL.find(b => b[0] === key); const bytes = key === 'fcs' ? 4 : L[2]; const col = key === 'fcs' ? 0x0f2239 : L[4];
+  const m = new THREE.Mesh(new THREE.BoxGeometry(bytes*0.024 - 0.01, 0.34, 0.46), new THREE.MeshStandardMaterial({color:col, emissive:col, emissiveIntensity:0.25, roughness:0.5}));
+  m.userData = {bytes, key}; m.castShadow = true; g.add(m);
+  front ? g.userData.segs.unshift(m) : g.userData.segs.push(m); layoutFrame(g);
+  m.scale.set(1, 0.1, 1); const t0 = performance.now();
+  const f = () => { const k = Math.min(1, (performance.now()-t0)/260); m.scale.y = 0.1 + 0.9*k; if (k < 1) requestAnimationFrame(f); }; f();
+}
+function dropSeg(g, key){
+  const i = g.userData.segs.findIndex(m => m.userData.key === key); if (i < 0) return;
+  const [m] = g.userData.segs.splice(i, 1); g.remove(m); layoutFrame(g);
+}
+// walk a path point by point; at tagged points await steps[tag]()
+async function walk(pts, steps, opts={}){
+  const tok = runToken; const g = opts.dot || makeDot(opts.color || PCOL.obj, opts.r || 0.2);
+  g.position.set(pts[0][0], pts[0][1], pts[0][2]);
+  if (steps[pts[0][3]]) await steps[pts[0][3]](g);
+  for (let j=1; j<pts.length; j++){
+    if (tok !== runToken) return g;
+    await travel([pts[j-1], pts[j]], {dot:g, speed: opts.speed || 4});
+    if (tok !== runToken) return g;
+    const fn = steps[pts[j][3]]; if (fn) await fn(g);
+  }
+  return g;
+}
+async function kfns(pos, title, list, tp){
+  clearCallouts(); callout(pos, title, list.map(x => `<code style="font:500 11px var(--mono)">${x[0]}</code>`).join('<br>'));
+  for (const [fn, note] of list){ log('kernel', `${fn}${note ? '  · '+note : ''}`, ''); adv(4); await sleep(reduced ? 120 : 330); }
+  if (tp) log(tp, '', 'u');
 }
 
 /* ---------- lessons ---------- */
@@ -574,6 +638,59 @@ ser.<span class="fn">serialize_message</span>(&amp;msg, &amp;out);  <span class=
      callout([H.B.x, Y.sock+0.1, kz(H.B)+0.1], 'socket queue', 'ถ้าเต็ม → drop และนับ UdpRcvbufErrors');
      await travel(u.slice(4,7),{color:PCOL.cdr, r:0.24, speed:2.2, onTag:(t)=>{ if(t==='recv'){log('syscalls:sys_exit_recvmsg','ret=65000 (copy_to_user)');adv(12);} }});
      log('fastdds:DataReader','sample received, ACKNACK sent','u');
+   }},
+ { short:'Packet bytes', sub:'122 B frame', layer:'encapsulation', title:'Packet จริงระดับ byte: ห่อ header ทีละชั้น',
+   text:'ตามรอย <code>std_msgs/String "Hello World: 1"</code> ตั้งแต่ CDR payload 24 B ที่ rmw → middleware เพิ่ม DATA, INFO_TS และ RTPS header (80 B) → kernel เพิ่ม UDP (88 B) → IP (108 B) → Ethernet (122 B + FCS) แล้ว Host B แกะออกทีละชั้นจนเหลือ message ดู hex dump ด้านขวาซึ่งไฮไลต์ชั้นที่กำลังทำงานอยู่',
+   facts:[['K','UDP dst port 7411 = 7400 + 250·0 + 11 + 2·0 (user unicast, domain 0, participant 0)'],['K','DATA submessage: id 0x15, flags E|D, writerId …03 = user writer ไม่มี key'],['K','payload: encapsulation 0x0001 (CDR_LE) + uint32 length 15 + "Hello World: 1\\0" + pad']],
+   code:'<div class="hex">' + hexHTML() + '</div>',
+   focus:['A.t.*','A.n1','A.sock','A.ip','A.nic','sw','B.*'],
+   async run(){
+     const fr = makeFrame(); const chipEl = chip('msg', [0,0,0], 'frame'); const a = anchors[anchors.length-1]; a.follow = fr;
+     const done = () => { chipEl.remove(); anchors.splice(anchors.indexOf(a), 1); };
+     const tok = runToken; const on = [];
+     const add = async (keys, cur, label, msg, front=true) => { for (const k of keys){ addSeg(fr, k, front); if (k !== 'fcs') on.push(k); } hexState(on, cur); chipEl.textContent = label; log('encap', msg, 'u'); adv(12); await sleep(900); };
+     const rm = async (keys, cur, label, msg) => { hexState(on, cur); await sleep(500); for (const k of keys){ dropSeg(fr, k); const i = on.indexOf(k); if (i>=0) on.splice(i,1); } hexState(on, null); chipEl.textContent = label; log('decap', msg, 'g'); adv(10); await sleep(500); };
+     hexState([], null);
+     try {
+       await walk(route(H.A,'t',H.B,'t'), {
+         rmw: () => add(['cdr'], 'cdr', 'CDR 24 B', 'serializedPayload: 00 01 00 00 | 0f 00 00 00 | "Hello World: 1\\0" | pad'),
+         mw: async () => { await add(['data'], 'data', 'DATA 48 B', 'DATA: 15 05 2c 00 · readerId 0 · writerId 00.00.12.03 · SN=1'); await add(['ts'], 'ts', 'RTPS submsgs 60 B', 'INFO_TS: 09 01 08 00 + timestamp'); await add(['rtps'], 'rtps', 'RTPS 80 B', 'RTPS hdr: "RTPS" 2.3 vendor 01 0f guidPrefix 01.0f.45.d2…'); },
+         sock: () => add(['udp'], 'udp', 'UDP 88 B', 'UDP: 52931 → 7411 len=88 csum=0x056d'),
+         ip: () => add(['ip'], 'ip', 'IPv4 108 B', 'IPv4: 45 00 len=108 id=0x1c46 DF TTL=64 proto=17 csum=0x9acc'),
+         nic: async () => { await add(['eth'], 'eth', 'Ethernet 122 B', 'Ethernet: 02:00:00:00:00:20 ← 02:00:00:00:00:10 type 0x0800'); addSeg(fr, 'fcs', false); chipEl.textContent = 'on wire 126 B'; log('phy', '+ FCS 4 B · preamble 8 · IFG 12 → 146 byte-times'); },
+         rxnic: () => rm(['eth','fcs'], 'eth', 'IPv4 108 B', 'NIC/driver: strip Ethernet (eth_type_trans → ETH_P_IP)'),
+         rxip: () => rm(['ip'], 'ip', 'UDP 88 B', 'ip_local_deliver: strip IPv4 → proto 17'),
+         rxsock: () => rm(['udp'], 'udp', 'RTPS 80 B', 'udp_rcv: port 7411 → socket queue (UDP hdr removed)'),
+         rxmw: () => rm(['rtps','ts','data'], 'rtps', 'CDR 24 B', 'MessageReceiver: parse RTPS · INFO_TS · DATA → sample'),
+         rxrmw: () => rm(['cdr'], 'cdr', 'msg', 'rmw_take: deserialize CDR → std_msgs/String'),
+         cb: async () => { const d = makeDot(PCOL.obj, 0.22); d.position.copy(fr.position); fadeOut(fr); log('ros2:callback_start', 'listener: "Hello World: 1"', 'g'); await sleep(600); fadeOut(d); }
+       }, {dot: fr, speed: 5});
+     } finally { done(); }
+   }},
+ { short:'Kernel call path', sub:'TX ↓ · RX ↑', layer:'linux kernel', title:'ฟังก์ชันใน Linux kernel ที่ packet วิ่งผ่าน',
+   text:'ไล่ชื่อฟังก์ชันจริงใน kernel ทีละตัว ขา TX ที่ Host A ตั้งแต่ <code>sendmsg()</code> ผ่าน socket, UDP, IP, netfilter, neighbour, qdisc ไปถึง driver และขา RX ที่ Host B ตั้งแต่ IRQ, NAPI softirq, GRO, IP, UDP ไปถึง socket queue และ <code>recvmsg()</code> ชื่อทั้งหมดตรวจกับ <code>/proc/kallsyms</code> ของ Linux 7.0 แล้ว (driver ตัวอย่าง r8169)',
+   facts:[['K','ฟังก์ชันที่ถูก inline จะไม่อยู่ใน kallsyms และชื่ออาจเปลี่ยนตามเวอร์ชัน เช่น napi_gro_receive → gro_receive_skb'],['K','tcpdump เห็น packet ที่ __netif_receive_skb_list_core (AF_PACKET tap) ก่อนถึง IP'],['K','drop เพราะ rcvbuf เต็มเกิดใน __udp_enqueue_schedule_skb (SKB_DROP_REASON_SOCKET_RCVBUFF)']],
+   code:`<span class="cm"># call graph ของ udp_sendmsg ใน talker</span>
+<span class="fn">sudo</span> perf ftrace -G udp_sendmsg -p $(pgrep -f talker)
+<span class="cm"># kernel stack ตอน enqueue ฝั่งรับ</span>
+<span class="fn">sudo</span> bpftrace -e <span class="str">'kprobe:__udp_enqueue_schedule_skb { @[kstack(12)] = count(); }'</span>
+<span class="cm"># ตรวจชื่อใน kernel ของคุณ</span>
+<span class="fn">sudo</span> grep -w gro_receive_skb /proc/kallsyms`,
+   focus:['A.t.mw','A.sock','A.ip','A.nic','sw','B.nic','B.ip','B.sock','B.l.mw','B.l.rmw','B.l.app','B.n1','A.n1'],
+   async run(){
+     const KA = H.A, KB = H.B, x = XT, bx = KB.x;
+     await walk(route(H.A,'t',H.B,'t').slice(4), {
+       sys: () => kfns([x, Y.bound+0.3, kz(KA)], 'syscall', [['__sys_sendmsg → ____sys_sendmsg','copy msghdr']], 'syscalls:sys_enter_sendmsg'),
+       sock: () => kfns([x, Y.sock+0.2, kz(KA)], 'socket · UDP', [['sock_sendmsg → inet_sendmsg',''],['udp_sendmsg','ip_route_output_flow'],['ip_make_skb → __ip_append_data','copy_from_user'],['udp_send_skb','UDP hdr + csum']]),
+       ip: () => kfns([x, Y.ip+0.2, kz(KA)], 'IP · netfilter · qdisc', [['ip_send_skb → ip_local_out','NF LOCAL_OUT'],['ip_output → ip_finish_output','NF POST_ROUTING · frag?'],['ip_finish_output2','neighbour → Ethernet hdr'],['__dev_queue_xmit → __dev_xmit_skb','qdisc enqueue'],['sch_direct_xmit · validate_xmit_skb','GSO / csum offload']], 'net:net_dev_queue'),
+       nic: () => kfns([x, Y.nic+0.2, kz(KA)], 'driver · NIC', [['dev_hard_start_xmit',''],['rtl8169_start_xmit','DMA → TX ring → doorbell']], 'net:net_dev_xmit'),
+       rxnic: () => kfns([bx, Y.nic+0.2, kz(KB)], 'IRQ · NAPI · GRO', [['rtl8169_interrupt','napi_schedule'],['net_rx_action → __napi_poll','NET_RX softirq'],['rtl8169_poll → rtl_rx','eth_type_trans'],['gro_receive_skb → udp4_gro_receive',''],['netif_receive_skb_list_internal','AF_PACKET tap (tcpdump)']], 'napi:napi_poll'),
+       rxip: () => kfns([bx, Y.ip+0.2, kz(KB)], 'IPv4 RX', [['ip_list_rcv → ip_sublist_rcv','NF PRE_ROUTING'],['ip_local_deliver','ip_defrag? · NF LOCAL_IN'],['ip_protocol_deliver_rcu → udp_rcv','proto 17']]),
+       rxsock: () => kfns([bx, Y.sock+0.2, kz(KB)], 'UDP · socket', [['__udp4_lib_rcv → __udp4_lib_lookup','port 7411'],['udp_queue_rcv_one_skb','csum · BPF filter'],['__udp_enqueue_schedule_skb','rcvbuf check'],['sock_def_readable','wake receive thread']]),
+       recv: () => kfns([bx, Y.bound+0.3, kz(KB)], 'recvmsg', [['udp_recvmsg → __skb_recv_udp',''],['skb_copy_datagram_iter','copy_to_user']], 'syscalls:sys_exit_recvmsg'),
+       rxmw: async () => { log('fastdds:MessageReceiver', 'processCDRMsg → DATA → reader', 'u'); adv(20); await sleep(300); },
+       cb: async (g) => { log('ros2:callback_start', 'listener on Host B', 'g'); await sleep(400); fadeOut(g); }
+     }, {color: PCOL.cdr, speed: 4.2});
    }},
  { short:'Loopback', sub:'same host UDP', layer:'kernel · lo', title:'เครื่องเดียวกันแต่ปิด SHM: วิ่งผ่าน lo',
    text:'ถ้าบังคับให้ใช้แค่ UDPv4 การสื่อสารระหว่าง process บนเครื่องเดียวกันจะผ่าน loopback ซึ่งไม่แตะ NIC แต่ยังผ่าน socket และ IP ครบทั้งขาไปและขากลับ จึงยังมีทั้ง serialize, copy_from_user, copy_to_user และ deserialize',
@@ -862,6 +979,7 @@ const tmp = new THREE.Vector3();
 function placeLabels(){
   const w = canvas.clientWidth, h = canvas.clientHeight;
   for (const a of anchors){
+    if (a.follow){ a.v.copy(a.follow.position); a.v.y += 0.55; }
     tmp.copy(a.v).project(camera);
     let x = (tmp.x*0.5+0.5)*w, y = (-tmp.y*0.5+0.5)*h;
     if (a.co){ const cw = a.el.offsetWidth || 210, ch = a.el.offsetHeight || 60; x = Math.min(Math.max(x, cw/2 + 8), w - cw/2 - 8); y = Math.max(y, ch + 26); }
