@@ -1,8 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 600" width="960" height="600" role="img" font-family="'Barlow Semi Condensed','Segoe UI',Helvetica,Arial,sans-serif">
 <title>ROS 2 Lyrical: message path from user space to kernel and across hosts</title>
 <style>
-.bg{fill:#f8f1e6}
-.host{fill:#fffbf6;stroke:#e5d8c5;stroke-width:1.5}
+.bg{fill:#f6f8fa}
+.host{fill:#ffffff;stroke:#d0d7de;stroke-width:1.5}
 .hl{font:700 13px 'Barlow Semi Condensed','Segoe UI',Arial,sans-serif;letter-spacing:.12em;fill:#fff}
 .lay text{font:600 13px 'JetBrains Mono',Menlo,Consolas,monospace}
 .u rect{stroke:#d6c6af;stroke-width:1.2}
