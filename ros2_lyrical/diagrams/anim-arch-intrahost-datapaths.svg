@@ -1,0 +1,111 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 720" width="1000" height="720" role="img">
+<title>Intra-host data paths in ROS 2 Lyrical and their approximate payload copy counts</title>
+<style>.march{stroke-dasharray:6 6;animation:m 1s linear infinite}@keyframes m{to{stroke-dashoffset:-24}}.pulse{animation:p 1.6s ease-in-out infinite}@keyframes p{50%{opacity:.35}}</style>
+<rect x="0" y="0" width="1000" height="720" rx="18" fill="#f6f8fa" stroke="none" stroke-width="1.2" />
+<text x="40" y="46" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="24" font-weight="700" fill="#0f2239" text-anchor="start" >Same host, six data paths: how many times is the payload copied?</text>
+<text x="40" y="70" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="12.5" font-weight="400" fill="#8c959f" text-anchor="start" >publisher process → subscriber process (except intra-process) · copy counts are approximate [K]</text>
+<rect x="30" y="98" width="940" height="86" rx="12" fill="#ffffff" stroke="#d0d7de" stroke-width="1.2" />
+<rect x="30" y="98" width="8" height="86" rx="4" fill="#8250df" stroke="none" stroke-width="1.2" />
+<text x="50" y="126" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="700" fill="#8250df" text-anchor="start" >intra-process</text>
+<text x="50" y="145" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.6" font-weight="400" fill="#57606a" text-anchor="start" >rclcpp IPC · same process</text>
+<text x="50" y="168" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.3" font-weight="400" fill="#8c959f" text-anchor="start" >unique_ptr hand-off, no rmw, no serialize</text>
+<line x1="260" y1="134" x2="900" y2="134" stroke="#8250df" stroke-width="2" opacity=".35"/>
+<rect x="538.0" y="119" width="84" height="30" rx="7" fill="#d9f0e8" stroke="#8250df" stroke-width="1.4" />
+<text x="580.0" y="138" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11" font-weight="700" fill="#0f2239" text-anchor="middle" >msg</text>
+<circle r="7" fill="#8250df" stroke="#fff" stroke-width="2"><animateMotion dur="5s" repeatCount="indefinite" keyPoints="0;1;1" keyTimes="0;0.8;1" calcMode="linear" path="M250 134 L910 134"/></circle>
+<circle cx="940" cy="140" r="20" fill="#27a689"/>
+<text x="940" y="146" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="17" font-weight="700" fill="#fff" text-anchor="middle" >0</text>
+<text x="940" y="174" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="9.5" font-weight="400" fill="#57606a" text-anchor="middle" >copies</text>
+<rect x="30" y="194" width="940" height="86" rx="12" fill="#ffffff" stroke="#d0d7de" stroke-width="1.2" />
+<rect x="30" y="194" width="8" height="86" rx="4" fill="#2c5f9e" stroke="none" stroke-width="1.2" />
+<text x="50" y="222" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="700" fill="#2c5f9e" text-anchor="start" >UDP loopback</text>
+<text x="50" y="241" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.6" font-weight="400" fill="#57606a" text-anchor="start" >FASTDDS_BUILTIN_TRANSPORTS=UDPv4</text>
+<text x="50" y="264" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.3" font-weight="400" fill="#8c959f" text-anchor="start" >full kernel stack on lo</text>
+<line x1="260" y1="230" x2="900" y2="230" stroke="#2c5f9e" stroke-width="2" opacity=".35"/>
+<rect x="298.0" y="215" width="84" height="30" rx="7" fill="#ffebe9" stroke="#cf222e" stroke-width="1.4" />
+<text x="340.0" y="234" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11" font-weight="700" fill="#0f2239" text-anchor="middle" >CDR</text>
+<text x="340.0" y="210" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.5" font-weight="700" fill="#cf222e" text-anchor="middle" opacity="0">copy<animate attributeName="opacity" dur="5s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.100;0.350;1" values="0;1;0;0"/></text>
+<rect x="458.0" y="215" width="84" height="30" rx="7" fill="#ffebe9" stroke="#cf222e" stroke-width="1.4" />
+<text x="500.0" y="234" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11" font-weight="700" fill="#0f2239" text-anchor="middle" >sendmsg</text>
+<text x="500.0" y="210" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.5" font-weight="700" fill="#cf222e" text-anchor="middle" opacity="0">copy<animate attributeName="opacity" dur="5s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.300;0.550;1" values="0;1;0;0"/></text>
+<rect x="618.0" y="215" width="84" height="30" rx="7" fill="#ffebe9" stroke="#cf222e" stroke-width="1.4" />
+<text x="660.0" y="234" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11" font-weight="700" fill="#0f2239" text-anchor="middle" >recvmsg</text>
+<text x="660.0" y="210" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.5" font-weight="700" fill="#cf222e" text-anchor="middle" opacity="0">copy<animate attributeName="opacity" dur="5s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.500;0.750;1" values="0;1;0;0"/></text>
+<rect x="778.0" y="215" width="84" height="30" rx="7" fill="#ffebe9" stroke="#cf222e" stroke-width="1.4" />
+<text x="820.0" y="234" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11" font-weight="700" fill="#0f2239" text-anchor="middle" >deser.</text>
+<text x="820.0" y="210" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.5" font-weight="700" fill="#cf222e" text-anchor="middle" opacity="0">copy<animate attributeName="opacity" dur="5s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.700;0.950;1" values="0;1;0;0"/></text>
+<circle r="7" fill="#2c5f9e" stroke="#fff" stroke-width="2"><animateMotion dur="5s" repeatCount="indefinite" keyPoints="0;1;1" keyTimes="0;0.8;1" calcMode="linear" path="M250 230 L910 230"/></circle>
+<circle cx="940" cy="236" r="20" fill="#cf222e"/>
+<text x="940" y="242" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="17" font-weight="700" fill="#fff" text-anchor="middle" >4</text>
+<text x="940" y="270" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="9.5" font-weight="400" fill="#57606a" text-anchor="middle" >copies</text>
+<rect x="30" y="290" width="940" height="86" rx="12" fill="#ffffff" stroke="#d0d7de" stroke-width="1.2" />
+<rect x="30" y="290" width="8" height="86" rx="4" fill="#f86b1d" stroke="none" stroke-width="1.2" />
+<text x="50" y="318" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="700" fill="#f86b1d" text-anchor="start" >Fast DDS SHM</text>
+<text x="50" y="337" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.6" font-weight="400" fill="#57606a" text-anchor="start" >default on same host</text>
+<text x="50" y="360" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.3" font-weight="400" fill="#8c959f" text-anchor="start" >512 KiB segment · 64 KB chunks</text>
+<line x1="260" y1="326" x2="900" y2="326" stroke="#f86b1d" stroke-width="2" opacity=".35"/>
+<rect x="298.0" y="311" width="84" height="30" rx="7" fill="#ffebe9" stroke="#cf222e" stroke-width="1.4" />
+<text x="340.0" y="330" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11" font-weight="700" fill="#0f2239" text-anchor="middle" >CDR</text>
+<text x="340.0" y="306" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.5" font-weight="700" fill="#cf222e" text-anchor="middle" opacity="0">copy<animate attributeName="opacity" dur="5s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.100;0.350;1" values="0;1;0;0"/></text>
+<rect x="452.0" y="311" width="96.0" height="30" rx="7" fill="#ffebe9" stroke="#cf222e" stroke-width="1.4" />
+<text x="500.0" y="330" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11" font-weight="700" fill="#0f2239" text-anchor="middle" >memcpy→seg</text>
+<text x="500.0" y="306" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.5" font-weight="700" fill="#cf222e" text-anchor="middle" opacity="0">copy<animate attributeName="opacity" dur="5s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.300;0.550;1" values="0;1;0;0"/></text>
+<rect x="612.0" y="311" width="96.0" height="30" rx="7" fill="#e3ecf7" stroke="#f86b1d" stroke-width="1.4" />
+<text x="660.0" y="330" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11" font-weight="700" fill="#0f2239" text-anchor="middle" >descriptor</text>
+<rect x="778.0" y="311" width="84" height="30" rx="7" fill="#ffebe9" stroke="#cf222e" stroke-width="1.4" />
+<text x="820.0" y="330" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11" font-weight="700" fill="#0f2239" text-anchor="middle" >deser.</text>
+<text x="820.0" y="306" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.5" font-weight="700" fill="#cf222e" text-anchor="middle" opacity="0">copy<animate attributeName="opacity" dur="5s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.700;0.950;1" values="0;1;0;0"/></text>
+<circle r="7" fill="#f86b1d" stroke="#fff" stroke-width="2"><animateMotion dur="5s" repeatCount="indefinite" keyPoints="0;1;1" keyTimes="0;0.8;1" calcMode="linear" path="M250 326 L910 326"/></circle>
+<circle cx="940" cy="332" r="20" fill="#cf222e"/>
+<text x="940" y="338" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="17" font-weight="700" fill="#fff" text-anchor="middle" >3</text>
+<text x="940" y="366" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="9.5" font-weight="400" fill="#57606a" text-anchor="middle" >copies</text>
+<rect x="30" y="386" width="940" height="86" rx="12" fill="#ffffff" stroke="#d0d7de" stroke-width="1.2" />
+<rect x="30" y="386" width="8" height="86" rx="4" fill="#e2962a" stroke="none" stroke-width="1.2" />
+<text x="50" y="414" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="700" fill="#e2962a" text-anchor="start" >Zenoh SHM</text>
+<text x="50" y="433" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.6" font-weight="400" fill="#57606a" text-anchor="start" >opt-in · ≥ 512 B</text>
+<text x="50" y="456" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.3" font-weight="400" fill="#8c959f" text-anchor="start" >serialize straight into pool</text>
+<line x1="260" y1="422" x2="900" y2="422" stroke="#e2962a" stroke-width="2" opacity=".35"/>
+<rect x="324.6666666666667" y="407" width="84" height="30" rx="7" fill="#ffebe9" stroke="#cf222e" stroke-width="1.4" />
+<text x="366.6666666666667" y="426" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11" font-weight="700" fill="#0f2239" text-anchor="middle" >CDR→SHM</text>
+<text x="366.6666666666667" y="402" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.5" font-weight="700" fill="#cf222e" text-anchor="middle" opacity="0">copy<animate attributeName="opacity" dur="5s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.133;0.383;1" values="0;1;0;0"/></text>
+<rect x="538.0" y="407" width="84" height="30" rx="7" fill="#d9f0e8" stroke="#e2962a" stroke-width="1.4" />
+<text x="580.0" y="426" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11" font-weight="700" fill="#0f2239" text-anchor="middle" >ref</text>
+<rect x="751.3333333333334" y="407" width="84" height="30" rx="7" fill="#ffebe9" stroke="#cf222e" stroke-width="1.4" />
+<text x="793.3333333333334" y="426" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11" font-weight="700" fill="#0f2239" text-anchor="middle" >deser.</text>
+<text x="793.3333333333334" y="402" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.5" font-weight="700" fill="#cf222e" text-anchor="middle" opacity="0">copy<animate attributeName="opacity" dur="5s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.667;0.917;1" values="0;1;0;0"/></text>
+<circle r="7" fill="#e2962a" stroke="#fff" stroke-width="2"><animateMotion dur="5s" repeatCount="indefinite" keyPoints="0;1;1" keyTimes="0;0.8;1" calcMode="linear" path="M250 422 L910 422"/></circle>
+<circle cx="940" cy="428" r="20" fill="#e2962a"/>
+<text x="940" y="434" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="17" font-weight="700" fill="#fff" text-anchor="middle" >2</text>
+<text x="940" y="462" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="9.5" font-weight="400" fill="#57606a" text-anchor="middle" >copies</text>
+<rect x="30" y="482" width="940" height="86" rx="12" fill="#ffffff" stroke="#d0d7de" stroke-width="1.2" />
+<rect x="30" y="482" width="8" height="86" rx="4" fill="#27a689" stroke="none" stroke-width="1.2" />
+<text x="50" y="510" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="700" fill="#27a689" text-anchor="start" >loaned · data-sharing · iceoryx</text>
+<text x="50" y="529" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.6" font-weight="400" fill="#57606a" text-anchor="start" >plain / fixed-size types</text>
+<text x="50" y="552" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.3" font-weight="400" fill="#8c959f" text-anchor="start" >Fast DDS: off by default in rmw</text>
+<line x1="260" y1="518" x2="900" y2="518" stroke="#27a689" stroke-width="2" opacity=".35"/>
+<rect x="324.6666666666667" y="503" width="84" height="30" rx="7" fill="#d9f0e8" stroke="#27a689" stroke-width="1.4" />
+<text x="366.6666666666667" y="522" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11" font-weight="700" fill="#0f2239" text-anchor="middle" >borrow</text>
+<rect x="516.8" y="503" width="126.39999999999999" height="30" rx="7" fill="#d9f0e8" stroke="#27a689" stroke-width="1.4" />
+<text x="580.0" y="522" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11" font-weight="700" fill="#0f2239" text-anchor="middle" >write in place</text>
+<rect x="751.3333333333334" y="503" width="84" height="30" rx="7" fill="#d9f0e8" stroke="#27a689" stroke-width="1.4" />
+<text x="793.3333333333334" y="522" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11" font-weight="700" fill="#0f2239" text-anchor="middle" >take</text>
+<circle r="7" fill="#27a689" stroke="#fff" stroke-width="2"><animateMotion dur="5s" repeatCount="indefinite" keyPoints="0;1;1" keyTimes="0;0.8;1" calcMode="linear" path="M250 518 L910 518"/></circle>
+<circle cx="940" cy="524" r="20" fill="#27a689"/>
+<text x="940" y="530" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="17" font-weight="700" fill="#fff" text-anchor="middle" >0</text>
+<text x="940" y="558" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="9.5" font-weight="400" fill="#57606a" text-anchor="middle" >copies</text>
+<rect x="30" y="578" width="940" height="86" rx="12" fill="#ffffff" stroke="#d0d7de" stroke-width="1.2" />
+<rect x="30" y="578" width="8" height="86" rx="4" fill="#17765f" stroke="none" stroke-width="1.2" />
+<text x="50" y="606" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="700" fill="#17765f" text-anchor="start" >rosidl::Buffer (CUDA)</text>
+<text x="50" y="625" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.6" font-weight="400" fill="#57606a" text-anchor="start" >uint8[] backend · new in Lyrical</text>
+<text x="50" y="648" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.3" font-weight="400" fill="#8c959f" text-anchor="start" >payload never touches host RAM path</text>
+<line x1="260" y1="614" x2="900" y2="614" stroke="#17765f" stroke-width="2" opacity=".35"/>
+<rect x="341.6" y="599" width="156.79999999999998" height="30" rx="7" fill="#e3ecf7" stroke="#17765f" stroke-width="1.4" />
+<text x="420.0" y="618" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11" font-weight="700" fill="#0f2239" text-anchor="middle" >descriptor ≤ 4 KiB</text>
+<rect x="692.0" y="599" width="96.0" height="30" rx="7" fill="#d9f0e8" stroke="#17765f" stroke-width="1.4" />
+<text x="740.0" y="618" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11" font-weight="700" fill="#0f2239" text-anchor="middle" >GPU memory</text>
+<circle r="7" fill="#17765f" stroke="#fff" stroke-width="2"><animateMotion dur="5s" repeatCount="indefinite" keyPoints="0;1;1" keyTimes="0;0.8;1" calcMode="linear" path="M250 614 L910 614"/></circle>
+<circle cx="940" cy="620" r="20" fill="#27a689"/>
+<text x="940" y="626" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="17" font-weight="700" fill="#fff" text-anchor="middle" >0</text>
+<text x="940" y="654" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="9.5" font-weight="400" fill="#57606a" text-anchor="middle" >copies</text>
+<text x="40" y="698" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.8" font-weight="400" fill="#57606a" text-anchor="start" >red = payload copy in user or kernel space · green = pointer / descriptor only · counts exclude NIC DMA and cache traffic</text>
+</svg>

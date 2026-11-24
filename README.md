@@ -31,7 +31,7 @@
 
 > 📁 ไฟล์ทั้งหมดของ Lyrical อยู่ในโฟลเดอร์ [`ros2_lyrical/`](ros2_lyrical/)
 >
-> เอกสารเชิงลึก: [**ภาค 1: Network Stack Deep Dive**](ros2_lyrical/ros2_lyrical_network_stack_deep_dive.md) · [**ภาค 2: wire format, reliability, kernel accounting, latency budget**](ros2_lyrical/ros2_lyrical_network_stack_deeper.md) · [**ภาค 3: ผลการทดลองจริง (packet capture)**](ros2_lyrical/ros2_lyrical_wire_experiments.md) · แล็บ 3D แบบ interactive: [**Lyrical Packet Lab**](https://alfaxphoori.github.io/ros2/ros2_lyrical/interactive/lyrical-packet-lab.html)
+> เอกสารเชิงลึก: [**ภาค 1: Network Stack Deep Dive**](ros2_lyrical/ros2_lyrical_network_stack_deep_dive.md) · [**ภาค 2: wire format, reliability, kernel accounting, latency budget**](ros2_lyrical/ros2_lyrical_network_stack_deeper.md) · [**ภาค 3: ผลการทดลองจริง (packet capture)**](ros2_lyrical/ros2_lyrical_wire_experiments.md) · [**ภาค 4: สถาปัตยกรรมของระบบ**](ros2_lyrical/ros2_lyrical_architectures.md) · แล็บ 3D แบบ interactive: [**Lyrical Packet Lab**](https://alfaxphoori.github.io/ros2/ros2_lyrical/interactive/lyrical-packet-lab.html)
 
 ### 🧅 OSI 7 Layer vs ROS 2 Lyrical (Animated Encapsulation)
 

@@ -11,6 +11,7 @@
 | [ภาค 1: Network Stack Deep Dive](ros2_lyrical_network_stack_deep_dive.md) | ภาพรวม stack, เทียบกับ OSI, RMW ทั้ง 4 ตัว, discovery, transport, packet anatomy และเส้นทางใน kernel ขา TX/RX |
 | [ภาค 2: Wire format, reliability, kernel accounting](ros2_lyrical_network_stack_deeper.md) | RTPS ระดับ byte, DATA_FRAG/NACK_FRAG, Zenoh framing, การคิด `truesize` ของ SO_RCVBUF และ latency budget |
 | [ภาค 3: ผลการทดลองจริง (packet capture)](ros2_lyrical_wire_experiments.md) | การทดลอง 6 ชุดใน Docker พร้อม pcap เทียบคำทำนายกับสิ่งที่เกิดบนสายจริง |
+| [ภาค 4: สถาปัตยกรรมของระบบ](ros2_lyrical_architectures.md) | rmw plugin และ internals ของ middleware 4 ตัว, discovery 3 แบบ, topic/service/action บน DDS และ Zenoh, data path ในเครื่องเดียวกัน 6 ทาง, deployment (LAN, fleet, cloud, micro-ROS), security และตารางเลือกสถาปัตยกรรม |
 
 ## Interactive 3D lab
 
@@ -28,11 +29,12 @@ ros2_lyrical/
 ├── ros2_lyrical_network_stack_deep_dive.md   ภาค 1
 ├── ros2_lyrical_network_stack_deeper.md      ภาค 2
 ├── ros2_lyrical_wire_experiments.md          ภาค 3
-├── diagrams/        animated SVG 8 ภาพ (stack, OSI, packet, kernel path, capture จริง, rcvbuf)
+├── ros2_lyrical_architectures.md            ภาค 4
+├── diagrams/        animated SVG 14 ภาพ (stack, OSI, packet, kernel path, capture จริง, rcvbuf, architecture 6 ภาพ)
 ├── interactive/     Lyrical Packet Lab (3D, Three.js)
 ├── captures/        pcap จากการทดลอง (กรอง hostname ของเครื่องออกแล้ว)
 │   └── scripts/     Dockerfile และ run_experiments.sh สำหรับทำซ้ำ
-└── tools/           สคริปต์ Python ที่สร้าง SVG 7 จาก 8 ภาพใน diagrams/ (anim-lyrical-packet-path.svg เขียนด้วยมือ)
+└── tools/           สคริปต์ Python ที่สร้าง SVG 13 จาก 14 ภาพใน diagrams/ (anim-lyrical-packet-path.svg เขียนด้วยมือ)
 ```
 
 ## ทำซ้ำ
@@ -45,6 +47,7 @@ cd ros2_lyrical/captures/scripts && ./run_experiments.sh
 python3 ros2_lyrical/tools/gen_stack_osi_svgs.py      ros2_lyrical/diagrams
 python3 ros2_lyrical/tools/gen_packet_kernel_svgs.py  ros2_lyrical/diagrams
 python3 ros2_lyrical/tools/gen_capture_svgs.py        ros2_lyrical/diagrams
+python3 ros2_lyrical/tools/gen_architecture_svgs.py   ros2_lyrical/diagrams
 ```
 
 > `run_experiments.sh` ไม่ได้กรอง traffic อื่นออกจาก pcap ถ้าจะเผยแพร่ไฟล์ที่ capture เอง ให้กรองตามวิธีในภาค 3 ก่อน เพราะ mDNS ของเครื่อง host อาจติดชื่อเครื่องมาด้วย

@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 640" width="1000" height="640" role="img">
+<title>ROS 2 communication patterns mapped to DDS topic names and Zenoh key expressions</title>
+<style>.march{stroke-dasharray:6 6;animation:m 1s linear infinite}@keyframes m{to{stroke-dashoffset:-24}}.pulse{animation:p 1.6s ease-in-out infinite}@keyframes p{50%{opacity:.35}}</style>
+<rect x="0" y="0" width="1000" height="640" rx="18" fill="#f6f8fa" stroke="none" stroke-width="1.2" />
+<text x="40" y="46" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="24" font-weight="700" fill="#0f2239" text-anchor="start" >Topic · Service · Action and how each RMW names them</text>
+<text x="40" y="70" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="12.5" font-weight="400" fill="#8c959f" text-anchor="start" >an action is not a new transport: it is 3 services + 2 topics</text>
+<text x="40" y="110" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12" font-weight="700" fill="#8c959f" text-anchor="start" letter-spacing="2">ROS ENTITY</text>
+<text x="370" y="110" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12" font-weight="700" fill="#8c959f" text-anchor="start" letter-spacing="2">DDS TOPIC (Fast/Cyclone/Connext)</text>
+<text x="700" y="110" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12" font-weight="700" fill="#8c959f" text-anchor="start" letter-spacing="2">ZENOH (rmw_zenoh_cpp)</text>
+<rect x="30" y="126" width="940" height="96" rx="12" fill="#ffffff" stroke="#d0d7de" stroke-width="1.3" />
+<rect x="30" y="126" width="8" height="96" rx="4" fill="#f86b1d" stroke="none" stroke-width="1.2" />
+<text x="52" y="156" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="17" font-weight="700" fill="#f86b1d" text-anchor="start" >Topic</text>
+<text x="52" y="178" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="12" font-weight="400" fill="#0f2239" text-anchor="start" >/chatter</text>
+<rect x="179" y="150" width="52" height="32" rx="6" fill="#fdecdd" stroke="#f86b1d" stroke-width="1.2" />
+<text x="205" y="170" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12" font-weight="700" fill="#f86b1d" text-anchor="middle" >A</text>
+<rect x="304" y="150" width="52" height="32" rx="6" fill="#fdecdd" stroke="#f86b1d" stroke-width="1.2" />
+<text x="330" y="170" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12" font-weight="700" fill="#f86b1d" text-anchor="middle" >B</text>
+<line x1="231" y1="166" x2="304" y2="166" stroke="#f86b1d" stroke-width="2" class="march"/>
+<circle r="5" fill="#f86b1d" stroke="#fff" stroke-width="1.5"><animateMotion dur="1.2s" begin="0s" repeatCount="indefinite" path="M231 166 L304 166"/></circle>
+<circle r="5" fill="#f86b1d" stroke="#fff" stroke-width="1.5"><animateMotion dur="1.2s" begin="0.6s" repeatCount="indefinite" path="M231 166 L304 166"/></circle>
+<text x="267.5" y="196" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.5" font-weight="400" fill="#57606a" text-anchor="middle" >many, one-way</text>
+<rect x="370" y="142" width="310" height="30" rx="6" fill="#fdecdd" stroke="none" stroke-width="1.2" />
+<text x="380" y="161" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11.2" font-weight="700" fill="#0f2239" text-anchor="start" >rt/chatter</text>
+<text x="672" y="161" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10" font-weight="400" fill="#57606a" text-anchor="end" >pub/sub</text>
+<rect x="700" y="142" width="255" height="46" rx="6" fill="#fdf1dc" stroke="none" stroke-width="1.2" />
+<text x="710" y="161" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11.2" font-weight="700" fill="#9a5b00" text-anchor="start" >0/chatter/&lt;type&gt;/&lt;hash&gt;</text>
+<text x="710" y="179" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10" font-weight="400" fill="#57606a" text-anchor="start" >put / subscriber</text>
+<rect x="30" y="236" width="940" height="106" rx="12" fill="#ffffff" stroke="#d0d7de" stroke-width="1.3" />
+<rect x="30" y="236" width="8" height="106" rx="4" fill="#2c5f9e" stroke="none" stroke-width="1.2" />
+<text x="52" y="266" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="17" font-weight="700" fill="#2c5f9e" text-anchor="start" >Service</text>
+<text x="52" y="288" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="12" font-weight="400" fill="#0f2239" text-anchor="start" >/add_two_ints</text>
+<rect x="179" y="260" width="52" height="32" rx="6" fill="#e3ecf7" stroke="#2c5f9e" stroke-width="1.2" />
+<text x="205" y="280" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12" font-weight="700" fill="#2c5f9e" text-anchor="middle" >A</text>
+<rect x="304" y="260" width="52" height="32" rx="6" fill="#e3ecf7" stroke="#2c5f9e" stroke-width="1.2" />
+<text x="330" y="280" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12" font-weight="700" fill="#2c5f9e" text-anchor="middle" >B</text>
+<line x1="231" y1="270" x2="304" y2="270" stroke="#2c5f9e" stroke-width="1.5" />
+<line x1="231" y1="282" x2="304" y2="282" stroke="#27a689" stroke-width="1.5" />
+<circle r="5" fill="#2c5f9e"><animateMotion dur="2.4s" repeatCount="indefinite" keyPoints="0;1;1" keyTimes="0;0.45;1" calcMode="linear" path="M231 270 L304 270"/></circle>
+<circle r="5" fill="#27a689"><animateMotion dur="2.4s" repeatCount="indefinite" keyPoints="0;0;1;1" keyTimes="0;0.5;0.95;1" calcMode="linear" path="M304 282 L231 282"/></circle>
+<text x="267.5" y="306" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.5" font-weight="400" fill="#57606a" text-anchor="middle" >request → reply</text>
+<rect x="370" y="252" width="310" height="30" rx="6" fill="#e3ecf7" stroke="none" stroke-width="1.2" />
+<text x="380" y="271" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11.2" font-weight="700" fill="#0f2239" text-anchor="start" >rq/add_two_intsRequest</text>
+<text x="672" y="271" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10" font-weight="400" fill="#57606a" text-anchor="end" >client → server</text>
+<rect x="370" y="290" width="310" height="30" rx="6" fill="#e3ecf7" stroke="none" stroke-width="1.2" />
+<text x="380" y="309" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11.2" font-weight="700" fill="#0f2239" text-anchor="start" >rr/add_two_intsReply</text>
+<text x="672" y="309" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10" font-weight="400" fill="#57606a" text-anchor="end" >server → client</text>
+<rect x="700" y="252" width="255" height="46" rx="6" fill="#fdf1dc" stroke="none" stroke-width="1.2" />
+<text x="710" y="271" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11.2" font-weight="700" fill="#9a5b00" text-anchor="start" >0/add_two_ints/&lt;type&gt;/&lt;hash&gt;</text>
+<text x="710" y="289" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10" font-weight="400" fill="#57606a" text-anchor="start" >get → queryable</text>
+<rect x="30" y="356" width="940" height="220" rx="12" fill="#ffffff" stroke="#d0d7de" stroke-width="1.3" />
+<rect x="30" y="356" width="8" height="220" rx="4" fill="#8250df" stroke="none" stroke-width="1.2" />
+<text x="52" y="386" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="17" font-weight="700" fill="#8250df" text-anchor="start" >Action</text>
+<text x="52" y="408" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="12" font-weight="400" fill="#0f2239" text-anchor="start" >/fibonacci</text>
+<rect x="179" y="380" width="52" height="32" rx="6" fill="#e3ecf7" stroke="#8250df" stroke-width="1.2" />
+<text x="205" y="400" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12" font-weight="700" fill="#8250df" text-anchor="middle" >A</text>
+<rect x="304" y="380" width="52" height="32" rx="6" fill="#e3ecf7" stroke="#8250df" stroke-width="1.2" />
+<text x="330" y="400" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12" font-weight="700" fill="#8250df" text-anchor="middle" >B</text>
+<circle r="5" fill="#8250df" opacity="0"><animate attributeName="opacity" dur="6s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.0;0.1;1" values="0;1;0;0"/><animateMotion dur="6s" repeatCount="indefinite" keyPoints="0;0;1;1" keyTimes="0;0.0;0.1;1" calcMode="linear" path="M231 396 L304 396"/></circle>
+<circle r="5" fill="#27a689" opacity="0"><animate attributeName="opacity" dur="6s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.12;0.22;1" values="0;1;0;0"/><animateMotion dur="6s" repeatCount="indefinite" keyPoints="0;0;1;1" keyTimes="0;0.12;0.22;1" calcMode="linear" path="M304 396 L231 396"/></circle>
+<circle r="5" fill="#e2962a" opacity="0"><animate attributeName="opacity" dur="6s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.3;0.4;1" values="0;1;0;0"/><animateMotion dur="6s" repeatCount="indefinite" keyPoints="0;0;1;1" keyTimes="0;0.3;0.4;1" calcMode="linear" path="M304 396 L231 396"/></circle>
+<circle r="5" fill="#e2962a" opacity="0"><animate attributeName="opacity" dur="6s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.45;0.55;1" values="0;1;0;0"/><animateMotion dur="6s" repeatCount="indefinite" keyPoints="0;0;1;1" keyTimes="0;0.45;0.55;1" calcMode="linear" path="M304 396 L231 396"/></circle>
+<circle r="5" fill="#e2962a" opacity="0"><animate attributeName="opacity" dur="6s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.6;0.7;1" values="0;1;0;0"/><animateMotion dur="6s" repeatCount="indefinite" keyPoints="0;0;1;1" keyTimes="0;0.6;0.7;1" calcMode="linear" path="M304 396 L231 396"/></circle>
+<circle r="5" fill="#27a689" opacity="0"><animate attributeName="opacity" dur="6s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.78;0.88;1" values="0;1;0;0"/><animateMotion dur="6s" repeatCount="indefinite" keyPoints="0;0;1;1" keyTimes="0;0.78;0.88;1" calcMode="linear" path="M304 396 L231 396"/></circle>
+<line x1="231" y1="396" x2="304" y2="396" stroke="#8250df" stroke-width="1.5" />
+<text x="267.5" y="426" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.5" font-weight="400" fill="#57606a" text-anchor="middle" >goal · feedback · result</text>
+<rect x="370" y="372" width="310" height="30" rx="6" fill="#e3ecf7" stroke="none" stroke-width="1.2" />
+<text x="380" y="391" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11.2" font-weight="700" fill="#0f2239" text-anchor="start" >rq|rr …/_action/send_goal…</text>
+<text x="672" y="391" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10" font-weight="400" fill="#57606a" text-anchor="end" >service</text>
+<rect x="370" y="410" width="310" height="30" rx="6" fill="#e3ecf7" stroke="none" stroke-width="1.2" />
+<text x="380" y="429" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11.2" font-weight="700" fill="#0f2239" text-anchor="start" >rq|rr …/_action/cancel_goal…</text>
+<text x="672" y="429" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10" font-weight="400" fill="#57606a" text-anchor="end" >service</text>
+<rect x="370" y="448" width="310" height="30" rx="6" fill="#e3ecf7" stroke="none" stroke-width="1.2" />
+<text x="380" y="467" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11.2" font-weight="700" fill="#0f2239" text-anchor="start" >rq|rr …/_action/get_result…</text>
+<text x="672" y="467" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10" font-weight="400" fill="#57606a" text-anchor="end" >service</text>
+<rect x="370" y="486" width="310" height="30" rx="6" fill="#fdecdd" stroke="none" stroke-width="1.2" />
+<text x="380" y="505" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11.2" font-weight="700" fill="#0f2239" text-anchor="start" >rt/fibonacci/_action/feedback</text>
+<text x="672" y="505" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10" font-weight="400" fill="#57606a" text-anchor="end" >topic</text>
+<rect x="370" y="524" width="310" height="30" rx="6" fill="#fdecdd" stroke="none" stroke-width="1.2" />
+<text x="380" y="543" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11.2" font-weight="700" fill="#0f2239" text-anchor="start" >rt/fibonacci/_action/status</text>
+<text x="672" y="543" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10" font-weight="400" fill="#57606a" text-anchor="end" >topic</text>
+<rect x="700" y="372" width="255" height="46" rx="6" fill="#fdf1dc" stroke="none" stroke-width="1.2" />
+<text x="710" y="391" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11.2" font-weight="700" fill="#9a5b00" text-anchor="start" >3 queryables + 2 publishers</text>
+<text x="710" y="409" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10" font-weight="400" fill="#57606a" text-anchor="start" >same split, Zenoh keys</text>
+<text x="40" y="594" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11" font-weight="400" fill="#57606a" text-anchor="start" >DDS prefixes: rt/ = ROS topic · rq/ = request · rr/ = reply (rmw_dds_common naming)  [K]</text>
+<text x="40" y="612" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11" font-weight="400" fill="#57606a" text-anchor="start" >Zenoh key: &lt;domain&gt;/&lt;name&gt;/&lt;type&gt;/&lt;RIHS01 hash&gt;  [V: rmw_zenoh docs/design.md, branch lyrical]</text>
+</svg>

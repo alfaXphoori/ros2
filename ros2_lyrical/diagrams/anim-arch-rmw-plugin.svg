@@ -1,0 +1,148 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 860" width="1000" height="860" role="img">
+<title>ROS 2 Lyrical rmw plugin architecture and the internals of Fast DDS, Cyclone DDS, Zenoh and Connext</title>
+<style>.march{stroke-dasharray:6 6;animation:m 1s linear infinite}@keyframes m{to{stroke-dashoffset:-24}}.pulse{animation:p 1.6s ease-in-out infinite}@keyframes p{50%{opacity:.35}}</style>
+<rect x="0" y="0" width="1000" height="860" rx="18" fill="#f6f8fa" stroke="none" stroke-width="1.2" />
+<text x="40" y="46" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="24" font-weight="700" fill="#0f2239" text-anchor="start" >rmw is a plugin: four middleware architectures behind one C ABI</text>
+<text x="40" y="70" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="12.5" font-weight="400" fill="#8c959f" text-anchor="start" >RMW_IMPLEMENTATION picks the shared library at runtime · same rcl code, different internals</text>
+<rect x="60" y="92" width="880" height="44" rx="8" fill="#ffffff" stroke="#d0d7de" stroke-width="1.2" />
+<text x="76" y="112" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="700" fill="#0f2239" text-anchor="start" >Application · rclcpp / rclpy</text>
+<text x="76" y="128" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11.5" font-weight="400" fill="#57606a" text-anchor="start" >nodes · executors · callbacks</text>
+<rect x="60" y="144" width="880" height="44" rx="8" fill="#ffffff" stroke="#d0d7de" stroke-width="1.2" />
+<text x="76" y="164" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="700" fill="#0f2239" text-anchor="start" >rcl</text>
+<text x="76" y="180" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11.5" font-weight="400" fill="#57606a" text-anchor="start" >graph · QoS · wait set · context</text>
+<rect x="60" y="196" width="880" height="44" rx="8" fill="#fdecdd" stroke="#d0d7de" stroke-width="1.2" />
+<text x="76" y="216" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="700" fill="#0f2239" text-anchor="start" >rmw C ABI  (rmw_implementation dispatch)</text>
+<text x="76" y="232" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11.5" font-weight="400" fill="#57606a" text-anchor="start" >dlopen(librmw_&lt;name&gt;.so) chosen by RMW_IMPLEMENTATION</text>
+<line x1="500" y1="240" x2="166.0" y2="270" stroke="#d0d7de" stroke-width="1.5" stroke-dasharray="3 4"/>
+<rect x="56" y="266" width="220" height="514" rx="12" fill="none" stroke="#f86b1d" stroke-width="3" opacity="0"><animate attributeName="opacity" dur="12s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.2500;1" values="1;0;0"/></rect>
+<rect x="60" y="270" width="212" height="506" rx="10" fill="#ffffff" stroke="#f86b1d" stroke-width="1.6" />
+<rect x="60" y="270" width="212" height="54" rx="10" fill="#f86b1d" stroke="none" stroke-width="1.2" />
+<rect x="60" y="310" width="212" height="14" rx="0" fill="#f86b1d" stroke="none" stroke-width="1.2" />
+<text x="72" y="292" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="13" font-weight="700" fill="#fff" text-anchor="start" >rmw_fastrtps_cpp</text>
+<text x="72" y="312" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11" font-weight="400" fill="#fff" text-anchor="start" >Fast DDS 3.6.x · default</text>
+<rect x="70" y="336" width="192" height="56" rx="7" fill="#fdecdd" stroke="none" stroke-width="1.2" />
+<text x="80" y="359" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12.5" font-weight="700" fill="#0f2239" text-anchor="start" >DomainParticipant</text>
+<text x="80" y="378" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.6" font-weight="400" fill="#57606a" text-anchor="start" >1 per context</text>
+<line x1="166.0" y1="392" x2="166.0" y2="400" stroke="#f86b1d" stroke-width="2" />
+<rect x="70" y="400" width="192" height="56" rx="7" fill="#fdecdd" stroke="none" stroke-width="1.2" />
+<text x="80" y="423" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12.5" font-weight="700" fill="#0f2239" text-anchor="start" >Publisher → DataWriter</text>
+<text x="80" y="442" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.6" font-weight="400" fill="#57606a" text-anchor="start" >history · QoS</text>
+<line x1="166.0" y1="456" x2="166.0" y2="464" stroke="#f86b1d" stroke-width="2" />
+<rect x="70" y="464" width="192" height="56" rx="7" fill="#fdecdd" stroke="none" stroke-width="1.2" />
+<text x="80" y="487" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12.5" font-weight="700" fill="#0f2239" text-anchor="start" >RTPS Stateful/Stateless</text>
+<text x="80" y="506" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.6" font-weight="400" fill="#57606a" text-anchor="start" >HEARTBEAT · ACKNACK</text>
+<line x1="166.0" y1="520" x2="166.0" y2="528" stroke="#f86b1d" stroke-width="2" />
+<rect x="70" y="528" width="192" height="56" rx="7" fill="#fdecdd" stroke="none" stroke-width="1.2" />
+<text x="80" y="551" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12.5" font-weight="700" fill="#0f2239" text-anchor="start" >FlowController</text>
+<text x="80" y="570" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.6" font-weight="400" fill="#57606a" text-anchor="start" >SYNCHRONOUS (default)</text>
+<line x1="166.0" y1="584" x2="166.0" y2="592" stroke="#f86b1d" stroke-width="2" />
+<rect x="70" y="592" width="192" height="56" rx="7" fill="#fdecdd" stroke="none" stroke-width="1.2" />
+<text x="80" y="615" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12.5" font-weight="700" fill="#0f2239" text-anchor="start" >Transports</text>
+<text x="80" y="634" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.6" font-weight="400" fill="#57606a" text-anchor="start" >UDPv4 · SHM · TCP</text>
+<line x1="166.0" y1="648" x2="166.0" y2="656" stroke="#f86b1d" stroke-width="2" />
+<rect x="70" y="656" width="192" height="56" rx="7" fill="#fdecdd" stroke="none" stroke-width="1.2" />
+<text x="80" y="679" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12.5" font-weight="700" fill="#0f2239" text-anchor="start" >threads</text>
+<text x="80" y="698" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.6" font-weight="400" fill="#57606a" text-anchor="start" >dds.udp.&lt;port&gt; · dds.ev</text>
+<text x="166.0" y="738" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.5" font-weight="700" fill="#f86b1d" text-anchor="middle" >no daemon · DS optional</text>
+<circle r="6" fill="#f86b1d" stroke="#fff" stroke-width="2" opacity="0"><animate attributeName="opacity" dur="12s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.2500;1" values="1;0;0"/><animateMotion dur="3.0s" repeatCount="indefinite" path="M166.0 330 L166.0 710"/></circle>
+<line x1="500" y1="240" x2="389.0" y2="270" stroke="#d0d7de" stroke-width="1.5" stroke-dasharray="3 4"/>
+<rect x="279" y="266" width="220" height="514" rx="12" fill="none" stroke="#2c5f9e" stroke-width="3" opacity="0"><animate attributeName="opacity" dur="12s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.2500;0.5000;1" values="0;1;0;0"/></rect>
+<rect x="283" y="270" width="212" height="506" rx="10" fill="#ffffff" stroke="#2c5f9e" stroke-width="1.6" />
+<rect x="283" y="270" width="212" height="54" rx="10" fill="#2c5f9e" stroke="none" stroke-width="1.2" />
+<rect x="283" y="310" width="212" height="14" rx="0" fill="#2c5f9e" stroke="none" stroke-width="1.2" />
+<text x="295" y="292" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="13" font-weight="700" fill="#fff" text-anchor="start" >rmw_cyclonedds_cpp</text>
+<text x="295" y="312" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11" font-weight="400" fill="#fff" text-anchor="start" >Cyclone DDS 11.0 · Tier 1</text>
+<rect x="293" y="336" width="192" height="56" rx="7" fill="#e3ecf7" stroke="none" stroke-width="1.2" />
+<text x="303" y="359" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12.5" font-weight="700" fill="#0f2239" text-anchor="start" >dds_domain</text>
+<text x="303" y="378" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.6" font-weight="400" fill="#57606a" text-anchor="start" >XML: CYCLONEDDS_URI</text>
+<line x1="389.0" y1="392" x2="389.0" y2="400" stroke="#2c5f9e" stroke-width="2" />
+<rect x="293" y="400" width="192" height="56" rx="7" fill="#e3ecf7" stroke="none" stroke-width="1.2" />
+<text x="303" y="423" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12.5" font-weight="700" fill="#0f2239" text-anchor="start" >writer · reader</text>
+<text x="303" y="442" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.6" font-weight="400" fill="#57606a" text-anchor="start" >WHC / RHC caches</text>
+<line x1="389.0" y1="456" x2="389.0" y2="464" stroke="#2c5f9e" stroke-width="2" />
+<rect x="293" y="464" width="192" height="56" rx="7" fill="#e3ecf7" stroke="none" stroke-width="1.2" />
+<text x="303" y="487" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12.5" font-weight="700" fill="#0f2239" text-anchor="start" >DDSI-RTPS core</text>
+<text x="303" y="506" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.6" font-weight="400" fill="#57606a" text-anchor="start" >SPDP · SEDP · reliability</text>
+<line x1="389.0" y1="520" x2="389.0" y2="528" stroke="#2c5f9e" stroke-width="2" />
+<rect x="293" y="528" width="192" height="56" rx="7" fill="#e3ecf7" stroke="none" stroke-width="1.2" />
+<text x="303" y="551" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12.5" font-weight="700" fill="#0f2239" text-anchor="start" >delivery queues</text>
+<text x="303" y="570" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.6" font-weight="400" fill="#57606a" text-anchor="start" >dq.builtins · dq.user</text>
+<line x1="389.0" y1="584" x2="389.0" y2="592" stroke="#2c5f9e" stroke-width="2" />
+<rect x="293" y="592" width="192" height="56" rx="7" fill="#e3ecf7" stroke="none" stroke-width="1.2" />
+<text x="303" y="615" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12.5" font-weight="700" fill="#0f2239" text-anchor="start" >Transports</text>
+<text x="303" y="634" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.6" font-weight="400" fill="#57606a" text-anchor="start" >UDP · TCP · iceoryx</text>
+<line x1="389.0" y1="648" x2="389.0" y2="656" stroke="#2c5f9e" stroke-width="2" />
+<rect x="293" y="656" width="192" height="56" rx="7" fill="#e3ecf7" stroke="none" stroke-width="1.2" />
+<text x="303" y="679" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12.5" font-weight="700" fill="#0f2239" text-anchor="start" >threads</text>
+<text x="303" y="698" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.6" font-weight="400" fill="#57606a" text-anchor="start" >recv · tev · gc  [K]</text>
+<text x="389.0" y="738" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.5" font-weight="700" fill="#2c5f9e" text-anchor="middle" >iox-roudi only when SHM is on</text>
+<circle r="6" fill="#2c5f9e" stroke="#fff" stroke-width="2" opacity="0"><animate attributeName="opacity" dur="12s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.2500;0.5000;1" values="0;1;0;0"/><animateMotion dur="3.0s" repeatCount="indefinite" path="M389.0 330 L389.0 710"/></circle>
+<line x1="500" y1="240" x2="612.0" y2="270" stroke="#d0d7de" stroke-width="1.5" stroke-dasharray="3 4"/>
+<rect x="502" y="266" width="220" height="514" rx="12" fill="none" stroke="#e2962a" stroke-width="3" opacity="0"><animate attributeName="opacity" dur="12s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.5000;0.7500;1" values="0;1;0;0"/></rect>
+<rect x="506" y="270" width="212" height="506" rx="10" fill="#ffffff" stroke="#e2962a" stroke-width="1.6" />
+<rect x="506" y="270" width="212" height="54" rx="10" fill="#e2962a" stroke="none" stroke-width="1.2" />
+<rect x="506" y="310" width="212" height="14" rx="0" fill="#e2962a" stroke="none" stroke-width="1.2" />
+<text x="518" y="292" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="13" font-weight="700" fill="#fff" text-anchor="start" >rmw_zenoh_cpp</text>
+<text x="518" y="312" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11" font-weight="400" fill="#fff" text-anchor="start" >zenoh-c 1.x · Tier 1</text>
+<rect x="516" y="336" width="192" height="56" rx="7" fill="#fdf1dc" stroke="none" stroke-width="1.2" />
+<text x="526" y="359" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12.5" font-weight="700" fill="#0f2239" text-anchor="start" >Zenoh session</text>
+<text x="526" y="378" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.6" font-weight="400" fill="#57606a" text-anchor="start" >mode: peer · 1 per context</text>
+<line x1="612.0" y1="392" x2="612.0" y2="400" stroke="#e2962a" stroke-width="2" />
+<rect x="516" y="400" width="192" height="56" rx="7" fill="#fdf1dc" stroke="none" stroke-width="1.2" />
+<text x="526" y="423" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12.5" font-weight="700" fill="#0f2239" text-anchor="start" >AdvancedPublisher</text>
+<text x="526" y="442" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.6" font-weight="400" fill="#57606a" text-anchor="start" >put() · pub cache</text>
+<line x1="612.0" y1="456" x2="612.0" y2="464" stroke="#e2962a" stroke-width="2" />
+<rect x="516" y="464" width="192" height="56" rx="7" fill="#fdf1dc" stroke="none" stroke-width="1.2" />
+<text x="526" y="487" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12.5" font-weight="700" fill="#0f2239" text-anchor="start" >liveliness tokens</text>
+<text x="526" y="506" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.6" font-weight="400" fill="#57606a" text-anchor="start" >@ros2_lv/… = graph</text>
+<line x1="612.0" y1="520" x2="612.0" y2="528" stroke="#e2962a" stroke-width="2" />
+<rect x="516" y="528" width="192" height="56" rx="7" fill="#fdf1dc" stroke="none" stroke-width="1.2" />
+<text x="526" y="551" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12.5" font-weight="700" fill="#0f2239" text-anchor="start" >queryable / get</text>
+<text x="526" y="570" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.6" font-weight="400" fill="#57606a" text-anchor="start" >services</text>
+<line x1="612.0" y1="584" x2="612.0" y2="592" stroke="#e2962a" stroke-width="2" />
+<rect x="516" y="592" width="192" height="56" rx="7" fill="#fdf1dc" stroke="none" stroke-width="1.2" />
+<text x="526" y="615" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12.5" font-weight="700" fill="#0f2239" text-anchor="start" >Transports</text>
+<text x="526" y="634" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.6" font-weight="400" fill="#57606a" text-anchor="start" >tcp · udp · quic · tls · shm</text>
+<line x1="612.0" y1="648" x2="612.0" y2="656" stroke="#e2962a" stroke-width="2" />
+<rect x="516" y="656" width="192" height="56" rx="7" fill="#fdf1dc" stroke="none" stroke-width="1.2" />
+<text x="526" y="679" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12.5" font-weight="700" fill="#0f2239" text-anchor="start" >router rmw_zenohd</text>
+<text x="526" y="698" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.6" font-weight="400" fill="#57606a" text-anchor="start" >tcp/[::]:7447 · gossip</text>
+<text x="612.0" y="738" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.5" font-weight="700" fill="#e2962a" text-anchor="middle" >router required for discovery</text>
+<circle r="6" fill="#e2962a" stroke="#fff" stroke-width="2" opacity="0"><animate attributeName="opacity" dur="12s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.5000;0.7500;1" values="0;1;0;0"/><animateMotion dur="3.0s" repeatCount="indefinite" path="M612.0 330 L612.0 710"/></circle>
+<line x1="500" y1="240" x2="835.0" y2="270" stroke="#d0d7de" stroke-width="1.5" stroke-dasharray="3 4"/>
+<rect x="725" y="266" width="220" height="514" rx="12" fill="none" stroke="#6e7781" stroke-width="3" opacity="0"><animate attributeName="opacity" dur="12s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.7500;1.0000;1" values="0;1;0;0"/></rect>
+<rect x="729" y="270" width="212" height="506" rx="10" fill="#ffffff" stroke="#6e7781" stroke-width="1.6" />
+<rect x="729" y="270" width="212" height="54" rx="10" fill="#6e7781" stroke="none" stroke-width="1.2" />
+<rect x="729" y="310" width="212" height="14" rx="0" fill="#6e7781" stroke="none" stroke-width="1.2" />
+<text x="741" y="292" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="13" font-weight="700" fill="#fff" text-anchor="start" >rmw_connextdds</text>
+<text x="741" y="312" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11" font-weight="400" fill="#fff" text-anchor="start" >Connext 7.7 · no arm64</text>
+<rect x="739" y="336" width="192" height="56" rx="7" fill="#eaeef2" stroke="none" stroke-width="1.2" />
+<text x="749" y="359" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12.5" font-weight="700" fill="#0f2239" text-anchor="start" >DomainParticipant</text>
+<text x="749" y="378" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.6" font-weight="400" fill="#57606a" text-anchor="start" >RTI DDS</text>
+<line x1="835.0" y1="392" x2="835.0" y2="400" stroke="#6e7781" stroke-width="2" />
+<rect x="739" y="400" width="192" height="56" rx="7" fill="#eaeef2" stroke="none" stroke-width="1.2" />
+<text x="749" y="423" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12.5" font-weight="700" fill="#0f2239" text-anchor="start" >DataWriter</text>
+<text x="749" y="442" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.6" font-weight="400" fill="#57606a" text-anchor="start" >history · QoS</text>
+<line x1="835.0" y1="456" x2="835.0" y2="464" stroke="#6e7781" stroke-width="2" />
+<rect x="739" y="464" width="192" height="56" rx="7" fill="#eaeef2" stroke="none" stroke-width="1.2" />
+<text x="749" y="487" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12.5" font-weight="700" fill="#0f2239" text-anchor="start" >RTPS</text>
+<text x="749" y="506" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.6" font-weight="400" fill="#57606a" text-anchor="start" >standard wire</text>
+<line x1="835.0" y1="520" x2="835.0" y2="528" stroke="#6e7781" stroke-width="2" />
+<rect x="739" y="528" width="192" height="56" rx="7" fill="#eaeef2" stroke="none" stroke-width="1.2" />
+<text x="749" y="551" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12.5" font-weight="700" fill="#0f2239" text-anchor="start" >XML QoS profiles</text>
+<text x="749" y="570" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.6" font-weight="400" fill="#57606a" text-anchor="start" >NDDS_QOS_PROFILES</text>
+<line x1="835.0" y1="584" x2="835.0" y2="592" stroke="#6e7781" stroke-width="2" />
+<rect x="739" y="592" width="192" height="56" rx="7" fill="#eaeef2" stroke="none" stroke-width="1.2" />
+<text x="749" y="615" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12.5" font-weight="700" fill="#0f2239" text-anchor="start" >Transports</text>
+<text x="749" y="634" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.6" font-weight="400" fill="#57606a" text-anchor="start" >UDPv4 · SHM</text>
+<line x1="835.0" y1="648" x2="835.0" y2="656" stroke="#6e7781" stroke-width="2" />
+<rect x="739" y="656" width="192" height="56" rx="7" fill="#eaeef2" stroke="none" stroke-width="1.2" />
+<text x="749" y="679" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12.5" font-weight="700" fill="#0f2239" text-anchor="start" >license</text>
+<text x="749" y="698" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.6" font-weight="400" fill="#57606a" text-anchor="start" >commercial / eval</text>
+<text x="835.0" y="738" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.5" font-weight="700" fill="#57606a" text-anchor="middle" >details: vendor docs [K]</text>
+<circle r="6" fill="#6e7781" stroke="#fff" stroke-width="2" opacity="0"><animate attributeName="opacity" dur="12s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.7500;1.0000;1" values="0;1;0;0"/><animateMotion dur="3.0s" repeatCount="indefinite" path="M835.0 330 L835.0 710"/></circle>
+<g opacity="0"><animate attributeName="opacity" dur="12s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.2500;1" values="1;0;0"/><rect x="300" y="808" width="400" height="28" rx="14" fill="#0f2239" stroke="none" stroke-width="1.2" /><text x="500" y="827" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="12.5" font-weight="700" fill="#fff" text-anchor="middle" >export RMW_IMPLEMENTATION=rmw_fastrtps_cpp</text></g>
+<g opacity="0"><animate attributeName="opacity" dur="12s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.2500;0.5000;1" values="0;1;0;0"/><rect x="300" y="808" width="400" height="28" rx="14" fill="#0f2239" stroke="none" stroke-width="1.2" /><text x="500" y="827" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="12.5" font-weight="700" fill="#fff" text-anchor="middle" >export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp</text></g>
+<g opacity="0"><animate attributeName="opacity" dur="12s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.5000;0.7500;1" values="0;1;0;0"/><rect x="300" y="808" width="400" height="28" rx="14" fill="#0f2239" stroke="none" stroke-width="1.2" /><text x="500" y="827" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="12.5" font-weight="700" fill="#fff" text-anchor="middle" >export RMW_IMPLEMENTATION=rmw_zenoh_cpp</text></g>
+<g opacity="0"><animate attributeName="opacity" dur="12s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.7500;1.0000;1" values="0;1;0;0"/><rect x="300" y="808" width="400" height="28" rx="14" fill="#0f2239" stroke="none" stroke-width="1.2" /><text x="500" y="827" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="12.5" font-weight="700" fill="#fff" text-anchor="middle" >export RMW_IMPLEMENTATION=rmw_connextdds</text></g>
+</svg>

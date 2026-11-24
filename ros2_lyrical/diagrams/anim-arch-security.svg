@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 640" width="1000" height="640" role="img">
+<title>ROS 2 security architecture: SROS2 keystore and DDS-Security plugins compared with Zenoh TLS and ACL</title>
+<style>.march{stroke-dasharray:6 6;animation:m 1s linear infinite}@keyframes m{to{stroke-dashoffset:-24}}.pulse{animation:p 1.6s ease-in-out infinite}@keyframes p{50%{opacity:.35}}</style>
+<rect x="0" y="0" width="1000" height="640" rx="18" fill="#f6f8fa" stroke="none" stroke-width="1.2" />
+<text x="40" y="46" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="24" font-weight="700" fill="#0f2239" text-anchor="start" >Security architecture: SROS2 (DDS-Security) and Zenoh</text>
+<text x="40" y="70" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="12.5" font-weight="400" fill="#8c959f" text-anchor="start" >identity per enclave · policy as signed XML · encryption in the middleware, not the kernel</text>
+<rect x="30" y="96" width="300" height="500" rx="14" fill="#ffffff" stroke="#d0d7de" stroke-width="1.5" />
+<rect x="44" y="108" width="200" height="26" rx="13" fill="#0f2239" stroke="none" stroke-width="1.2" />
+<text x="144.0" y="125.5" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12" font-weight="700" fill="#fff" text-anchor="middle" >keystore (ros2 security)</text>
+<rect x="46" y="150" width="268" height="34" rx="6" fill="#eaeef2" stroke="none" stroke-width="1.2" />
+<text x="56" y="165" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.5" font-weight="700" fill="#57606a" text-anchor="start" >public/</text>
+<text x="56" y="178" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.5" font-weight="400" fill="#0f2239" text-anchor="start" >ca / identity_ca / permissions_ca certs</text>
+<rect x="46" y="192" width="268" height="34" rx="6" fill="#eaeef2" stroke="none" stroke-width="1.2" />
+<text x="56" y="207" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.5" font-weight="700" fill="#57606a" text-anchor="start" >private/</text>
+<text x="56" y="220" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.5" font-weight="400" fill="#0f2239" text-anchor="start" >CA keys (keep offline)</text>
+<rect x="46" y="234" width="268" height="34" rx="6" fill="#eaeef2" stroke="none" stroke-width="1.2" />
+<text x="56" y="249" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.5" font-weight="700" fill="#57606a" text-anchor="start" >enclaves/</text>
+<text x="56" y="262" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.5" font-weight="400" fill="#0f2239" text-anchor="start" >governance.xml · governance.p7s</text>
+<rect x="46" y="276" width="268" height="34" rx="6" fill="#eaeef2" stroke="none" stroke-width="1.2" />
+<text x="56" y="291" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.5" font-weight="700" fill="#57606a" text-anchor="start" >enclaves/&lt;name&gt;/</text>
+<text x="56" y="304" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.5" font-weight="400" fill="#0f2239" text-anchor="start" >cert.pem · key.pem</text>
+<rect x="46" y="318" width="268" height="34" rx="6" fill="#eaeef2" stroke="none" stroke-width="1.2" />
+<text x="56" y="333" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.5" font-weight="700" fill="#57606a" text-anchor="start" >enclaves/&lt;name&gt;/</text>
+<text x="56" y="346" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.5" font-weight="400" fill="#0f2239" text-anchor="start" >permissions.xml · permissions.p7s</text>
+<rect x="46" y="360" width="268" height="34" rx="6" fill="#eaeef2" stroke="none" stroke-width="1.2" />
+<text x="56" y="375" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.5" font-weight="700" fill="#57606a" text-anchor="start" >enclaves/&lt;name&gt;/</text>
+<text x="56" y="388" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.5" font-weight="400" fill="#0f2239" text-anchor="start" >governance.p7s · CA certs</text>
+<text x="46" y="432" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.8" font-weight="700" fill="#0f2239" text-anchor="start" >ROS_SECURITY_KEYSTORE=&lt;dir&gt;</text>
+<text x="46" y="450" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.8" font-weight="700" fill="#0f2239" text-anchor="start" >ROS_SECURITY_ENABLE=true</text>
+<text x="46" y="468" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.8" font-weight="700" fill="#0f2239" text-anchor="start" >ROS_SECURITY_STRATEGY=Enforce</text>
+<text x="46" y="492" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.8" font-weight="700" fill="#dc5812" text-anchor="start" >node --ros-args --enclave /robot/nav</text>
+<text x="46" y="520" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.4" font-weight="400" fill="#57606a" text-anchor="start" >Fast DDS .deb for Lyrical is built</text>
+<text x="46" y="536" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.4" font-weight="400" fill="#57606a" text-anchor="start" >with -DSECURITY=ON (see part 2 §3.7)</text>
+<text x="46" y="560" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.4" font-weight="700" fill="#cf222e" text-anchor="start" >source build w/o flag → no security</text>
+<rect x="350" y="96" width="330" height="500" rx="14" fill="#ffffff" stroke="#d0d7de" stroke-width="1.5" />
+<rect x="364" y="108" width="230" height="26" rx="13" fill="#f86b1d" stroke="none" stroke-width="1.2" />
+<text x="479.0" y="125.5" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12" font-weight="700" fill="#fff" text-anchor="middle" >DDS-Security plugins (OMG)</text>
+<rect x="366" y="150" width="298" height="72" rx="9" fill="#fff" stroke="#f86b1d" stroke-width="1.6" />
+<rect x="366" y="150" width="7" height="72" rx="3" fill="#f86b1d" stroke="none" stroke-width="1.2" />
+<text x="384" y="172" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="13.5" font-weight="700" fill="#f86b1d" text-anchor="start" >Authentication</text>
+<text x="384" y="192" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.6" font-weight="400" fill="#0f2239" text-anchor="start" >DDS:Auth:PKI-DH</text>
+<text x="384" y="210" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.4" font-weight="400" fill="#57606a" text-anchor="start" >X.509 cert + DH handshake</text>
+<rect x="366" y="234" width="298" height="72" rx="9" fill="#fff" stroke="#2c5f9e" stroke-width="1.6" />
+<rect x="366" y="234" width="7" height="72" rx="3" fill="#2c5f9e" stroke="none" stroke-width="1.2" />
+<text x="384" y="256" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="13.5" font-weight="700" fill="#2c5f9e" text-anchor="start" >Access Control</text>
+<text x="384" y="276" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.6" font-weight="400" fill="#0f2239" text-anchor="start" >DDS:Access:Permissions</text>
+<text x="384" y="294" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.4" font-weight="400" fill="#57606a" text-anchor="start" >governance + permissions XML</text>
+<rect x="366" y="318" width="298" height="72" rx="9" fill="#fff" stroke="#8250df" stroke-width="1.6" />
+<rect x="366" y="318" width="7" height="72" rx="3" fill="#8250df" stroke="none" stroke-width="1.2" />
+<text x="384" y="340" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="13.5" font-weight="700" fill="#8250df" text-anchor="start" >Cryptographic</text>
+<text x="384" y="360" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.6" font-weight="400" fill="#0f2239" text-anchor="start" >DDS:Crypto:AES-GCM-GMAC</text>
+<text x="384" y="378" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.4" font-weight="400" fill="#57606a" text-anchor="start" >encrypt / sign submessages</text>
+<rect x="366" y="402" width="298" height="72" rx="9" fill="#fff" stroke="#6e7781" stroke-width="1.6" />
+<rect x="366" y="402" width="7" height="72" rx="3" fill="#6e7781" stroke="none" stroke-width="1.2" />
+<text x="384" y="424" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="13.5" font-weight="700" fill="#6e7781" text-anchor="start" >Logging (optional)</text>
+<text x="384" y="444" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.6" font-weight="400" fill="#0f2239" text-anchor="start" >DDS:Logging:DDS_LogTopic</text>
+<text x="384" y="462" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.4" font-weight="400" fill="#57606a" text-anchor="start" >security events</text>
+<text x="366" y="506" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.8" font-weight="700" fill="#0f2239" text-anchor="start" >on the wire: SRTPS_PREFIX / SEC_PREFIX</text>
+<text x="366" y="524" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.6" font-weight="400" fill="#57606a" text-anchor="start" >wrap encrypted RTPS submessages; UDP,</text>
+<text x="366" y="542" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.6" font-weight="400" fill="#57606a" text-anchor="start" >IP and port numbers stay in clear text.</text>
+<text x="366" y="566" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.6" font-weight="400" fill="#57606a" text-anchor="start" >Discovery itself can be protected via</text>
+<text x="366" y="582" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.6" font-weight="400" fill="#57606a" text-anchor="start" >governance (enable_discovery_protection).</text>
+<line x1="314" y1="192" x2="366" y2="186" stroke="#d0d7de" stroke-width="1.5" stroke-dasharray="3 4"/>
+<circle r="4" fill="#0f2239" stroke="#fff" stroke-width="1.5"><animateMotion dur="1.8s" begin="0s" repeatCount="indefinite" path="M314 192 L366 186"/></circle>
+<line x1="314" y1="276" x2="366" y2="270" stroke="#d0d7de" stroke-width="1.5" stroke-dasharray="3 4"/>
+<circle r="4" fill="#0f2239" stroke="#fff" stroke-width="1.5"><animateMotion dur="1.8s" begin="0.6s" repeatCount="indefinite" path="M314 276 L366 270"/></circle>
+<line x1="314" y1="360" x2="366" y2="354" stroke="#d0d7de" stroke-width="1.5" stroke-dasharray="3 4"/>
+<circle r="4" fill="#0f2239" stroke="#fff" stroke-width="1.5"><animateMotion dur="1.8s" begin="1.2s" repeatCount="indefinite" path="M314 360 L366 354"/></circle>
+<rect x="700" y="96" width="270" height="500" rx="14" fill="#ffffff" stroke="#d0d7de" stroke-width="1.5" />
+<rect x="714" y="108" width="200" height="26" rx="13" fill="#e2962a" stroke="none" stroke-width="1.2" />
+<text x="814.0" y="125.5" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12" font-weight="700" fill="#fff" text-anchor="middle" >rmw_zenoh_cpp</text>
+<rect x="716" y="150" width="238" height="58" rx="9" fill="#fdf1dc" stroke="#e2962a" stroke-width="1.4" />
+<text x="728" y="172" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="700" fill="#e2962a" text-anchor="start" >link</text>
+<text x="728" y="192" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.4" font-weight="400" fill="#0f2239" text-anchor="start" >TLS / mTLS (tls/… endpoints)</text>
+<rect x="716" y="220" width="238" height="58" rx="9" fill="#fdf1dc" stroke="#e2962a" stroke-width="1.4" />
+<text x="728" y="242" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="700" fill="#e2962a" text-anchor="start" >auth</text>
+<text x="728" y="262" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.4" font-weight="400" fill="#0f2239" text-anchor="start" >usrpwd or certificate</text>
+<rect x="716" y="290" width="238" height="58" rx="9" fill="#fdf1dc" stroke="#e2962a" stroke-width="1.4" />
+<text x="728" y="312" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="700" fill="#e2962a" text-anchor="start" >ACL</text>
+<text x="728" y="332" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.4" font-weight="400" fill="#0f2239" text-anchor="start" >allow/deny per key expr</text>
+<rect x="716" y="360" width="238" height="58" rx="9" fill="#fdf1dc" stroke="#9a5b00" stroke-width="1.4" />
+<text x="728" y="382" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="700" fill="#9a5b00" text-anchor="start" >tool</text>
+<text x="728" y="402" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.4" font-weight="400" fill="#0f2239" text-anchor="start" >zenoh_security_tools</text>
+<text x="716" y="448" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.5" font-weight="400" fill="#57606a" text-anchor="start" >zenoh_security_tools builds Zenoh</text>
+<text x="716" y="464" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.5" font-weight="400" fill="#57606a" text-anchor="start" >configs from SROS2-style policies</text>
+<text x="716" y="480" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.5" font-weight="400" fill="#57606a" text-anchor="start" >[package exists in Lyrical; behaviour</text>
+<text x="716" y="496" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.5" font-weight="400" fill="#57606a" text-anchor="start" > not verified here]</text>
+<text x="716" y="526" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.5" font-weight="700" fill="#0f2239" text-anchor="start" >encryption is per TCP/TLS link,</text>
+<text x="716" y="542" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.5" font-weight="700" fill="#0f2239" text-anchor="start" >not per message: the router can</text>
+<text x="716" y="558" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.5" font-weight="700" fill="#0f2239" text-anchor="start" >read payloads it forwards.</text>
+</svg>

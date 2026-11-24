@@ -9,6 +9,8 @@
 
 ---
 
+> **ภาค 4 (สถาปัตยกรรม):** [ros2_lyrical_architectures.md](ros2_lyrical_architectures.md) middleware internals, discovery, data path ในเครื่อง, deployment แบบ fleet/cloud และ security
+>
 > **ภาค 3 (ทดลองจริง):** [ros2_lyrical_wire_experiments.md](ros2_lyrical_wire_experiments.md) packet capture จาก Docker พร้อม pcap และสคริปต์ทำซ้ำ
 >
 > **ภาค 2 (ลึกกว่า):** [ros2_lyrical_network_stack_deeper.md](ros2_lyrical_network_stack_deeper.md) ครอบคลุม discovery ระดับ byte, reliable protocol และ DATA_FRAG, Fast DDS internals, Zenoh framing, การนับ `SO_RCVBUF`, latency/CPU budget และหัวข้อวิจัย R1–R9

@@ -1,0 +1,134 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 820" width="1000" height="820" role="img">
+<title>ROS 2 deployment architectures: multi-host robot, multi-robot fleet with domain bridge, Zenoh router mesh to the cloud, micro-ROS agent</title>
+<style>.march{stroke-dasharray:6 6;animation:m 1s linear infinite}@keyframes m{to{stroke-dashoffset:-24}}.pulse{animation:p 1.6s ease-in-out infinite}@keyframes p{50%{opacity:.35}}</style>
+<rect x="0" y="0" width="1000" height="820" rx="18" fill="#f6f8fa" stroke="none" stroke-width="1.2" />
+<text x="40" y="46" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="24" font-weight="700" fill="#0f2239" text-anchor="start" >Deployment architectures: one robot → fleet → cloud</text>
+<text x="40" y="70" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="12.5" font-weight="400" fill="#8c959f" text-anchor="start" >left: DDS on the robot LAN · right: Zenoh routers across NAT · bottom: micro-ROS on MCUs</text>
+<rect x="30" y="92" width="460" height="470" rx="14" fill="#ffffff" stroke="#d0d7de" stroke-width="1.5" />
+<rect x="44" y="104" width="230" height="26" rx="13" fill="#f86b1d" stroke="none" stroke-width="1.2" />
+<text x="159.0" y="121.5" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12" font-weight="700" fill="#fff" text-anchor="middle" >A · DDS on a robot LAN</text>
+<rect x="44" y="144" width="210" height="300" rx="12" fill="#fff" stroke="#f86b1d" stroke-width="1.4" stroke-dasharray="5 4"/>
+<text x="54" y="164" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11.5" font-weight="700" fill="#dc5812" text-anchor="start" >robot_1 · ROS_DOMAIN_ID=11</text>
+<rect x="56" y="176" width="186" height="82" rx="9" fill="#fdecdd" stroke="#f86b1d" stroke-width="1.5" />
+<text x="66" y="196" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12.5" font-weight="700" fill="#f86b1d" text-anchor="start" >compute (x86)</text>
+<text x="66" y="214" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.4" font-weight="400" fill="#0f2239" text-anchor="start" >nav2 · perception</text>
+<text x="66" y="230" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.4" font-weight="400" fill="#0f2239" text-anchor="start" >SHM inside host</text>
+<rect x="56" y="274" width="186" height="82" rx="9" fill="#fdecdd" stroke="#f86b1d" stroke-width="1.5" />
+<text x="66" y="294" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12.5" font-weight="700" fill="#f86b1d" text-anchor="start" >sensor box (arm64)</text>
+<text x="66" y="312" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.4" font-weight="400" fill="#0f2239" text-anchor="start" >lidar · camera drivers</text>
+<text x="66" y="328" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.4" font-weight="400" fill="#0f2239" text-anchor="start" >UDP to compute</text>
+<line x1="149" y1="258" x2="149" y2="274" stroke="#f86b1d" stroke-width="3" class="march"/>
+<text x="54" y="382" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.5" font-weight="400" fill="#57606a" text-anchor="start" >switch · multicast OK</text>
+<text x="54" y="398" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.5" font-weight="400" fill="#57606a" text-anchor="start" >SPDP/SEDP stay inside</text>
+<text x="54" y="414" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.5" font-weight="400" fill="#57606a" text-anchor="start" >the domain</text>
+<rect x="266" y="144" width="210" height="150" rx="12" fill="#fff" stroke="#f86b1d" stroke-width="1.4" stroke-dasharray="5 4"/>
+<text x="276" y="164" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11.5" font-weight="700" fill="#dc5812" text-anchor="start" >robot_2 · DOMAIN_ID=12</text>
+<rect x="278" y="176" width="186" height="98" rx="9" fill="#fdecdd" stroke="#f86b1d" stroke-width="1.5" />
+<text x="288" y="196" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12.5" font-weight="700" fill="#f86b1d" text-anchor="start" >single computer</text>
+<text x="288" y="214" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.4" font-weight="400" fill="#0f2239" text-anchor="start" >all nodes</text>
+<text x="288" y="230" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.4" font-weight="400" fill="#0f2239" text-anchor="start" >ROS_AUTOMATIC_DISCOVERY</text>
+<text x="288" y="246" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.4" font-weight="400" fill="#0f2239" text-anchor="start" >_RANGE=LOCALHOST</text>
+<rect x="266" y="318" width="210" height="126" rx="9" fill="#e3ecf7" stroke="#2c5f9e" stroke-width="1.5" />
+<text x="276" y="338" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12.5" font-weight="700" fill="#2c5f9e" text-anchor="start" >fleet server · DOMAIN 0</text>
+<text x="276" y="356" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.4" font-weight="400" fill="#0f2239" text-anchor="start" >domain_bridge</text>
+<text x="276" y="372" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.4" font-weight="400" fill="#0f2239" text-anchor="start" >  11:/robot_1/odom → 0</text>
+<text x="276" y="388" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.4" font-weight="400" fill="#0f2239" text-anchor="start" >  12:/robot_2/odom → 0</text>
+<text x="276" y="404" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.4" font-weight="400" fill="#0f2239" text-anchor="start" >only chosen topics cross</text>
+<path d="M242 212 C 260 252, 260 352, 266 372" fill="none" stroke="#2c5f9e" stroke-width="2" class="march"/>
+<circle r="5" fill="#2c5f9e" stroke="#fff" stroke-width="1.5"><animateMotion dur="2.2s" begin="0s" repeatCount="indefinite" path="M242 212 C 260 252, 260 352, 266 372"/></circle>
+<path d="M371 294 L371 318" fill="none" stroke="#2c5f9e" stroke-width="2" class="march"/>
+<circle r="5" fill="#2c5f9e" stroke="#fff" stroke-width="1.5"><animateMotion dur="1.2s" begin="0s" repeatCount="indefinite" path="M371 294 L371 318"/></circle>
+<text x="44" y="468" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.8" font-weight="400" fill="#0f2239" text-anchor="start" >Isolation by ROS_DOMAIN_ID (ports 7400+250·id).</text>
+<text x="44" y="486" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.8" font-weight="400" fill="#0f2239" text-anchor="start" >Safe range on Linux: 0–101 (ephemeral ports).</text>
+<text x="44" y="504" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.8" font-weight="400" fill="#0f2239" text-anchor="start" >Namespaces (/robot_1/…) keep names unique when</text>
+<text x="44" y="522" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.8" font-weight="400" fill="#0f2239" text-anchor="start" >topics are bridged into one shared domain.</text>
+<text x="44" y="544" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.8" font-weight="700" fill="#dc5812" text-anchor="start" >Across routers: Discovery Server or ROS_STATIC_PEERS.</text>
+<rect x="510" y="92" width="460" height="470" rx="14" fill="#ffffff" stroke="#d0d7de" stroke-width="1.5" />
+<rect x="524" y="104" width="260" height="26" rx="13" fill="#e2962a" stroke="none" stroke-width="1.2" />
+<text x="654.0" y="121.5" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12" font-weight="700" fill="#fff" text-anchor="middle" >B · Zenoh routers to the cloud</text>
+<rect x="640" y="144" width="200" height="92" rx="40" fill="#fdf1dc" stroke="#e2962a" stroke-width="1.6" />
+<text x="740" y="174" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="13" font-weight="700" fill="#9a5b00" text-anchor="middle" >cloud / edge</text>
+<text x="740" y="192" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="11" font-weight="400" fill="#0f2239" text-anchor="middle" >rmw_zenohd</text>
+<text x="740" y="208" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.5" font-weight="400" fill="#0f2239" text-anchor="middle" >listen tls/0.0.0.0:7447</text>
+<text x="740" y="224" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.5" font-weight="400" fill="#0f2239" text-anchor="middle" >ACL per robot</text>
+<line x1="530" y1="278" x2="950" y2="278" stroke="#cf222e" stroke-width="1.5" stroke-dasharray="8 6"/>
+<rect x="650.0" y="268" width="180" height="20" rx="10" fill="#ffebe9" stroke="#cf222e" stroke-width="1.2" />
+<text x="740.0" y="282" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.5" font-weight="700" fill="#cf222e" text-anchor="middle" >NAT · firewall · 4G/5G</text>
+<rect x="530" y="318" width="130" height="170" rx="12" fill="#fff" stroke="#e2962a" stroke-width="1.4" stroke-dasharray="5 4"/>
+<text x="540" y="338" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="12" font-weight="700" fill="#9a5b00" text-anchor="start" >robot_1</text>
+<circle cx="595" cy="372" r="20" fill="#e2962a" class="pulse"/>
+<text x="595" y="376" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#fff" text-anchor="middle" >router</text>
+<line x1="595" y1="392" x2="555" y2="430" stroke="#e2962a" stroke-width="1.2" />
+<circle cx="555" cy="442" r="12" fill="#fff" stroke="#0f2239" stroke-width="1.5"/>
+<text x="555" y="446" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#0f2239" text-anchor="middle" >n</text>
+<line x1="595" y1="392" x2="595" y2="430" stroke="#e2962a" stroke-width="1.2" />
+<circle cx="595" cy="442" r="12" fill="#fff" stroke="#0f2239" stroke-width="1.5"/>
+<text x="595" y="446" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#0f2239" text-anchor="middle" >n</text>
+<line x1="595" y1="392" x2="635" y2="430" stroke="#e2962a" stroke-width="1.2" />
+<circle cx="635" cy="442" r="12" fill="#fff" stroke="#0f2239" stroke-width="1.5"/>
+<text x="635" y="446" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#0f2239" text-anchor="middle" >n</text>
+<text x="595" y="478" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="9.8" font-weight="400" fill="#57606a" text-anchor="middle" >peers on host</text>
+<path d="M595 352 L740 236" fill="none" stroke="#e2962a" stroke-width="2.4" class="march"/>
+<circle r="5" fill="#e2962a" stroke="#fff" stroke-width="1.5"><animateMotion dur="1.8s" begin="0s" repeatCount="indefinite" path="M595 352 L740 236"/></circle>
+<rect x="676" y="318" width="130" height="170" rx="12" fill="#fff" stroke="#e2962a" stroke-width="1.4" stroke-dasharray="5 4"/>
+<text x="686" y="338" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="12" font-weight="700" fill="#9a5b00" text-anchor="start" >robot_2</text>
+<circle cx="741" cy="372" r="20" fill="#e2962a" class="pulse"/>
+<text x="741" y="376" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#fff" text-anchor="middle" >router</text>
+<line x1="741" y1="392" x2="701" y2="430" stroke="#e2962a" stroke-width="1.2" />
+<circle cx="701" cy="442" r="12" fill="#fff" stroke="#0f2239" stroke-width="1.5"/>
+<text x="701" y="446" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#0f2239" text-anchor="middle" >n</text>
+<line x1="741" y1="392" x2="741" y2="430" stroke="#e2962a" stroke-width="1.2" />
+<circle cx="741" cy="442" r="12" fill="#fff" stroke="#0f2239" stroke-width="1.5"/>
+<text x="741" y="446" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#0f2239" text-anchor="middle" >n</text>
+<line x1="741" y1="392" x2="781" y2="430" stroke="#e2962a" stroke-width="1.2" />
+<circle cx="781" cy="442" r="12" fill="#fff" stroke="#0f2239" stroke-width="1.5"/>
+<text x="781" y="446" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#0f2239" text-anchor="middle" >n</text>
+<text x="741" y="478" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="9.8" font-weight="400" fill="#57606a" text-anchor="middle" >peers on host</text>
+<path d="M741 352 L740 236" fill="none" stroke="#e2962a" stroke-width="2.4" class="march"/>
+<circle r="5" fill="#e2962a" stroke="#fff" stroke-width="1.5"><animateMotion dur="2.1s" begin="0s" repeatCount="indefinite" path="M741 352 L740 236"/></circle>
+<rect x="822" y="318" width="130" height="170" rx="12" fill="#fff" stroke="#e2962a" stroke-width="1.4" stroke-dasharray="5 4"/>
+<text x="832" y="338" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="12" font-weight="700" fill="#9a5b00" text-anchor="start" >robot_3</text>
+<circle cx="887" cy="372" r="20" fill="#e2962a" class="pulse"/>
+<text x="887" y="376" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10.5" font-weight="700" fill="#fff" text-anchor="middle" >router</text>
+<line x1="887" y1="392" x2="847" y2="430" stroke="#e2962a" stroke-width="1.2" />
+<circle cx="847" cy="442" r="12" fill="#fff" stroke="#0f2239" stroke-width="1.5"/>
+<text x="847" y="446" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#0f2239" text-anchor="middle" >n</text>
+<line x1="887" y1="392" x2="887" y2="430" stroke="#e2962a" stroke-width="1.2" />
+<circle cx="887" cy="442" r="12" fill="#fff" stroke="#0f2239" stroke-width="1.5"/>
+<text x="887" y="446" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#0f2239" text-anchor="middle" >n</text>
+<line x1="887" y1="392" x2="927" y2="430" stroke="#e2962a" stroke-width="1.2" />
+<circle cx="927" cy="442" r="12" fill="#fff" stroke="#0f2239" stroke-width="1.5"/>
+<text x="927" y="446" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#0f2239" text-anchor="middle" >n</text>
+<text x="887" y="478" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="9.8" font-weight="400" fill="#57606a" text-anchor="middle" >peers on host</text>
+<path d="M887 352 L740 236" fill="none" stroke="#e2962a" stroke-width="2.4" class="march"/>
+<circle r="5" fill="#e2962a" stroke="#fff" stroke-width="1.5"><animateMotion dur="2.4s" begin="0s" repeatCount="indefinite" path="M887 352 L740 236"/></circle>
+<text x="524" y="512" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.6" font-weight="400" fill="#0f2239" text-anchor="start" >robot router: connect/endpoints=["tls/&lt;cloud&gt;:7447"]</text>
+<text x="524" y="530" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.6" font-weight="400" fill="#0f2239" text-anchor="start" >outbound TCP/TLS only → works behind NAT</text>
+<text x="524" y="548" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.6" font-weight="700" fill="#9a5b00" text-anchor="start" >alt: zenoh-bridge-ros2dds next to a DDS robot</text>
+<rect x="30" y="580" width="940" height="210" rx="14" fill="#ffffff" stroke="#d0d7de" stroke-width="1.5" />
+<rect x="44" y="592" width="270" height="26" rx="13" fill="#8250df" stroke="none" stroke-width="1.2" />
+<text x="179.0" y="609.5" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12" font-weight="700" fill="#fff" text-anchor="middle" >C · micro-ROS on microcontrollers</text>
+<rect x="60" y="636" width="220" height="112" rx="9" fill="#efe7fb" stroke="#8250df" stroke-width="1.5" />
+<text x="70" y="656" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12.5" font-weight="700" fill="#8250df" text-anchor="start" >MCU (STM32 · ESP32 · RP2040)</text>
+<text x="70" y="674" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.4" font-weight="400" fill="#0f2239" text-anchor="start" >rclc + micro-ROS client</text>
+<text x="70" y="690" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.4" font-weight="400" fill="#0f2239" text-anchor="start" >Micro XRCE-DDS client</text>
+<text x="70" y="706" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.4" font-weight="400" fill="#0f2239" text-anchor="start" >no OS / FreeRTOS / Zephyr</text>
+<rect x="390" y="636" width="220" height="112" rx="9" fill="#efe7fb" stroke="#8250df" stroke-width="1.5" />
+<text x="400" y="656" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12.5" font-weight="700" fill="#8250df" text-anchor="start" >micro_ros_agent (Linux)</text>
+<text x="400" y="674" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.4" font-weight="400" fill="#0f2239" text-anchor="start" >XRCE-DDS agent</text>
+<text x="400" y="690" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.4" font-weight="400" fill="#0f2239" text-anchor="start" >creates real DDS entities</text>
+<text x="400" y="706" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.4" font-weight="400" fill="#0f2239" text-anchor="start" >on behalf of the MCU</text>
+<rect x="720" y="636" width="220" height="112" rx="9" fill="#fdecdd" stroke="#f86b1d" stroke-width="1.5" />
+<text x="730" y="656" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12.5" font-weight="700" fill="#f86b1d" text-anchor="start" >ROS 2 graph</text>
+<text x="730" y="674" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.4" font-weight="400" fill="#0f2239" text-anchor="start" >normal DDS participants</text>
+<text x="730" y="690" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.4" font-weight="400" fill="#0f2239" text-anchor="start" >see the MCU as a node</text>
+<text x="730" y="706" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.4" font-weight="400" fill="#0f2239" text-anchor="start" >(DDS RMW only)</text>
+<line x1="280" y1="692" x2="390" y2="692" stroke="#8250df" stroke-width="2.4" class="march"/>
+<circle r="5" fill="#8250df" stroke="#fff" stroke-width="1.5"><animateMotion dur="1.4s" begin="0s" repeatCount="indefinite" path="M280 692 L390 692"/></circle>
+<text x="335" y="682" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.5" font-weight="700" fill="#8250df" text-anchor="middle" >serial · UDP</text>
+<text x="335" y="712" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.5" font-weight="400" fill="#8250df" text-anchor="middle" >XRCE</text>
+<line x1="610" y1="692" x2="720" y2="692" stroke="#f86b1d" stroke-width="2.4" class="march"/>
+<circle r="5" fill="#f86b1d" stroke="#fff" stroke-width="1.5"><animateMotion dur="1.4s" begin="0s" repeatCount="indefinite" path="M610 692 L720 692"/></circle>
+<text x="665" y="682" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.5" font-weight="700" fill="#dc5812" text-anchor="middle" >RTPS</text>
+<text x="60" y="772" font-family="'JetBrains Mono',Consolas,Menlo,monospace" font-size="10.6" font-weight="400" fill="#57606a" text-anchor="start" >Lyrical status of micro-ROS packages not verified here: check the micro-ROS repos for a lyrical branch before planning on it.</text>
+</svg>
