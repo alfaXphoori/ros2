@@ -29,13 +29,15 @@
 
 ## 🌐 ROS 2 Lyrical Luth: Network Stack เทียบกับ OSI 7 Layer
 
-> เอกสารเชิงลึก: [**ภาค 1: Network Stack Deep Dive**](docs/ros2_lyrical_network_stack_deep_dive.md) · [**ภาค 2: wire format, reliability, kernel accounting, latency budget**](docs/ros2_lyrical_network_stack_deeper.md) · [**ภาค 3: ผลการทดลองจริง (packet capture)**](docs/ros2_lyrical_wire_experiments.md) · แล็บ 3D แบบ interactive: [**Lyrical Packet Lab**](https://alfaxphoori.github.io/ros2/docs/interactive/lyrical-packet-lab.html)
+> 📁 ไฟล์ทั้งหมดของ Lyrical อยู่ในโฟลเดอร์ [`ros2_lyrical/`](ros2_lyrical/)
+>
+> เอกสารเชิงลึก: [**ภาค 1: Network Stack Deep Dive**](ros2_lyrical/ros2_lyrical_network_stack_deep_dive.md) · [**ภาค 2: wire format, reliability, kernel accounting, latency budget**](ros2_lyrical/ros2_lyrical_network_stack_deeper.md) · [**ภาค 3: ผลการทดลองจริง (packet capture)**](ros2_lyrical/ros2_lyrical_wire_experiments.md) · แล็บ 3D แบบ interactive: [**Lyrical Packet Lab**](https://alfaxphoori.github.io/ros2/ros2_lyrical/interactive/lyrical-packet-lab.html)
 
 ### 🧅 OSI 7 Layer vs ROS 2 Lyrical (Animated Encapsulation)
 
 ภาพนี้ไล่ message หนึ่งก้อนลงทีละชั้นฝั่งส่ง (TX: ห่อ header เพิ่ม) แล้วขึ้นทีละชั้นฝั่งรับ (RX: แกะ header ออก) โดยแถบขวาแสดงว่าแต่ละชั้นทำงานใน user space, kernel หรือ hardware
 
-![anim-osi-vs-ros2-lyrical](docs/diagrams/anim-osi-vs-ros2-lyrical.svg)
+![anim-osi-vs-ros2-lyrical](ros2_lyrical/diagrams/anim-osi-vs-ros2-lyrical.svg)
 
 | OSI | ชั้นใน ROS 2 Lyrical | ข้อมูลที่อยู่บนสาย | ทำงานที่ |
 |---|---|---|---|
@@ -51,30 +53,30 @@
 
 ### 🧱 Network Stack ของ Lyrical: user space → kernel → ระหว่างเครื่อง
 
-![anim-lyrical-stack-layers](docs/diagrams/anim-lyrical-stack-layers.svg)
+![anim-lyrical-stack-layers](ros2_lyrical/diagrams/anim-lyrical-stack-layers.svg)
 
 ### 🔬 Packet จริงระดับ byte และเส้นทางใน Linux kernel
 
 หนึ่ง sample ของ `std_msgs/String "Hello World: 1"` ที่ส่งผ่าน `rmw_fastrtps_cpp` คือ Ethernet frame ขนาด 122 byte ภาพด้านล่างไฮไลต์ทีละชั้นทั้งในตาราง field และใน hex dump (Ethernet → IPv4 → UDP → RTPS → INFO_TS → DATA → CDR)
 
-![anim-rtps-packet-anatomy](docs/diagrams/anim-rtps-packet-anatomy.svg)
+![anim-rtps-packet-anatomy](ros2_lyrical/diagrams/anim-rtps-packet-anatomy.svg)
 
-เส้นทางของ datagram นี้ใน Linux kernel ทีละฟังก์ชัน ขา TX ตั้งแต่ `sendmsg()` ลงไปถึง driver และขา RX ตั้งแต่ IRQ/NAPI ขึ้นมาถึง `recvmsg()` ชื่อฟังก์ชันตรวจกับ `/proc/kallsyms` ของ Linux 7.0 พร้อมระบุ tracepoint ที่ใช้วัดผลได้ (รายละเอียดอยู่ใน[หัวข้อ 5.4–5.5 ของเอกสาร](docs/ros2_lyrical_network_stack_deep_dive.md#54-packet-จริงระดับ-byte-หนึ่ง-sample-บนสาย))
+เส้นทางของ datagram นี้ใน Linux kernel ทีละฟังก์ชัน ขา TX ตั้งแต่ `sendmsg()` ลงไปถึง driver และขา RX ตั้งแต่ IRQ/NAPI ขึ้นมาถึง `recvmsg()` ชื่อฟังก์ชันตรวจกับ `/proc/kallsyms` ของ Linux 7.0 พร้อมระบุ tracepoint ที่ใช้วัดผลได้ (รายละเอียดอยู่ใน[หัวข้อ 5.4–5.5 ของเอกสาร](ros2_lyrical/ros2_lyrical_network_stack_deep_dive.md#54-packet-จริงระดับ-byte-หนึ่ง-sample-บนสาย))
 
-![anim-linux-kernel-packet-path](docs/diagrams/anim-linux-kernel-packet-path.svg)
+![anim-linux-kernel-packet-path](ros2_lyrical/diagrams/anim-linux-kernel-packet-path.svg)
 
 ### 🧪 ทดลองจริง: packet capture บน ROS 2 Lyrical
 
-ผมรัน `ros:lyrical-ros-base` ใน Docker โดยให้แต่ละ container เป็น host หนึ่งเครื่อง แล้ว capture packet จริงด้วย tcpdump/tshark ไฟล์ pcap และสคริปต์ทำซ้ำอยู่ใน [`docs/captures/`](docs/captures/) รายละเอียดอยู่ใน[ภาค 3](docs/ros2_lyrical_wire_experiments.md)
+ผมรัน `ros:lyrical-ros-base` ใน Docker โดยให้แต่ละ container เป็น host หนึ่งเครื่อง แล้ว capture packet จริงด้วย tcpdump/tshark ไฟล์ pcap และสคริปต์ทำซ้ำอยู่ใน [`ros2_lyrical/captures/`](ros2_lyrical/captures/) รายละเอียดอยู่ใน[ภาค 3](ros2_lyrical/ros2_lyrical_wire_experiments.md)
 
 - sample ของ `demo_nodes_cpp talker` บนสายจริงยาว **198 B** ได้แก่ RTPS 2.3 + INFO_DST + INFO_TS + DATA + statistics `0x80`
 - sample เดียวกันผ่าน `rmw_zenoh_cpp` ยาว **161 B** และวิ่ง peer-to-peer ไม่ผ่าน router
 - ภาพ 640×480 แบบ BEST_EFFORT **หาย 35%** เพราะ socket receive buffer เต็ม (`RcvbufErrors = 45`) เมื่อเพิ่ม buffer เป็น 4 MiB ได้ครบ 20/20
-- ดูผลการทดลองแบบ 3D ได้ใน Lyrical Packet Lab บทที่ 17–20: [traffic 14 s](https://alfaxphoori.github.io/ros2/docs/interactive/lyrical-packet-lab.html#lesson-17) · [ภาพ RELIABLE + NACK_FRAG](https://alfaxphoori.github.io/ros2/docs/interactive/lyrical-packet-lab.html#lesson-18) · [rcvbuf 13/20 → 20/20](https://alfaxphoori.github.io/ros2/docs/interactive/lyrical-packet-lab.html#lesson-19) · [Zenoh & SHM](https://alfaxphoori.github.io/ros2/docs/interactive/lyrical-packet-lab.html#lesson-20)
+- ดูผลการทดลองแบบ 3D ได้ใน Lyrical Packet Lab บทที่ 17–20: [traffic 14 s](https://alfaxphoori.github.io/ros2/ros2_lyrical/interactive/lyrical-packet-lab.html#lesson-17) · [ภาพ RELIABLE + NACK_FRAG](https://alfaxphoori.github.io/ros2/ros2_lyrical/interactive/lyrical-packet-lab.html#lesson-18) · [rcvbuf 13/20 → 20/20](https://alfaxphoori.github.io/ros2/ros2_lyrical/interactive/lyrical-packet-lab.html#lesson-19) · [Zenoh & SHM](https://alfaxphoori.github.io/ros2/ros2_lyrical/interactive/lyrical-packet-lab.html#lesson-20)
 
-![anim-capture-rtps-198b](docs/diagrams/anim-capture-rtps-198b.svg)
+![anim-capture-rtps-198b](ros2_lyrical/diagrams/anim-capture-rtps-198b.svg)
 
-![anim-experiment-rcvbuf](docs/diagrams/anim-experiment-rcvbuf.svg)
+![anim-experiment-rcvbuf](ros2_lyrical/diagrams/anim-experiment-rcvbuf.svg)
 
 ---
 

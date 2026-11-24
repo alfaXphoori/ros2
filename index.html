@@ -136,14 +136,14 @@ footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
       <h1>เรียน ROS 2 ตั้งแต่ node แรก จนถึง packet บนสาย</h1>
       <p class="lead">หลักสูตรหุ่นยนต์เคลื่อนที่อัตโนมัติ (AMR) แบบลงมือทำ มี Essential Track 16 สัปดาห์ และ Advanced Track 6 โมดูล พร้อมแล็บ 3D ที่ไล่ให้เห็นว่า message ใน ROS 2 Lyrical Luth วิ่งผ่าน rmw, middleware และ Linux kernel อย่างไร</p>
       <div class="cta">
-        <a class="btn primary" href="docs/interactive/lyrical-packet-lab.html">เปิด Packet Lab</a>
-        <a class="btn" href="https://github.com/alfaXphoori/ros2/blob/main/docs/ros2_lyrical_network_stack_deep_dive.md">อ่าน Deep Dive</a>
+        <a class="btn primary" href="ros2_lyrical/interactive/lyrical-packet-lab.html">เปิด Packet Lab</a>
+        <a class="btn" href="https://github.com/alfaXphoori/ros2/blob/main/ros2_lyrical/ros2_lyrical_network_stack_deep_dive.md">อ่าน Deep Dive</a>
         <a class="btn" href="https://github.com/alfaXphoori/ros2">GitHub</a>
       </div>
       <div class="badges"><span>Jazzy · Lyrical</span><span>Gazebo Harmonic</span><span>Docker ready</span><span>Apache-2.0</span></div>
     </div>
     <figure class="hero-fig" style="margin:0">
-      <img src="docs/diagrams/anim-osi-vs-ros2-lyrical.svg" width="1000" height="760" alt="Animation เทียบ OSI 7 layer กับ ROS 2 Lyrical: packet ถูกห่อ header ทีละชั้นตอนส่ง และแกะออกตอนรับ">
+      <img src="ros2_lyrical/diagrams/anim-osi-vs-ros2-lyrical.svg" width="1000" height="760" alt="Animation เทียบ OSI 7 layer กับ ROS 2 Lyrical: packet ถูกห่อ header ทีละชั้นตอนส่ง และแกะออกตอนรับ">
     </figure>
   </div>
 </header>
@@ -160,10 +160,10 @@ footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
         <h3>จาก <code>publish()</code> ลงไปถึง NIC แล้วขึ้นไปถึง callback</h3>
         <p>ทุกบทมีป้ายบอกว่าข้อเท็จจริงไหนตรวจกับต้นฉบับของ Lyrical แล้ว และข้อไหนเป็นความรู้มาตรฐานของ DDS หรือ Linux</p>
         <ol class="lessons" id="lessonList"></ol>
-        <a class="btn primary" href="docs/interactive/lyrical-packet-lab.html">เริ่มบทที่ 1</a>
+        <a class="btn primary" href="ros2_lyrical/interactive/lyrical-packet-lab.html">เริ่มบทที่ 1</a>
       </div>
       <div class="lab-vis">
-        <img src="docs/diagrams/anim-capture-rtps-198b.svg" width="1000" height="956" alt="Hex dump ของ frame จริงขนาด 198 byte จาก packet capture แยกสีตามชั้น">
+        <img src="ros2_lyrical/diagrams/anim-capture-rtps-198b.svg" width="1000" height="956" alt="Hex dump ของ frame จริงขนาด 198 byte จาก packet capture แยกสีตามชั้น">
         <small>บทที่ 7: frame 198 B จาก packet capture จริงของ Lyrical ไฮไลต์ทีละชั้นใน hex dump</small>
       </div>
     </div>
@@ -178,23 +178,23 @@ footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
     </div>
     <div class="gallery">
       <figure class="fig">
-        <a class="img" href="docs/diagrams/anim-lyrical-stack-layers.svg"><img loading="lazy" src="docs/diagrams/anim-lyrical-stack-layers.svg" width="1000" height="1020" alt="Network stack ของ Lyrical: user space, syscall, kernel และระหว่างเครื่อง"></a>
+        <a class="img" href="ros2_lyrical/diagrams/anim-lyrical-stack-layers.svg"><img loading="lazy" src="ros2_lyrical/diagrams/anim-lyrical-stack-layers.svg" width="1000" height="1020" alt="Network stack ของ Lyrical: user space, syscall, kernel และระหว่างเครื่อง"></a>
         <figcaption><b>Network stack ของ Lyrical</b><span>user space → syscall → kernel → ระหว่างเครื่อง พร้อมเส้นทาง network, SHM และ intra-process</span></figcaption>
       </figure>
       <figure class="fig">
-        <a class="img" href="docs/diagrams/anim-linux-kernel-packet-path.svg"><img loading="lazy" src="docs/diagrams/anim-linux-kernel-packet-path.svg" width="1000" height="1048" alt="ฟังก์ชันใน Linux kernel ขา TX และ RX ของ datagram ROS 2"></a>
+        <a class="img" href="ros2_lyrical/diagrams/anim-linux-kernel-packet-path.svg"><img loading="lazy" src="ros2_lyrical/diagrams/anim-linux-kernel-packet-path.svg" width="1000" height="1048" alt="ฟังก์ชันใน Linux kernel ขา TX และ RX ของ datagram ROS 2"></a>
         <figcaption><b>เส้นทางใน Linux kernel</b><span>TX จาก <code>sendmsg()</code> ถึง driver และ RX จาก IRQ/NAPI ถึง <code>recvmsg()</code> ชื่อฟังก์ชันตรวจกับ kallsyms</span></figcaption>
       </figure>
       <figure class="fig">
-        <a class="img" href="docs/diagrams/anim-capture-zenoh-161b.svg"><img loading="lazy" src="docs/diagrams/anim-capture-zenoh-161b.svg" width="1000" height="742" alt="frame จริงขนาด 161 byte ของ rmw_zenoh แยกตามชั้น"></a>
+        <a class="img" href="ros2_lyrical/diagrams/anim-capture-zenoh-161b.svg"><img loading="lazy" src="ros2_lyrical/diagrams/anim-capture-zenoh-161b.svg" width="1000" height="742" alt="frame จริงขนาด 161 byte ของ rmw_zenoh แยกตามชั้น"></a>
         <figcaption><b>Capture จริง: rmw_zenoh 161 B</b><span>sample เดียวกันผ่าน Zenoh บน TCP วิ่ง peer-to-peer สั้นกว่า RTPS 37 B</span></figcaption>
       </figure>
       <figure class="fig">
-        <a class="img" href="docs/diagrams/anim-experiment-rcvbuf.svg"><img loading="lazy" src="docs/diagrams/anim-experiment-rcvbuf.svg" width="1000" height="560" alt="ผลการทดลอง receive buffer: 13 จาก 20 ภาพเทียบกับ 20 จาก 20 ภาพ"></a>
+        <a class="img" href="ros2_lyrical/diagrams/anim-experiment-rcvbuf.svg"><img loading="lazy" src="ros2_lyrical/diagrams/anim-experiment-rcvbuf.svg" width="1000" height="560" alt="ผลการทดลอง receive buffer: 13 จาก 20 ภาพเทียบกับ 20 จาก 20 ภาพ"></a>
         <figcaption><b>ทดลองจริง: receive buffer</b><span>ภาพ best-effort หาย 35% ด้วยค่าเริ่มต้น และไม่หายเลยเมื่อตั้ง buffer 4 MiB</span></figcaption>
       </figure>
       <figure class="fig wide">
-        <a class="img" href="docs/diagrams/anim-lyrical-packet-path.svg"><img loading="lazy" src="docs/diagrams/anim-lyrical-packet-path.svg" width="960" height="600" alt="Message หนึ่งก้อนวิ่งจาก Host A ไป Host B พร้อมจุดที่เกิด copy ทั้ง 5 ครั้ง"></a>
+        <a class="img" href="ros2_lyrical/diagrams/anim-lyrical-packet-path.svg"><img loading="lazy" src="ros2_lyrical/diagrams/anim-lyrical-packet-path.svg" width="960" height="600" alt="Message หนึ่งก้อนวิ่งจาก Host A ไป Host B พร้อมจุดที่เกิด copy ทั้ง 5 ครั้ง"></a>
         <figcaption><b>หนึ่ง message ห้า copy</b><span>เส้นทางเริ่มต้นแบบ UDP จาก talker ไป listener และจุดที่เกิด copy แต่ละครั้ง</span></figcaption>
       </figure>
     </div>
@@ -226,9 +226,9 @@ footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
   <div class="wrap">
     <div class="sec-head"><div><div class="eyebrow">Guides</div><h2>คู่มือประกอบ</h2></div></div>
     <div class="guides">
-      <a class="guide" href="https://github.com/alfaXphoori/ros2/blob/main/docs/ros2_lyrical_network_stack_deep_dive.md"><div class="t">Research</div><b>Lyrical Network Stack Deep Dive</b><span>RMW ทั้ง 4 ตัว, <code>rosidl::Buffer</code>, packet ระดับ byte, kernel path และ methodology การทดลอง</span></a>
-      <a class="guide" href="https://github.com/alfaXphoori/ros2/blob/main/docs/ros2_lyrical_network_stack_deeper.md"><div class="t">Research · ภาค 2</div><b>Wire format, reliability &amp; kernel accounting</b><span>SPDP/SEDP ระดับ byte, DATA_FRAG ของภาพ 921 KB, SHM ของ Fast DDS, Zenoh framing, <code>SO_RCVBUF</code> truesize และ latency budget</span></a>
-      <a class="guide" href="https://github.com/alfaXphoori/ros2/blob/main/docs/ros2_lyrical_wire_experiments.md"><div class="t">Experiment · ภาค 3</div><b>ผลการทดลองจริงบนสาย</b><span>pcap 5 ชุดจาก Docker: frame 198 B ของ Fast DDS, 161 B ของ Zenoh, DATA_FRAG/NACK_FRAG, SHM และการทดลอง receive buffer</span></a>
+      <a class="guide" href="https://github.com/alfaXphoori/ros2/blob/main/ros2_lyrical/ros2_lyrical_network_stack_deep_dive.md"><div class="t">Research</div><b>Lyrical Network Stack Deep Dive</b><span>RMW ทั้ง 4 ตัว, <code>rosidl::Buffer</code>, packet ระดับ byte, kernel path และ methodology การทดลอง</span></a>
+      <a class="guide" href="https://github.com/alfaXphoori/ros2/blob/main/ros2_lyrical/ros2_lyrical_network_stack_deeper.md"><div class="t">Research · ภาค 2</div><b>Wire format, reliability &amp; kernel accounting</b><span>SPDP/SEDP ระดับ byte, DATA_FRAG ของภาพ 921 KB, SHM ของ Fast DDS, Zenoh framing, <code>SO_RCVBUF</code> truesize และ latency budget</span></a>
+      <a class="guide" href="https://github.com/alfaXphoori/ros2/blob/main/ros2_lyrical/ros2_lyrical_wire_experiments.md"><div class="t">Experiment · ภาค 3</div><b>ผลการทดลองจริงบนสาย</b><span>pcap 5 ชุดจาก Docker: frame 198 B ของ Fast DDS, 161 B ของ Zenoh, DATA_FRAG/NACK_FRAG, SHM และการทดลอง receive buffer</span></a>
       <a class="guide" href="https://github.com/alfaXphoori/ros2/blob/main/docs/ros2_installation_guide.md"><div class="t">Setup</div><b>คู่มือการติดตั้ง ROS 2</b><span>Native, Docker, WSL2 และ macOS พร้อมการตั้งค่าเครือข่าย DDS</span></a>
       <a class="guide" href="https://github.com/alfaXphoori/ros2/blob/main/docs/ros2_developer_toolkit.md"><div class="t">Toolkit</div><b>Developer Toolkit &amp; CLI</b><span>VSCode, colcon workspace และคำสั่ง CLI ที่ใช้บ่อย</span></a>
     </div>
@@ -245,7 +245,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 <script>
 (() => {
   const GH = 'https://github.com/alfaXphoori/ros2/blob/main/';
-  const LAB = 'docs/interactive/lyrical-packet-lab.html#lesson-';
+  const LAB = 'ros2_lyrical/interactive/lyrical-packet-lab.html#lesson-';
   const lessons = ['ภาพรวม 4 hosts','Intra-process','Serialize CDR','Syscall','Kernel TX','Kernel RX','Packet bytes','Kernel call path','Loopback','Shared memory','rosidl::Buffer','Service','Action','Discovery','Zenoh','Observability','ทดลองจริง · traffic 14 s','ทดลองจริง · ภาพ RELIABLE','ทดลองจริง · rcvbuf 13/20 → 20/20','ทดลองจริง · Zenoh &amp; SHM'];
   const fresh = new Set([17, 18, 19, 20]);
   document.getElementById('lessonList').innerHTML = lessons.map((t, i) =>
