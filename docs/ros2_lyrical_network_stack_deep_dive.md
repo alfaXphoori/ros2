@@ -34,7 +34,7 @@
 ![anim-lyrical-packet-path](diagrams/anim-lyrical-packet-path.svg)
 
 > **Interactive 3D lab:** [`interactive/lyrical-packet-lab.html`](interactive/lyrical-packet-lab.html) มี 12 บทเรียน (ภาพรวม, intra-process, serialize, syscall, kernel TX/RX, loopback, SHM, `rosidl::Buffer`, DDS discovery, Zenoh, observability) หมุน/ซูมฉากได้ คลิก layer เพื่อดูรายละเอียด และกด Run เพื่อดู trace console ตัวอย่าง
-> วิธีเปิด: clone repo แล้วเปิดไฟล์ในเบราว์เซอร์ (ต้องใช้ WebGL และอินเทอร์เน็ตสำหรับโหลด three.js จาก jsDelivr)
+> **เปิดออนไลน์:** https://alfaxphoori.github.io/ros2/docs/interactive/lyrical-packet-lab.html (ต้องใช้เบราว์เซอร์ที่รองรับ WebGL)
 
 ```
 ┌──────────────────────────── USER SPACE (process ของ node) ────────────────────────────┐
