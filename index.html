@@ -163,8 +163,8 @@ footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
         <a class="btn primary" href="docs/interactive/lyrical-packet-lab.html">เริ่มบทที่ 1</a>
       </div>
       <div class="lab-vis">
-        <img src="docs/diagrams/anim-rtps-packet-anatomy.svg" width="1000" height="918" alt="Hex dump ของ frame ขนาด 122 byte แยกสีตามชั้น Ethernet, IPv4, UDP, RTPS และ CDR">
-        <small>บทที่ 7: frame 122 B จริง (checksum คำนวณจริง) ไฮไลต์ทีละชั้นใน hex dump</small>
+        <img src="docs/diagrams/anim-capture-rtps-198b.svg" width="1000" height="956" alt="Hex dump ของ frame จริงขนาด 198 byte จาก packet capture แยกสีตามชั้น">
+        <small>บทที่ 7: frame 198 B จาก packet capture จริงของ Lyrical ไฮไลต์ทีละชั้นใน hex dump</small>
       </div>
     </div>
   </div>
@@ -184,6 +184,14 @@ footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
       <figure class="fig">
         <a class="img" href="docs/diagrams/anim-linux-kernel-packet-path.svg"><img loading="lazy" src="docs/diagrams/anim-linux-kernel-packet-path.svg" width="1000" height="1048" alt="ฟังก์ชันใน Linux kernel ขา TX และ RX ของ datagram ROS 2"></a>
         <figcaption><b>เส้นทางใน Linux kernel</b><span>TX จาก <code>sendmsg()</code> ถึง driver และ RX จาก IRQ/NAPI ถึง <code>recvmsg()</code> ชื่อฟังก์ชันตรวจกับ kallsyms</span></figcaption>
+      </figure>
+      <figure class="fig">
+        <a class="img" href="docs/diagrams/anim-capture-zenoh-161b.svg"><img loading="lazy" src="docs/diagrams/anim-capture-zenoh-161b.svg" width="1000" height="742" alt="frame จริงขนาด 161 byte ของ rmw_zenoh แยกตามชั้น"></a>
+        <figcaption><b>Capture จริง: rmw_zenoh 161 B</b><span>sample เดียวกันผ่าน Zenoh บน TCP วิ่ง peer-to-peer สั้นกว่า RTPS 37 B</span></figcaption>
+      </figure>
+      <figure class="fig">
+        <a class="img" href="docs/diagrams/anim-experiment-rcvbuf.svg"><img loading="lazy" src="docs/diagrams/anim-experiment-rcvbuf.svg" width="1000" height="560" alt="ผลการทดลอง receive buffer: 13 จาก 20 ภาพเทียบกับ 20 จาก 20 ภาพ"></a>
+        <figcaption><b>ทดลองจริง: receive buffer</b><span>ภาพ best-effort หาย 35% ด้วยค่าเริ่มต้น และไม่หายเลยเมื่อตั้ง buffer 4 MiB</span></figcaption>
       </figure>
       <figure class="fig wide">
         <a class="img" href="docs/diagrams/anim-lyrical-packet-path.svg"><img loading="lazy" src="docs/diagrams/anim-lyrical-packet-path.svg" width="960" height="600" alt="Message หนึ่งก้อนวิ่งจาก Host A ไป Host B พร้อมจุดที่เกิด copy ทั้ง 5 ครั้ง"></a>
@@ -220,6 +228,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
     <div class="guides">
       <a class="guide" href="https://github.com/alfaXphoori/ros2/blob/main/docs/ros2_lyrical_network_stack_deep_dive.md"><div class="t">Research</div><b>Lyrical Network Stack Deep Dive</b><span>RMW ทั้ง 4 ตัว, <code>rosidl::Buffer</code>, packet ระดับ byte, kernel path และ methodology การทดลอง</span></a>
       <a class="guide" href="https://github.com/alfaXphoori/ros2/blob/main/docs/ros2_lyrical_network_stack_deeper.md"><div class="t">Research · ภาค 2</div><b>Wire format, reliability &amp; kernel accounting</b><span>SPDP/SEDP ระดับ byte, DATA_FRAG ของภาพ 921 KB, SHM ของ Fast DDS, Zenoh framing, <code>SO_RCVBUF</code> truesize และ latency budget</span></a>
+      <a class="guide" href="https://github.com/alfaXphoori/ros2/blob/main/docs/ros2_lyrical_wire_experiments.md"><div class="t">Experiment · ภาค 3</div><b>ผลการทดลองจริงบนสาย</b><span>pcap 5 ชุดจาก Docker: frame 198 B ของ Fast DDS, 161 B ของ Zenoh, DATA_FRAG/NACK_FRAG, SHM และการทดลอง receive buffer</span></a>
       <a class="guide" href="https://github.com/alfaXphoori/ros2/blob/main/docs/ros2_installation_guide.md"><div class="t">Setup</div><b>คู่มือการติดตั้ง ROS 2</b><span>Native, Docker, WSL2 และ macOS พร้อมการตั้งค่าเครือข่าย DDS</span></a>
       <a class="guide" href="https://github.com/alfaXphoori/ros2/blob/main/docs/ros2_developer_toolkit.md"><div class="t">Toolkit</div><b>Developer Toolkit &amp; CLI</b><span>VSCode, colcon workspace และคำสั่ง CLI ที่ใช้บ่อย</span></a>
     </div>

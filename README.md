@@ -29,7 +29,7 @@
 
 ## 🌐 ROS 2 Lyrical Luth: Network Stack เทียบกับ OSI 7 Layer
 
-> เอกสารเชิงลึก: [**ภาค 1: Network Stack Deep Dive**](docs/ros2_lyrical_network_stack_deep_dive.md) · [**ภาค 2: wire format, reliability, kernel accounting, latency budget**](docs/ros2_lyrical_network_stack_deeper.md) · แล็บ 3D แบบ interactive: [**Lyrical Packet Lab**](https://alfaxphoori.github.io/ros2/docs/interactive/lyrical-packet-lab.html)
+> เอกสารเชิงลึก: [**ภาค 1: Network Stack Deep Dive**](docs/ros2_lyrical_network_stack_deep_dive.md) · [**ภาค 2: wire format, reliability, kernel accounting, latency budget**](docs/ros2_lyrical_network_stack_deeper.md) · [**ภาค 3: ผลการทดลองจริง (packet capture)**](docs/ros2_lyrical_wire_experiments.md) · แล็บ 3D แบบ interactive: [**Lyrical Packet Lab**](https://alfaxphoori.github.io/ros2/docs/interactive/lyrical-packet-lab.html)
 
 ### 🧅 OSI 7 Layer vs ROS 2 Lyrical (Animated Encapsulation)
 
@@ -62,6 +62,18 @@
 เส้นทางของ datagram นี้ใน Linux kernel ทีละฟังก์ชัน ขา TX ตั้งแต่ `sendmsg()` ลงไปถึง driver และขา RX ตั้งแต่ IRQ/NAPI ขึ้นมาถึง `recvmsg()` ชื่อฟังก์ชันตรวจกับ `/proc/kallsyms` ของ Linux 7.0 พร้อมระบุ tracepoint ที่ใช้วัดผลได้ (รายละเอียดอยู่ใน[หัวข้อ 5.4–5.5 ของเอกสาร](docs/ros2_lyrical_network_stack_deep_dive.md#54-packet-จริงระดับ-byte-หนึ่ง-sample-บนสาย))
 
 ![anim-linux-kernel-packet-path](docs/diagrams/anim-linux-kernel-packet-path.svg)
+
+### 🧪 ทดลองจริง: packet capture บน ROS 2 Lyrical
+
+ผมรัน `ros:lyrical-ros-base` ใน Docker โดยให้แต่ละ container เป็น host หนึ่งเครื่อง แล้ว capture packet จริงด้วย tcpdump/tshark ไฟล์ pcap และสคริปต์ทำซ้ำอยู่ใน [`docs/captures/`](docs/captures/) รายละเอียดอยู่ใน[ภาค 3](docs/ros2_lyrical_wire_experiments.md)
+
+- sample ของ `demo_nodes_cpp talker` บนสายจริงยาว **198 B** ได้แก่ RTPS 2.3 + INFO_DST + INFO_TS + DATA + statistics `0x80`
+- sample เดียวกันผ่าน `rmw_zenoh_cpp` ยาว **161 B** และวิ่ง peer-to-peer ไม่ผ่าน router
+- ภาพ 640×480 แบบ BEST_EFFORT **หาย 35%** เพราะ socket receive buffer เต็ม (`RcvbufErrors = 45`) เมื่อเพิ่ม buffer เป็น 4 MiB ได้ครบ 20/20
+
+![anim-capture-rtps-198b](docs/diagrams/anim-capture-rtps-198b.svg)
+
+![anim-experiment-rcvbuf](docs/diagrams/anim-experiment-rcvbuf.svg)
 
 ---
 

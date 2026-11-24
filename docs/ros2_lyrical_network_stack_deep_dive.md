@@ -9,6 +9,8 @@
 
 ---
 
+> **ภาค 3 (ทดลองจริง):** [ros2_lyrical_wire_experiments.md](ros2_lyrical_wire_experiments.md) packet capture จาก Docker พร้อม pcap และสคริปต์ทำซ้ำ
+>
 > **ภาค 2 (ลึกกว่า):** [ros2_lyrical_network_stack_deeper.md](ros2_lyrical_network_stack_deeper.md) ครอบคลุม discovery ระดับ byte, reliable protocol และ DATA_FRAG, Fast DDS internals, Zenoh framing, การนับ `SO_RCVBUF`, latency/CPU budget และหัวข้อวิจัย R1–R9
 
 ## 0. ข้อเท็จจริงหลักของ Lyrical ที่เกี่ยวกับ network [V]
@@ -281,6 +283,8 @@ cat /proc/net/snmp ; ss -uamp ; ethtool -S <iface> | grep -i drop
 
 ![anim-rtps-packet-anatomy](diagrams/anim-rtps-packet-anatomy.svg)
 
+> **ผลจาก capture จริง ([ภาค 3](ros2_lyrical_wire_experiments.md)):** frame ของ demo talker บน Lyrical ยาว **198 B** (RTPS 2.3 + INFO_DST + INFO_TS + DATA + statistics 0x80), readerId เป็น reader จริง (`00.00.13.04`) และ type คือ `example_interfaces/msg/String` ไม่ใช่ `std_msgs`
+>
 > **หมายเหตุ build variant [แก้ไข 2026-11-24 ตามภาค 2]:** frame 122 B นี้เป็นแบบ**น้อยที่สุด** (ไม่มี INFO_DST และ statistics submessage) binary `.deb` ของ Lyrical build Fast DDS ด้วย `-DSECURITY=ON` (RTPS version 2.3 ตามตัวอย่างนี้) และเปิด `FASTDDS_STATISTICS` ตามค่าเริ่มต้น frame จริงจึงน่าจะมี statistics submessage 60 B ต่อท้าย และอาจมี INFO_DST 16 B รวมเป็น 182–198 B ผู้ที่ build จาก source โดยไม่ใส่ flag จะได้ version 2.2 รายละเอียดอยู่ใน[ภาค 2 §3.7](ros2_lyrical_network_stack_deeper.md#37-build-option-ที่เปลี่ยน-byte-บนสาย)
 
 ตัวอย่างนี้คือ `demo_nodes_cpp talker` ส่ง `std_msgs/String` ค่า `"Hello World: 1"` บน topic `/chatter` ผ่าน `rmw_fastrtps_cpp` แบบ UDPv4 unicast ไปยัง listener ที่ domain 0, participant 0 frame ทั้งก้อนสร้างด้วยสคริปต์ที่คำนวณ IP และ UDP checksum ให้ถูกต้องจริง ส่วนค่า MAC, IP, guidPrefix และ timestamp เป็นค่าตัวอย่าง

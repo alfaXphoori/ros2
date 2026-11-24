@@ -73,6 +73,7 @@ pre.code:has(.hex){max-height:none}
 .hex .o{color:var(--faint)}
 .hex .b{color:#c3c9d0;border-radius:3px;padding:0 1px;transition:background .25s,color .25s}
 .hex.on-eth .b-eth{color:#0f2239;font-weight:700}.hex.on-ip .b-ip{color:#3a6aa6;font-weight:700}.hex.on-udp .b-udp{color:#2c5f9e;font-weight:700}
+.hex.on-dst .b-dst{color:#6639ba;font-weight:700}.hex.on-stat .b-stat{color:#57606a;font-weight:700}.hex.cur-dst .b-dst{background:#6639ba;color:#fff}.hex.cur-stat .b-stat{background:#57606a;color:#fff}
 .hex.on-rtps .b-rtps{color:#8250df;font-weight:700}.hex.on-ts .b-ts{color:#a371f7;font-weight:700}.hex.on-data .b-data{color:#bf3989;font-weight:700}.hex.on-cdr .b-cdr{color:#c77d10;font-weight:700}
 .hex.cur-eth .b-eth{background:#0f2239;color:#fff}.hex.cur-ip .b-ip{background:#3a6aa6;color:#fff}.hex.cur-udp .b-udp{background:#2c5f9e;color:#fff}
 .hex.cur-rtps .b-rtps{background:#8250df;color:#fff}.hex.cur-ts .b-ts{background:#a371f7;color:#fff}.hex.cur-data .b-data{background:#bf3989;color:#fff}.hex.cur-cdr .b-cdr{background:#e2962a;color:#fff}
@@ -479,11 +480,11 @@ function stdTrace(rx='B', {pub='ros2:rclcpp_publish', cb='ros2:callback_start', 
 
 
 /* ---------- packet bytes & kernel path helpers ---------- */
-const FRAME = (() => { const h = '02000000002002000000001008004500006c1c46400040119acc' + 'c0a8010ac0a80114' + 'cec31cf30058056d' + '525450530203010f010f45d2b30c000001000000' + '09010800553b056bcccccc4c' + '15052c000000100000000000000012030000000001000000' + '000100000f00000048656c6c6f20576f726c643a20310000'; const b = []; for (let i=0;i<h.length;i+=2) b.push(h.substr(i,2)); return b; })();
-const BL = [['eth',0,14,'Ethernet II',0x0f2239],['ip',14,20,'IPv4',0x3a6aa6],['udp',34,8,'UDP',0x2c5f9e],['rtps',42,20,'RTPS hdr',0x8250df],['ts',62,12,'INFO_TS',0xa371f7],['data',74,24,'DATA hdr',0xbf3989],['cdr',98,24,'CDR payload',0xe2962a]];
+const FRAME = (() => { const h = '621b4b57a2ac428de7ceea360800450000b8102940004011d1deac140003ac140002b04f1cf300a458e3525450530203010f010f11311a00bc0d000000000e010c00010f2c171d001c480000000009010800b158056b6388858b15052c000000100000001304000013030000000001000000000100000f00000048656c6c6f20576f726c643a203100008001380001000000f31c0000000000000000000000000000ac140002b158056b0749888b050000000000000094020000000000000000000000000000'; const b = []; for (let i=0;i<h.length;i+=2) b.push(h.substr(i,2)); return b; })();
+const BL = [['eth',0,14,'Ethernet II',0x0f2239],['ip',14,20,'IPv4',0x3a6aa6],['udp',34,8,'UDP',0x2c5f9e],['rtps',42,20,'RTPS hdr',0x8250df],['dst',62,16,'INFO_DST',0x6639ba],['ts',78,12,'INFO_TS',0xa371f7],['data',90,24,'DATA hdr',0xbf3989],['cdr',114,24,'CDR payload',0xe2962a],['stat',138,60,'Statistics 0x80',0x57606a]];
 const layerOf = i => BL.find(([k,o,n]) => i >= o && i < o+n)[0];
 function hexHTML(){
-  let out = '<span class="cm">// 122 B frame · ตัวอย่างค่า (checksum คำนวณจริง)</span>\n';
+  let out = '<span class="cm">// 198 B frame · capture จริง (exp1_fastdds_default.pcap #95)</span>\n';
   for (let r=0; r<FRAME.length; r+=16){
     out += `<span class="o">${r.toString(16).padStart(4,'0')}</span>  `;
     for (let i=r; i<Math.min(r+16, FRAME.length); i++) out += `<span class="b b-${layerOf(i)}">${FRAME[i]}</span>` + (i%16===7 ? '  ' : ' ');
@@ -632,9 +633,9 @@ ser.<span class="fn">serialize_message</span>(&amp;msg, &amp;out);  <span class=
      await travel(u.slice(4,7),{color:PCOL.cdr, r:0.24, speed:2.2, onTag:(t)=>{ if(t==='recv'){log('syscalls:sys_exit_recvmsg','ret=65000 (copy_to_user)');adv(12);} }});
      log('fastdds:DataReader','sample received, ACKNACK sent','u');
    }},
- { short:'Packet bytes', sub:'122 B frame', layer:'encapsulation', title:'Packet จริงระดับ byte: ห่อ header ทีละชั้น',
-   text:'ตามรอย <code>std_msgs/String "Hello World: 1"</code> ตั้งแต่ CDR payload 24 B ที่ rmw → middleware เพิ่ม DATA, INFO_TS และ RTPS header (80 B) → kernel เพิ่ม UDP (88 B) → IP (108 B) → Ethernet (122 B + FCS) แล้ว Host B แกะออกทีละชั้นจนเหลือ message ดู hex dump ด้านขวาซึ่งไฮไลต์ชั้นที่กำลังทำงานอยู่',
-   facts:[['K','UDP dst port 7411 = 7400 + 250·0 + 11 + 2·0 (user unicast, domain 0, participant 0)'],['K','DATA submessage: id 0x15, flags E|D, writerId …03 = user writer ไม่มี key'],['K','payload: encapsulation 0x0001 (CDR_LE) + uint32 length 15 + "Hello World: 1\\0" + pad'],['V','นี่คือแบบน้อยที่สุด: binary .deb ของ Lyrical build Fast DDS ด้วย SECURITY=ON (version 2.3) และ STATISTICS=ON จึงมี submessage 0x80 อีก 60 B และอาจมี INFO_DST 16 B รวม 182–198 B']],
+ { short:'Packet bytes', sub:'198 B · capture จริง', layer:'encapsulation', title:'Packet จริงจาก capture: ห่อ header ทีละชั้น',
+   text:'byte ทั้ง 198 B มาจาก packet capture จริงของ <code>demo_nodes_cpp talker</code> บน Lyrical (<code>example_interfaces/String "Hello World: 1"</code>) เริ่มจาก CDR payload 24 B ที่ rmw → Fast DDS เพิ่ม DATA, INFO_TS, INFO_DST, RTPS header และ statistics <code>0x80</code> (156 B) → kernel เพิ่ม UDP (164 B) → IP (184 B) → Ethernet (198 B) แล้ว Host B แกะออกทีละชั้น ดู hex dump ด้านขวาซึ่งไฮไลต์ชั้นที่กำลังทำงานอยู่',
+   facts:[['V','capture จริง: RTPS 2.3 (.deb ใช้ SECURITY=ON), INFO_DST 16 B, statistics 0x80 60 B ทุก message'],['V','UDP 45135 → 7411 · readerId 00.00.13.04 · writerId 00.00.13.03 · SN 1'],['V','CDR: 00 01 00 00 | 0f 00 00 00 | "Hello World: 1\\0" | pad 1 · ข้อความ 14 ตัวอักษรใช้ header 174 B']],
    code:'<div class="hex">' + hexHTML() + '</div>',
    focus:['A.t.*','A.n1','A.sock','A.ip','A.nic','sw','B.*'],
    async run(){
@@ -646,16 +647,16 @@ ser.<span class="fn">serialize_message</span>(&amp;msg, &amp;out);  <span class=
      hexState([], null);
      try {
        await walk(route(H.A,'t',H.B,'t'), {
-         rmw: () => add(['cdr'], 'cdr', 'CDR 24 B', 'serializedPayload: 00 01 00 00 | 0f 00 00 00 | "Hello World: 1\\0" | pad'),
-         mw: async () => { await add(['data'], 'data', 'DATA 48 B', 'DATA: 15 05 2c 00 · readerId 0 · writerId 00.00.12.03 · SN=1'); await add(['ts'], 'ts', 'RTPS submsgs 60 B', 'INFO_TS: 09 01 08 00 + timestamp'); await add(['rtps'], 'rtps', 'RTPS 80 B', 'RTPS hdr: "RTPS" 2.3 vendor 01 0f guidPrefix 01.0f.45.d2…'); },
-         sock: () => add(['udp'], 'udp', 'UDP 88 B', 'UDP: 52931 → 7411 len=88 csum=0x056d'),
-         ip: () => add(['ip'], 'ip', 'IPv4 108 B', 'IPv4: 45 00 len=108 id=0x1c46 DF TTL=64 proto=17 csum=0x9acc'),
-         nic: async () => { await add(['eth'], 'eth', 'Ethernet 122 B', 'Ethernet: 02:00:00:00:00:20 ← 02:00:00:00:00:10 type 0x0800'); addSeg(fr, 'fcs', false); chipEl.textContent = 'on wire 126 B'; log('phy', '+ FCS 4 B · preamble 8 · IFG 12 → 146 byte-times'); log('note', 'Lyrical .deb: + statistics 0x80 (60 B), อาจมี INFO_DST (16 B)', 'x'); },
-         rxnic: () => rm(['eth','fcs'], 'eth', 'IPv4 108 B', 'NIC/driver: strip Ethernet (eth_type_trans → ETH_P_IP)'),
-         rxip: () => rm(['ip'], 'ip', 'UDP 88 B', 'ip_local_deliver: strip IPv4 → proto 17'),
-         rxsock: () => rm(['udp'], 'udp', 'RTPS 80 B', 'udp_rcv: port 7411 → socket queue (UDP hdr removed)'),
-         rxmw: () => rm(['rtps','ts','data'], 'rtps', 'CDR 24 B', 'MessageReceiver: parse RTPS · INFO_TS · DATA → sample'),
-         rxrmw: () => rm(['cdr'], 'cdr', 'msg', 'rmw_take: deserialize CDR → std_msgs/String'),
+         rmw: () => add(['cdr'], 'cdr', 'CDR 24 B', 'serializedPayload: 00 01 00 00 | 0f 00 00 00 | "Hello World: 1\\0" | 00'),
+         mw: async () => { await add(['data'], 'data', 'DATA 48 B', 'DATA: 15 05 2c 00 · readerId 00.00.13.04 · writerId 00.00.13.03 · SN=1'); await add(['ts'], 'ts', '+INFO_TS 60 B', 'INFO_TS: 09 01 08 00 + timestamp'); await add(['dst'], 'dst', '+INFO_DST 76 B', 'INFO_DST: 0e 01 0c 00 + guidPrefix ของ listener 01.0f.2c.17…'); await add(['rtps'], 'rtps', 'RTPS 96 B', 'RTPS hdr: "RTPS" 2.3 vendor 01 0f guidPrefix 01.0f.11.31…'); await add(['stat'], 'stat', 'RTPS 156 B', 'statistics 0x80: 80 01 38 00 + locator 172.20.0.2:7411 + timestamp + counters', false); },
+         sock: () => add(['udp'], 'udp', 'UDP 164 B', 'UDP: 45135 → 7411 len=164 csum=0x58e3'),
+         ip: () => add(['ip'], 'ip', 'IPv4 184 B', 'IPv4: 45 00 len=184 id=0x1029 DF TTL=64 proto=17 csum=0xd1de · 172.20.0.3 → .2'),
+         nic: async () => { await add(['eth'], 'eth', 'Ethernet 198 B', 'Ethernet: 62:1b:4b:57:a2:ac ← 42:8d:e7:ce:ea:36 type 0x0800'); addSeg(fr, 'fcs', false); chipEl.textContent = 'on wire 202 B'; log('phy', '+ FCS 4 B · preamble 8 · IFG 12 → 222 byte-times'); },
+         rxnic: () => rm(['eth','fcs'], 'eth', 'IPv4 184 B', 'NIC/driver: strip Ethernet (eth_type_trans → ETH_P_IP)'),
+         rxip: () => rm(['ip'], 'ip', 'UDP 164 B', 'ip_local_deliver: strip IPv4 → proto 17'),
+         rxsock: () => rm(['udp'], 'udp', 'RTPS 156 B', 'udp_rcv: port 7411 → socket queue (UDP hdr removed)'),
+         rxmw: () => rm(['rtps','dst','ts','data','stat'], 'rtps', 'CDR 24 B', 'MessageReceiver: parse RTPS · INFO_DST · INFO_TS · DATA · 0x80 → sample'),
+         rxrmw: () => rm(['cdr'], 'cdr', 'msg', 'rmw_take: deserialize CDR → example_interfaces/String'),
          cb: async () => { const d = makeDot(PCOL.obj, 0.22); d.position.copy(fr.position); fadeOut(fr); log('ros2:callback_start', 'listener: "Hello World: 1"', 'g'); await sleep(600); fadeOut(d); }
        }, {dot: fr, speed: 5});
      } finally { done(); }
