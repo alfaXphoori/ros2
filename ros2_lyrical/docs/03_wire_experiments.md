@@ -1,8 +1,8 @@
 # ROS 2 Lyrical Luth: ผลการทดลองจริงบนสาย (packet capture)
 
-> ภาค 3 ของชุดเอกสาร network stack · ภาค 1: [Deep Dive](ros2_lyrical_network_stack_deep_dive.md) · ภาค 2: [Wire format & kernel accounting](ros2_lyrical_network_stack_deeper.md)
+> ภาค 3 ของชุดเอกสาร network stack · ภาค 1: [Deep Dive](01_network_stack_deep_dive.md) · ภาค 2: [Wire format & kernel accounting](02_wire_format_and_kernel.md)
 > ดูแบบ 3D: [Lyrical Packet Lab บทที่ 17–20](https://alfaxphoori.github.io/ros2/ros2_lyrical/interactive/lyrical-packet-lab.html#lesson-17) (packet วิ่งตามจำนวนจริงจาก pcap)
-> ทดลองเมื่อ 2026-11-24 · ไฟล์ pcap ทั้งหมดอยู่ใน [`captures/`](captures/) · ทำซ้ำได้ด้วย [`captures/scripts/run_experiments.sh`](captures/scripts/run_experiments.sh)
+> ทดลองเมื่อ 2026-11-24 · ไฟล์ pcap ทั้งหมดอยู่ใน [`captures/`](../captures/) · ทำซ้ำได้ด้วย [`captures/scripts/run_experiments.sh`](../captures/scripts/run_experiments.sh)
 
 เอกสารภาค 1 และภาค 2 สร้างจากการอ่าน source code ภาคนี้คือการ**รันของจริงแล้ว capture packet** เพื่อตรวจว่าที่วิเคราะห์ไว้ตรงกับสิ่งที่เกิดบนสายหรือไม่ ทุกตัวเลขในเอกสารนี้มาจาก pcap หรือจากตัวนับของ kernel (`/proc/net/snmp`) ในการรันจริง และการทดลองชุดเต็มรันซ้ำแล้ว 2 รอบได้ผลตรงกัน
 
@@ -12,7 +12,7 @@
 
 | รายการ | ค่า |
 |---|---|
-| Image | `ros:lyrical-ros-base` (Docker Official Image) + `ros-lyrical-demo-nodes-cpp`, `ros-lyrical-rmw-zenoh-cpp`, `tcpdump`, `tshark 4.6.4` ([Dockerfile](captures/scripts/Dockerfile)) |
+| Image | `ros:lyrical-ros-base` (Docker Official Image) + `ros-lyrical-demo-nodes-cpp`, `ros-lyrical-rmw-zenoh-cpp`, `tcpdump`, `tshark 4.6.4` ([Dockerfile](../captures/scripts/Dockerfile)) |
 | package จริงจาก apt | `ros-lyrical-fastdds 3.6.2`, `ros-lyrical-fastcdr 2.3.6`, `ros-lyrical-rmw-fastrtps-cpp 9.4.10`, `ros-lyrical-rclcpp 32.0.3`, `ros-lyrical-rmw-zenoh-cpp 0.10.6` |
 | Kernel | Linux 7.0.0-43-generic (Ubuntu 26.04, container ใช้ kernel ของ host) |
 | Topology | container แต่ละตัวเป็น "host" แยก network namespace ต่อกันผ่าน Docker bridge (`veth`, MTU 1500, subnet 172.20.0.0/16) multicast ใช้ได้ |
@@ -27,18 +27,18 @@
 
 | # | การทดลอง | pcap |
 |---|---|---|
-| 1 | Fast DDS ค่าเริ่มต้น: `demo_nodes_cpp talker` → `listener` ข้าม container | [`exp1_fastdds_default.pcap`](captures/exp1_fastdds_default.pcap) |
-| 2 | `sensor_msgs/Image` 640×480 rgb8 (921 600 B) แบบ RELIABLE 5 ภาพ | [`exp2_image_reliable.pcap.gz`](captures/exp2_image_reliable.pcap.gz) |
-| 3 | `rmw_zenoh_cpp` ผ่าน router 1 ตัว | [`exp3_zenoh.pcap`](captures/exp3_zenoh.pcap) |
-| 4 | talker + listener ใน container เดียวกัน (SHM) | [`exp4_samehost_shm.pcap`](captures/exp4_samehost_shm.pcap) |
-| 5 | Image แบบ BEST_EFFORT 20 ภาพ, receive buffer ค่าเริ่มต้น | [`exp5_image_besteffort.pcap.gz`](captures/exp5_image_besteffort.pcap.gz) |
+| 1 | Fast DDS ค่าเริ่มต้น: `demo_nodes_cpp talker` → `listener` ข้าม container | [`exp1_fastdds_default.pcap`](../captures/exp1_fastdds_default.pcap) |
+| 2 | `sensor_msgs/Image` 640×480 rgb8 (921 600 B) แบบ RELIABLE 5 ภาพ | [`exp2_image_reliable.pcap.gz`](../captures/exp2_image_reliable.pcap.gz) |
+| 3 | `rmw_zenoh_cpp` ผ่าน router 1 ตัว | [`exp3_zenoh.pcap`](../captures/exp3_zenoh.pcap) |
+| 4 | talker + listener ใน container เดียวกัน (SHM) | [`exp4_samehost_shm.pcap`](../captures/exp4_samehost_shm.pcap) |
+| 5 | Image แบบ BEST_EFFORT 20 ภาพ, receive buffer ค่าเริ่มต้น | [`exp5_image_besteffort.pcap.gz`](../captures/exp5_image_besteffort.pcap.gz) |
 | 6 | เหมือนข้อ 5 แต่ตั้ง `receiveBufferSize` 4 MiB ผ่าน XML profile | (ผลจากตัวนับของ kernel) |
 
 ---
 
 ## 2. การทดลองที่ 1: หนึ่ง sample ของ talker บนสายจริง
 
-![anim-capture-rtps-198b](diagrams/anim-capture-rtps-198b.svg)
+![anim-capture-rtps-198b](../diagrams/anim-capture-rtps-198b.svg)
 
 frame 95 ใน `exp1_fastdds_default.pcap` คือ `"Hello World: 1"` ตัวแรก **ยาว 198 B**
 
@@ -102,9 +102,20 @@ frame 95 ใน `exp1_fastdds_default.pcap` คือ `"Hello World: 1"` ตั�
 | IP fragment ต่อ datagram | 45 | **45** (reassembled 65 476 B) |
 | ชื่อ topic บนสาย | `rt/img` | **`rt/img/_buf_cpu`** (ข้อค้นพบใหม่ ดูด้านล่าง) |
 
-ผลการส่ง: ได้รับครบ 5/5 ภาพ แต่ตัวนับ kernel ของ Host B แสดง **`RcvbufErrors = 23`**, `ReasmOKs = 97` (75 datagram ที่ควรมี + ส่งซ้ำ) และเห็น `NACK_FRAG` 4 ครั้ง จำนวน DATA_FRAG ต่อ sequence number คือ 17, 21, 15, 15, 28 แปลว่าภาพที่ 1, 2 และ 5 ต้องส่ง fragment ซ้ำ 2, 6 และ 13 ชิ้น กลไก RELIABLE ของ RTPS กู้ข้อมูลที่ kernel ทิ้งไปได้ แต่ทำให้ traffic เพิ่มขึ้นราว 28%
+ผลการส่ง: ได้รับครบ 5/5 ภาพ แต่ตัวนับ kernel ของ Host B แสดง **`RcvbufErrors = 23`**, `ReasmOKs = 97` (75 datagram ที่ควรมี + ส่งซ้ำ) และเห็น `NACK_FRAG` 4 ครั้ง จำนวน DATA_FRAG ต่อ sequence number คือ 18, 21, 15, 15, 28 แปลว่าภาพที่ 1, 2 และ 5 ต้องส่ง fragment ซ้ำ 3, 6 และ 13 ชิ้น รวม 22 ชิ้น ซึ่งตรงกับตัวนับ kernel พอดี (75 + 22 = 97 = `ReasmOKs`) กลไก RELIABLE ของ RTPS กู้ข้อมูลที่ kernel ทิ้งไปได้ แต่ทำให้ traffic เพิ่มขึ้นราว 29%
 
-ตัวอย่าง `NACK_FRAG` (frame 749): `writerSN 1, bitmapBase 4, numBits 3, bitmap 11` คือ reader ขอ fragment 4 และ 5 ของภาพแรกใหม่
+ตัวอย่าง `NACK_FRAG` (frame 749): `writerSN 1, bitmapBase 4, numBits 3, bitmap 00 00 00 e0` (u32 little-endian = `0xe0000000` คือ 3 บิตแรกเป็น 1) reader ขอ fragment 4, 5 และ 6 ของภาพแรกใหม่ และ DATA_FRAG ที่ส่งซ้ำตามมาคือ fragment 4, 5, 6 จริง
+
+NACK_FRAG ทั้ง 4 ฉบับในไฟล์
+
+| frame | SN | bitmapBase | numBits | fragment ที่ขอ |
+|---|---|---|---|---|
+| 749 | 1 | 4 | 3 | 4, 5, 6 |
+| 1534 | 2 | 3 | 10 | 3, 4, 10, 11, 12 |
+| 1764 | 2 | 12 | 1 | 12 (ขอซ้ำ เพราะก้อนที่ส่งซ้ำหายอีกรอบ) |
+| 3746 | 5 | 3 | 13 | 3–15 |
+
+> **แก้ไข 2026-11-26:** ฉบับก่อนหน้าระบุว่า frame 749 ขอ fragment 4 และ 5 และ SN 1 มี DATA_FRAG 17 ก้อน ซึ่งผิด ตรวจใหม่โดยถอด bitmap จาก byte ดิบด้วย [`tools/rtps_peek.py`](../tools/rtps_peek.py) (`python3 ros2_lyrical/tools/rtps_peek.py sms ros2_lyrical/captures/exp2_image_reliable.pcap.gz NACK_FRAG`)
 
 **ข้อค้นพบใหม่: topic `/_buf_cpu`** [V capture + source]
 ใน Lyrical ถ้า message มีฟิลด์ `uint8[]` (ซึ่งตอนนี้เป็น `rosidl::Buffer`) และไม่ได้ใช้ QoS แบบ transient-local `rmw_fastrtps_cpp` จะสร้าง DDS topic เพิ่มชื่อ `<topic>/_buf_cpu` เป็นช่องทางร่วมของ subscriber ที่ใช้ CPU backend ทั้งหมด (`rmw_fastrtps_cpp/src/publisher.cpp` บรรทัด 385–395) ส่วน subscriber ที่ใช้ backend อื่น เช่น CUDA จะได้ช่องทาง `/_buf/<gid>` ของตัวเอง ตาม `rmw_zenoh/docs/design.md` ผลที่ตามมาคือเครื่องมือที่ filter ตามชื่อ topic DDS (Wireshark, firewall, bridge) จะไม่เห็นภาพบน `rt/img` แต่จะเห็นบน `rt/img/_buf_cpu` แทน
@@ -113,7 +124,7 @@ frame 95 ใน `exp1_fastdds_default.pcap` คือ `"Hello World: 1"` ตั�
 
 ## 4. การทดลองที่ 3: sample เดียวกันผ่าน rmw_zenoh
 
-![anim-capture-zenoh-161b](diagrams/anim-capture-zenoh-161b.svg)
+![anim-capture-zenoh-161b](../diagrams/anim-capture-zenoh-161b.svg)
 
 - หลังจาก router gossip ส่งข้อมูลให้แล้ว session ของ talker (172.20.0.4) **เปิด TCP ตรงไปหา listener** (172.20.0.3:57268) ข้อมูลจึงไม่ผ่าน router (172.20.0.2:7447) ตรงตาม README ของ rmw_zenoh
 - หนึ่ง sample = **161 B** (Ethernet 14 + IP 20 + TCP 32 + Zenoh 95) **สั้นกว่า RTPS 37 B**
@@ -142,7 +153,7 @@ sem.fastdds_port7000_mutex …             named semaphore
 
 ## 6. การทดลองที่ 5–6: receive buffer ตัดสินว่าภาพจะรอดหรือไม่
 
-![anim-experiment-rcvbuf](diagrams/anim-experiment-rcvbuf.svg)
+![anim-experiment-rcvbuf](../diagrams/anim-experiment-rcvbuf.svg)
 
 | | ค่าเริ่มต้น | XML `receiveBufferSize` 4 MiB |
 |---|---|---|
@@ -158,7 +169,7 @@ sem.fastdds_port7000_mutex …             named semaphore
 
 วิธีแก้ในงานจริงมี 2 ระดับ
 1. ระดับ OS: เพิ่ม `net.core.rmem_max` (และ `rmem_default` ถ้าไม่ใช้ XML)
-2. ระดับ middleware: ตั้ง `receiveBufferSize` ใน XML profile ตาม [`bigbuf.xml`](captures/scripts/bigbuf.xml) (ค่าที่ได้จะถูกจำกัดด้วย `rmem_max`)
+2. ระดับ middleware: ตั้ง `receiveBufferSize` ใน XML profile ตาม [`bigbuf.xml`](../captures/scripts/bigbuf.xml) (ค่าที่ได้จะถูกจำกัดด้วย `rmem_max`)
 
 ---
 

@@ -9,11 +9,11 @@
 
 ---
 
-> **ภาค 4 (สถาปัตยกรรม):** [ros2_lyrical_architectures.md](ros2_lyrical_architectures.md) middleware internals, discovery, data path ในเครื่อง, deployment แบบ fleet/cloud และ security
+> **ภาค 4 (สถาปัตยกรรม):** [04_architectures.md](04_architectures.md) middleware internals, discovery, data path ในเครื่อง, deployment แบบ fleet/cloud และ security
 >
-> **ภาค 3 (ทดลองจริง):** [ros2_lyrical_wire_experiments.md](ros2_lyrical_wire_experiments.md) packet capture จาก Docker พร้อม pcap และสคริปต์ทำซ้ำ
+> **ภาค 3 (ทดลองจริง):** [03_wire_experiments.md](03_wire_experiments.md) packet capture จาก Docker พร้อม pcap และสคริปต์ทำซ้ำ
 >
-> **ภาค 2 (ลึกกว่า):** [ros2_lyrical_network_stack_deeper.md](ros2_lyrical_network_stack_deeper.md) ครอบคลุม discovery ระดับ byte, reliable protocol และ DATA_FRAG, Fast DDS internals, Zenoh framing, การนับ `SO_RCVBUF`, latency/CPU budget และหัวข้อวิจัย R1–R9
+> **ภาค 2 (ลึกกว่า):** [02_wire_format_and_kernel.md](02_wire_format_and_kernel.md) ครอบคลุม discovery ระดับ byte, reliable protocol และ DATA_FRAG, Fast DDS internals, Zenoh framing, การนับ `SO_RCVBUF`, latency/CPU budget และหัวข้อวิจัย R1–R9
 
 ## 0. ข้อเท็จจริงหลักของ Lyrical ที่เกี่ยวกับ network [V]
 
@@ -37,12 +37,12 @@
 
 ## 1. ภาพรวมแต่ละชั้น
 
-![anim-lyrical-packet-path](diagrams/anim-lyrical-packet-path.svg)
+![anim-lyrical-packet-path](../diagrams/anim-lyrical-packet-path.svg)
 
-> **Interactive 3D lab:** [`interactive/lyrical-packet-lab.html`](interactive/lyrical-packet-lab.html) จำลอง 4 hosts ต่อผ่าน switch มี 20 บทเรียน (ภาพรวม, intra-process, serialize, syscall, kernel TX/RX, **packet bytes (hex dump 198 B จาก capture จริง)**, **kernel call path**, loopback, SHM, `rosidl::Buffer`, **service**, **action**, DDS discovery, Zenoh router mesh, observability และ**ผลการทดลองจริง 4 บท**: traffic breakdown, ภาพ RELIABLE + NACK_FRAG, rcvbuf 13/20 → 20/20, Zenoh & SHM) หมุน/ซูมฉากได้ คลิก layer เพื่อดูรายละเอียด และกด Run เพื่อดู trace console ตัวอย่าง
+> **Interactive 3D lab:** [`interactive/lyrical-packet-lab.html`](../interactive/lyrical-packet-lab.html) จำลอง 4 hosts ต่อผ่าน switch มี 20 บทเรียน (ภาพรวม, intra-process, serialize, syscall, kernel TX/RX, **packet bytes (hex dump 198 B จาก capture จริง)**, **kernel call path**, loopback, SHM, `rosidl::Buffer`, **service**, **action**, DDS discovery, Zenoh router mesh, observability และ**ผลการทดลองจริง 4 บท**: traffic breakdown, ภาพ RELIABLE + NACK_FRAG, rcvbuf 13/20 → 20/20, Zenoh & SHM) หมุน/ซูมฉากได้ คลิก layer เพื่อดูรายละเอียด และกด Run เพื่อดู trace console ตัวอย่าง
 > **เปิดออนไลน์:** https://alfaxphoori.github.io/ros2/ros2_lyrical/interactive/lyrical-packet-lab.html (ต้องใช้เบราว์เซอร์ที่รองรับ WebGL)
 
-![anim-lyrical-stack-layers](diagrams/anim-lyrical-stack-layers.svg)
+![anim-lyrical-stack-layers](../diagrams/anim-lyrical-stack-layers.svg)
 
 <details>
 <summary>ASCII version</summary>
@@ -80,7 +80,7 @@
 
 ### 1.1 เทียบกับ OSI 7 Layer
 
-![anim-osi-vs-ros2-lyrical](diagrams/anim-osi-vs-ros2-lyrical.svg)
+![anim-osi-vs-ros2-lyrical](../diagrams/anim-osi-vs-ros2-lyrical.svg)
 
 การเทียบชั้นนี้เป็นค่าโดยประมาณ [K] ชั้น 5–7 อยู่ใน user space (rclcpp/rcl → typesupport/CDR → DDS-RTPS หรือ Zenoh) ชั้น 2–4 อยู่ใน kernel (UDP/TCP → IP → driver) และชั้น 1 เป็น hardware ส่วน SHM, loaned messages และ `rosidl::Buffer` backend ข้ามชั้น 1–4 ไปได้เมื่อส่งระหว่าง process บนเครื่องเดียวกัน
 
@@ -283,11 +283,11 @@ cat /proc/net/snmp ; ss -uamp ; ethtool -S <iface> | grep -i drop
 
 ### 5.4 Packet จริงระดับ byte: หนึ่ง sample บนสาย
 
-![anim-rtps-packet-anatomy](diagrams/anim-rtps-packet-anatomy.svg)
+![anim-rtps-packet-anatomy](../diagrams/anim-rtps-packet-anatomy.svg)
 
-> **ผลจาก capture จริง ([ภาค 3](ros2_lyrical_wire_experiments.md)):** frame ของ demo talker บน Lyrical ยาว **198 B** (RTPS 2.3 + INFO_DST + INFO_TS + DATA + statistics 0x80), readerId เป็น reader จริง (`00.00.13.04`) และ type คือ `example_interfaces/msg/String` ไม่ใช่ `std_msgs`
+> **ผลจาก capture จริง ([ภาค 3](03_wire_experiments.md)):** frame ของ demo talker บน Lyrical ยาว **198 B** (RTPS 2.3 + INFO_DST + INFO_TS + DATA + statistics 0x80), readerId เป็น reader จริง (`00.00.13.04`) และ type คือ `example_interfaces/msg/String` ไม่ใช่ `std_msgs`
 >
-> **หมายเหตุ build variant [แก้ไข 2026-11-24 ตามภาค 2]:** frame 122 B นี้เป็นแบบ**น้อยที่สุด** (ไม่มี INFO_DST และ statistics submessage) binary `.deb` ของ Lyrical build Fast DDS ด้วย `-DSECURITY=ON` (RTPS version 2.3 ตามตัวอย่างนี้) และเปิด `FASTDDS_STATISTICS` ตามค่าเริ่มต้น frame จริงจึงน่าจะมี statistics submessage 60 B ต่อท้าย และอาจมี INFO_DST 16 B รวมเป็น 182–198 B ผู้ที่ build จาก source โดยไม่ใส่ flag จะได้ version 2.2 รายละเอียดอยู่ใน[ภาค 2 §3.7](ros2_lyrical_network_stack_deeper.md#37-build-option-ที่เปลี่ยน-byte-บนสาย)
+> **หมายเหตุ build variant [แก้ไข 2026-11-24 ตามภาค 2]:** frame 122 B นี้เป็นแบบ**น้อยที่สุด** (ไม่มี INFO_DST และ statistics submessage) binary `.deb` ของ Lyrical build Fast DDS ด้วย `-DSECURITY=ON` (RTPS version 2.3 ตามตัวอย่างนี้) และเปิด `FASTDDS_STATISTICS` ตามค่าเริ่มต้น frame จริงจึงน่าจะมี statistics submessage 60 B ต่อท้าย และอาจมี INFO_DST 16 B รวมเป็น 182–198 B ผู้ที่ build จาก source โดยไม่ใส่ flag จะได้ version 2.2 รายละเอียดอยู่ใน[ภาค 2 §3.7](02_wire_format_and_kernel.md#37-build-option-ที่เปลี่ยน-byte-บนสาย)
 
 ตัวอย่างนี้คือ `demo_nodes_cpp talker` ส่ง `std_msgs/String` ค่า `"Hello World: 1"` บน topic `/chatter` ผ่าน `rmw_fastrtps_cpp` แบบ UDPv4 unicast ไปยัง listener ที่ domain 0, participant 0 frame ทั้งก้อนสร้างด้วยสคริปต์ที่คำนวณ IP และ UDP checksum ให้ถูกต้องจริง ส่วนค่า MAC, IP, guidPrefix และ timestamp เป็นค่าตัวอย่าง
 
@@ -326,7 +326,7 @@ tshark -r chatter.pcap -Y rtps -x | head -40                  # hex dump
 
 ### 5.5 เส้นทางใน Linux kernel ทีละฟังก์ชัน (TX และ RX)
 
-![anim-linux-kernel-packet-path](diagrams/anim-linux-kernel-packet-path.svg)
+![anim-linux-kernel-packet-path](../diagrams/anim-linux-kernel-packet-path.svg)
 
 ชื่อฟังก์ชันทุกตัวด้านล่างตรวจแล้วว่ามีอยู่ใน `/proc/kallsyms` ของ Linux 7.0.0 (Ubuntu 26.04 generic) ฟังก์ชันที่ถูก inline จะไม่ปรากฏใน kallsyms และชื่อฟังก์ชันอาจเปลี่ยนตามเวอร์ชัน kernel เช่น symbol `napi_gro_receive` ไม่มีแล้ว (ยังเป็น `static inline` ที่ห่อ `gro_receive_skb` และ driver ยังเรียกชื่อเดิม) ตัวอย่าง driver ใช้ `r8169` (Realtek)
 

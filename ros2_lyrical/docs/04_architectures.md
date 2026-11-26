@@ -10,12 +10,12 @@
 
 | หัวข้อ | ภาพ |
 |---|---|
-| 1. rmw เป็น plugin: middleware 4 ตัว | [anim-arch-rmw-plugin.svg](diagrams/anim-arch-rmw-plugin.svg) |
-| 2. Discovery architecture | [anim-arch-discovery.svg](diagrams/anim-arch-discovery.svg) |
-| 3. Topic / Service / Action บน middleware | [anim-arch-comm-patterns.svg](diagrams/anim-arch-comm-patterns.svg) |
-| 4. Data path ภายในเครื่องเดียวกัน | [anim-arch-intrahost-datapaths.svg](diagrams/anim-arch-intrahost-datapaths.svg) |
-| 5. Deployment: หุ่นยนต์ตัวเดียว → fleet → cloud | [anim-arch-deployment.svg](diagrams/anim-arch-deployment.svg) |
-| 6. Security architecture | [anim-arch-security.svg](diagrams/anim-arch-security.svg) |
+| 1. rmw เป็น plugin: middleware 4 ตัว | [anim-arch-rmw-plugin.svg](../diagrams/anim-arch-rmw-plugin.svg) |
+| 2. Discovery architecture | [anim-arch-discovery.svg](../diagrams/anim-arch-discovery.svg) |
+| 3. Topic / Service / Action บน middleware | [anim-arch-comm-patterns.svg](../diagrams/anim-arch-comm-patterns.svg) |
+| 4. Data path ภายในเครื่องเดียวกัน | [anim-arch-intrahost-datapaths.svg](../diagrams/anim-arch-intrahost-datapaths.svg) |
+| 5. Deployment: หุ่นยนต์ตัวเดียว → fleet → cloud | [anim-arch-deployment.svg](../diagrams/anim-arch-deployment.svg) |
+| 6. Security architecture | [anim-arch-security.svg](../diagrams/anim-arch-security.svg) |
 | 7. สถาปัตยกรรมสำหรับงาน real-time | (ตาราง) |
 | 8. ตารางเลือกสถาปัตยกรรม | (ตาราง) |
 
@@ -23,7 +23,7 @@
 
 ## 1. rmw เป็น plugin: middleware 4 ตัวหลัง C ABI เดียวกัน
 
-![anim-arch-rmw-plugin](diagrams/anim-arch-rmw-plugin.svg)
+![anim-arch-rmw-plugin](../diagrams/anim-arch-rmw-plugin.svg)
 
 ชั้นบน (rclcpp/rclpy → rcl) เหมือนกันทุกกรณี ส่วนที่เปลี่ยนคือ shared library ของ rmw ที่ `rmw_implementation` โหลดตอน runtime ตาม `RMW_IMPLEMENTATION` [K] ดังนั้นโค้ดของ node ไม่ต้อง build ใหม่เมื่อสลับ middleware แต่พฤติกรรมบนสาย, thread และ daemon ที่ต้องรันเปลี่ยนทั้งหมด
 
@@ -53,7 +53,7 @@ cat /proc/$(pgrep -f talker)/maps | grep -o 'librmw_[a-z_]*\.so' | sort -u
 
 ## 2. Discovery architecture
 
-![anim-arch-discovery](diagrams/anim-arch-discovery.svg)
+![anim-arch-discovery](../diagrams/anim-arch-discovery.svg)
 
 Discovery คือส่วนที่สถาปัตยกรรมต่างกันมากที่สุด และเป็นต้นเหตุหลักของปัญหาเมื่อระบบใหญ่ขึ้นหรือย้ายไปอยู่บน Wi-Fi
 
@@ -92,7 +92,7 @@ Discovery คือส่วนที่สถาปัตยกรรมต่�
 
 ## 3. Topic / Service / Action บน middleware
 
-![anim-arch-comm-patterns](diagrams/anim-arch-comm-patterns.svg)
+![anim-arch-comm-patterns](../diagrams/anim-arch-comm-patterns.svg)
 
 ROS 2 มี communication pattern 3 แบบ แต่ middleware รู้จักแค่ pub/sub (DDS) หรือ pub/sub + query (Zenoh) rmw จึงแปลงแต่ละแบบลงไปดังนี้
 
@@ -111,7 +111,7 @@ ROS 2 มี communication pattern 3 แบบ แต่ middleware รู้จ
 
 ## 4. Data path ภายในเครื่องเดียวกัน
 
-![anim-arch-intrahost-datapaths](diagrams/anim-arch-intrahost-datapaths.svg)
+![anim-arch-intrahost-datapaths](../diagrams/anim-arch-intrahost-datapaths.svg)
 
 เมื่อ publisher และ subscriber อยู่บนเครื่องเดียวกัน มีทางเลือกอย่างน้อย 6 ทาง จำนวน copy ในภาพเป็นค่าประมาณ [K] นับเฉพาะ copy ของ payload ที่ CPU ทำ ไม่นับ DMA และ cache traffic
 
@@ -137,7 +137,7 @@ ros2 component load /ComponentManager composition composition::Listener
 
 ## 5. Deployment: หุ่นยนต์ตัวเดียว → fleet → cloud
 
-![anim-arch-deployment](diagrams/anim-arch-deployment.svg)
+![anim-arch-deployment](../diagrams/anim-arch-deployment.svg)
 
 ### 5.1 หุ่นยนต์หลายเครื่องคอมพิวเตอร์บน LAN เดียว (A ในภาพ)
 - เครื่องในหุ่นยนต์ตัวเดียวกันใช้ `ROS_DOMAIN_ID` เดียวกัน คุยด้วย UDP ผ่าน switch ภายใน และใช้ SHM ภายในแต่ละเครื่อง
@@ -192,7 +192,7 @@ syntax ของค่า array ใน `ZENOH_CONFIG_OVERRIDE` ควรตร�
 
 ## 6. Security architecture
 
-![anim-arch-security](diagrams/anim-arch-security.svg)
+![anim-arch-security](../diagrams/anim-arch-security.svg)
 
 ### 6.1 SROS2 (DDS-Security) [K: OMG DDS-Security v1.1 + เอกสาร SROS2]
 - **Keystore** สร้างด้วย `ros2 security create_keystore` มี CA สำหรับ identity และ permissions, `enclaves/governance.p7s` และ directory ต่อ enclave ที่มี cert, key และ `permissions.p7s`

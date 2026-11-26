@@ -1,9 +1,9 @@
 # ROS 2 Lyrical Luth: Network Stack เชิงลึก ภาค 2 (wire format, reliability, Fast DDS internals, Zenoh framing, kernel accounting, latency budget)
 
-> เอกสารต่อยอดจาก `ros2_lyrical_network_stack_deep_dive.md` (ต่อไปเรียกว่า "ภาค 1") ไม่ทำซ้ำเนื้อหาเดิม
+> เอกสารต่อยอดจาก `01_network_stack_deep_dive.md` (ต่อไปเรียกว่า "ภาค 1") ไม่ทำซ้ำเนื้อหาเดิม
 > ร่างโดย Claude Fable 5.2 แล้วตรวจทานและแก้ไขโดย Claude Opus 5.5 · สถานะ ณ 2026-11-24 · เครื่องที่ใช้ตรวจ: Ubuntu 26.04.1, Linux 7.0.0-43-generic, NIC `r8169` (RTL8168h), CPU Intel i3-12100
 
-> **อัปเดต:** หลายข้อในเอกสารนี้ได้รับการยืนยันด้วย packet capture จริงแล้วใน[ภาค 3](ros2_lyrical_wire_experiments.md) ได้แก่ frame 198 B, INFO_DST 16 B, statistics 60 B, fragmentSize 65 324 B, 15 DATA_FRAG, 45 IP fragment, Zenoh length prefix และ attachment 33 B ส่วน sampleSize จริงคือ 921 648 B (เอกสารนี้คำนวณได้ 921 652 B)
+> **อัปเดต:** หลายข้อในเอกสารนี้ได้รับการยืนยันด้วย packet capture จริงแล้วใน[ภาค 3](03_wire_experiments.md) ได้แก่ frame 198 B, INFO_DST 16 B, statistics 60 B, fragmentSize 65 324 B, 15 DATA_FRAG, 45 IP fragment, Zenoh length prefix และ attachment 33 B ส่วน sampleSize จริงคือ 921 648 B (เอกสารนี้คำนวณได้ 921 652 B)
 
 ## 0. วิธีอ่านเอกสารนี้
 

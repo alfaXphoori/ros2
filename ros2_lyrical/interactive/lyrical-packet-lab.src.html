@@ -900,7 +900,7 @@ ZENOH_CONFIG_OVERRIDE=<span class="str">'connect/endpoints=["tcp/hostB:7447","tc
      log('rosbag2:messages_lost','Host C topic=/camera/image lost=3 (transport)','x');
      await Promise.all([okB, okD]); await sleep(1400); fadeOut(d);
    }},
- /* ===== ผลการทดลองจริง (ros2_lyrical/ros2_lyrical_wire_experiments.md) ===== */
+ /* ===== ผลการทดลองจริง (ros2_lyrical/docs/03_wire_experiments.md) ===== */
  { short:'ทดลอง 1 · traffic', sub:'ทดลองจริง · 14 s', layer:'capture · exp1', real:true, title:'ผลจริง: 14 วินาทีบนสาย ข้อมูลจริงมีแค่ 3.3%',
    text:'capture จริงของ <code>talker → listener</code> ข้าม container นาน 14 วินาที ได้ RTPS message 137 frame แต่เป็นข้อมูล chatter แค่ 9 frame (สีส้ม) ที่เหลือคือ discovery ได้แก่ SPDP, SEDP, HEARTBEAT/ACKNACK และ <code>ros_discovery_info</code> ในแอนิเมชันนี้ จุด 1 จุด = 1 frame จริง และกราฟด้านขวานับ byte จริงจาก pcap',
    facts:[['V','SPDP <code>DATA(p)</code> 610 B ต่อครั้ง รวม 36.5% · SEDP 30.3% · HB/ACKNACK 12.6% · chatter <strong>3.3%</strong>'],['V','privacy: SPDP ประกาศ <code>fastdds.physical_data.user</code> (ชื่อผู้ใช้) และ <code>.process</code> (PID) ผ่าน multicast'],['V','reader ของ <code>ros_discovery_info</code> ใช้ UDP 7000 แยกจาก 7411 · ลำดับและทิศทางของจุดเป็นภาพประกอบ ส่วนจำนวนเป็นค่าจริง']],
@@ -939,16 +939,16 @@ ZENOH_CONFIG_OVERRIDE=<span class="str">'connect/endpoints=["tcp/hostB:7447","tc
    }},
  { short:'ทดลอง 2 · ภาพ RELIABLE', sub:'ทดลองจริง · 15 DATA_FRAG', layer:'capture · exp2', real:true, title:'ผลจริง: ภาพ 921 KB แตกเป็น 15 DATA_FRAG และต้อง NACK',
    text:'ส่ง <code>sensor_msgs/Image</code> 640×480 rgb8 แบบ RELIABLE 5 ภาพ แต่ละภาพ (sampleSize 921 648 B) ถูกแบ่งเป็น 15 DATA_FRAG ขนาด 65 324 B ซึ่งแต่ละก้อนแตกต่อเป็น IP fragment อีก 45 ชิ้น ภาพวิ่งบน topic <code>rt/img/_buf_cpu</code> ไม่ใช่ <code>rt/img</code> kernel ฝั่ง B ทิ้ง datagram ไป 23 ก้อนเพราะ receive buffer เต็ม (สีแดง) reader จึงส่ง NACK_FRAG (สีน้ำเงิน) แล้ว writer ส่ง fragment ซ้ำ 21 ชิ้น ผลคือได้ครบ 5/5 ภาพ แต่ traffic เพิ่มขึ้นราว 28%',
-   facts:[['V','DATA_FRAG ต่อ SN จริง: 17, 21, 15, 15, 28 (= 15 + ส่งซ้ำ 2, 6, 0, 0, 13) · NACK_FRAG 4 ครั้ง'],['V','<code>RcvbufErrors = 23</code>, <code>ReasmOKs = 97</code> จาก /proc/net/snmp ของ Host B'],['V','<code>/_buf_cpu</code> มาจาก rosidl::Buffer (rmw_fastrtps_cpp publisher.cpp) · ตำแหน่ง fragment ที่หายเป็นภาพประกอบ ยกเว้นภาพที่ 1 (frag 4–5 ตาม NACK_FRAG frame 749)']],
-   code: barsHTML('DATA_FRAG ต่อภาพ (15 = ไม่ต้องส่งซ้ำ)', [1,2,3,4,5].map((k,i) => [`SN ${k}`, [17,21,15,15,28][i], 30, [17,21,15,15,28][i] > 15 ? '#d64545' : '#27a689', null, `${[17,21,15,15,28][i]}`])) +
+   facts:[['V','DATA_FRAG ต่อ SN จริง: 18, 21, 15, 15, 28 (= 15 + ส่งซ้ำ 3, 6, 0, 0, 13) · NACK_FRAG 4 ครั้ง'],['V','<code>RcvbufErrors = 23</code>, <code>ReasmOKs = 97</code> จาก /proc/net/snmp ของ Host B'],['V','<code>/_buf_cpu</code> มาจาก rosidl::Buffer (rmw_fastrtps_cpp publisher.cpp) · ตำแหน่ง fragment ที่หายเป็นภาพประกอบ ยกเว้นภาพที่ 1 (frag 4–5 ตาม NACK_FRAG frame 749)']],
+   code: barsHTML('DATA_FRAG ต่อภาพ (15 = ไม่ต้องส่งซ้ำ)', [1,2,3,4,5].map((k,i) => [`SN ${k}`, [18,21,15,15,28][i], 30, [18,21,15,15,28][i] > 15 ? '#d64545' : '#27a689', null, `${[18,21,15,15,28][i]}`])) +
      codeBlock(`<span class="fn">tshark</span> -r exp2_image_reliable.pcap.gz \\
   -Y <span class="str">'rtps.sm.id == 0x16'</span> -T fields -e rtps.sm.seqNumber \\
-  | sort | uniq -c        <span class="cm"># 17 21 15 15 28</span>
+  | sort | uniq -c        <span class="cm"># 18 21 15 15 28</span>
 <span class="fn">nstat</span> -az UdpRcvbufErrors IpReasmOKs`),
    focus:['A.t.*','A.n1','A.sock','A.ip','A.nic','sw','B.*'],
    labels:{'A.n1':'img_pub', 'B.n1':'img_sub'},
    async run(){
-     const RES = [2,6,0,0,13], NACK = [1,1,0,0,2], DROPS = [[3,4],[1,5,7,9,11,13],[],[],[0,1,2,3,4,5,6,8,9,10,11,12,14]];
+     const RES = [3,6,0,0,13], NACK = [1,2,0,0,1], DROPS = [[3,4,5],[2,3,9,10,11],[],[],[2,3,4,5,6,7,8,9,10,11,12,13,14]];
      const AB = [...down(H.A).slice(4), ...up(H.B).slice(1,5)], BA = [...down(H.B).slice(4), ...up(H.A).slice(1,7)];
      const upd = liveCallout([SW[0], 1.1, SW[2]], 'rt/img/_buf_cpu');
      let sent = 0, drop = 0, got = 0;
@@ -968,7 +968,7 @@ ZENOH_CONFIG_OVERRIDE=<span class="str">'connect/endpoints=["tcp/hostB:7447","tc
          callout([H.B.x, Y.sock+0.1, kz(H.B)+0.1], 'rcvbuf เต็ม', `ทิ้ง ${DROPS[k].length} datagram (45 IP frag ต่อก้อน)`); const cDrop = callouts[callouts.length-1];
          log('skb:kfree_skb', `Host B ×${DROPS[k].length} reason=SOCKET_RCVBUFF`, 'x'); adv(300);
          for (let j=0;j<NACK[k];j++){
-           log('rtps:NACK_FRAG', k === 0 ? 'writerSN 1 · bitmapBase 4 · numBits 3 · bitmap 11 (frame 749)' : `writerSN ${k+1} · ขอ fragment ที่หาย`, 'u'); adv(200);
+           log('rtps:NACK_FRAG', k === 0 ? 'writerSN 1 · bitmapBase 4 · numBits 3 · bitmap 0xe0000000 → frag 4, 5, 6 (frame 749)' : `writerSN ${k+1} · ขอ fragment ที่หาย`, 'u'); adv(200);
            await travel(BA, {color:PCOL.ctl, r:0.12, speed:11});
          }
          const rs = [];
@@ -979,7 +979,7 @@ ZENOH_CONFIG_OVERRIDE=<span class="str">'connect/endpoints=["tcp/hostB:7447","tc
        await travel(up(H.B).slice(4), {color:PCOL.obj, r:0.24, speed:9});
        got++; show(k+1); log('ros2:callback_start', `img_sub got f${k} 921 600 B`, 'g'); adv(500000);
      }
-     log('summary', 'ได้ 5/5 · DATA_FRAG 96 (= 75 + ส่งซ้ำ 21) · RcvbufErrors 23 · NACK_FRAG 4', 'u');
+     log('summary', 'ได้ 5/5 · DATA_FRAG 97 (= 75 + ส่งซ้ำ 22 = ReasmOKs) · RcvbufErrors 23 · NACK_FRAG 4', 'u');
    }},
  { short:'ทดลอง 5–6 · rcvbuf', sub:'ทดลองจริง · 13/20 → 20/20', layer:'capture · exp5–6', real:true, title:'ผลจริง: receive buffer ตัดสินว่าภาพจะรอดหรือไม่',
    text:'ส่งภาพแบบ BEST_EFFORT 20 ภาพ (2 Hz) รอบแรกใช้ receive buffer ค่าเริ่มต้น (<code>rb212992</code>) กล่องข้าง socket ของ Host B คือคิวรับ เมื่อ burst ของ datagram 65 KB มาเร็วกว่าที่ thread ของ Fast DDS ดึงออก คิวจะเต็มและ kernel ทิ้งก้อนที่เหลือใน <code>__udp_enqueue_schedule_skb</code> ภาพนั้นจึงหายทั้งภาพ รอบที่สองตั้ง <code>receiveBufferSize</code> 4 MiB (kernel ให้จริง <code>rb8388608</code>) โดยไม่เปลี่ยนอย่างอื่น ผลคือไม่หายเลย',

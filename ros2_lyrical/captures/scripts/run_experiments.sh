@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Reproduce the ROS 2 Lyrical wire experiments (ros2_lyrical/ros2_lyrical_wire_experiments.md).
+# Reproduce the ROS 2 Lyrical wire experiments (ros2_lyrical/docs/03_wire_experiments.md).
 # Needs: Docker (user in the docker group). Output pcaps go to ./out/
 set -euo pipefail
 cd "$(dirname "$0")"

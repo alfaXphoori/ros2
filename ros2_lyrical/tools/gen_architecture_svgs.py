@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Animated architecture SVGs for ros2_lyrical_architectures.md (part 4).
+"""Animated architecture SVGs for docs/04_architectures.md (part 4).
 
 GitHub-safe: inline CSS + SMIL only, no scripts, no external assets.
 Usage: python3 gen_architecture_svgs.py <out_dir>

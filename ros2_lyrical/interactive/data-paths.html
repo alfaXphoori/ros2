@@ -1,0 +1,508 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="เทียบเส้นทางการส่งข้อมูลของ ROS 2 Lyrical 10 แบบ พร้อม packet จริงจาก capture">
+<title>เส้นทางข้อมูล ROS 2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: mode picker on top; diagram (layers × hosts) beside a step list; facts, commands and a cross-mode comparison below. */
+:root{
+  --bg:#f2f4f7; --panel:#ffffff; --sunk:#e9edf2; --fg:#17202b; --muted:#566376; --line:#d3dae3;
+  --user:#2f66c9; --kern:#a8700f; --hw:#6a58a8; --shm:#0d8577; --gpu:#2c8c4b;
+  --data:#2f66c9; --ctrl:#8a45c9; --drop:#cc3d33;
+  --f-body:"IBM Plex Sans Thai",system-ui,sans-serif; --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f141a; --panel:#161d26; --sunk:#1c2530; --fg:#e4e9ef; --muted:#97a5b6; --line:#2a3542;
+  --user:#6d9eff; --kern:#e0a645; --hw:#a594e8; --shm:#3cc0b0; --gpu:#5cc882;
+  --data:#6d9eff; --ctrl:#bb8af2; --drop:#f26a5e; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f141a; --panel:#161d26; --sunk:#1c2530; --fg:#e4e9ef; --muted:#97a5b6; --line:#2a3542;
+  --user:#6d9eff; --kern:#e0a645; --hw:#a594e8; --shm:#3cc0b0; --gpu:#5cc882;
+  --data:#6d9eff; --ctrl:#bb8af2; --drop:#f26a5e; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.6}
+.wrap{max-width:1240px;margin:0 auto;padding-block:28px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:22px}
+h1{font-size:clamp(1.6rem,3.2vw,2.2rem);line-height:1.2;margin:0;font-weight:700;text-wrap:balance}
+h2{font-size:1.15rem;margin:0;font-weight:600;text-wrap:balance}
+h3{font-size:.8rem;margin:0 0 8px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+p{margin:0}
+.lede{color:var(--muted);max-width:70ch;margin-top:6px}
+code,.mono{font-family:var(--f-mono);font-size:.88em}
+.picker{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))}
+.group{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:grid;gap:8px;align-content:start}
+.group h3{margin:0}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:inherit;font-size:.9rem;border:1px solid var(--line);background:var(--sunk);color:var(--fg);border-radius:999px;padding:4px 12px;cursor:pointer}
+.chip:hover{border-color:var(--data)}
+.chip[aria-pressed="true"]{background:var(--data);border-color:var(--data);color:var(--panel);font-weight:600}
+.chip:focus-visible,.btn:focus-visible,.seg button:focus-visible,.copy:focus-visible{outline:2px solid var(--data);outline-offset:2px}
+.main{display:grid;gap:22px;grid-template-columns:minmax(0,1fr)}
+@media (min-width:1060px){.main{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr)}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;min-width:0}
+.diag-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;margin-bottom:10px}
+.diag-head h2{flex:1 1 220px}
+.btn{font:inherit;font-size:.88rem;border:1px solid var(--line);background:var(--sunk);color:var(--fg);border-radius:8px;padding:4px 12px;cursor:pointer}
+.btn:hover{border-color:var(--data)}
+.counter{font-family:var(--f-mono);font-size:.9rem;font-variant-numeric:tabular-nums;padding:3px 10px;border-radius:6px;background:var(--sunk)}
+.counter b{color:var(--data)}
+.counter.bad b{color:var(--drop)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;flex-wrap:wrap}
+.seg button{font:inherit;font-size:.85rem;border:0;background:transparent;color:var(--fg);padding:4px 10px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--data);color:var(--panel);font-weight:600}
+.svgbox{overflow-x:auto}
+svg.diag{display:block;width:100%;min-width:640px;height:auto}
+.band-u{fill:color-mix(in srgb,var(--user) 7%,transparent)}
+.band-k{fill:color-mix(in srgb,var(--kern) 9%,transparent)}
+.band-h{fill:color-mix(in srgb,var(--hw) 8%,transparent)}
+.bl{font-family:var(--f-mono);font-size:10px;letter-spacing:.12em;fill:var(--muted)}
+.colh{font-size:13px;font-weight:600;fill:var(--fg)}
+.colsub{font-size:11px;fill:var(--muted)}
+.box rect{fill:var(--panel);stroke:var(--line);stroke-width:1.2}
+.box.l-u rect{stroke:color-mix(in srgb,var(--user) 45%,var(--line))}
+.box.l-k rect{stroke:color-mix(in srgb,var(--kern) 50%,var(--line))}
+.box.l-h rect{stroke:color-mix(in srgb,var(--hw) 50%,var(--line))}
+.box.m-shm rect{fill:color-mix(in srgb,var(--shm) 14%,var(--panel));stroke:var(--shm)}
+.box.m-gpu rect{fill:color-mix(in srgb,var(--gpu) 14%,var(--panel));stroke:var(--gpu)}
+.box.m-ctrl rect{fill:color-mix(in srgb,var(--ctrl) 10%,var(--panel));stroke:var(--ctrl);stroke-dasharray:5 4}
+.box.m-kern rect{fill:color-mix(in srgb,var(--kern) 12%,var(--panel));stroke:var(--kern)}
+.box.m-user rect{fill:color-mix(in srgb,var(--user) 12%,var(--panel));stroke:var(--user)}
+.box .t{font-size:13px;font-weight:600;fill:var(--fg)}
+.box .s{font-family:var(--f-mono);font-size:11px;fill:var(--muted)}
+.box.dim{opacity:.28}
+.box.hl rect{stroke:var(--data);stroke-width:3}
+.box{transition:opacity .25s}
+.pl{fill:none;stroke-width:3;stroke-linejoin:round;opacity:.32}
+.pl.k-data{stroke:var(--data)} .pl.k-ctrl{stroke:var(--ctrl);stroke-dasharray:6 5} .pl.k-gpu{stroke:var(--gpu)}
+.dot circle{stroke:var(--panel);stroke-width:2}
+.dot.k-data circle{fill:var(--data)} .dot.k-ctrl circle{fill:var(--ctrl)} .dot.k-gpu circle{fill:var(--gpu)}
+.dot text{font-family:var(--f-mono);font-size:11px;font-weight:500;fill:var(--fg);paint-order:stroke;stroke:var(--panel);stroke-width:4px}
+.xm line{stroke:var(--drop);stroke-width:3.5;stroke-linecap:round}
+.xm text{font-family:var(--f-mono);font-size:11px;fill:var(--drop);paint-order:stroke;stroke:var(--panel);stroke-width:4px}
+.badge circle{fill:var(--kern)} .badge text{font-family:var(--f-mono);font-size:11px;font-weight:600;fill:var(--panel)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:10px;font-size:.85rem;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:12px;height:12px;border-radius:50%;display:inline-block}
+.sw.sq{border-radius:3px}
+.side{display:grid;gap:16px;align-content:start}
+.summary{color:var(--fg)}
+.kv{display:flex;flex-wrap:wrap;gap:8px}
+.kv div{background:var(--sunk);border-radius:8px;padding:6px 10px;font-size:.85rem}
+.kv b{display:block;font-family:var(--f-mono);font-size:1.05rem;font-variant-numeric:tabular-nums}
+ol.steps{list-style:none;margin:0;padding:0;display:grid;gap:4px;counter-reset:s}
+ol.steps li{counter-increment:s;display:grid;grid-template-columns:28px minmax(0,1fr);gap:8px;padding:7px 8px;border-radius:8px;cursor:default}
+ol.steps li::before{content:counter(s);font-family:var(--f-mono);font-size:.8rem;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:var(--sunk);color:var(--muted)}
+ol.steps li:hover,ol.steps li:focus-within,ol.steps li:focus{background:var(--sunk);outline:none}
+ol.steps li:hover::before,ol.steps li:focus::before{background:var(--data);color:var(--panel)}
+ol.steps .h{font-weight:600}
+ol.steps .d{color:var(--muted);font-size:.9rem}
+.cpy{font-family:var(--f-mono);font-size:.75rem;color:var(--kern);font-weight:600;white-space:nowrap}
+.lower{display:grid;gap:22px;grid-template-columns:minmax(0,1fr)}
+@media (min-width:900px){.lower{grid-template-columns:minmax(0,1.1fr) minmax(0,1fr)}}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:.78rem;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.tbl{overflow-x:auto}
+.tag{display:inline-block;font-size:.72rem;padding:1px 7px;border-radius:999px;white-space:nowrap;border:1px solid currentColor}
+.tag.m{color:var(--gpu)} .tag.c{color:var(--user)} .tag.e{color:var(--kern)} .tag.k{color:var(--muted)}
+pre{margin:0;background:var(--sunk);border-radius:8px;padding:12px 14px;overflow-x:auto;font-family:var(--f-mono);font-size:.82rem;line-height:1.55}
+.cmd{display:grid;gap:6px}
+.cmd-h{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.copy{font:inherit;font-size:.8rem;border:1px solid var(--line);background:var(--panel);color:var(--fg);border-radius:6px;padding:2px 10px;cursor:pointer}
+.cmp td:first-child{font-weight:600;white-space:nowrap}
+.cmp tr.cur td{background:color-mix(in srgb,var(--data) 9%,transparent)}
+.cmp tbody tr{cursor:pointer}
+.yes{color:var(--drop)} .no{color:var(--gpu)} .part{color:var(--kern)}
+.foot{color:var(--muted);font-size:.85rem;display:grid;gap:6px}
+.hexwrap{display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
+@media (min-width:1000px){.hexwrap{grid-template-columns:auto minmax(0,1fr)}}
+.hex{font-family:var(--f-mono);font-size:.82rem;line-height:1.75;overflow-x:auto;background:var(--sunk);border-radius:8px;padding:12px 14px}
+.hex .row{white-space:pre}
+.hex .off{color:var(--muted);margin-right:10px}
+.hex .b{padding:1px 2px;border-radius:3px;transition:box-shadow .15s}
+.hex .b.on{box-shadow:0 0 0 2px var(--fg)}
+.r-h{background:color-mix(in srgb,var(--hw) 24%,transparent)}
+.r-k{background:color-mix(in srgb,var(--kern) 26%,transparent)}
+.r-k2{background:color-mix(in srgb,var(--kern) 12%,transparent)}
+.r-u{background:color-mix(in srgb,var(--user) 24%,transparent)}
+.r-c{background:color-mix(in srgb,var(--ctrl) 26%,transparent)}
+.r-c2{background:color-mix(in srgb,var(--ctrl) 12%,transparent)}
+.r-p{background:color-mix(in srgb,var(--gpu) 30%,transparent)}
+.r-s{background:color-mix(in srgb,var(--muted) 18%,transparent)}
+.reg td{padding:5px 8px}
+.reg tr{cursor:default}
+.reg tr:hover td,.reg tr:focus td{background:var(--sunk)}
+.reg .sw{border-radius:3px;width:14px;height:14px}
+.pnote{color:var(--muted)}
+a{color:var(--data)}
+@media (prefers-reduced-motion:reduce){.box{transition:none}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1>เส้นทางข้อมูล ROS 2 Lyrical</h1>
+    <p class="lede">เลือกรูปแบบการส่งแล้วดูว่าข้อมูลหนึ่ง sample วิ่งผ่านชั้นไหนบ้าง ตั้งแต่ <code>publish()</code> ผ่าน rmw, middleware, kernel และ NIC จนถึง callback ฝั่งรับ ตัวเลขที่ติดป้าย “วัดจริง” มาจาก packet capture ในภาค 3 ของเอกสาร</p>
+  </header>
+
+  <nav class="picker" id="picker" aria-label="รูปแบบการส่ง"></nav>
+
+  <section class="main">
+    <div class="card">
+      <div class="diag-head">
+        <h2 id="mtitle"></h2>
+        <span class="counter" id="counter" hidden></span>
+        <div class="seg" id="variants" hidden></div>
+        <button class="btn" id="play" type="button">หยุด</button>
+        <button class="btn" id="replay" type="button">เริ่มใหม่</button>
+      </div>
+      <div class="svgbox"><svg class="diag" id="svg" viewBox="0 0 960 500" role="img" aria-label="แผนภาพเส้นทางข้อมูล"></svg></div>
+      <div class="legend">
+        <span><i class="sw" style="background:var(--data)"></i>ข้อมูลผู้ใช้</span>
+        <span><i class="sw" style="background:var(--ctrl)"></i>discovery / ควบคุม</span>
+        <span><i class="sw" style="background:var(--gpu)"></i>payload ใน GPU</span>
+        <span><i class="sw" style="background:var(--drop)"></i>ถูกทิ้ง</span>
+        <span><i class="sw" style="background:var(--kern)"></i>จุดที่ CPU copy payload</span>
+        <span><i class="sw sq" style="background:var(--line)"></i>ชั้นที่ไม่ได้ใช้ (จาง)</span>
+      </div>
+    </div>
+    <aside class="side card">
+      <p class="summary" id="summary"></p>
+      <div class="kv" id="kv"></div>
+      <div>
+        <h3>ทีละขั้น (ชี้เพื่อดูตำแหน่งในแผนภาพ)</h3>
+        <ol class="steps" id="steps"></ol>
+      </div>
+    </aside>
+  </section>
+
+  <section class="card" id="pkt">
+    <h3>Packet จริงจาก capture (ชี้ที่แถวเพื่อดู byte)</h3>
+    <p class="pnote mono" id="pktsrc"></p>
+    <div class="hexwrap" id="pktbody"></div>
+  </section>
+
+  <section class="lower">
+    <div class="card">
+      <h3>ข้อเท็จจริงของแบบนี้</h3>
+      <div class="tbl"><table><tbody id="facts"></tbody></table></div>
+    </div>
+    <div class="card cmd" id="cmds"></div>
+  </section>
+
+  <section class="card">
+    <h3>เทียบทุกแบบ (คลิกแถวเพื่อเปิด)</h3>
+    <div class="tbl"><table class="cmp">
+      <thead><tr><th>แบบ</th><th>ขอบเขต</th><th>copy ของ payload</th><th>ผ่าน network stack ของ kernel</th><th>tcpdump เห็นข้อมูล</th><th>ต้องตั้งค่าเพิ่ม</th></tr></thead>
+      <tbody id="cmp"></tbody>
+    </table></div>
+  </section>
+
+  <footer class="foot">
+    <p>ป้ายกำกับ: <span class="tag m">วัดจริง</span> จาก pcap หรือตัวนับของ kernel ในภาค 3 · <span class="tag c">จากโค้ด</span> อ่านจาก source ของ Lyrical · <span class="tag e">ประมาณการ</span> คำนวณจากแบบจำลอง · <span class="tag k">ความรู้ทั่วไป</span> ยังไม่ได้ตรวจกับ source ของเวอร์ชันนี้</p>
+    <p>จำนวน copy นับเฉพาะ copy ของ payload ที่ CPU ทำ ไม่นับ DMA การทดลองข้ามเครื่องในภาค 3 ใช้ Docker container สองตัวต่อกันผ่าน <code>veth</code> จึงไม่ผ่าน NIC จริง ตำแหน่งของภาพที่หายในภาพเคลื่อนไหวเป็นตัวอย่าง ส่วนจำนวนที่หายเป็นค่าที่วัดได้</p>
+    <p>ดูแบบ 3D พร้อม service และ action ได้ที่ <a href="lyrical-packet-lab.html">Lyrical Packet Lab</a> · เอกสาร: <a href="https://github.com/alfaXphoori/ros2/tree/main/ros2_lyrical">ros2_lyrical/</a> · packet ถอดจาก <code>captures/*.pcap</code> ด้วย <a href="https://github.com/alfaXphoori/ros2/blob/main/ros2_lyrical/tools/rtps_peek.py"><code>tools/rtps_peek.py</code></a></p>
+  </footer>
+</div>
+
+<script>
+(function(){
+const ROWY=[56,136,216,296,376,456], COLX={A:180,M:480,B:780}, COLW={A:250,M:214,B:250}, BH=54, SPEED=470;
+const NS='http://www.w3.org/2000/svg';
+const LAYER=['u','u','u','k','h'];
+const DEF={
+ A0:['Application','publish(msg)'],A1:['rmw + typesupport','serialize → CDR'],A2:['Fast DDS 3.6','RTPS writer'],A3:['Kernel','sendmsg → UDP → IP'],A4:['NIC driver','r8169 · TX ring'],
+ B0:['Application','callback(msg)'],B1:['rmw + typesupport','deserialize'],B2:['Fast DDS 3.6','RTPS reader'],B3:['Kernel','socket queue → recvmsg'],B4:['NIC driver','IRQ → NAPI → GRO']};
+const HEAD={process:['Node A','Node B','process เดียวกัน'],host:['Process A · talker','Process B · listener','เครื่องเดียวกัน'],network:['Host A · talker','Host B · listener','ข้ามเครื่อง']};
+const GROUPS=[['process','ใน process เดียว'],['host','เครื่องเดียว ข้าม process'],['network','ข้ามเครื่อง']];
+const TAG={m:'วัดจริง',c:'จากโค้ด',e:'ประมาณการ',k:'ความรู้ทั่วไป'};
+
+function pt(k){if(k==='WA')return{x:COLX.A,y:ROWY[5]};if(k==='WB')return{x:COLX.B,y:ROWY[5]};return{x:COLX[k[0]],y:ROWY[+k[1]]};}
+function plen(p){let s=0;for(let i=1;i<p.length;i++){const a=pt(p[i-1]),b=pt(p[i]);s+=Math.hypot(b.x-a.x,b.y-a.y);}return s;}
+function trip(p,k,t,o){return Object.assign({p:p,k:k,t:t,d:Math.max(.6,plen(p)/SPEED)},o||{});}
+const end=tr=>tr.t+tr.d;
+
+const FULL=['A0','A1','A2','A3','A4','WA','WB','B4','B3','B2','B1','B0'];
+const TO_B3=['A0','A1','A2','A3','A4','WA','WB','B4','B3'];
+const MW=['A2','A3','A4','WA','WB','B4','B3','B2'];
+const NACK=['B2','B3','B4','WB','WA','A4','A3','A2'];
+const RESEND=['A2','A3','A4','WA','WB','B4','B3','B2','B1','B0'];
+
+const MODES=[
+{id:'intra',group:'process',name:'Intra-process',
+ summary:'publisher และ subscriber อยู่ใน process เดียวกัน rclcpp ส่ง unique_ptr ผ่าน IntraProcessManager ตรงไปยัง buffer ของ subscription โดยไม่ผ่าน rmw, middleware และ kernel',
+ labels:{A0:['rclcpp · Node A','publish(unique_ptr)'],B0:['rclcpp · Node B','callback(msg)']},
+ middle:{M0:['IntraProcessManager','pointer → ring buffer','m-user']},
+ copies:{},kv:[['0','copy ของ payload'],['0','syscall ต่อข้อความ'],['ไม่เห็น','บน tcpdump']],
+ trips:()=>[0,1,2].map(i=>trip(['A0','M0','B0'],'data',i*.9,{count:true})),
+ steps:[['A0','publish() ด้วย unique_ptr','ไม่มีการ serialize ข้อมูลยังอยู่ใน heap ที่เดิม'],['M0','IntraProcessManager','หา subscription ใน process เดียวกันแล้วย้าย pointer เข้า ring buffer ของ subscription นั้น'],['B0','callback ของ Node B','executor ปลุก callback ได้ message ตัวเดิม ถ้ามี subscriber หลายตัวที่ต้องการ ownership จะมี copy เพิ่ม']],
+ facts:[['copy ของ payload','0 (ส่ง pointer)','k'],['tracepoint','ไม่ผ่าน rmw จึงไม่มี rmw_publish ใน ros2_tracing','k'],['เงื่อนไข','อยู่ process เดียวกันและเปิด use_intra_process_comms; QoS บางแบบใช้ไม่ได้','k'],['วิธีที่ไม่ต้องแก้โค้ด node','composition: โหลดหลาย node เข้า component container เดียว','k']],
+ enable:'ros2 run rclcpp_components component_container \\\n  --ros-args -p use_intra_process_comms:=true\nros2 component load /ComponentManager composition composition::Talker\nros2 component load /ComponentManager composition composition::Listener',
+ observe:'# tcpdump จะเห็นแค่ discovery ไม่เห็น DATA ของ topic นี้\nsudo tcpdump -i any -n \'udp portrange 7400-7500\'',
+ cmp:['0','ไม่ผ่าน','ไม่เห็น','เปิด intra-process / composition']},
+
+{id:'udp-loopback',group:'host',name:'UDP loopback',
+ summary:'บังคับให้ Fast DDS ใช้ UDP อย่างเดียว ข้อมูลลงไปถึง kernel แล้ววิ่งผ่าน interface lo ขึ้นมาอีกฝั่ง ผ่าน network stack ครบทั้งชุดแต่ไม่ผ่าน NIC เหมาะเป็น baseline ในการวัด',
+ middle:{M3:['lo (loopback)','ไม่ผ่าน NIC','m-kern']},
+ copies:{A1:1,A3:2,B3:3,B1:4},kv:[['≈ 4','copy ของ payload'],['2','syscall ต่อ datagram (ส่ง)'],['เห็น','tcpdump -i lo']],
+ trips:()=>[0,1,2].map(i=>trip(['A0','A1','A2','A3','M3','B3','B2','B1','B0'],'data',i*1.1,{count:true})),
+ steps:[['A1','serialize เป็น CDR','copy ที่ 1: message → CDR buffer'],['A2','Fast DDS ประกอบ RTPS','RTPS header + INFO_TS + DATA'],['A3','setsockopt + sendmsg','ฝั่งส่งเรียก 2 syscall ต่อ datagram; copy ที่ 2: copy_from_user เข้า sk_buff'],['M3','วนผ่าน lo','ผ่าน UDP/IP ทั้งขาออกและขาเข้า แต่ไม่ถึง driver'],['B3','socket queue → recvmsg','copy ที่ 3: copy_to_user'],['B1','deserialize','copy ที่ 4: CDR → message']],
+ facts:[['copy ของ payload','≈ 4','k'],['syscall ฝั่งส่ง','setsockopt(SO_SNDTIMEO) + sendmsg ต่อ datagram','c'],['ปลายทาง','UDP 7411 = 7400 + 250·domain + 11 + 2·participantId','c'],['การใช้งาน','baseline สำหรับเทียบกับ SHM และวัดต้นทุนของ kernel path','k']],
+ enable:'export FASTDDS_BUILTIN_TRANSPORTS=UDPv4   # ปิด SHM ใช้ UDP อย่างเดียว',
+ observe:'sudo tcpdump -i lo -w lo.pcap \'udp portrange 7400-7500\'\nsudo strace -f -e trace=sendmsg,setsockopt -p $(pgrep -f talker)',
+ cmp:['≈ 4','ผ่าน (lo)','เห็น (-i lo)','FASTDDS_BUILTIN_TRANSPORTS=UDPv4']},
+
+{id:'fastdds-shm',group:'host',name:'Fast DDS SHM',
+ summary:'ค่าเริ่มต้นของ Fast DDS เมื่อสอง process อยู่เครื่องเดียวกัน ผู้ส่ง memcpy ข้อมูลลง segment ใน /dev/shm ครั้งเดียวแล้ววาง descriptor ลง ring buffer ของ port ผู้รับ ส่วน discovery ยังวิ่งผ่าน UDP',
+ middle:{M2:['/dev/shm','fastdds_<uuid> · 512 KiB','m-shm'],M3:['UDP','discovery เท่านั้น','m-ctrl']},
+ copies:{A1:1,A2:2,B1:3},kv:[['≈ 3','copy ของ payload'],['0','DATA บนเครือข่าย'],['512 KiB','segment ต่อ participant']],
+ trips:()=>{const o=[trip(['A2','A3','M3','B3','B2'],'ctrl',0,{label:'SPDP/SEDP'})];[0,1,2].forEach(i=>o.push(trip(['A0','A1','A2','M2','B2','B1','B0'],'data',1.6+i*1,{count:true})));return o;},
+ steps:[['A1','serialize เป็น CDR','copy ที่ 1'],['A2','SharedMemTransport::send','copy ที่ 2: memcpy ลง segment ของผู้ส่งครั้งเดียว ไม่ว่ามีผู้รับกี่ port'],['M2','descriptor ลง port ring buffer','fastdds_port7411 เก็บ {segment, offset, validity}; ปลุกผู้รับด้วย semaphore'],['B2','thread dds.shm.<port>','อ่าน descriptor แล้วชี้ไปที่ข้อมูลใน segment'],['B1','deserialize','copy ที่ 3'],['M3','discovery ยังใช้ UDP','SPDP/SEDP ไม่ผ่าน SHM']],
+ facts:[['DATA บนสาย','capture ทุก interface ไม่พบ DATA ของ rt/chatter เลย มีแต่ DATA(p) 40, DATA(w) 21, DATA(r) 17, HEARTBEAT/ACKNACK 28','m'],['/dev/shm ระหว่างรัน','fastdds_<uuid> 549 408 B ต่อ participant, fastdds_port7411 52 400 B','m'],['thread','dds.udp.<port>, dds.shm.<port>, dds.shm.wdog, dds.ev.0','m'],['segment เต็ม','ทิ้งเงียบ ไม่คืน error ให้ผู้ส่ง','c'],['ข้อความ > 65 500 B','ยังถูกตัดเป็น DATA_FRAG เหมือน UDP','c']],
+ enable:'# ค่าเริ่มต้น ไม่ต้องตั้งอะไร ขอแค่อยู่เครื่องเดียวกัน\n# ใน Docker ต้องให้สอง container เห็น /dev/shm เดียวกัน (เช่น --ipc=host)',
+ observe:'ls -la /dev/shm | grep fastdds\nps -eLo comm | grep \'^dds\\.\' | sort | uniq -c\nfastdds shm clean      # ล้าง segment ที่ค้างหลัง process crash',
+ cmp:['≈ 3','ไม่ผ่าน (discovery ผ่าน)','ไม่เห็น','ไม่ต้อง (default)']},
+
+{id:'zenoh-shm',group:'host',name:'Zenoh SHM',
+ summary:'rmw_zenoh มี SHM แต่ปิดไว้เป็นค่าเริ่มต้น ต้องเปิดทั้งสองฝั่ง ข้อความตั้งแต่ 512 B ขึ้นไปจะ serialize ลง buffer ที่จองจาก SHM pool โดยตรง และ node ต้องหากันผ่าน router rmw_zenohd',
+ labels:{A2:['Zenoh session','peer · put()'],B2:['Zenoh session','subscriber']},
+ middle:{M1:['rmw_zenohd','router · discovery','m-ctrl'],M2:['/dev/shm','SHM pool 48 MiB','m-shm']},
+ copies:{A1:1,B1:2},kv:[['≈ 2','copy ของ payload'],['≥ 512 B','ข้อความที่ย้ายเข้า SHM'],['ปิด','ค่าเริ่มต้น']],
+ trips:()=>{const o=[trip(['A2','M1','B2'],'ctrl',0,{label:'liveliness'})];[0,1,2].forEach(i=>o.push(trip(['A0','A1','A2','M2','B2','B1','B0'],'data',1.3+i*1,{count:true})));return o;},
+ steps:[['M1','หากันผ่าน router','multicast scouting ปิดไว้ node จึงต้องรู้จักกันผ่าน liveliness token ที่ router กระจาย'],['A1','serialize ลง SHM โดยตรง','copy ที่ 1: จองจาก SHM provider แล้ว serialize ลงไป ถ้าจองไม่ได้จะกลับไปใช้ memory ปกติ'],['M2','ส่งแค่ reference','ข้อมูลจริงอยู่ใน pool ที่สองฝั่ง map ไว้'],['B1','deserialize','copy ที่ 2']],
+ facts:[['ค่าเริ่มต้น','shared_memory.enabled: false (“disabled by default until fully tested”)','c'],['threshold / pool','512 B / 48 MiB','c'],['ข้อบังคับ','ต้องเปิดทั้งสองฝั่ง เพราะมีขั้น probing ตอนเปิด session','c'],['สถานะการทดลอง','ยังไม่ได้วัดในภาค 3','k']],
+ enable:'ros2 run rmw_zenoh_cpp rmw_zenohd &\nexport RMW_IMPLEMENTATION=rmw_zenoh_cpp\nexport ZENOH_CONFIG_OVERRIDE=\'transport/shared_memory/enabled=true\'',
+ observe:'ls -la /dev/shm\nsudo tcpdump -i lo -n tcp    # เห็นแค่ control traffic ไม่เห็น payload ใหญ่',
+ cmp:['≈ 2','ไม่ผ่าน (control ผ่าน TCP)','ไม่เห็น payload','router + ZENOH_CONFIG_OVERRIDE']},
+
+{id:'loaned',group:'host',name:'Loaned + data-sharing',
+ summary:'ขอ sample จาก middleware ด้วย borrow_loaned_message() แล้วเขียนลงไปตรง ๆ ผู้รับอ่านจาก memory เดียวกันโดยไม่ serialize ใช้ได้เฉพาะ type ขนาดคงที่ และใน Lyrical data-sharing ของ rmw_fastrtps ถูกปิดไว้เป็นค่าเริ่มต้น',
+ labels:{A0:['Application','borrow_loaned_message()'],A2:['Fast DDS writer','data-sharing'],B2:['Fast DDS reader','notification'],B0:['Application','callback(loaned)']},
+ middle:{M2:['data-sharing pool','fast_datasharing_…','m-shm']},
+ copies:{},kv:[['0','copy ของ payload'],['plain','type เท่านั้น'],['ปิด','ค่าเริ่มต้นใน rmw']],
+ trips:()=>[0,1,2].map(i=>trip(['A0','A2','M2','B2','B0'],'data',i*1,{count:true})),
+ steps:[['A0','ยืม sample','เขียนค่าลง memory ที่อยู่ใน pool ของ writer อยู่แล้ว ข้ามขั้น serialize'],['A2','writer แจ้ง reader','new_data = true แล้ว notify_all'],['M2','pool ที่แชร์กัน','reader อ่านจาก segment เดียวกัน ไม่ส่ง fragment'],['B0','callback','ได้ sample ที่ยืมมา คืนให้ pool เมื่อใช้เสร็จ']],
+ facts:[['copy ของ payload','0','k'],['type','plain/bounded เท่านั้น ไม่มี string หรือ sequence แบบ unbounded','c'],['ค่าเริ่มต้นใน Lyrical','rmw_fastrtps_cpp สั่ง data_sharing().off() ทั้ง writer และ reader ถ้าไม่ตั้ง RMW_FASTRTPS_USE_QOS_FROM_XML','c'],['fragment','data-sharing ไม่ส่ง fragment','c'],['Cyclone DDS','ใช้ iceoryx ต้องรัน iox-roudi','k']],
+ enable:'export RMW_FASTRTPS_USE_QOS_FROM_XML=1\nexport FASTDDS_DEFAULT_PROFILES_FILE=datasharing.xml\n# XML: ตั้ง data_sharing ของ writer/reader เป็น AUTOMATIC',
+ observe:'ls -la /dev/shm | grep fast_datasharing',
+ cmp:['0','ไม่ผ่าน','ไม่เห็น','XML + type ขนาดคงที่']},
+
+{id:'buffer',group:'host',name:'rosidl::Buffer (CUDA)',
+ summary:'ใหม่ใน Lyrical: ฟิลด์ uint8[] กลายเป็น rosidl::Buffer ถ้า backend (เช่น CUDA) ของสองฝั่งรับกันได้ rmw ส่งเฉพาะ descriptor ไม่เกิน 4 096 B ผ่านทางปกติ ส่วนข้อมูลจริงอยู่ใน GPU memory และเปิดได้ผ่าน CUDA IPC',
+ middle:{M1:['GPU memory','CUDA IPC handle','m-gpu'],M2:['SHM / UDP','descriptor ≤ 4 KB','m-shm']},
+ copies:{},kv:[['0','copy ผ่าน host'],['≤ 4096 B','descriptor'],['topic','เท่านั้น']],
+ trips:()=>{const o=[];[0,1].forEach(i=>{o.push(trip(['A0','M1','B0'],'gpu',i*2,{label:'payload'}));o.push(trip(['A0','A1','A2','M2','B2','B1','B0'],'data',i*2,{label:'descriptor',count:true}));});return o;},
+ steps:[['A2','ตอน discovery','backend ได้ hook on_creating_endpoint / on_discovering_endpoint เพื่อตัดสินว่า peer คู่นี้ใช้ช่องทางของตัวเองได้หรือไม่'],['A1','สร้าง descriptor','create_descriptor_with_endpoint() แล้ว serialize descriptor ลงตำแหน่งของฟิลด์ uint8[]'],['M1','payload อยู่ใน GPU','ไม่ผ่าน kernel socket path เลย'],['B1','ประกอบกลับ','from_descriptor_with_endpoint() เปิด CUDA IPC handle; ถ้า backend คืน nullptr จะกลับไป serialize แบบ CPU']],
+ facts:[['RMW ที่รองรับ','rmw_fastrtps_cpp และ rmw_zenoh_cpp','c'],['ขนาด descriptor','≤ rosidl::kMaxBufferDescriptorSize = 4096 B','c'],['ช่องทางบนสาย','กลุ่ม CPU ใช้ <topic>/_buf_cpu (เห็นจริงเป็น rt/img/_buf_cpu); backend อื่นได้ /_buf/<gid> ของตัวเอง','m'],['ข้อจำกัด','ใช้กับ topic เท่านั้น service และ action ยัง serialize ปกติ','c']],
+ enable:'# ต้องติดตั้ง backend plugin (เช่น CUDA) ทั้งสองฝั่ง\n# และใช้ type ที่มี uint8[] เช่น tensor_msgs/msg/ExperimentalTensor',
+ observe:'tshark -r cap.pcap -Y \'rtps.param.topicName contains "_buf"\' \\\n  -T fields -e rtps.param.topicName | sort -u',
+ cmp:['0 ผ่าน host','descriptor เท่านั้น','เห็นแค่ descriptor','backend plugin']},
+
+{id:'dds-udp',group:'network',name:'DDS UDP ข้อความเล็ก',
+ summary:'demo talker ส่ง "Hello World: 1" ข้าม host ด้วย Fast DDS ค่าเริ่มต้น เริ่มจาก discovery (SPDP multicast แล้ว SEDP unicast) จากนั้นจึงส่ง DATA แบบ unicast ไปที่ port 7411 หนึ่ง sample เป็น frame ขนาด 198 B',
+ copies:{A1:1,A3:2,B4:3,B3:4,B1:5},kv:[['198 B','ต่อ sample'],['3.3%','ของ traffic เป็นข้อมูลจริง'],['15–150 µs','latency (ประมาณการ)']],
+ trips:()=>{const o=[trip(MW,'ctrl',0,{label:'SPDP 239.255.0.1'}),trip(MW,'ctrl',1.1,{label:'SEDP'})];[0,1,2].forEach(i=>o.push(trip(FULL,'data',2.6+i*1,{count:true})));return o;},
+ steps:[['A2','discovery','SPDP DATA(p) 610 B ทาง multicast ทุก 3 s แล้วแลก endpoint ด้วย SEDP แบบ reliable unicast'],['A1','serialize','copy ที่ 1: CDR 24 B'],['A2','ประกอบ RTPS','RTPS 20 + INFO_DST 16 + INFO_TS 12 + DATA 24 + statistics 60'],['A3','sendmsg','copy ที่ 2: copy_from_user + checksum'],['B4','r8169 รับ','copy ที่ 3: driver copy ทุก packet ไป skb ใหม่'],['B3','socket queue','copy ที่ 4 ตอน recvmsg ใน thread dds.udp.7411'],['B1','deserialize → callback','copy ที่ 5 หลัง wakeup ครั้งที่ 2']],
+ facts:[['frame','198 B = Eth 14 + IP 20 + UDP 8 + RTPS 20 + INFO_DST 16 + INFO_TS 12 + DATA 24 + CDR 24 + statistics 60','m'],['traffic 14 วินาที','137 RTPS frame, 53 434 B; SPDP 36.5%, SEDP 30.3%, ข้อมูล chatter 3.3%','m'],['type บนสาย','example_interfaces::msg::dds_::String_','m'],['privacy','SPDP ส่งชื่อผู้ใช้และ PID ทาง multicast','m'],['latency','≈ 15–150 µs ส่วนใหญ่เป็นเวลา wakeup 2 ครั้งและ interrupt coalescing','e']],
+ enable:'# ค่าเริ่มต้น เครื่องต้องอยู่ subnet เดียวกันและ multicast ผ่านได้\nexport ROS_DOMAIN_ID=0',
+ observe:'sudo tcpdump -i eth0 -w chatter.pcap \'udp portrange 7400-7500\'\ntshark -r chatter.pcap -Y \'rtps.sm.id == 0x15\' -V | less',
+ cmp:['5 (r8169)','ผ่าน','เห็น','ไม่ต้อง (default)']},
+
+{id:'image-reliable',group:'network',name:'ภาพ RELIABLE',
+ summary:'ภาพ 640×480 rgb8 (sample 921 648 B) แบบ RELIABLE Fast DDS ตัดเป็น 15 DATA_FRAG ก้อนละ 65 324 B แต่ละก้อนเป็น UDP datagram ที่ IP แตกต่อเป็น 45 fragment เมื่อ kernel ฝั่งรับทิ้งบางก้อน reader ส่ง NACK_FRAG ขอเฉพาะ fragment ที่ขาด',
+ copies:{A1:1,A3:2,B4:3,B3:4,B2:5,B1:6},kv:[['5/5','ภาพที่ได้รับ'],['23','RcvbufErrors'],['+29%','traffic จากการส่งซ้ำ']],
+ counterLabel:'ภาพที่ได้รับ',total:()=>5,
+ trips:()=>{const o=[];const bad=[0,1,4];for(let i=0;i<5;i++){const t=i*1.5;if(bad.includes(i)){const a=trip(TO_B3,'data',t,{drop:true,label:'DATA_FRAG'});const n=trip(NACK,'ctrl',end(a)+.15,{label:'NACK_FRAG'});const r=trip(RESEND,'data',end(n)+.1,{count:true,label:'ส่งซ้ำ'});o.push(a,n,r);}else o.push(trip(FULL,'data',t,{count:true}));}return o;},
+ steps:[['A2','ตัดเป็น DATA_FRAG','15 ก้อน ก้อนละ 65 324 B (หัก statistics 60 B แล้ว)'],['A3','IP fragmentation','UDP datagram 65 476 B แตกเป็น 45 fragment ที่ MTU 1500 รวม ≈ 635 frame ต่อภาพ'],['B3','socket buffer เต็ม','datagram บางก้อนถูกทิ้งที่ __udp_enqueue_schedule_skb'],['B2','NACK_FRAG','reader ขอ fragment ที่ขาด เช่น frame 749: bitmapBase 4, numBits 3, bitmap 00 00 00 e0 = fragment 4, 5, 6'],['A2','ส่งซ้ำ','writer รอ nack_response_delay 5 ms แล้วส่ง DATA_FRAG ที่ขอใหม่'],['B2','ประกอบภาพ','copy ที่ 5: memcpy fragment ลง CacheChange']],
+ facts:[['ต่อภาพ','15 DATA_FRAG × 45 IP fragment','m'],['ผล','ได้ครบ 5/5 แต่ RcvbufErrors = 23, ReasmOKs = 97, NACK_FRAG 4 ครั้ง','m'],['การส่งซ้ำ','DATA_FRAG ต่อภาพ 18, 21, 15, 15, 28 (ส่งซ้ำ 3 + 6 + 13 = 22 ก้อน; 75 + 22 = 97 ตรงกับ ReasmOKs) → traffic เพิ่ม ≈ 29%','m'],['ชื่อ topic บนสาย','rt/img/_buf_cpu ไม่ใช่ rt/img','m'],['ตัวขยาย','IP fragment หาย 1 ชิ้น ต้องส่งซ้ำทั้ง datagram 45 ชิ้น','c']],
+ enable:'# QoS ฝั่ง publisher\nQoSProfile(depth=5, reliability=ReliabilityPolicy.RELIABLE)',
+ observe:'tshark -r exp2_image_reliable.pcap -Y \'rtps.sm.id==0x16\' \\\n  -T fields -e rtps.sm.seqNumber | sort | uniq -c\nnstat -az | grep -E \'UdpRcvbufErrors|ReasmOKs\'',
+ cmp:['6 (r8169)','ผ่าน + IP fragment','เห็น','ไม่ต้อง (ควรเพิ่ม rcvbuf)']},
+
+{id:'image-besteffort',group:'network',name:'ภาพ BEST_EFFORT',
+ summary:'ภาพเดิม 20 ภาพแบบ BEST_EFFORT ไม่มีการขอซ้ำ ถ้า socket buffer ฝั่งรับเต็มแม้ datagram เดียว ภาพนั้นหายทั้งภาพ tcpdump เห็น fragment ครบทุกภาพ เพราะ kernel ทิ้งตอนใส่ socket queue ซึ่งอยู่หลังจุดที่ tcpdump มองเห็น ลองสลับขนาด buffer ด้านบน',
+ variants:[['default','SO_RCVBUF ค่าเริ่มต้น'],['big','XML 4 MiB']],
+ copies:{A1:1,A3:2,B4:3,B3:4,B2:5,B1:6},
+ kvv:{default:[['13/20','ภาพที่ได้รับ'],['45','RcvbufErrors'],['rb212992','SO_RCVBUF จริง']],big:[['20/20','ภาพที่ได้รับ'],['0','RcvbufErrors'],['rb8388608','SO_RCVBUF จริง']]},
+ counterLabel:'ภาพที่ได้รับ',total:()=>20,
+ trips:v=>{const o=[];const lost=v==='big'?[]:[2,5,8,10,13,16,18];for(let i=0;i<20;i++){const t=i*.42;o.push(lost.includes(i)?trip(TO_B3,'data',t,{drop:true}):trip(FULL,'data',t,{count:true}));}return o;},
+ steps:[['A3','ส่ง 15 datagram ต่อภาพ','ทุก fragment ออกจากเครื่อง A ครบ'],['B4','tcpdump เห็นครบ','AF_PACKET tap อยู่ก่อนถึง IP stack'],['B3','ทิ้งที่ socket queue','sk_rcvbuf 212 992 B นับตาม truesize รับ datagram 65 KB ได้แค่ 1–2 ก้อน ถ้า thread dds.udp อ่านไม่ทันก้อนต่อไปถูกทิ้ง'],['B2','reader ทิ้งทั้งภาพ','BEST_EFFORT ไม่มี NACK_FRAG เมื่อ fragment ของ SN ใหม่มาถึง sample ที่ไม่ครบจะถูกทิ้ง']],
+ facts:[['ค่าเริ่มต้น','SO_RCVBUF rb212992 → ได้ 13/20 (หาย 35%), RcvbufErrors 45','m'],['XML receiveBufferSize 4 MiB','SO_RCVBUF rb8388608 (kernel คูณ 2) → ได้ 20/20, RcvbufErrors 0','m'],['ความซ้ำได้','รันซ้ำ 2 รอบได้ตัวเลขเดิมทุกตัว','m'],['สาเหตุ','buffer ฝั่งรับ ไม่ใช่เครือข่าย เพราะ capture เห็น DATA_FRAG 15/15 ทุกภาพ','m']],
+ enable:'sudo sysctl -w net.core.rmem_max=2147483647\nexport FASTDDS_DEFAULT_PROFILES_FILE=bigbuf.xml   # receiveBufferSize 4194304',
+ observe:'ss -uamp | grep -A1 7411          # ดู rb<ขนาด>\nnstat -az | grep UdpRcvbufErrors\nsudo bpftrace -e \'tracepoint:skb:kfree_skb { @[args->reason] = count(); }\'',
+ cmp:['6 (r8169)','ผ่าน + IP fragment','เห็นครบ แต่แอปได้ไม่ครบ','เพิ่ม rmem_max / XML']},
+
+{id:'zenoh-tcp',group:'network',name:'Zenoh TCP',
+ summary:'rmw_zenoh ข้าม host: node หากันผ่าน router (rmw_zenohd :7447) จากนั้น session ของ talker เปิด TCP ตรงไปหา listener ข้อมูลจึงไม่ผ่าน router หนึ่ง sample เป็น frame 161 B',
+ labels:{A2:['Zenoh session','put() + attachment'],A3:['Kernel','send → TCP → IP'],B3:['Kernel','TCP → socket → recv'],B2:['Zenoh session','subscriber']},
+ middle:{M2:['rmw_zenohd','router :7447 · discovery','m-ctrl']},
+ copies:{A1:1,A3:2,B4:3,B3:4,B1:5},kv:[['161 B','ต่อ sample'],['−37 B','สั้นกว่า RTPS'],['1 segment','ส่งซ้ำเมื่อหาย']],
+ trips:()=>{const o=[trip(['A2','M2'],'ctrl',0,{label:'liveliness'}),trip(['M2','B2'],'ctrl',.7,{label:'gossip'})];[0,1,2].forEach(i=>o.push(trip(FULL,'data',1.8+i*1,{count:true})));return o;},
+ steps:[['M2','discovery ผ่าน router','liveliness token แทน SPDP/SEDP'],['A2','put()','CDR 23 B + attachment 33 B (sequence 8 + timestamp 8 + ความยาว GID 1 + GID 16)'],['A3','TCP ตรงถึง listener','เปิด connection peer-to-peer ไม่ผ่าน router; ตั้ง TCP_NODELAY'],['B3','TCP stream','payload ขึ้นต้นด้วย 5d 00 = ความยาว batch 93 B แบบ u16 little-endian'],['B1','deserialize → callback','']],
+ facts:[['frame','161 B = Eth 14 + IP 20 + TCP 32 + Zenoh 95','m'],['เส้นทางข้อมูล','ไม่ผ่าน router (172.20.0.4 → 172.20.0.3 ตรง)','m'],['attachment','33 B ตรงตามที่วิเคราะห์จากโค้ด','m'],['เมื่อ packet หาย','TCP ส่งซ้ำ 1 segment (1 448 B) ไม่ใช่ 45 frame แต่ทุก topic ใน session รอกัน (head-of-line blocking)','k']],
+ enable:'ros2 run rmw_zenoh_cpp rmw_zenohd        # บนเครื่อง router\nexport RMW_IMPLEMENTATION=rmw_zenoh_cpp\nexport ZENOH_CONFIG_OVERRIDE=\'connect/endpoints=["tcp/<router-host>:7447"]\'',
+ observe:'sudo tcpdump -i eth0 -w zenoh.pcap tcp\ntshark -r zenoh.pcap -Y \'tcp.len > 0\' -x | head -40',
+ cmp:['5 (r8169)','ผ่าน (TCP)','เห็น','router + RMW_IMPLEMENTATION']}
+];
+
+const PKT={
+'dds-udp':{src:'exp1_fastdds_default.pcap · frame 95 · sample แรกของ talker (198 B)',hex:'621b4b57a2ac428de7ceea360800450000b8102940004011d1deac140003ac140002b04f1cf300a458e3525450530203010f010f11311a00bc0d000000000e010c00010f2c171d001c480000000009010800b158056b6388858b15052c000000100000001304000013030000000001000000000100000f00000048656c6c6f20576f726c643a203100008001380001000000f31c0000000000000000000000000000ac140002b158056b0749888b050000000000000094020000000000000000000000000000',
+ reg:[[0,14,'h','Ethernet II','MAC ปลายทาง/ต้นทาง, EtherType 08 00'],[14,34,'k','IPv4','172.20.0.3 → 172.20.0.2, DF, TTL 64, protocol 17'],[34,42,'k2','UDP','45135 → 7411 (1c f3), length 164'],[42,62,'u','RTPS header','"RTPS" v2.3, vendor 01.0f (eProsima), guidPrefix ของ talker'],[62,78,'c2','INFO_DST','guidPrefix ของ listener'],[78,90,'c','INFO_TS','source timestamp'],[90,114,'c2','DATA header','reader 00.00.13.04, writer 00.00.13.03, SN 1'],[114,138,'p','CDR payload','00 01 = CDR_LE, ความยาว 15, "Hello World: 1\\0" + pad 1'],[138,198,'s','statistics 0x80','submessage ของ Fast DDS ติดมาทุก message เพราะ build ด้วย FASTDDS_STATISTICS']]},
+'zenoh-tcp':{src:'exp3_zenoh.pcap · frame 142 · sample เดียวกันผ่าน rmw_zenoh (161 B)',hex:'8a93a7c1ebd78e97af366eeb0800450000931be840004006c64dac140004ac1400038ad9dfb4af3653927ebbcc0a8018003f58b500000101080a9a1bdd86918a6f175d0025e791b6081d02a190d2eae8aaaed6826b10247ccf5df0b051a84ea782d19cf6f2f94321010000000000000069be757547f1ea1810c589fb05d436e0a1d63d5687be4225fe17000100000f00000048656c6c6f20576f726c643a203100',
+ reg:[[0,14,'h','Ethernet II',''],[14,34,'k','IPv4','172.20.0.4 → 172.20.0.3, protocol 6 (TCP)'],[34,66,'k2','TCP','header 20 + timestamp option 12, flags PSH ACK'],[66,68,'u','length prefix','5d 00 = batch ยาว 93 B (u16 little-endian)'],[68,103,'c','Zenoh FRAME · PUSH · PUT','header 3 ชั้น, key id, timestamp (แยก field ด้วยมือ ยังไม่ได้ตรวจกับ dissector)'],[103,137,'c2','attachment','21 = 33 B: sequence 1 (8) + timestamp (8) + ความยาว GID 10 + GID 16 B'],[137,138,'s','payload length','17 = 23 (varint)'],[138,161,'p','CDR payload','00 01 = CDR_LE, ความยาว 15, "Hello World: 1\\0" ไม่มี pad']]},
+'image-reliable':{src:'exp2_image_reliable.pcap.gz · frame 749 · listener ขอ fragment ที่ขาด (202 B)',hex:'6aae8bc47d0882cd04d3f6270800450000bcc84f4000401119b4ac140002ac140003bf3e1cf300a858e7525450530203010f010f2c17180027ac000000000e010c00010f11311500433b0000000012012000000014040000140300000000010000000400000003000000000000e001000000060318000000140400001403000000000100000000000000020000008001380001000000f31c0000000000000000000000000000ac1400031759056b92fcc475060000000000000010030000000000000000000000000000',
+ reg:[[0,14,'h','Ethernet II',''],[14,34,'k','IPv4','172.20.0.2 (listener) → 172.20.0.3 (talker)'],[34,42,'k2','UDP','→ 7411'],[42,62,'u','RTPS header','guidPrefix ของ listener'],[62,78,'c2','INFO_DST','guidPrefix ของ talker'],[78,114,'c','NACK_FRAG','writer 00.00.14.03, SN 1, bitmapBase 4, numBits 3, bitmap 00 00 00 e0 → ขอ fragment 4, 5, 6'],[114,142,'c2','ACKNACK','flags 03 (Final), bitmapBase 1, numBits 0, count 2'],[142,202,'s','statistics 0x80','']]}
+};
+const PNOTE={intra:'ไม่มี packet: ข้อมูลไม่ออกจาก process','udp-loopback':'ยังไม่ได้ capture แบบนี้ บน lo จะเห็น RTPS แบบเดียวกับ “DDS UDP ข้อความเล็ก” แต่ IP เป็น 127.0.0.1 และ MAC เป็นศูนย์','fastdds-shm':'ไม่มี DATA บนเครือข่าย (การทดลองที่ 4) มีแค่ packet ของ discovery','zenoh-shm':'ไม่มี payload บนเครือข่าย ยังไม่ได้ capture แบบนี้','loaned':'ไม่มี packet ของข้อมูล ทุกอย่างอยู่ใน shared memory','buffer':'บนสายมีแค่ descriptor ยังไม่ได้ capture backend CUDA','image-besteffort':'DATA_FRAG หน้าตาเหมือนแบบ “ภาพ RELIABLE” แต่ไม่มี NACK_FRAG ตอบกลับ เปิดแบบนั้นเพื่อดู packet'};
+function renderPkt(){
+  const p=PKT[mode.id],body=document.getElementById('pktbody'),src=document.getElementById('pktsrc');
+  if(!p){src.textContent=PNOTE[mode.id]||'';body.innerHTML='';return;}
+  src.textContent=p.src;
+  const by=p.hex.match(/../g),ri=new Array(by.length);p.reg.forEach((r,i)=>{for(let j=r[0];j<r[1];j++)ri[j]=i;});
+  let h='<div class="hex">';
+  for(let o=0;o<by.length;o+=16){h+='<div class="row"><span class="off">'+o.toString(16).padStart(4,'0')+'</span>';
+    for(let j=o;j<Math.min(o+16,by.length);j++){const r=p.reg[ri[j]];h+='<span class="b r-'+r[2]+'" data-r="'+ri[j]+'">'+by[j]+'</span>'+(j%16===7?'  ':' ');}h+='</div>';}
+  h+='</div><div class="tbl"><table class="reg"><tbody>'+p.reg.map((r,i)=>'<tr tabindex="0" data-r="'+i+'"><td><i class="sw r-'+r[2]+'"></i></td><td class="mono">'+r[0]+'–'+(r[1]-1)+'</td><td class="mono">'+(r[1]-r[0])+' B</td><td><b>'+esc(r[3])+'</b>'+(r[4]?'<br><span class="pnote">'+esc(r[4])+'</span>':'')+'</td></tr>').join('')+'</tbody></table></div>';
+  body.innerHTML=h;
+  body.querySelectorAll('.reg tr').forEach(tr=>{const set=v=>body.querySelectorAll('.b[data-r="'+tr.dataset.r+'"]').forEach(b=>b.classList.toggle('on',v));
+    tr.addEventListener('mouseenter',()=>set(true));tr.addEventListener('mouseleave',()=>set(false));tr.addEventListener('focus',()=>set(true));tr.addEventListener('blur',()=>set(false));});
+}
+const $=id=>document.getElementById(id);
+const svg=$('svg');
+let mode=MODES[0], variant=null, trips=[], T=1, dots=[], xms=[], startMs=0, paused=false, tau=0;
+const reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function el(tag,attrs,parent){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(parent)parent.appendChild(e);return e;}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+function buildPicker(){
+  const nav=$('picker');
+  GROUPS.forEach(([g,label])=>{
+    const d=document.createElement('div');d.className='group';
+    d.innerHTML='<h3>'+label+'</h3><div class="chips"></div>';
+    const chips=d.querySelector('.chips');
+    MODES.filter(m=>m.group===g).forEach(m=>{
+      const b=document.createElement('button');b.type='button';b.className='chip';b.textContent=m.name;b.dataset.id=m.id;
+      b.addEventListener('click',()=>{location.hash=m.id;});
+      chips.appendChild(b);
+    });
+    nav.appendChild(d);
+  });
+  const tb=$('cmp');
+  MODES.forEach(m=>{
+    const tr=document.createElement('tr');tr.dataset.id=m.id;tr.tabIndex=0;
+    const scope=GROUPS.find(g=>g[0]===m.group)[1];
+    const k=m.cmp[1];const kc=k.startsWith('ไม่ผ่าน')?'no':(k.startsWith('descriptor')?'part':'yes');
+    tr.innerHTML='<td>'+esc(m.name)+'</td><td>'+scope+'</td><td class="mono">'+esc(m.cmp[0])+'</td><td class="'+kc+'">'+esc(k)+'</td><td>'+esc(m.cmp[2])+'</td><td>'+esc(m.cmp[3])+'</td>';
+    tr.addEventListener('click',()=>{location.hash=m.id;window.scrollTo({top:0,behavior:reduce?'auto':'smooth'});});
+    tr.addEventListener('keydown',e=>{if(e.key==='Enter')tr.click();});
+    tb.appendChild(tr);
+  });
+}
+
+function drawStatic(){
+  svg.innerHTML='';
+  const used=new Set();trips.forEach(t=>t.p.forEach(k=>used.add(k)));
+  const net=mode.group==='network';
+  // bands
+  el('rect',{x:0,y:16,width:960,height:240,class:'band-u'},svg);
+  el('rect',{x:0,y:256,width:960,height:80,class:'band-k'},svg);
+  el('rect',{x:0,y:336,width:960,height:160,class:'band-h'},svg);
+  [['USER SPACE',136],['KERNEL',296],['HARDWARE',416]].forEach(([t,y])=>{const tx=el('text',{x:22,y:y,class:'bl','text-anchor':'middle',transform:'rotate(-90 22 '+y+')'},svg);tx.textContent=t;});
+  // column heads
+  const h=HEAD[mode.group];
+  [['A',h[0]],['B',h[1]]].forEach(([c,t])=>{const tx=el('text',{x:COLX[c],y:12,class:'colh','text-anchor':'middle'},svg);tx.textContent=t;});
+  const sc=el('text',{x:480,y:12,class:'colsub','text-anchor':'middle'},svg);sc.textContent=h[2];
+  // path lines (under boxes)
+  const seen=new Set(), gl=el('g',{},svg);
+  trips.forEach(tr=>{const key=tr.k+tr.p.join();if(seen.has(key))return;seen.add(key);
+    el('polyline',{points:tr.p.map(k=>{const q=pt(k);return q.x+','+q.y;}).join(' '),class:'pl k-'+tr.k},gl);});
+  // wire
+  const wg=el('g',{class:'box l-h'+(net?'':' dim'),id:'bx-W'},svg);
+  el('rect',{x:55,y:ROWY[5]-BH/2,width:850,height:BH,rx:8},wg);
+  const wt=el('text',{x:480,y:ROWY[5]-3,class:'t','text-anchor':'middle'},wg);wt.textContent=net?'Ethernet · switch':'ไม่ใช้สาย';
+  const ws=el('text',{x:480,y:ROWY[5]+14,class:'s','text-anchor':'middle'},wg);ws.textContent=net?'ภาค 3: Docker bridge (veth) · MTU 1500':'ข้อมูลไม่ออกจากเครื่อง';
+  // A/B boxes
+  ['A','B'].forEach(c=>{for(let r=0;r<5;r++){const k=c+r;const lab=(mode.labels&&mode.labels[k])||DEF[k];box(k,lab,'l-'+LAYER[r]+(used.has(k)?'':' dim'));}});
+  // middle boxes
+  for(const k in (mode.middle||{})){const m=mode.middle[k];box(k,m,m[2]);}
+  // copy badges
+  for(const k in mode.copies){const q=pt(k),w=COLW[k[0]];const g=el('g',{class:'badge'},svg);
+    el('circle',{cx:q.x+w/2-4,cy:q.y-BH/2+2,r:10},g);const t=el('text',{x:q.x+w/2-4,y:q.y-BH/2+6,'text-anchor':'middle'},g);t.textContent=mode.copies[k];}
+  // x marks and dots
+  xms=trips.map(tr=>{if(!tr.drop)return null;const q=pt(tr.p[tr.p.length-1]);const g=el('g',{class:'xm',opacity:0},svg);
+    const x=q.x+COLW.B/2-26,y=q.y;el('line',{x1:x-8,y1:y-8,x2:x+8,y2:y+8},g);el('line',{x1:x-8,y1:y+8,x2:x+8,y2:y-8},g);
+    const t=el('text',{x:x,y:y+24,'text-anchor':'middle'},g);t.textContent='ทิ้ง';return g;});
+  dots=trips.map(tr=>{const g=el('g',{class:'dot k-'+tr.k,opacity:0},svg);el('circle',{r:7},g);
+    const t=el('text',{x:11,y:-9},g);t.textContent=tr.label||'';
+    const pts=tr.p.map(pt),seg=[];let L=0;for(let i=1;i<pts.length;i++){const l=Math.hypot(pts[i].x-pts[i-1].x,pts[i].y-pts[i-1].y);seg.push(l);L+=l;}
+    return {g,pts,seg,L};});
+}
+function box(k,lab,cls){const q=pt(k),w=COLW[k[0]];const g=el('g',{class:'box '+cls,id:'bx-'+k},svg);
+  el('rect',{x:q.x-w/2,y:q.y-BH/2,width:w,height:BH,rx:8},g);
+  const t=el('text',{x:q.x,y:q.y-3,class:'t','text-anchor':'middle'},g);t.textContent=lab[0];
+  const s=el('text',{x:q.x,y:q.y+14,class:'s','text-anchor':'middle'},g);s.textContent=lab[1];}
+
+function draw(time){
+  let got=0;
+  trips.forEach((tr,i)=>{const D=dots[i];const f=(time-tr.t)/tr.d;
+    if(f<0||f>1){D.g.setAttribute('opacity',0);}
+    else{let dist=f*D.L,j=0;while(j<D.seg.length-1&&dist>D.seg[j]){dist-=D.seg[j];j++;}
+      const a=D.pts[j],b=D.pts[j+1],u=D.seg[j]?Math.min(1,dist/D.seg[j]):0;
+      D.g.setAttribute('transform','translate('+(a.x+(b.x-a.x)*u)+','+(a.y+(b.y-a.y)*u)+')');D.g.setAttribute('opacity',1);}
+    if(xms[i])xms[i].setAttribute('opacity',f>=1?1:0);
+    if(tr.count&&f>=1)got++;});
+  if(mode.total){const tot=mode.total(variant);const c=$('counter');c.innerHTML=mode.counterLabel+' <b>'+got+'</b> / '+tot;
+    const done=time>=T-1.6;c.classList.toggle('bad',done&&got<tot);}
+}
+
+function frame(now){if(!paused){tau=((now-startMs)/1000)%T;draw(tau);}requestAnimationFrame(frame);}
+
+function setMode(id){
+  mode=MODES.find(m=>m.id===id)||MODES[0];
+  variant=mode.variants?(variant&&mode.variants.some(v=>v[0]===variant)?variant:mode.variants[0][0]):null;
+  document.querySelectorAll('.chip').forEach(b=>b.setAttribute('aria-pressed',b.dataset.id===mode.id));
+  document.querySelectorAll('#cmp tr').forEach(r=>r.classList.toggle('cur',r.dataset.id===mode.id));
+  $('mtitle').textContent=mode.name;
+  $('summary').textContent=mode.summary;
+  const kv=mode.kvv?mode.kvv[variant]:mode.kv;
+  $('kv').innerHTML=kv.map(([v,l])=>'<div><b>'+esc(v)+'</b>'+esc(l)+'</div>').join('');
+  $('steps').innerHTML=mode.steps.map(([b,h,d])=>{const c=mode.copies[b];return '<li tabindex="0" data-b="'+b+'"><div><div class="h">'+esc(h)+(c?' <span class="cpy">copy '+c+'</span>':'')+'</div>'+(d?'<div class="d">'+esc(d)+'</div>':'')+'</div></li>';}).join('');
+  document.querySelectorAll('#steps li').forEach(li=>{const on=()=>{const b=document.getElementById('bx-'+li.dataset.b);if(b)b.classList.add('hl');};const off=()=>{const b=document.getElementById('bx-'+li.dataset.b);if(b)b.classList.remove('hl');};
+    li.addEventListener('mouseenter',on);li.addEventListener('mouseleave',off);li.addEventListener('focus',on);li.addEventListener('blur',off);});
+  $('facts').innerHTML=mode.facts.map(([k,v,t])=>'<tr><td>'+esc(k)+'</td><td>'+esc(v)+'</td><td><span class="tag '+t+'">'+TAG[t]+'</span></td></tr>').join('');
+  $('cmds').innerHTML='<h3>คำสั่ง</h3>'+cmd('เปิดใช้',mode.enable)+cmd('ดูด้วยตาตัวเอง',mode.observe);
+  document.querySelectorAll('.copy').forEach(b=>b.addEventListener('click',()=>{const pre=b.closest('.cmdb').querySelector('pre');const txt=pre.textContent;
+    const done=()=>{b.textContent='คัดลอกแล้ว';setTimeout(()=>b.textContent='คัดลอก',1400);};
+    const sel=()=>{const r=document.createRange();r.selectNodeContents(pre);const s=getSelection();s.removeAllRanges();s.addRange(r);b.textContent='เลือกข้อความแล้ว';};
+    try{navigator.clipboard.writeText(txt).then(done,sel);}catch(e){sel();}}));
+  renderPkt();
+  const vb=$('variants');
+  if(mode.variants){vb.hidden=false;vb.innerHTML=mode.variants.map(([v,l])=>'<button type="button" data-v="'+v+'" aria-pressed="'+(v===variant)+'">'+esc(l)+'</button>').join('');
+    vb.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{variant=b.dataset.v;setMode(mode.id);}));}
+  else{vb.hidden=true;vb.innerHTML='';}
+  $('counter').hidden=!mode.total;
+  trips=mode.trips(variant);T=Math.max(...trips.map(end))+1.6;
+  drawStatic();
+  startMs=performance.now();
+  if(paused){tau=reduce?T-.01:0;draw(tau);}
+}
+function cmd(h,code){return '<div class="cmdb"><div class="cmd-h"><span class="h">'+h+'</span><button class="copy" type="button">คัดลอก</button></div><pre>'+esc(code)+'</pre></div>';}
+
+$('play').addEventListener('click',()=>{paused=!paused;$('play').textContent=paused?'เล่น':'หยุด';if(!paused)startMs=performance.now()-tau*1000;});
+$('replay').addEventListener('click',()=>{tau=0;startMs=performance.now();if(paused){paused=false;$('play').textContent='หยุด';}});
+
+buildPicker();
+if(reduce){paused=true;$('play').textContent='เล่น';}
+function route(){const h=location.hash.slice(1);setMode(MODES.some(m=>m.id===h)?h:MODES[0].id);}
+window.addEventListener('hashchange',route);
+route();
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

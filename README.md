@@ -31,7 +31,7 @@
 
 > 📁 ไฟล์ทั้งหมดของ Lyrical อยู่ในโฟลเดอร์ [`ros2_lyrical/`](ros2_lyrical/)
 >
-> เอกสารเชิงลึก: [**ภาค 1: Network Stack Deep Dive**](ros2_lyrical/ros2_lyrical_network_stack_deep_dive.md) · [**ภาค 2: wire format, reliability, kernel accounting, latency budget**](ros2_lyrical/ros2_lyrical_network_stack_deeper.md) · [**ภาค 3: ผลการทดลองจริง (packet capture)**](ros2_lyrical/ros2_lyrical_wire_experiments.md) · [**ภาค 4: สถาปัตยกรรมของระบบ**](ros2_lyrical/ros2_lyrical_architectures.md) · แล็บ 3D แบบ interactive: [**Lyrical Packet Lab**](https://alfaxphoori.github.io/ros2/ros2_lyrical/interactive/lyrical-packet-lab.html)
+> เอกสารเชิงลึก: [**ภาค 1: Network Stack Deep Dive**](ros2_lyrical/docs/01_network_stack_deep_dive.md) · [**ภาค 2: wire format, reliability, kernel accounting, latency budget**](ros2_lyrical/docs/02_wire_format_and_kernel.md) · [**ภาค 3: ผลการทดลองจริง (packet capture)**](ros2_lyrical/docs/03_wire_experiments.md) · [**ภาค 4: สถาปัตยกรรมของระบบ**](ros2_lyrical/docs/04_architectures.md) · แล็บ 3D แบบ interactive: [**Lyrical Packet Lab**](https://alfaxphoori.github.io/ros2/ros2_lyrical/interactive/lyrical-packet-lab.html) · เทียบเส้นทางข้อมูล 10 แบบพร้อม packet จริง: [**Data Paths**](https://alfaxphoori.github.io/ros2/ros2_lyrical/interactive/data-paths.html)
 
 ### 🧅 OSI 7 Layer vs ROS 2 Lyrical (Animated Encapsulation)
 
@@ -57,17 +57,17 @@
 
 ### 🔬 Packet จริงระดับ byte และเส้นทางใน Linux kernel
 
-หนึ่ง sample ของ `std_msgs/String "Hello World: 1"` ที่ส่งผ่าน `rmw_fastrtps_cpp` คือ Ethernet frame ขนาด 122 byte ภาพด้านล่างไฮไลต์ทีละชั้นทั้งในตาราง field และใน hex dump (Ethernet → IPv4 → UDP → RTPS → INFO_TS → DATA → CDR)
+หนึ่ง sample ของ `"Hello World: 1"` ที่ส่งผ่าน `rmw_fastrtps_cpp` ในรูปแบบที่น้อยที่สุดคือ Ethernet frame ขนาด 122 byte ภาพด้านล่างไฮไลต์ทีละชั้นทั้งในตาราง field และใน hex dump (Ethernet → IPv4 → UDP → RTPS → INFO_TS → DATA → CDR) ส่วน binary `.deb` ของ Lyrical เพิ่ม INFO_DST 16 B และ statistics 60 B จึงยาว **198 B** บนสายจริง (ดูการทดลองด้านล่าง)
 
 ![anim-rtps-packet-anatomy](ros2_lyrical/diagrams/anim-rtps-packet-anatomy.svg)
 
-เส้นทางของ datagram นี้ใน Linux kernel ทีละฟังก์ชัน ขา TX ตั้งแต่ `sendmsg()` ลงไปถึง driver และขา RX ตั้งแต่ IRQ/NAPI ขึ้นมาถึง `recvmsg()` ชื่อฟังก์ชันตรวจกับ `/proc/kallsyms` ของ Linux 7.0 พร้อมระบุ tracepoint ที่ใช้วัดผลได้ (รายละเอียดอยู่ใน[หัวข้อ 5.4–5.5 ของเอกสาร](ros2_lyrical/ros2_lyrical_network_stack_deep_dive.md#54-packet-จริงระดับ-byte-หนึ่ง-sample-บนสาย))
+เส้นทางของ datagram นี้ใน Linux kernel ทีละฟังก์ชัน ขา TX ตั้งแต่ `sendmsg()` ลงไปถึง driver และขา RX ตั้งแต่ IRQ/NAPI ขึ้นมาถึง `recvmsg()` ชื่อฟังก์ชันตรวจกับ `/proc/kallsyms` ของ Linux 7.0 พร้อมระบุ tracepoint ที่ใช้วัดผลได้ (รายละเอียดอยู่ใน[หัวข้อ 5.4–5.5 ของเอกสาร](ros2_lyrical/docs/01_network_stack_deep_dive.md#54-packet-จริงระดับ-byte-หนึ่ง-sample-บนสาย))
 
 ![anim-linux-kernel-packet-path](ros2_lyrical/diagrams/anim-linux-kernel-packet-path.svg)
 
 ### 🧪 ทดลองจริง: packet capture บน ROS 2 Lyrical
 
-ผมรัน `ros:lyrical-ros-base` ใน Docker โดยให้แต่ละ container เป็น host หนึ่งเครื่อง แล้ว capture packet จริงด้วย tcpdump/tshark ไฟล์ pcap และสคริปต์ทำซ้ำอยู่ใน [`ros2_lyrical/captures/`](ros2_lyrical/captures/) รายละเอียดอยู่ใน[ภาค 3](ros2_lyrical/ros2_lyrical_wire_experiments.md)
+ผมรัน `ros:lyrical-ros-base` ใน Docker โดยให้แต่ละ container เป็น host หนึ่งเครื่อง แล้ว capture packet จริงด้วย tcpdump/tshark ไฟล์ pcap และสคริปต์ทำซ้ำอยู่ใน [`ros2_lyrical/captures/`](ros2_lyrical/captures/) รายละเอียดอยู่ใน[ภาค 3](ros2_lyrical/docs/03_wire_experiments.md)
 
 - sample ของ `demo_nodes_cpp talker` บนสายจริงยาว **198 B** ได้แก่ RTPS 2.3 + INFO_DST + INFO_TS + DATA + statistics `0x80`
 - sample เดียวกันผ่าน `rmw_zenoh_cpp` ยาว **161 B** และวิ่ง peer-to-peer ไม่ผ่าน router
