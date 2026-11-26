@@ -1,5 +1,7 @@
 # ROS 2 Lyrical Luth: Network Stack เชิงลึก (User Space → Kernel Space → ระหว่างเครื่อง)
 
+> **ลำดับการอ่าน:** ขั้นที่ 2 และ 4 จาก 8 ([ดูทั้งหมด](../README.md#ลำดับการอ่าน)) · ก่อนหน้า: [หน้า Data Paths](https://alfaxphoori.github.io/ros2/ros2_lyrical/interactive/data-paths.html) · ถัดไป: [ภาค 4 สถาปัตยกรรม](04_architectures.md)
+
 > เอกสารอ้างอิงระดับนักวิจัย สำหรับใช้พัฒนาต่อยอด middleware / transport ของ ROS 2
 > สถานะ ณ 2026-11-24 · Distro: **Lyrical Luth** (LTS, ออก 22 พ.ค. 2026, ซัพพอร์ตถึง พ.ค. 2031)
 

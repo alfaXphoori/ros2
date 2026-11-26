@@ -1,5 +1,7 @@
 # ROS 2 Lyrical Luth: ผลการทดลองจริงบนสาย (packet capture)
 
+> **ลำดับการอ่าน:** ขั้นที่ 6 จาก 8 ([ดูทั้งหมด](../README.md#ลำดับการอ่าน)) · ก่อนหน้า: [ภาค 4](04_architectures.md) · ถัดไป: [ภาค 2 เชิงลึก](02_wire_format_and_kernel.md)
+
 > ภาค 3 ของชุดเอกสาร network stack · ภาค 1: [Deep Dive](01_network_stack_deep_dive.md) · ภาค 2: [Wire format & kernel accounting](02_wire_format_and_kernel.md)
 > ดูแบบ 3D: [Lyrical Packet Lab บทที่ 17–20](https://alfaxphoori.github.io/ros2/ros2_lyrical/interactive/lyrical-packet-lab.html#lesson-17) (packet วิ่งตามจำนวนจริงจาก pcap)
 > ทดลองเมื่อ 2026-11-24 · ไฟล์ pcap ทั้งหมดอยู่ใน [`captures/`](../captures/) · ทำซ้ำได้ด้วย [`captures/scripts/run_experiments.sh`](../captures/scripts/run_experiments.sh)

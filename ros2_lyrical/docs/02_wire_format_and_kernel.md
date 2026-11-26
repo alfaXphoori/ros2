@@ -1,5 +1,7 @@
 # ROS 2 Lyrical Luth: Network Stack เชิงลึก ภาค 2 (wire format, reliability, Fast DDS internals, Zenoh framing, kernel accounting, latency budget)
 
+> **ลำดับการอ่าน:** ขั้นที่ 7–8 จาก 8 ([ดูทั้งหมด](../README.md#ลำดับการอ่าน)) · ก่อนหน้า: [ภาค 3](03_wire_experiments.md) · จบที่หัวข้อวิจัย [§7](#7-ทิศทางวิจัยที่ตามมาโดยตรงจากหัวข้อ-16)
+
 > เอกสารต่อยอดจาก `01_network_stack_deep_dive.md` (ต่อไปเรียกว่า "ภาค 1") ไม่ทำซ้ำเนื้อหาเดิม
 > ร่างโดย Claude Fable 5.2 แล้วตรวจทานและแก้ไขโดย Claude Opus 5.5 · สถานะ ณ 2026-11-24 · เครื่องที่ใช้ตรวจ: Ubuntu 26.04.1, Linux 7.0.0-43-generic, NIC `r8169` (RTL8168h), CPU Intel i3-12100
 

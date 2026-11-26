@@ -1,5 +1,7 @@
 # ROS 2 Lyrical Luth: สถาปัตยกรรมของระบบ (middleware, discovery, data path, deployment, security)
 
+> **ลำดับการอ่าน:** ขั้นที่ 5 จาก 8 ([ดูทั้งหมด](../README.md#ลำดับการอ่าน)) · ก่อนหน้า: [ภาค 1](01_network_stack_deep_dive.md) · ถัดไป: [ภาค 3 ผลการทดลองจริง](03_wire_experiments.md)
+
 > เอกสารภาค 4 ของชุด Network Stack สถานะ ณ 2026-11-24 · Distro: **Lyrical Luth** (LTS ถึง พ.ค. 2031)
 >
 > ภาค 1–3 ไล่ packet หนึ่งก้อนจาก `publish()` ลงไปถึงสาย ภาคนี้ถอยออกมามองระดับสถาปัตยกรรม คือเลือกส่วนประกอบแบบไหน วางไว้ตรงไหน และแต่ละแบบแลกอะไรกับอะไร
