@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="th">
+<html lang="th" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -14,11 +14,8 @@
   --user:#2f66c9; --kern:#a8700f; --hw:#6a58a8; --shm:#0d8577; --gpu:#2c8c4b;
   --data:#2f66c9; --ctrl:#8a45c9; --drop:#cc3d33;
   --f-body:"IBM Plex Sans Thai",system-ui,sans-serif; --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  color-scheme:light;
 }
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#0f141a; --panel:#161d26; --sunk:#1c2530; --fg:#e4e9ef; --muted:#97a5b6; --line:#2a3542;
-  --user:#6d9eff; --kern:#e0a645; --hw:#a594e8; --shm:#3cc0b0; --gpu:#5cc882;
-  --data:#6d9eff; --ctrl:#bb8af2; --drop:#f26a5e; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0f141a; --panel:#161d26; --sunk:#1c2530; --fg:#e4e9ef; --muted:#97a5b6; --line:#2a3542;
   --user:#6d9eff; --kern:#e0a645; --hw:#a594e8; --shm:#3cc0b0; --gpu:#5cc882;
@@ -30,6 +27,7 @@ h1{font-size:clamp(1.6rem,3.2vw,2.2rem);line-height:1.2;margin:0;font-weight:700
 h2{font-size:1.15rem;margin:0;font-weight:600;text-wrap:balance}
 h3{font-size:.8rem;margin:0 0 8px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 p{margin:0}
+.head-row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
 .lede{color:var(--muted);max-width:70ch;margin-top:6px}
 code,.mono{font-family:var(--f-mono);font-size:.88em}
 .picker{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))}
@@ -145,7 +143,10 @@ a{color:var(--data)}
 
 <div class="wrap">
   <header>
-    <h1>เส้นทางข้อมูล ROS 2 Lyrical</h1>
+    <div class="head-row">
+      <h1>เส้นทางข้อมูล ROS 2 Lyrical</h1>
+      <button class="btn" id="theme" type="button" aria-pressed="false">โหมดมืด</button>
+    </div>
     <p class="lede">เลือกรูปแบบการส่งแล้วดูว่าข้อมูลหนึ่ง sample วิ่งผ่านชั้นไหนบ้าง ตั้งแต่ <code>publish()</code> ผ่าน rmw, middleware, kernel และ NIC จนถึง callback ฝั่งรับ ตัวเลขที่ติดป้าย “วัดจริง” มาจาก packet capture ในภาค 3 ของเอกสาร</p>
   </header>
 
@@ -495,6 +496,12 @@ function cmd(h,code){return '<div class="cmdb"><div class="cmd-h"><span class="h
 
 $('play').addEventListener('click',()=>{paused=!paused;$('play').textContent=paused?'เล่น':'หยุด';if(!paused)startMs=performance.now()-tau*1000;});
 $('replay').addEventListener('click',()=>{tau=0;startMs=performance.now();if(paused){paused=false;$('play').textContent='หยุด';}});
+(function(){const b=$('theme'),root=document.documentElement;
+  function set(t){root.dataset.theme=t;b.setAttribute('aria-pressed',t==='dark');b.textContent=t==='dark'?'โหมดสว่าง':'โหมดมืด';}
+  let saved='light';try{if(localStorage.getItem('data-paths-theme')==='dark')saved='dark';}catch(e){}
+  set(saved);
+  b.addEventListener('click',()=>{const next=root.dataset.theme==='dark'?'light':'dark';set(next);try{localStorage.setItem('data-paths-theme',next);}catch(e){}});
+})();
 
 buildPicker();
 if(reduce){paused=true;$('play').textContent='เล่น';}
