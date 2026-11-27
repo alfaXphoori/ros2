@@ -620,7 +620,7 @@ ser.<span class="fn">serialize_message</span>(&amp;msg, &amp;out);  <span class=
    async run(){
      callout([XT, Y.rmw, tz(H.A)+0.2], 'struct → CDR', 'typesupport เรียงฟิลด์เป็น byte ตาม alignment');
      await travel(userOnly(H.A).slice(0,3), {onTag:(t)=>{ if(t==='app'){log('ros2:rclcpp_publish','msg=0x55d1… (sensor_msgs/Image)','u');adv(6);} if(t==='rcl'){log('ros2:rcl_publish','publisher=/camera/image','u');adv(4);} }});
-     log('ros2:rmw_publish','serialize 921 664 B (640×480 rgb8) → CDR','u'); adv(310);
+     log('ros2:rmw_publish','serialize 921 648 B (640×480 rgb8) → CDR','u'); adv(310);
      const g = makeDot(PCOL.cdr, 0.26); g.position.set(XT, Y.rcl, tz(H.A));
      await travel([P(XT,Y.rcl,tz(H.A)),P(XT,Y.rmw,tz(H.A)),P(XT,Y.mw,tz(H.A))],{dot:g, speed:1.8});
      log('fastdds:DataWriter::write','history depth=10, reliable','u'); fadeOut(g);
