@@ -5,7 +5,7 @@
 > เอกสารต่อยอดจาก `01_network_stack_deep_dive.md` (ต่อไปเรียกว่า "ภาค 1") ไม่ทำซ้ำเนื้อหาเดิม
 > ร่างโดย Claude Fable 5.2 แล้วตรวจทานและแก้ไขโดย Claude Opus 5.5 · สถานะ ณ 2026-11-24 · เครื่องที่ใช้ตรวจ: Ubuntu 26.04.1, Linux 7.0.0-43-generic, NIC `r8169` (RTL8168h), CPU Intel i3-12100
 
-> **อัปเดต:** หลายข้อในเอกสารนี้ได้รับการยืนยันด้วย packet capture จริงแล้วใน[ภาค 3](03_wire_experiments.md) ได้แก่ frame 198 B, INFO_DST 16 B, statistics 60 B, fragmentSize 65 324 B, 15 DATA_FRAG, 45 IP fragment, Zenoh length prefix และ attachment 33 B ส่วน sampleSize จริงคือ 921 648 B (เอกสารนี้คำนวณได้ 921 652 B)
+> **อัปเดต:** หลายข้อในเอกสารนี้ได้รับการยืนยันด้วย packet capture จริงแล้วใน[ภาค 3](03_wire_experiments.md) ได้แก่ frame 198 B, INFO_DST 16 B, statistics 60 B, fragmentSize 65 324 B, 15 DATA_FRAG, 45 IP fragment, Zenoh length prefix และ attachment 33 B ส่วน sampleSize จริงคือ 921 648 B (เอกสารนี้คำนวณได้ 921 652 B เพราะสมมติ `frame_id = "camera"` แต่สคริปต์ทดลองใช้ `"f0"`… ดูหัวข้อ 2.4)
 
 ## 0. วิธีอ่านเอกสารนี้
 
@@ -17,7 +17,7 @@
 
 **ข้อจำกัดสำคัญของการตรวจรอบนี้**
 
-1. เครื่องที่ใช้ตรวจ**ไม่มี ROS 2 ติดตั้ง** (`/opt/ros` ไม่มี) จึง**ไม่มี packet capture จริง**แม้แต่ชิ้นเดียว ทุกข้อที่ติด [V] ในส่วน wire format หมายถึง "ตรงกับโค้ดที่ serialize/parse field นั้น" ไม่ใช่ "เห็นบนสายแล้ว"
+1. เครื่องที่ใช้ตรวจ**ไม่มี ROS 2 ติดตั้ง** (`/opt/ros` ไม่มี) ตอนเขียนเอกสารนี้จึงยังไม่มี packet capture และทุกข้อที่ติด [V] ในส่วน wire format หมายถึง "ตรงกับโค้ดที่ serialize/parse field นั้น" ไม่ใช่ "เห็นบนสายแล้ว" ภายหลังได้ capture จริงจาก Docker (`ros:lyrical-ros-base` + package จาก apt) แล้วใน[ภาค 3](03_wire_experiments.md) ข้อที่ยืนยันด้วย capture แล้วจะระบุเป็น [V: capture ภาค 3 …] ส่วนข้อที่ไม่ได้ระบุยังเป็นผลจากการอ่านโค้ดเท่านั้น
 2. OMG DDSI-RTPS 2.5 PDF ไม่ได้เปิดอ่านโดยตรง ค่าคงที่ของ protocol ตรวจไขว้ 2 แหล่งแทน คือ Wireshark `packet-rtps.c` และ header ของ Fast DDS 3.6.x
 3. พฤติกรรมของ Fast DDS ขึ้นกับ option ตอน build สองตัว (`SECURITY`, `FASTDDS_STATISTICS`) ซึ่งเปลี่ยน byte บนสายจริง ดูหัวข้อ 3.7 เอกสารนี้ระบุทั้งสองกรณีเมื่อผลต่างกัน
 4. คำสั่ง `bpftrace`/`perf` ในเอกสารยังไม่ได้รัน (ต้องใช้ root) ตรวจแล้วเฉพาะว่า symbol และ tracepoint ที่อ้างมีอยู่ใน `/proc/kallsyms` ของเครื่องนี้
@@ -84,13 +84,13 @@ serializedPayload:
 - **Locator = 24 B** เสมอ ทั้ง IPv4/IPv6 โดย IPv4 อยู่ 4 byte ท้ายของ address 16 B [V: `CDRMessage::add_locator` เขียน `kind` i32, `port` u32, `address[16]`] เครื่องที่มีหลาย interface จึงเพิ่ม 28 B ต่อ interface ต่อชนิด locator
 - **SHM locator**: Fast DDS ใช้ `LOCATOR_KIND_SHM = 16 + FASTDDS_VERSION_MAJOR` = 19 ใน 3.x [V: `static_assert` ใน `SharedMemGlobal.hpp`] ส่วน Wireshark รู้จัก `LOCATOR_KIND_SHMEM = 0x01000000` ซึ่งเป็นของ RTI [V: `packet-rtps.c`] Wireshark จึงไม่แสดง locator SHM ของ Fast DDS ว่าเป็น SHM
 - **`PID_BUILTIN_ENDPOINT_SET`** บิตที่เกี่ยวข้อง [V: Fast DDS `BuiltinEndpoints.hpp`]: bit 0/1 participant announcer/detector, bit 2/3 publication announcer/detector, bit 4/5 subscription announcer/detector, bit 10/11 participant message writer/reader (ใช้ทำ liveliness), bit 12–15 TypeLookup service, bit 16–21 และ 26–27 เป็นชุด secure ค่าที่คาดว่าจะเห็นใน simple discovery ที่ไม่มี security คือ `0x00000c3f` หรือมากกว่าถ้ามี TypeLookup [K: ผลรวมบิตยังไม่ได้ยืนยันด้วย capture]
-- **enclave ของ ROS 2**: `rmw_fastrtps` เขียน `USER_DATA` เป็นสตริง `"enclave=%s;"` พร้อม NUL ปิดท้าย และตั้งชื่อ participant (`PID_ENTITY_NAME`) เป็นค่า enclave เช่นกัน [V: `rmw_fastrtps_shared_cpp/src/participant.cpp` บรรทัด 287–297] enclave default `/` จะได้ `enclave=/;\0` = 11 B ขนาดบนสายของ parameter นี้ = 4 (header) + 4 (sequence length) + 11 + 1 (pad) = 20 B (คำนวณจากกฎ alignment; ยังไม่ได้ยืนยันด้วย capture)
+- **enclave ของ ROS 2**: `rmw_fastrtps` เขียน `USER_DATA` เป็นสตริง `"enclave=%s;"` พร้อม NUL ปิดท้าย และตั้งชื่อ participant (`PID_ENTITY_NAME`) เป็นค่า enclave เช่นกัน [V: `rmw_fastrtps_shared_cpp/src/participant.cpp` บรรทัด 287–297] enclave default `/` จะได้ `enclave=/;\0` = 11 B ขนาดบนสายของ parameter นี้ = 4 (header) + 4 (sequence length) + 11 + 1 (pad) = 20 B (คำนวณจากกฎ alignment; ตรงกับ capture: `PID_USER_DATA` length 16 + header 4 = 20 B [V: capture ภาค 3 `exp1_fastdds_default.pcap` frame 3])
 - **ROS_AUTOMATIC_DISCOVERY_RANGE** เปลี่ยนเนื้อหา SPDP โดยตรง: `LOCALHOST` และ `OFF` ล้าง `metatrafficMulticastLocatorList` แล้วใส่ unicast locator เปล่าเพื่อกันไม่ให้สร้าง multicast locator default และ `OFF` จำกัด participant ไว้ที่ 1 [V: `participant.cpp` บรรทัด 189–215]
 
 **ขนาดรวมและคาบการส่ง**
 
-- ขนาด: ส่วนคงที่ (รายการ 1–4, 6, 7, 13, 14, 20) = 8+8+8+8+20+8+12+8+4 = 84 B บวก locator 28 B ต่อรายการ บวก string/property ประมาณการว่า `DATA(p)` ของ node ทั่วไปบนเครื่อง 1 interface อยู่ราว 250–400 B (ประมาณการจากผลรวมข้างต้นบวก machine id และ property list ซึ่งยังไม่ได้วัดขนาด)
-- คาบ: `leaseDuration` = 20 s, `leaseDuration_announcementperiod` = 3 s, initial announcements 5 ครั้ง ห่างกัน 100 ms [V: `RTPSParticipantAttributes.hpp` บรรทัด 231–277]
+- ขนาด: ส่วนคงที่ (รายการ 1–4, 6, 7, 13, 14, 20) = 8+8+8+8+20+8+12+8+4 = 84 B บวก locator 28 B ต่อรายการ บวก string/property ประมาณการก่อนวัดว่า `DATA(p)` ของ node ทั่วไปบนเครื่อง 1 interface อยู่ราว 250–400 B (ประมาณการจากผลรวมข้างต้นบวก machine id และ property list) **ค่าที่วัดได้จริงใหญ่กว่านั้น** [V: capture ภาค 3 `exp1_fastdds_default.pcap` frame 3]: ParameterList (`serializedPayload` รวม encapsulation 4 B) = **452 B**, DATA submessage 476 B, RTPS message (UDP payload) 568 B และ Ethernet frame **610 B** (ตัวเลข 610 B ใน[ภาค 3](03_wire_experiments.md) คือขนาด frame) ส่วนที่เกินประมาณการมาจาก `PID_PROPERTY_LIST` 204 B (`PARTICIPANT_TYPE`, `fastdds.physical_data.host/user/process`), `PID_MACHINE_ID` 44 B และ default unicast locator 2 รายการ (SHM kind 19 + UDPv4) นอกเหนือจาก metatraffic unicast 1 รายการ (ใน capture นี้ไม่มี metatraffic multicast locator ใน `DATA(p)`): 84 + 44 + 3×28 + 12 (`ENTITY_NAME`) + 20 (`USER_DATA`) + 204 + 4 = 452 B
+- คาบ: `leaseDuration` = 20 s, `leaseDuration_announcementperiod` = 3 s, initial announcements `count` = 5 ห่างกัน 100 ms [V: `RTPSParticipantAttributes.hpp` บรรทัด 231–277] แต่บนสายจะเห็น **`DATA(p)` 6 ฉบับ** ห่างกัน 100 ms เพราะ `BuiltinProtocols::enable()` เรียก `announceParticipantState(true)` ทันที 1 ครั้งก่อน แล้ว timer จึงส่งอีก 5 ครั้งตาม `count` จากนั้นจึงเปลี่ยนเป็นคาบ 3 s [V: Fast DDS tag `v3.6.2` `BuiltinProtocols.cpp` บรรทัด 157–163, `PDP.cpp` บรรทัด 543–552, 1486–1509] ตรงกับ capture: listener ส่ง SPDP multicast ไป 239.255.0.1:7400 ที่ t = 0, 100, 200, 300, 400, 500 ms (frame 3–6, 9, 10) แล้วฉบับถัดไปที่ 3.5 s [V: capture ภาค 3 `exp1_fastdds_default.pcap`]
 - ผลตามมา: participant ที่หายไปเงียบ ๆ (ไฟดับ, สายหลุด) จะถูกตัดออกจาก graph หลังผ่านไปได้ถึง 20 s ตามค่า default
 
 ### 1.3 SEDP `DATA(w)` / `DATA(r)`: ประกาศ endpoint
@@ -110,7 +110,7 @@ parameter หลักของ `DATA(w)` ตามลำดับใน `Writer
 | `PID_UNICAST_LOCATOR` / `PID_MULTICAST_LOCATOR` | `0x002f` / `0x0030` | เฉพาะเมื่อ endpoint มี locator ของตัวเอง |
 | `PID_PARTICIPANT_GUID` | `0x0050` | |
 | `PID_TOPIC_NAME` | `0x0005` | `"rt/chatter"` |
-| `PID_TYPE_NAME` | `0x0007` | `"std_msgs::msg::dds_::String_"` |
+| `PID_TYPE_NAME` | `0x0007` | `"example_interfaces::msg::dds_::String_"` (demo talker ของ Lyrical ใช้ `example_interfaces` ไม่ใช่ `std_msgs` [V: capture ภาค 3 `exp1_fastdds_default.pcap`]) |
 | `PID_KEY_HASH` | `0x0070` | |
 | `PID_TYPE_MAX_SIZE_SERIALIZED` | `0x0060` | |
 | `PID_PROTOCOL_VERSION`, `PID_VENDORID` | `0x0015`, `0x0016` | |
@@ -128,7 +128,7 @@ parameter หลักของ `DATA(w)` ตามลำดับใน `Writer
 
 - **ชื่อ topic**: prefix `rt` (topic), `rq` (service request), `rr` (service reply) [V: `rmw_fastrtps_shared_cpp/src/namespace_prefix.cpp`]
 - **ชื่อ type**: `<package>::<msg|srv>::dds_::<Name>_` [V: `TypeSupport_impl.cpp` บรรทัด 311–314]
-- **การเข้ารหัส string**: u32 ความยาวรวม NUL + ตัวอักษร + pad ให้ครบ 4 [K: CDR] ดังนั้น `"rt/chatter"` = 4 + 11 + 1 = 16 B (parameter รวม 20 B) และ `"std_msgs::msg::dds_::String_"` (28 ตัวอักษร) = 4 + 29 + 3 = 36 B (parameter รวม 40 B) (คำนวณ)
+- **การเข้ารหัส string**: u32 ความยาวรวม NUL + ตัวอักษร + pad ให้ครบ 4 [K: CDR] ดังนั้น `"rt/chatter"` = 4 + 11 + 1 = 16 B (parameter รวม 20 B) และ `"example_interfaces::msg::dds_::String_"` (38 ตัวอักษร) = 4 + 39 + 1 = 44 B (parameter รวม 48 B) (คำนวณ; ตรงกับ capture: `PID_TOPIC_NAME` length 16 และ `PID_TYPE_NAME` length 44 ซึ่งมี string length 39 [V: capture ภาค 3 `exp1_fastdds_default.pcap`])
 - **type hash**: `rmw_dds_common` เข้ารหัสเป็น `"typehash=RIHS01_<hex 64 ตัว>;"` ลงใน `USER_DATA` ของ endpoint [V: `rmw_dds_common/src/qos.cpp` บรรทัด 715] ความยาว 9 + 71 + 1 = 81 ตัวอักษร ทุก endpoint จึงแบกเพิ่มราว 90 B (คำนวณ)
 
 ### 1.4 ROS graph ขี่อยู่บน DDS อย่างไร: `ros_discovery_info`
@@ -164,7 +164,7 @@ size ≈ 4 (encapsulation) + 16 (gid) + 4 (seq len)
 
 | ชั้น | อะไรวิ่ง | ความถี่ | ต้นทุนเติบโตตาม |
 |---|---|---|---|
-| SPDP | `DATA(p)` 250–400 B (ประมาณการ) | ทุก 3 s + 5 ครั้งแรกทุก 100 ms [V] | จำนวน participant (multicast) |
+| SPDP | `DATA(p)` frame 610 B ใน capture ภาค 3 (ก่อนวัดประมาณการไว้ 250–400 B) | ทุก 3 s + 6 ครั้งแรกทุก 100 ms (1 ครั้งตอน enable + `count` 5) [V] | จำนวน participant (multicast) |
 | SEDP | `DATA(w)`/`DATA(r)` ต่อ endpoint + HEARTBEAT/ACKNACK | ครั้งเดียวต่อคู่ participant แล้ว heartbeat ตามคาบ | participant² × endpoint [K] |
 | ROS graph | `ParticipantEntitiesInfo` ทั้งก้อน | ทุกครั้งที่ graph เปลี่ยน [K] | endpoint² ต่อ participant (ประมาณการ) |
 
@@ -275,7 +275,9 @@ FragmentNumberSet = bitmapBase 4 | numBits 4 | bitmap 4 × ceil(numBits/32)   (�
 | `data` = u32 len + 921 600 | 921 604 |
 | **รวม (`sampleSize`)** | **921 652** |
 
-(คำนวณจากกฎ alignment ของ CDR; สมมติว่า `serializedPayload.length` นับรวม encapsulation 4 B ซึ่งเป็น [K] ถ้าไม่นับ ผลลัพธ์ต่างกัน 4 B และจำนวน fragment ไม่เปลี่ยน)
+(คำนวณจากกฎ alignment ของ CDR; `sampleSize` นับรวม encapsulation 4 B [V: capture ภาค 3 `exp2_image_reliable.pcap.gz` ดูด้านล่าง])
+
+**ผลวัดใน[ภาค 3](03_wire_experiments.md):** `sampleSize` = **921 648 B** ในทุก DATA_FRAG ของ `exp2` และ `exp5` ต่างจากตารางข้างบน 4 B เพราะ [`img_pub.py`](../captures/scripts/img_pub.py) ตั้ง `frame_id` เป็น `f"f{k}"` (`"f0"`…`"f4"` ใน exp2, ถึง `"f19"` ใน exp5) ซึ่งเป็น u32 len + `"f0\0"` 3 B + pad 1 (หรือ `"f10\0"` 4 B ไม่มี pad) = 8 B แทน 12 B ของ `"camera"` (921 652 − 4 = 921 648) ไล่ byte ใน DATA_FRAG แรก (frame 107) แล้วตรงทุก field: encapsulation `00 01 00 00`, stamp 0 (8 B), len 3 + `"f0\0"` + pad 1, height 480, width 640, len 5 + `"rgb8\0"`, `is_bigendian` 0 + pad 2, step 1920, len 921 600 แล้วตามด้วย data ที่ offset 48 นับจากต้น `serializedPayload` ผลรวม 4 + 921 644 = 921 648 จึงยืนยันว่า `sampleSize` นับรวม encapsulation header (ถ้าไม่นับจะเป็น 921 644) จำนวน fragment ยังเป็น 15 เท่าเดิม
 
 **ขนาด fragment ที่ Fast DDS เลือก** [V: `BaseWriter::get_max_allowed_payload_size` + `calculate_max_payload_size` + `RTPSParticipantImpl::calculateMaxDataSize`]
 
@@ -397,7 +399,7 @@ rmw_publish                                      [tracepoint rmw_publish: V rmw_
 | data segment | `fastdds_<uuid hex>` 1 ต่อ participant | buffer ของ datagram ที่ participant นี้ส่ง | [V: `SharedMemManager.hpp` บรรทัด 540] |
 | segment lock | `fastdds_<uuid>_el` | บอกว่าเจ้าของยังมีชีวิต | [V: บรรทัด 546] |
 
-`port_id` ใช้สูตรเดียวกับ UDP (`getUnicastPort(domainId, i)`) [V: `SharedMemTransport.cpp` บรรทัด 732] จึงเห็นไฟล์ชื่อเช่น `fastdds_port7411` (ตัวอย่างชื่อคำนวณจากสูตร; ยังไม่ได้ `ls /dev/shm` บนเครื่องที่รัน ROS)
+`port_id` ใช้สูตรเดียวกับ UDP (`getUnicastPort(domainId, i)`) [V: `SharedMemTransport.cpp` บรรทัด 732] จึงเห็นไฟล์ชื่อเช่น `fastdds_port7411` (ตัวอย่างชื่อคำนวณจากสูตร; `ls /dev/shm` ในการทดลองที่ 4 ของ[ภาค 3](03_wire_experiments.md) เห็น `fastdds_port7411` จริง พร้อม `fastdds_port7000`/`7001`/`7413`)
 
 **ค่าคงที่** [V: `SharedMemTransportDescriptor.hpp`, `SharedMemGlobal.hpp`]
 
@@ -444,19 +446,19 @@ rmw_publish                                      [tracepoint rmw_publish: V rmw_
 | `FASTDDS_STATISTICS` | **ON** | ทุก RTPS message ที่ส่งมี submessage id `0x80` ยาว **60 B** ต่อท้าย (header 4 + `StatisticsSubmessageData` 56) และ fragment size ลดลง 60 B | [V: `CMakeLists.txt` บรรทัด 428, `RTPSStatisticsMessages.hpp`, `RTPSMessageGroup.cpp` บรรทัด 973–984, `BaseWriter.cpp`] |
 | `SHM_TRANSPORT_DEFAULT` | ON | มี SHM ใน builtin transport | [V: `CMakeLists.txt` บรรทัด 326] |
 
-- ขนาด 56 B ของ `StatisticsSubmessageData` คำนวณจาก layout: `Locator_t` 24 + `TimeStamp` 8 + `Sequence` (u64, u64, u16 + padding) 24 (คำนวณจากนิยาม struct; ยังไม่ได้ compile `sizeof`)
+- ขนาด 56 B ของ `StatisticsSubmessageData` คำนวณจาก layout: `Locator_t` 24 + `TimeStamp` 8 + `Sequence` (u64, u64, u16 + padding) 24 (คำนวณจากนิยาม struct; ยังไม่ได้ compile `sizeof` แต่บนสายเห็น header `80 01 38 00` คือ length 56 B ตรงกัน [V: capture ภาค 3])
 - `colcon.pkg` ของ Fast DDS ไม่มี cmake-args เพิ่ม [V] การ build จาก `ros2.repos` ด้วย colcon โดยไม่ใส่ flag จึงได้ SECURITY=OFF, STATISTICS=ON
-- **binary `.deb` ของ Lyrical build ด้วย `-DSECURITY=ON`** และไม่ได้แตะ `FASTDDS_STATISTICS` (จึงเป็น ON ตาม default) [V: `ros2-gbp/fastdds-release` branch `debian/lyrical/resolute/fastdds` ไฟล์ `debian/rules`] ผู้ที่ติดตั้งจาก apt จึงควรเห็น protocol version **2.3** และ statistics submessage `0x80` ต่อท้าย ส่วนผู้ที่ build จาก source ด้วย colcon โดยไม่ใส่ flag จะได้ 2.2 ยังควรยืนยันด้วย capture: ดู 2 byte หลัง `"RTPS"` และดูว่า datagram ลงท้ายด้วย submessage `0x80` หรือไม่
+- **binary `.deb` ของ Lyrical build ด้วย `-DSECURITY=ON`** และไม่ได้แตะ `FASTDDS_STATISTICS` (จึงเป็น ON ตาม default) [V: `ros2-gbp/fastdds-release` branch `debian/lyrical/resolute/fastdds` ไฟล์ `debian/rules`] ผู้ที่ติดตั้งจาก apt จึงควรเห็น protocol version **2.3** และ statistics submessage `0x80` ต่อท้าย ส่วนผู้ที่ build จาก source ด้วย colcon โดยไม่ใส่ flag จะได้ 2.2 ยืนยันด้วย capture แล้ว: `ros-lyrical-fastdds 3.6.2` จาก apt ส่ง `"RTPS" 02 03` และทุก RTPS message ลงท้ายด้วย submessage `0x80` [V: capture ภาค 3 `exp1_fastdds_default.pcap`]
 - `add_stats_submsg()` ถูกเรียกเมื่อ compile ด้วย `FASTDDS_STATISTICS` ทุกครั้งที่ส่ง (ยกเว้น DATA ที่ไม่ fragment และเกิน 65 kB) ไม่ขึ้นกับว่าเปิด statistics module ตอน runtime หรือไม่ [V: `RTPSMessageGroup.cpp` บรรทัด 393–400]
 
-**ผลต่อ frame ตัวอย่างของภาค 1** (`std_msgs/String "Hello World: 1"`, CDR 24 B) (คำนวณ)
+**ผลต่อ frame ตัวอย่างของภาค 1** (`example_interfaces/msg/String "Hello World: 1"`, `serializedPayload` 24 B) (คำนวณ; แถวสุดท้ายตรงกับ capture)
 
 | ส่วนประกอบ | UDP payload | Ethernet frame |
 |---|---|---|
-| RTPS 20 + INFO_TS 12 + DATA 24 + payload 24 (ตามภาค 1) | 80 | 122 |
+| RTPS 20 + INFO_TS 12 + DATA 24 + payload 24 (frame สังเคราะห์เดิมของภาค 1) | 80 | 122 |
 | + INFO_DST 16 (เมื่อผู้รับทั้งหมดอยู่ใน participant เดียว) | 96 | 138 |
 | + statistics 60 | 140 | 182 |
-| + ทั้งสองอย่าง | 156 | 198 |
+| + ทั้งสองอย่าง | 156 | 198 (frame 95 ใน `exp1_fastdds_default.pcap` ซึ่งภาค 1 §5.4 ใช้เป็นตัวอย่างแล้ว [V: capture ภาค 3]) |
 
 `INFO_DST` ถูกเพิ่มเมื่อ `current_dst_ != destination_guid_prefix` โดย `current_dst_` เริ่มที่ `c_GuidPrefix_Unknown` [V: `RTPSMessageGroup.cpp` บรรทัด 429, 520–524] เงื่อนไขที่ `destination_guid_prefix()` คืนค่าที่ไม่ใช่ unknown เป็น [K]
 
@@ -465,6 +467,8 @@ rmw_publish                                      [tracepoint rmw_publish: V rmw_
 ## 4. `rmw_zenoh_cpp` บนสาย
 
 เวอร์ชันที่ตรวจ: `zenoh_cpp_vendor/CMakeLists.txt` ของ branch `lyrical` pin zenoh-c commit `07b0d43…` พร้อม comment "This corresponds to zenoh-c 1.10.1 plus few fixes" [V] source ของ protocol อ่านจาก tag `1.10.1` ของ `eclipse-zenoh/zenoh` ส่วน "few fixes" ไม่ได้ตรวจ
+
+> **หมายเหตุเวอร์ชัน (ตรวจภายหลังจาก binary ที่ติดตั้งจริง):** ใน image ที่ใช้ทดลองของ[ภาค 3](03_wire_experiments.md) (`lyrical-wire:exp` = `ros:lyrical-ros-base` + apt) `ros-lyrical-rmw-zenoh-cpp` และ `ros-lyrical-zenoh-cpp-vendor` เป็น **0.10.6** ซึ่งภายในเป็น **zenoh-c 1.8.0** (`#define ZENOH_C "1.8.0"` ใน `zenoh_configure.h`, `zenohc.pc` Version 1.8.0), **zenoh-cpp 1.9.0** (`zenohcxx.pc`) และ crate **zenoh (Rust) 1.8.0** ที่ git commit `2687c51…` (string `v1.8.0-2687c51352121f006e3a603ce07925a8ad0b295c` และ path `.cargo/git/checkouts/zenoh-…/2687c51/` ใน `libzenohc.so`) [V: `dpkg -l` และไฟล์ใน `/opt/ros/lyrical/opt/zenoh_cpp_vendor/`] ไม่ใช่ 1.10.1 ตาม comment ของ branch `lyrical` ที่อ่านข้างต้น (branch น่าจะถูกเลื่อนหลังจาก build `.deb` นี้ แต่ยังไม่ได้ตรวจ) ลำดับ field ในหัวข้อนี้อ่านจาก source 1.10.1 จึงยังไม่ได้เทียบกับ 1.8.0 ทีละ field แต่ field ที่ยืนยันด้วย capture แล้ว (length prefix, attachment 33 B, CDR payload) ตรงกับที่อธิบายไว้
 
 ### 4.1 ชั้นของ message
 
@@ -530,7 +534,7 @@ batch:       FRAME hdr 1 | seq num (varint) | [exts] | NetworkMessage, NetworkMe
 - timestamping เปิดทุก mode เพราะ publication cache ต้องใช้ [V: config พร้อม comment `ROS setting`] ทุก `PUT` จึงมี flag `T` และ timestamp
 - SHM: ถ้าเปิดและขนาด ≥ threshold จะ `alloc_gc_defrag` จาก SHM provider ถ้าล้มเหลว fallback เป็น allocation ปกติ [V: `rmw_publisher_data.cpp` บรรทัด 534–550]
 
-**โครงของ byte** (ลำดับ field [V: `zenoh-codec` `network/push.rs`, `zenoh/put.rs`]; ขนาดแต่ละ field เป็นประมาณการเพราะเป็น varint และไม่มี capture)
+**โครงของ byte** (ลำดับ field [V: `zenoh-codec` `network/push.rs`, `zenoh/put.rs`]; ขนาดแต่ละ field เป็นประมาณการเพราะเป็น varint ภายหลัง capture ใน[ภาค 3](03_wire_experiments.md) วัดได้เฉพาะขนาดรวม length prefix, attachment และ CDR payload ส่วนการแบ่ง field ที่เหลือยังถอดด้วยมือ ไม่ได้ตรวจด้วย Zenoh dissector)
 
 ```
 len16 | FRAME hdr | sn | PUSH hdr | key_scope [key_suffix] | [QoS ext] | PUT hdr | timestamp | [encoding]
@@ -546,11 +550,11 @@ len16 | FRAME hdr | sn | PUSH hdr | key_scope [key_suffix] | [QoS ext] | PUT hdr
 | PUT header | 1 | |
 | timestamp | 10–26 | เวลา varint ของ u64 (สูงสุด 9) + ZenohId ความยาว 1 + สูงสุด 16 [K: รูปแบบ ZenohId] |
 | attachment extension | ≈ 35–36 | 33 B + ext header + ความยาว |
-| payload length | 1 | varint ของ 24 |
-| CDR ของ `"Hello World: 1"` | 24 | เท่ากับ RTPS |
-| **รวม TCP payload** | **≈ 77–103** | |
+| payload length | 1 | varint ของ 23 (เห็น `0x17` บนสาย [V: capture ภาค 3]) |
+| CDR ของ `"Hello World: 1"` | 23 | encapsulation 4 + string length 4 + 14 ตัวอักษร + NUL 1 = 23 B ไม่มี padding ท้าย [V: capture ภาค 3 `exp3_zenoh.pcap` frame 142] ส่วน RTPS ใน `exp1` เป็น 24 B เพราะ `serializedPayload` ของ DATA มี byte `00` ต่อท้ายอีก 1 ตัว (DATA length 44 = 20 + 24) |
+| **รวม TCP payload** | **≈ 76–102** (วัดจริง **95 B** รวม length prefix [V: capture ภาค 3]) | |
 
-เทียบกับ RTPS/UDP ของข้อความเดียวกัน (UDP payload 80–156 B ตามหัวข้อ 3.7) (ประมาณการทั้งคู่)
+เทียบกับ RTPS/UDP ของข้อความเดียวกัน (UDP payload 80–156 B ตามหัวข้อ 3.7) (ประมาณการทั้งคู่; ผลวัดใน[ภาค 3](03_wire_experiments.md): RTPS UDP payload 156 B ใน frame 198 B เทียบกับ Zenoh TCP payload 95 B ใน frame 161 B)
 
 | | RTPS/UDP (Fast DDS) | Zenoh/TCP |
 |---|---|---|
@@ -867,7 +871,8 @@ kernel tracepoint ในตาราง [V: `__traceiter_net_dev_xmit`, `netif_r
 
 **R3. ผลของ build option ต่อ overhead บนสาย** (จาก 3.7)
 - สมมติฐาน: `FASTDDS_STATISTICS=ON` เพิ่ม 60 B ต่อ datagram ซึ่งเป็น 30–40% ของ frame สำหรับข้อความเล็ก และเพิ่มงานต่อ send (ค้น locator ใน collection) แต่ไม่มีผลวัดได้กับข้อความใหญ่
-- วัด: capture เพื่อยืนยันว่า binary `.deb` ของ Lyrical build แบบใด (ขั้นแรกที่ต้องทำก่อนอ้างตัวเลขใด ๆ จากเอกสารนี้) แล้วเทียบ throughput ของข้อความ 16–256 B ที่อัตราสูงระหว่างสอง build
+- สิ่งที่ทำแล้ว: capture ใน[ภาค 3](03_wire_experiments.md) ยืนยันว่า binary `.deb` ของ Lyrical ส่ง RTPS 2.3 และมี statistics submessage 60 B ในทุก RTPS message (คือ build แบบ `SECURITY=ON`, `FASTDDS_STATISTICS=ON`) ใน frame `"Hello World: 1"` 198 B ส่วนนี้คิดเป็น 60/198 ≈ 30%
+- วัด (ยังไม่ได้ทำ): build Fast DDS แบบ `FASTDDS_STATISTICS=OFF` เพิ่ม แล้วเทียบ throughput และ CPU ต่อ send ของข้อความ 16–256 B ที่อัตราสูงระหว่างสอง build
 
 **R4. ขนาด socket buffer ขั้นต่ำเชิงทฤษฎีจาก `truesize`** (จาก 5.3)
 - สมมติฐาน: อัตราทิ้งที่ socket ของภาพขนาด S ทำนายได้จากแบบจำลอง `sk_rcvbuf / (truesize ต่อ datagram)` กับการกระจายของเวลาที่ `dds.udp.*` ถูกหน่วง และค่า `SO_RCVBUF` ที่พอดีคือ (จำนวน DATA_FRAG ต่อ sample × truesize ต่อ datagram × จำนวน sample ที่ต้องการรองรับ)
@@ -901,7 +906,7 @@ kernel tracepoint ในตาราง [V: `__traceiter_net_dev_xmit`, `netif_r
 |---|---|---|---|
 | 1 | §3.1 "Data-sharing delivery: zero-copy ระหว่าง DataWriter/DataReader บน host เดียวกัน (ใช้กับ loaned messages)" | ใน `rmw_fastrtps_cpp` ของ Lyrical data-sharing ถูกสั่ง `off()` ทั้ง writer และ reader เป็น default จะเปิดได้ต้องใช้ `RMW_FASTRTPS_USE_QOS_FROM_XML=1` พร้อม XML ควรเพิ่มเงื่อนไขนี้ | `rmw_fastrtps_cpp/src/publisher.cpp` บรรทัด 245–256; `subscription.cpp` บรรทัด 412–417, 684–688 |
 | 2 | §6 ตาราง "QoS ในระดับเครือข่าย: DSCP/`SO_PRIORITY` ผ่าน XML profile" สำหรับ DDS | Fast DDS 3.6.x ไม่มีการตั้ง `IP_TOS`/`SO_PRIORITY` ใน source และทั้ง UDP กับ TCP transport ทิ้งพารามิเตอร์ `transport_priority` ข้อความนี้ไม่เป็นจริงสำหรับ Fast DDS (Cyclone มี field `m_diffserv` ใน `ddsi_udp.c` แต่ยังไม่ได้ไล่ว่าใช้อย่างไร) | grep ใน `src/`, `include/` ได้ 0 รายการ; `UDPTransportInterface.cpp` บรรทัด 543; `TCPTransportInterface.cpp` บรรทัด 1498 |
-| 3 | §5.4 frame ตัวอย่าง: RTPS version `02 03`, 122 B, ไม่มี INFO_DST และไม่มี submessage ท้าย | (ก) version เป็น 2.3 เฉพาะ build ที่ `SECURITY=ON` ซึ่ง**ตรงกับ binary `.deb` ของ Lyrical** (ตรวจเพิ่มภายหลังจาก `debian/rules`) ส่วน build default ของ CMake ได้ 2.2 (ข) build default มี statistics submessage `0x80` ยาว 60 B ต่อท้ายทุก message (ค) unicast ถึง participant เดียวมี INFO_DST frame จริงจึงน่าจะเป็น 138–198 B ไม่ใช่ 122 B ภาค 1 ระบุไว้แล้วว่าเป็นค่าตัวอย่าง แต่ควรระบุ build variant | `Types.hpp` บรรทัด 108–117; `CMakeLists.txt` บรรทัด 278, 428; `RTPSMessageGroup.cpp` บรรทัด 520–524, 973–984 ทั้งหมดยังไม่ได้ยืนยันด้วย capture |
+| 3 | §5.4 frame ตัวอย่าง: RTPS version `02 03`, 122 B, ไม่มี INFO_DST และไม่มี submessage ท้าย | (ก) version เป็น 2.3 เฉพาะ build ที่ `SECURITY=ON` ซึ่ง**ตรงกับ binary `.deb` ของ Lyrical** (ตรวจเพิ่มภายหลังจาก `debian/rules`) ส่วน build default ของ CMake ได้ 2.2 (ข) build default มี statistics submessage `0x80` ยาว 60 B ต่อท้ายทุก message (ค) unicast ถึง participant เดียวมี INFO_DST frame จริงจึงน่าจะเป็น 138–198 B ไม่ใช่ 122 B ภาค 1 ระบุไว้แล้วว่าเป็นค่าตัวอย่าง แต่ควรระบุ build variant **แก้แล้ว (2026-11-27):** ภาค 1 §5.4 เปลี่ยนตัวอย่างเป็น frame จริง 198 B และ type `example_interfaces/msg/String` | `Types.hpp` บรรทัด 108–117; `CMakeLists.txt` บรรทัด 278, 428; `RTPSMessageGroup.cpp` บรรทัด 520–524, 973–984 ภายหลังยืนยันด้วย capture ใน[ภาค 3](03_wire_experiments.md) แล้ว: version 2.3, INFO_DST 16 B, statistics 60 B, frame 198 B |
 | 4 | §5.4 "`INFO_DST` (12 B)" | submessage `INFO_DST` รวม header ยาว 16 B (header 4 + guidPrefix 12) | `info_dst_message_length = 16` ใน `BaseWriter.cpp` |
 | 5 | §5.5 RX แถว 1 "DMA frame ลง RX ring (page pool)" และ §2.1 ที่นับ copy ฝั่งรับ 1 รอบใน kernel | สำหรับ r8169 ซึ่งเป็น driver ตัวอย่างของภาค 1: ไม่ใช้ page pool และ**คัดลอกทุก packet** จาก buffer DMA ไป skb ใหม่ จึงมี copy ฝั่งรับใน kernel 2 รอบ | `r8169_main.c` v7.0 บรรทัด 4162, 4816–4827 |
 | 6 | §5.5 "`napi_gro_receive` ในเวอร์ชันนี้กลายเป็น `gro_receive_skb`" | ถูกต้องในระดับ symbol แต่ควรเสริมว่า `napi_gro_receive()` ยังมีอยู่เป็น `static inline` ที่ห่อ `gro_receive_skb()` และ driver ยังเรียกชื่อเดิม | `include/linux/netdevice.h` v7.0 บรรทัด 4251–4255; `r8169_main.c` บรรทัด 4840 |
@@ -916,15 +921,15 @@ kernel tracepoint ในตาราง [V: `__traceiter_net_dev_xmit`, `netif_r
 
 ## 9. สิ่งที่ยังไม่ได้ verify
 
-1. **ไม่มี packet capture**: ทุก layout ในหัวข้อ 1, 2, 3.7, 4.4 มาจากการอ่านโค้ด ต้องยืนยันด้วย `tcpdump` + Wireshark บนเครื่องที่ติดตั้ง Lyrical
-2. ~~build option ของ binary `.deb`~~ ตรวจแล้ว: `debian/rules` ของ Lyrical ใส่ `-DSECURITY=ON` และไม่ได้ปิด `FASTDDS_STATISTICS` (ยังต้องยืนยันผลบนสายด้วย capture)
+1. ~~**ไม่มี packet capture**~~ capture แล้วใน[ภาค 3](03_wire_experiments.md) (Docker, `veth`, 5 pcap) ยืนยัน layout หลักของหัวข้อ 1, 2, 3.7, 4.4 แล้ว (SPDP `DATA(p)`, frame 198 B, DATA_FRAG/NACK_FRAG, Zenoh length prefix/attachment/CDR) ส่วนที่ยังไม่ได้ยืนยัน: การแบ่ง field ภายใน `PUT` ของ Zenoh, ค่า `PID_BUILTIN_ENDPOINT_SET` เทียบกับที่ทำนาย และผลบน NIC จริง (r8169) เพราะ capture ผ่าน `veth`
+2. ~~build option ของ binary `.deb`~~ ตรวจแล้ว: `debian/rules` ของ Lyrical ใส่ `-DSECURITY=ON` และไม่ได้ปิด `FASTDDS_STATISTICS` และยืนยันบนสายแล้วใน[ภาค 3](03_wire_experiments.md) (RTPS 2.3 + submessage `0x80`)
 3. **OMG DDSI-RTPS 2.5** ไม่ได้อ่านต้นฉบับ ความหมายของ field (เช่น ความหมายของ bitmap, GAP) เป็น [K]
 4. พฤติกรรมของ `rmw_dds_common::Context` ว่าส่ง `ParticipantEntitiesInfo` เมื่อใดบ้าง (หัวข้อ 1.4)
 5. เส้นทางเต็มของ HEARTBEAT ใน `StatefulWriter` (ตรวจเฉพาะ `send_heartbeat_piggyback_nts_` และค่า default) ข้อสรุปเรื่องเวลากู้คืน 3 s เป็นสมมติฐาน
 6. รายละเอียดการส่งซ้ำเฉพาะ fragment ที่ขอใน NACK_FRAG ฝั่ง writer (ตรวจถึง `perform_nack_response` → `add_old_sample`)
 7. source ของ asio (ว่า `send_to` แบบหลาย buffer ลงเป็น `sendmsg` + iovec) และพฤติกรรมของ `get_option` ต่อ `SO_RCVBUF` บน Linux
 8. `sizeof(StatisticsSubmessageData)` = 56 คำนวณจากนิยาม struct ไม่ได้ compile
-9. ขนาดจริงของ `PUT` ของ Zenoh บนสาย, รูปแบบ ZenohId ใน timestamp, handshake INIT/OPEN, และ "few fixes" ที่ vendor เพิ่มจาก 1.10.1
+9. การแบ่ง field ภายใน `PUT` ของ Zenoh (ขนาดรวมวัดแล้ว: TCP payload 95 B ใน[ภาค 3](03_wire_experiments.md)), รูปแบบ ZenohId ใน timestamp, handshake INIT/OPEN และความต่างของ codec ระหว่าง zenoh 1.8.0 (`2687c51`) ที่อยู่ใน `.deb` จริงกับ source 1.10.1 ที่ใช้อ่าน (ดูหมายเหตุเวอร์ชันในหัวข้อ 4)
 10. `truesize` จริงของ packet แต่ละขนาดบนเครื่องนี้ และพฤติกรรมเมื่อ frag memory เกิน `ipfrag_high_thresh`
 11. คำสั่ง `bpftrace`/`perf` ทั้งหมดยังไม่ได้รัน
 12. ตัวเลขทั้งหมดในหัวข้อ 6 เป็นประมาณการ

@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
 """Minimal pcap reader + RTPS submessage decoder (standard library only, no tshark needed).
 
-Reads .pcap and .pcap.gz (Ethernet or Linux cooked capture) and decodes RTPS
-submessages: INFO_DST, INFO_TS, DATA, DATA_FRAG, HEARTBEAT, ACKNACK, NACK_FRAG,
+Reads .pcap and .pcap.gz with link type Ethernet (1) or Linux cooked capture
+v1 (113) / v2 (276, what `tcpdump -i any` writes on newer libpcap); cooked frames are
+shown with a 14-byte pseudo-Ethernet header. Other link types get a warning on stderr.
+Decodes RTPS submessages: INFO_DST, INFO_TS, DATA, DATA_FRAG, HEARTBEAT, ACKNACK, NACK_FRAG,
 and the Fast DDS statistics submessage (0x80).
 
 Usage (from the repository root):
   python3 ros2_lyrical/tools/rtps_peek.py frame     <pcap> <frame-no>   hex dump + decoded RTPS of one frame
   python3 ros2_lyrical/tools/rtps_peek.py sms       <pcap> <NAME...>    every submessage of the given kinds
                                                                       e.g. NACK_FRAG DATA_FRAG HEARTBEAT
+                                                                      (exact name: DATA does not match DATA_FRAG)
   python3 ros2_lyrical/tools/rtps_peek.py strings   <pcap> <frame-no>   printable strings (SPDP properties)
   python3 ros2_lyrical/tools/rtps_peek.py fragcount <pcap>              IP fragments per UDP datagram
 
@@ -28,12 +31,17 @@ def frames(path):
         n += 1
         pkt = data[off + 16:off + 16 + incl]
         off += 16 + incl
-        if link == 113:            # Linux cooked (tcpdump -i any)
+        if link == 113:            # Linux cooked v1 (SLL): protocol at bytes 14-15, 16-byte header
             pkt = b'\x00' * 12 + pkt[14:16] + pkt[16:]
+        elif link == 276:          # Linux cooked v2 (SLL2): protocol at bytes 0-1, 20-byte header
+            pkt = b'\x00' * 12 + pkt[0:2] + pkt[20:]
+        elif link != 1 and n == 1:
+            print(f'warning: unsupported pcap link type {link}, treating frames as Ethernet '
+                  '(RTPS will probably not be decoded)', file=sys.stderr)
         yield n, ts + tu / 1e6, pkt
 
 def ip_udp(pkt):
-    if pkt[12:14] != b'\x08\x00':
+    if pkt[12:14] != b'\x08\x00' or len(pkt) < 34:
         return None
     ip = pkt[14:]
     ihl = (ip[0] & 15) * 4
@@ -53,7 +61,7 @@ def sn(b, e): hi, lo = struct.unpack(e + 'iI', b); return (hi << 32) | lo
 def rtps(payload, maxlen=None):
     if payload[:4] != b'RTPS':
         return None
-    out = [f'RTPS v{payload[4]}.{payload[5]} vendor {payload[6]:02x}.{payload[7]:02x} guidPrefix {payload[8:20].hex(" ")}']
+    out = [(None, f'RTPS v{payload[4]}.{payload[5]} vendor {payload[6]:02x}.{payload[7]:02x} guidPrefix {payload[8:20].hex(" ")}')]
     p = 20
     while p + 4 <= len(payload):
         sid, fl, ln = payload[p], payload[p + 1], None
@@ -83,7 +91,7 @@ def rtps(payload, maxlen=None):
             s, fr = struct.unpack(e + 'iI', body[:8]); d = f'time {s}.{fr * 1e9 / 2**32:09.0f}'
         elif sid == 0x0e:
             d = f'dst guidPrefix {body[:12].hex(" ")}'
-        out.append(f'  [{p:3d}] {name:<18} flags 0x{fl:02x} len {ln:<5} {d}')
+        out.append((name, f'  [{p:3d}] {name:<18} flags 0x{fl:02x} len {ln:<5} {d}'))
         if ln == 0:
             break
         p += 4 + ln
@@ -114,21 +122,25 @@ if cmd == 'frame':
             print(f'frame {n}: {len(pkt)} B'); hexdump(pkt)
             iu = ip_udp(pkt)
             if iu and iu['proto'] == 17:
-                for l in rtps(iu['l4'][8:]) or []: print(l)
+                for k, l in rtps(iu['l4'][8:]) or []: print(l)
 elif cmd == 'strings':
     want = int(arg[0])
     for n, t, pkt in frames(path):
         if n == want: print(strings(pkt))
 elif cmd == 'sms':     # summarize RTPS submessages of interest
-    kinds = set(arg)
+    hexid = lambda k: k.lower().startswith('0x') and len(k) == 4 and all(c in '0123456789abcdef' for c in k[2:].lower())
+    kinds = {SM.get(int(k, 16), k.lower()) if hexid(k) else k for k in arg}   # exact names; 0xNN also accepted
+    for k in sorted(kinds - set(SM.values())):
+        if not hexid(k):
+            print(f'warning: unknown submessage kind {k!r}; known: {" ".join(SM.values())} or 0xNN', file=sys.stderr)
     for n, t, pkt in frames(path):
         iu = ip_udp(pkt)
         if not iu or iu['proto'] != 17 or iu['foff'] != 0: continue
         r = rtps(iu['l4'][8:])
-        if r and any(k in l for k in kinds for l in r[1:]):
+        hits = [l for k, l in (r or [])[1:] if k in kinds]
+        if hits:
             print(f'frame {n} {t:.6f} {iu["src"]} -> {iu["dst"]} ip.id {iu["id"]} MF={iu["mf"]}')
-            for l in r[1:]:
-                if any(k in l for k in kinds): print(l)
+            for l in hits: print(l)
 elif cmd == 'fragcount':
     from collections import Counter
     c = Counter()

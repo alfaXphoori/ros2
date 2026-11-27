@@ -15,7 +15,7 @@
 | รายการ | ค่า |
 |---|---|
 | Image | `ros:lyrical-ros-base` (Docker Official Image) + `ros-lyrical-demo-nodes-cpp`, `ros-lyrical-rmw-zenoh-cpp`, `tcpdump`, `tshark 4.6.4` ([Dockerfile](../captures/scripts/Dockerfile)) |
-| package จริงจาก apt | `ros-lyrical-fastdds 3.6.2`, `ros-lyrical-fastcdr 2.3.6`, `ros-lyrical-rmw-fastrtps-cpp 9.4.10`, `ros-lyrical-rclcpp 32.0.3`, `ros-lyrical-rmw-zenoh-cpp 0.10.6` |
+| package จริงจาก apt | `ros-lyrical-fastdds 3.6.2`, `ros-lyrical-fastcdr 2.3.6`, `ros-lyrical-rmw-fastrtps-cpp 9.4.10`, `ros-lyrical-rclcpp 32.0.3`, `ros-lyrical-rmw-zenoh-cpp 0.10.6`, `ros-lyrical-zenoh-cpp-vendor 0.10.6` (zenoh-c 1.8.0, zenoh-cpp 1.9.0) |
 | Kernel | Linux 7.0.0-43-generic (Ubuntu 26.04, container ใช้ kernel ของ host) |
 | Topology | container แต่ละตัวเป็น "host" แยก network namespace ต่อกันผ่าน Docker bridge (`veth`, MTU 1500, subnet 172.20.0.0/16) multicast ใช้ได้ |
 | จุด capture | `tcpdump -i eth0` ภายใน container ฝั่งรับ (Host B) ซึ่งเห็น packet ที่ AF_PACKET tap ก่อนเข้า IP stack |
@@ -79,7 +79,7 @@ frame 95 ใน `exp1_fastdds_default.pcap` คือ `"Hello World: 1"` ตั�
 
 | ประเภท | frame | byte | สัดส่วน |
 |---|---|---|---|
-| SPDP `DATA(p)` (610 B/ครั้ง, multicast + unicast) | 32 | 19 520 | 36.5% |
+| SPDP `DATA(p)` (frame 610 B/ครั้ง = UDP payload 568 B, multicast + unicast) | 32 | 19 520 | 36.5% |
 | SEDP `DATA(w)`/`DATA(r)` | 21 | 16 166 | 30.3% |
 | HEARTBEAT / ACKNACK | 40 | 6 728 | 12.6% |
 | `ros_discovery_info` DATA | 13 | 4 754 | 8.9% |
@@ -87,7 +87,7 @@ frame 95 ใน `exp1_fastdds_default.pcap` คือ `"Hello World: 1"` ตั�
 | **ข้อมูล chatter จริง** (9 sample × 198 B) | 9 | 1 782 | **3.3%** |
 
 ข้อค้นพบจาก discovery
-- SPDP ส่งซ้ำ 6 ครั้งห่างกัน 100 ms ตอนเริ่ม (frame 3–10) ตรงกับค่า initial announcements ในภาค 2 §1.2
+- SPDP `DATA(p)` ของ listener ส่ง multicast 6 ครั้งห่างกัน 100 ms ตอนเริ่ม (frame 3–6, 9, 10; frame 7 และ 8 ไม่ใช่ SPDP) แล้วจึงเปลี่ยนเป็นคาบ 3 s (ครั้งถัดไปคือ frame 99) 6 ครั้ง = ประกาศทันที 1 ครั้งตอน enable participant + initial announcements `count` = 5 ตามภาค 2 §1.2 ฝั่ง talker ก็ส่ง 6 ครั้งเช่นกัน (multicast frame 12, 61, 85, 87, 90, 92) ตั้งแต่ครั้งที่ 2 มีสำเนา unicast ไปยัง listener ที่รู้จักแล้วคู่กันด้วย (frame 60, 84, 86, 89, 91) และมี unicast อีก 1 ฉบับ (frame 21) ส่งทันทีหลังได้รับ `DATA(p)` ของ listener (frame 15)
 - `DATA(p)` มี parameter ตามลำดับที่ภาค 2 ทำนายไว้ รวมถึง SHM locator **kind `0x13` (=19)** ซึ่ง Wireshark แสดงว่า "Unknown" และ `USER_DATA` = `enclave=/;\0`
 - **ข้อค้นพบใหม่ (privacy):** `PID_PROPERTY_LIST` ส่ง `fastdds.physical_data.host` (hash ของเครื่อง), **`fastdds.physical_data.user` = ชื่อผู้ใช้ (`root`)** และ **`fastdds.physical_data.process` = PID** ผ่าน multicast ให้ทุกเครื่องใน subnet ควรระวังในเครือข่ายที่ใช้ร่วมกับผู้อื่น
 - **ข้อค้นพบใหม่:** reader ของ `ros_discovery_info` ประกาศ unicast locator ที่ **UDP port 7000** แยกจาก 7411 (เห็นใน `DATA(r)` frame 29, 69) Wireshark จึงแปลผิดเป็นโปรโตคอล "RX" ส่วนสาเหตุในโค้ดยังไม่ได้ไล่ [K]
@@ -98,7 +98,7 @@ frame 95 ใน `exp1_fastdds_default.pcap` คือ `"Hello World: 1"` ตั�
 
 | ค่า | คำทำนาย (ภาค 2 §2.4) | ผลจริง |
 |---|---|---|
-| sampleSize | 921 652 B | **921 648 B** (ต่างกัน 4 B) |
+| sampleSize | 921 652 B | **921 648 B** (ต่างกัน 4 B เพราะภาค 2 สมมติ `frame_id = "camera"` (12 B ใน CDR) แต่ [`img_pub.py`](../captures/scripts/img_pub.py) ใช้ `"f0"`… (8 B) คำนวณใหม่ด้วย `"f0"` ได้ 921 648 ตรงพอดี และยืนยันว่า sampleSize นับรวม encapsulation 4 B ดูภาค 2 §2.4) |
 | fragmentSize | 65 324 B (เมื่อมี statistics) | **65 324 B** |
 | DATA_FRAG ต่อภาพ | 15 | **15** (ครบทั้ง 5 ภาพ) |
 | IP fragment ต่อ datagram | 45 | **45** (reassembled 65 476 B) |
@@ -133,13 +133,22 @@ NACK_FRAG ทั้ง 4 ฉบับในไฟล์
 - TCP payload ขึ้นต้นด้วย `5d 00` คือ batch length แบบ u16 little-endian (=93) ตรงตามภาค 2 §4.2
 - attachment ของ rmw_zenoh ยาว 33 B ตรงตามภาค 2: sequence number (8) + source timestamp (8) + ความยาว GID (1) + GID (16)
 - CDR payload ยาว 23 B ไม่มี padding ท้าย ส่วน RTPS pad เป็น 24 B
-- การแยก field `FRAME 0x25`, `PUSH 0x1d`, `PUT 0xa1` และ timestamp ถอดด้วยมือตามลำดับ codec ของ Zenoh 1.10.1 ยังไม่ได้ตรวจด้วย Zenoh dissector [K]
+- การแยก field `FRAME 0x25`, `PUSH 0x1d`, `PUT 0xa1` และ timestamp ถอดด้วยมือตามลำดับ codec ที่อ่านจาก source ของ Zenoh 1.10.1 แต่ binary ที่ใช้ในการทดลองจริงคือ zenoh-c 1.8.0 / zenoh 1.8.0 (commit `2687c51`) จาก `ros-lyrical-zenoh-cpp-vendor 0.10.6` (ดูหมายเหตุเวอร์ชันใน[ภาค 2 §4](02_wire_format_and_kernel.md#4-rmw_zenoh_cpp-บนสาย)) ยังไม่ได้เทียบ codec สองเวอร์ชันทีละ field และยังไม่ได้ตรวจด้วย Zenoh dissector [K]
 
 ---
 
 ## 5. การทดลองที่ 4: เครื่องเดียวกัน (Fast DDS SHM)
 
 - ใน pcap ที่ capture ทุก interface (`-i any`) **ไม่มี user DATA ของ `rt/chatter` เลย** มีแค่ discovery (`DATA(p)` 40, `DATA(w)` 21, `DATA(r)` 17, HEARTBEAT/ACKNACK 28) แต่ listener ได้รับครบทุกข้อความ จึงยืนยันว่าข้อมูลวิ่งผ่าน shared memory
+  - **ตรวจซ้ำ 2026-11-27 ด้วย [`tools/rtps_peek.py`](../tools/rtps_peek.py) [V]:** pcap นี้เป็น link type 276 (Linux cooked v2 จาก `-i any`) ซึ่ง tool ฉบับก่อนอ่านไม่ได้ (`sms` ไม่แสดงผลเลย) หลังแก้ให้รองรับแล้วพบ DATA 100 submessage ทั้งหมดมาจาก builtin writer: `00.01.00.c2` (SPDP) 43, `00.00.03.c2` (SEDP publications) 32, `00.00.04.c2` (SEDP subscriptions) 25 ในจำนวนนี้ DATA ที่มี payload (flags `0x05`) คือ 40/21/17 ตรงกับตัวเลขข้างบน ส่วนอีก 3/11/8 (flags `0x03`) มีแค่ inline QoS ที่มี `STATUS_INFO` = dispose+unregister ตอนปิด node (Wireshark แสดงเป็น `[UD]`) HEARTBEAT 14 มาจาก `00.00.03.c2` 4, `00.00.04.c2` 4, `00.02.00.c2` (participant message) 2, `00.03.00.c3`/`00.03.01.c3` (type lookup request/reply) 2/2 และ ACKNACK 14 **ไม่มี DATA หรือ DATA_FRAG จาก user writer เลย** ตรวจไขว้ด้วยสคริปต์แยกที่อ่าน header SLL2 เองได้ผลเดียวกัน
+  - interface ที่เห็น: `lo` (127.0.0.1 → 127.0.0.1 unicast ไป UDP 7410/7412 รวม 77 frame และ → 239.255.0.1:7400 16 frame) กับ interface ของ container (172.17.0.2 → 239.255.0.1:7400 16 frame, เป็น SPDP multicast เท่านั้น) นอกจากนี้มีแค่ IGMP 4 และ ARP 2
+  - ทำซ้ำ (จาก root ของ repo):
+
+```bash
+python3 ros2_lyrical/tools/rtps_peek.py sms ros2_lyrical/captures/exp4_samehost_shm.pcap DATA DATA_FRAG | grep -o 'flags 0x.. .*writer [0-9a-f.]*' | awk '{print $1,$2,$NF}' | sort | uniq -c
+python3 ros2_lyrical/tools/rtps_peek.py sms ros2_lyrical/captures/exp4_samehost_shm.pcap HEARTBEAT | grep -o 'writer [0-9a-f.]*' | sort | uniq -c
+```
+
 - `/dev/shm` ระหว่างรัน:
 
 ```
@@ -179,10 +188,10 @@ sem.fastdds_port7000_mutex …             named semaphore
 
 | เรื่อง | ผลจากการทดลอง |
 |---|---|
-| frame ตัวอย่างในภาค 1 (122 B) | frame จริงยาว 198 B (เพิ่ม INFO_DST 16 + statistics 60) readerId เป็น reader จริง ไม่ใช่ UNKNOWN |
+| frame ตัวอย่างในภาค 1 (122 B) | frame จริงยาว 198 B (เพิ่ม INFO_DST 16 + statistics 60) readerId เป็น reader จริง ไม่ใช่ UNKNOWN (ภาค 1 §5.4 เปลี่ยนไปใช้ frame 95 นี้แล้ว) |
 | type ของ demo talker | `example_interfaces/msg/String` ไม่ใช่ `std_msgs/msg/String` |
 | RTPS version | 2.3 ใน `.deb` ของ Lyrical |
-| `sampleSize` ของภาพ 640×480 | 921 648 B (ภาค 2 คำนวณได้ 921 652 B) |
+| `sampleSize` ของภาพ 640×480 | 921 648 B (ภาค 2 คำนวณได้ 921 652 B ด้วย `frame_id = "camera"`; ต่างกัน 4 B จาก `frame_id` ที่สั้นกว่า และยืนยันว่านับรวม encapsulation) |
 | topic ของ message ที่มี `uint8[]` | มี topic `/_buf_cpu` เพิ่มเข้ามา |
 | `ros_discovery_info` | reader ใช้ UDP port 7000 |
 | ข้อมูลที่ SPDP เปิดเผย | ชื่อผู้ใช้และ PID ของ process |

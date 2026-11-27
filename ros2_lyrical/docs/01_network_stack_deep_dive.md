@@ -25,7 +25,7 @@
 | Fast DDS / Fast CDR | 3.6.x / 2.3.x | ros2.repos |
 | Cyclone DDS | 11.0.x (+ iceoryx `release_2.0`) | ros2.repos |
 | Connext DDS | 7.7.0 (Tier 1 ยกเว้น arm64) | supported-platforms.rst |
-| Zenoh | ตารางในเอกสารระบุ **1.8.0** แต่ comment ใน `zenoh_cpp_vendor/CMakeLists.txt` ระบุ **zenoh-c 1.10.1 + fixes** (ขัดกันอยู่ ควรเช็กจาก binary ที่ติดตั้งจริง) | ทั้งสองไฟล์ |
+| Zenoh | ตารางในเอกสารระบุ **1.8.0** แต่ comment ใน `zenoh_cpp_vendor/CMakeLists.txt` ของ branch `lyrical` ระบุ **zenoh-c 1.10.1 + fixes** เช็กจาก binary `.deb` ที่ติดตั้งจริงใน image ของ[ภาค 3](03_wire_experiments.md) แล้ว: `rmw_zenoh_cpp` / `zenoh_cpp_vendor` **0.10.6** ภายในเป็น **zenoh-c 1.8.0**, **zenoh-cpp 1.9.0** และ crate **zenoh (Rust) 1.8.0** (git commit `2687c51`) ตรงกับตารางในเอกสาร ไม่ใช่ 1.10.1 | ทั้งสองไฟล์; binary: `zenoh_configure.h`, `zenohc.pc`, `zenohcxx.pc` และ version string ใน `libzenohc.so` ของ package จาก apt (`dpkg -l` ใน image ภาค 3) |
 | Tier 1 RMW | fastrtps, cyclonedds, zenoh, connextdds | supported-platforms.rst |
 | Tier 2 RMW | `rmw_fastrtps_dynamic_cpp` | supported-platforms.rst |
 | Platform Tier 1 | Ubuntu 26.04 Resolute (amd64/arm64), Windows 11 | supported-platforms.rst |
@@ -287,36 +287,43 @@ cat /proc/net/snmp ; ss -uamp ; ethtool -S <iface> | grep -i drop
 
 ![anim-rtps-packet-anatomy](../diagrams/anim-rtps-packet-anatomy.svg)
 
-> **ผลจาก capture จริง ([ภาค 3](03_wire_experiments.md)):** frame ของ demo talker บน Lyrical ยาว **198 B** (RTPS 2.3 + INFO_DST + INFO_TS + DATA + statistics 0x80), readerId เป็น reader จริง (`00.00.13.04`) และ type คือ `example_interfaces/msg/String` ไม่ใช่ `std_msgs`
->
-> **หมายเหตุ build variant [แก้ไข 2026-11-24 ตามภาค 2]:** frame 122 B นี้เป็นแบบ**น้อยที่สุด** (ไม่มี INFO_DST และ statistics submessage) binary `.deb` ของ Lyrical build Fast DDS ด้วย `-DSECURITY=ON` (RTPS version 2.3 ตามตัวอย่างนี้) และเปิด `FASTDDS_STATISTICS` ตามค่าเริ่มต้น frame จริงจึงน่าจะมี statistics submessage 60 B ต่อท้าย และอาจมี INFO_DST 16 B รวมเป็น 182–198 B ผู้ที่ build จาก source โดยไม่ใส่ flag จะได้ version 2.2 รายละเอียดอยู่ใน[ภาค 2 §3.7](02_wire_format_and_kernel.md#37-build-option-ที่เปลี่ยน-byte-บนสาย)
+> **[แก้ไข 2026-11-27 ตาม capture ภาค 3]:** ฉบับก่อนใช้ frame สังเคราะห์ 122 B (`std_msgs/String`, readerId `UNKNOWN`, ไม่มี INFO_DST และ statistics submessage) ตอนนี้เปลี่ยนเป็น frame จริงจาก[ภาค 3](03_wire_experiments.md) ยาว **198 B** frame 122 B เดิมคือ frame เดียวกันนี้ที่ตัด INFO_DST 16 B และ statistics submessage `0x80` 60 B ออก (198 − 16 − 60 = 122) ซึ่งเป็นรูปสมมติของ build ที่ปิด `FASTDDS_STATISTICS` และไม่ได้ใส่ INFO_DST (ยังไม่ได้ capture build แบบนั้น) binary `.deb` ของ Lyrical build Fast DDS ด้วย `-DSECURITY=ON` (RTPS version 2.3) และเปิด `FASTDDS_STATISTICS` ตามค่าเริ่มต้น ผู้ที่ build จาก source โดยไม่ใส่ flag จะได้ version 2.2 รายละเอียดอยู่ใน[ภาค 2 §3.7](02_wire_format_and_kernel.md#37-build-option-ที่เปลี่ยน-byte-บนสาย) ภาพ animation ด้านบนสร้างจาก frame นี้โดยตรง (`tools/gen_packet_kernel_svgs.py` อ่าน frame 95 จาก pcap)
 
-ตัวอย่างนี้คือ `demo_nodes_cpp talker` ส่ง `std_msgs/String` ค่า `"Hello World: 1"` บน topic `/chatter` ผ่าน `rmw_fastrtps_cpp` แบบ UDPv4 unicast ไปยัง listener ที่ domain 0, participant 0 frame ทั้งก้อนสร้างด้วยสคริปต์ที่คำนวณ IP และ UDP checksum ให้ถูกต้องจริง ส่วนค่า MAC, IP, guidPrefix และ timestamp เป็นค่าตัวอย่าง
+ตัวอย่างนี้คือ frame 95 ใน [`captures/exp1_fastdds_default.pcap`](../captures/exp1_fastdds_default.pcap) (การทดลองที่ 1 ของภาค 3): `demo_nodes_cpp talker` ส่ง `example_interfaces/msg/String` ค่า `"Hello World: 1"` บน topic `/chatter` (ชื่อบนสาย `rt/chatter`, type บนสาย `example_interfaces::msg::dds_::String_`) ผ่าน `rmw_fastrtps_cpp` (`ros-lyrical-fastdds 3.6.2` จาก apt) แบบ UDPv4 unicast จาก container 172.20.0.3 ไปยัง listener 172.20.0.2 ที่ domain 0, participant 0 ทุก byte มาจาก capture จริง (MAC, IP, guidPrefix และ timestamp เป็นค่าของ container ในการทดลอง) [V: capture ภาค 3, ถอดด้วย `tools/rtps_peek.py frame`]
 
 ```
-0000  02 00 00 00 00 20 02 00 00 00 00 10 08 00 45 00   Ethernet dst/src/type │ IPv4 →
-0010  00 6c 1c 46 40 00 40 11 9a cc c0 a8 01 0a c0 a8   len=108 id DF TTL=64 proto=17 csum src dst
-0020  01 14 ce c3 1c f3 00 58 05 6d 52 54 50 53 02 03   UDP 52931→7411 len=88 csum │ "RTPS" v2.3
-0030  01 0f 01 0f 45 d2 b3 0c 00 00 01 00 00 00 09 01   vendor 0x010f · guidPrefix │ INFO_TS
-0040  08 00 55 3b 05 6b cc cc cc 4c 15 05 2c 00 00 00   timestamp │ DATA flags=E|D len=44
-0050  10 00 00 00 00 00 00 00 12 03 00 00 00 00 01 00   toInlineQos=16 readerId writerId SN=1
-0060  00 00 00 01 00 00 0f 00 00 00 48 65 6c 6c 6f 20   CDR_LE · len=15 · "Hello "
-0070  57 6f 72 6c 64 3a 20 31 00 00                     "World: 1\0" + pad
+0000  62 1b 4b 57 a2 ac 42 8d e7 ce ea 36 08 00 45 00   Ethernet dst/src/type │ IPv4 →
+0010  00 b8 10 29 40 00 40 11 d1 de ac 14 00 03 ac 14   len=184 id DF TTL=64 proto=17 csum src dst
+0020  00 02 b0 4f 1c f3 00 a4 58 e3 52 54 50 53 02 03   UDP 45135→7411 len=164 csum │ "RTPS" v2.3
+0030  01 0f 01 0f 11 31 1a 00 bc 0d 00 00 00 00 0e 01   vendor 0x010f · guidPrefix │ INFO_DST
+0040  0c 00 01 0f 2c 17 1d 00 1c 48 00 00 00 00 09 01   len=12 · guidPrefix ของ listener │ INFO_TS
+0050  08 00 b1 58 05 6b 63 88 85 8b 15 05 2c 00 00 00   timestamp │ DATA flags=E|D len=44
+0060  10 00 00 00 13 04 00 00 13 03 00 00 00 00 01 00   toInlineQos=16 readerId writerId SN=1
+0070  00 00 00 01 00 00 0f 00 00 00 48 65 6c 6c 6f 20   CDR_LE · len=15 · "Hello "
+0080  57 6f 72 6c 64 3a 20 31 00 00 80 01 38 00 01 00   "World: 1\0" + pad │ 0x80 statistics len=56
+0090  00 00 f3 1c 00 00 00 00 00 00 00 00 00 00 00 00   locator UDPv4 port 7411 …
+00a0  00 00 ac 14 00 02 b1 58 05 6b 07 49 88 8b 05 00   … 172.20.0.2 │ timestamp │ sequence
+00b0  00 00 00 00 00 00 94 02 00 00 00 00 00 00 00 00
+00c0  00 00 00 00 00 00
 ```
 
 | ชั้น | ขนาด | field สำคัญ | ใครเขียน field นี้ |
 |---|---|---|---|
-| Ethernet II | 14 B (+4 FCS) | dst/src MAC, EtherType 0x0800 | kernel `ip_finish_output2` → neighbour/ARP cache; NIC เติม FCS |
-| IPv4 | 20 B | total length 108, ID, DF, TTL 64 (multicast มักตั้ง TTL=1), protocol 17, checksum | kernel `ip_make_skb` / `__ip_append_data` |
-| UDP | 8 B | src port (ephemeral ของ send socket), dst port **7411** = 7400 + 250·0 + 11 + 2·0, length, checksum (หรือ offload ให้ NIC) | kernel `udp_send_skb` |
+| Ethernet II | 14 B (+4 FCS บนสายจริง; ไม่อยู่ใน pcap) | dst/src MAC, EtherType 0x0800 | kernel `ip_finish_output2` → neighbour/ARP cache; NIC เติม FCS |
+| IPv4 | 20 B | total length 184, ID, DF, TTL 64 (multicast มักตั้ง TTL=1), protocol 17, checksum | kernel `ip_make_skb` / `__ip_append_data` |
+| UDP | 8 B | src port 45135 (ephemeral ของ send socket), dst port **7411** = 7400 + 250·0 + 11 + 2·0, length 164, checksum (หรือ offload ให้ NIC) | kernel `udp_send_skb` |
 | RTPS header | 20 B | `"RTPS"`, version 2.3, vendorId 0x010f (eProsima), guidPrefix 12 B | Fast DDS (`RTPSMessageGroup`) |
+| INFO_DST | 16 B | submessage id 0x0e, flag E, guidPrefix 12 B ของ participant ปลายทาง (listener) | Fast DDS |
 | INFO_TS | 12 B | submessage id 0x09, flag E (little endian), source timestamp | Fast DDS |
-| DATA header | 24 B | id 0x15, flags E\|D, octetsToInlineQos=16, readerId (UNKNOWN), writerId (`…03` = user writer, ไม่มี key), writerSN | Fast DDS writer |
-| serializedPayload | 24 B | encapsulation `0x0001` = CDR_LE (XCDR1), options, CDR body: `uint32` length 15 + `"Hello World: 1\0"` + padding | rmw typesupport (Fast-CDR 2.3.x) |
+| DATA header | 24 B | id 0x15, flags E\|D, length 44 (= 20 ส่วนคงที่ + 24 payload), octetsToInlineQos=16, readerId `00.00.13.04` (user reader ปลายทาง, ไม่มี key), writerId `00.00.13.03` (user writer, ไม่มี key), writerSN 1 | Fast DDS writer |
+| serializedPayload | 24 B | encapsulation `0x0001` = CDR_LE (XCDR1), options, CDR body: `uint32` length 15 + `"Hello World: 1\0"` + pad 1 | rmw typesupport (Fast-CDR 2.3.x) |
+| statistics `0x80` | 60 B | header 4 + `StatisticsSubmessageData` 56: locator ปลายทาง (UDPv4 172.20.0.2:7411) 24, timestamp 8, sequence 24 | Fast DDS (`add_stats_submsg`, เพราะ compile ด้วย `FASTDDS_STATISTICS`) |
+
+รวม: 14 + 20 + 8 + 20 + 16 + 12 + 24 + 24 + 60 = **198 B** (UDP payload = RTPS message 156 B, IPv4 total length 184 B)
 
 ข้อสังเกตสำหรับงานวิจัย
-- **Overhead:** ข้อความจริงยาว 14 ตัวอักษร แต่ใช้ 146 byte-times บนสาย (122 + FCS 4 + preamble 8 + IFG 12) ข้อความเล็กจึงเปลือง header เกือบทั้งหมด การรวมหลาย sample ไว้ในข้อความ RTPS เดียวกัน (Fast DDS ทำ message grouping) จึงช่วยได้มาก [K]
-- **Submessage ที่อาจเพิ่มเข้ามา:** `INFO_DST` (16 B รวม header) เมื่อส่งเฉพาะ participant, statistics submessage `0x80` (60 B) เมื่อ Fast DDS ถูก compile ด้วย `FASTDDS_STATISTICS` (ค่าเริ่มต้นและใน binary `.deb` ของ Lyrical), `HEARTBEAT` / `ACKNACK` เมื่อเป็น RELIABLE, `DATA_FRAG` เมื่อข้อมูลใหญ่เกินขนาด datagram, และ inline QoS (เช่น key hash เมื่อ type มี key) [K]
+- **Overhead:** ข้อความจริงยาว 14 ตัวอักษร แต่ใช้ 222 byte-times บนสาย (198 + FCS 4 + preamble 8 + IFG 12) statistics submessage อย่างเดียวก็ยาว 60 B แล้ว ข้อความเล็กจึงเปลือง header เกือบทั้งหมด การรวมหลาย sample ไว้ในข้อความ RTPS เดียวกัน (Fast DDS ทำ message grouping) จึงช่วยได้มาก [K]
+- **Submessage ที่อาจเพิ่มเข้ามา:** นอกจาก `INFO_DST` (16 B รวม header) และ statistics submessage `0x80` (60 B) ที่อยู่ใน frame นี้แล้ว ยังมี `HEARTBEAT` / `ACKNACK` เมื่อเป็น RELIABLE, `DATA_FRAG` เมื่อข้อมูลใหญ่เกินขนาด datagram, และ inline QoS (เช่น key hash เมื่อ type มี key) [K]
 - ค่าใน field ขึ้นกับ implementation และเวอร์ชัน ควรยืนยันกับ capture จริงก่อนอ้างอิง
 
 ```bash
