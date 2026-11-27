@@ -944,9 +944,9 @@ ZENOH_CONFIG_OVERRIDE=<span class="str">'connect/endpoints=["tcp/hostB:7447","tc
      callout([H.A.x, Y.mw+0.9, tz(H.A)], 'SPDP เปิดเผย', 'PID_PROPERTY_LIST: physical_data.user = root · .process = PID → ทุกเครื่องใน subnet');
      log('rtps:SPDP','PID_PROPERTY_LIST fastdds.physical_data.user="root" fastdds.physical_data.process=<pid>','x');
    }},
- { short:'ทดลอง 2 · ภาพ RELIABLE', sub:'ทดลองจริง · 15 DATA_FRAG', layer:'capture · exp2', real:true, title:'ผลจริง: ภาพ 921 KB แตกเป็น 15 DATA_FRAG และต้อง NACK',
-   text:'ส่ง <code>sensor_msgs/Image</code> 640×480 rgb8 แบบ RELIABLE 5 ภาพ แต่ละภาพ (sampleSize 921 648 B) ถูกแบ่งเป็น 15 DATA_FRAG ขนาด 65 324 B ซึ่งแต่ละก้อนแตกต่อเป็น IP fragment อีก 45 ชิ้น ภาพวิ่งบน topic <code>rt/img/_buf_cpu</code> ไม่ใช่ <code>rt/img</code> kernel ฝั่ง B ทิ้ง datagram ไป 23 ก้อนเพราะ receive buffer เต็ม (สีแดง) reader จึงส่ง NACK_FRAG (สีน้ำเงิน) แล้ว writer ส่ง fragment ซ้ำ 21 ชิ้น ผลคือได้ครบ 5/5 ภาพ แต่ traffic เพิ่มขึ้นราว 28%',
-   facts:[['V','DATA_FRAG ต่อ SN จริง: 18, 21, 15, 15, 28 (= 15 + ส่งซ้ำ 3, 6, 0, 0, 13) · NACK_FRAG 4 ครั้ง'],['V','<code>RcvbufErrors = 23</code>, <code>ReasmOKs = 97</code> จาก /proc/net/snmp ของ Host B'],['V','<code>/_buf_cpu</code> มาจาก rosidl::Buffer (rmw_fastrtps_cpp publisher.cpp) · ตำแหน่ง fragment ที่หายเป็นภาพประกอบ ยกเว้นภาพที่ 1 (frag 4–5 ตาม NACK_FRAG frame 749)']],
+ { short:'ทดลอง 2 · ภาพ RELIABLE', sub:'ทดลองจริง 24 พ.ย. · 15 DATA_FRAG', layer:'capture · exp2', real:true, title:'ผลจริง: ภาพ 921 KB แตกเป็น 15 DATA_FRAG และต้อง NACK',
+   text:'ส่ง <code>sensor_msgs/Image</code> 640×480 rgb8 แบบ RELIABLE 5 ภาพ แต่ละภาพ (sampleSize 921 648 B) ถูกแบ่งเป็น 15 DATA_FRAG ขนาด 65 324 B ซึ่งแต่ละก้อนแตกต่อเป็น IP fragment อีก 45 ชิ้น ภาพวิ่งบน topic <code>rt/img/_buf_cpu</code> ไม่ใช่ <code>rt/img</code> kernel ฝั่ง B ทิ้ง datagram ไป 23 ก้อนเพราะ receive buffer เต็ม (สีแดง) reader จึงส่ง NACK_FRAG (สีน้ำเงิน) แล้ว writer ส่ง fragment ซ้ำ 22 ชิ้น ผลคือได้ครบ 5/5 ภาพ แต่ traffic เพิ่มขึ้นราว 29% (ตัวเลขของรอบ 24 พ.ย. 2026)',
+   facts:[['V','DATA_FRAG ต่อ SN จริง: 18, 21, 15, 15, 28 (= 15 + ส่งซ้ำ 3, 6, 0, 0, 13) · NACK_FRAG 4 ครั้ง (รอบ 24 พ.ย. 2026)'],['V','<code>RcvbufErrors = 23</code>, <code>ReasmOKs = 97</code> จาก /proc/net/snmp ของ Host B (รอบ 24 พ.ย.)'],['V','รันซ้ำ 27 พ.ย. 2026 (2 รอบ): ได้ 5/5 แต่ NACK_FRAG 1 ฉบับ, DATA_FRAG ต่อ SN 21, 15, 15, 15, 15 และ 18, 15, 15, 15, 15, RcvbufErrors 6 และ 3 (ภาค 3 §6)'],['V','<code>/_buf_cpu</code> มาจาก rosidl::Buffer (rmw_fastrtps_cpp publisher.cpp) · ตำแหน่ง fragment ที่หายเป็นภาพประกอบ ยกเว้นภาพที่ 1 (frag 4–5 ตาม NACK_FRAG frame 749)']],
    code: barsHTML('DATA_FRAG ต่อภาพ (15 = ไม่ต้องส่งซ้ำ)', [1,2,3,4,5].map((k,i) => [`SN ${k}`, [18,21,15,15,28][i], 30, [18,21,15,15,28][i] > 15 ? '#d64545' : '#27a689', null, `${[18,21,15,15,28][i]}`])) +
      codeBlock(`<span class="fn">tshark</span> -r exp2_image_reliable.pcap.gz \\
   -Y <span class="str">'rtps.sm.id == 0x16'</span> -T fields -e rtps.sm.seqNumber \\
@@ -986,11 +986,11 @@ ZENOH_CONFIG_OVERRIDE=<span class="str">'connect/endpoints=["tcp/hostB:7447","tc
        await travel(up(H.B).slice(4), {color:PCOL.obj, r:0.24, speed:9});
        got++; show(k+1); log('ros2:callback_start', `img_sub got f${k} 921 600 B`, 'g'); adv(500000);
      }
-     log('summary', 'ได้ 5/5 · DATA_FRAG 97 (= 75 + ส่งซ้ำ 22 = ReasmOKs) · RcvbufErrors 23 · NACK_FRAG 4', 'u');
+     log('summary', '24 พ.ย.: ได้ 5/5 · DATA_FRAG 97 (= 75 + ส่งซ้ำ 22 = ReasmOKs) · RcvbufErrors 23 · NACK_FRAG 4', 'u');
    }},
- { short:'ทดลอง 5–6 · rcvbuf', sub:'ทดลองจริง · 13/20 → 20/20', layer:'capture · exp5–6', real:true, title:'ผลจริง: receive buffer ตัดสินว่าภาพจะรอดหรือไม่',
-   text:'ส่งภาพแบบ BEST_EFFORT 20 ภาพ (2 Hz) รอบแรกใช้ receive buffer ค่าเริ่มต้น (<code>rb212992</code>) กล่องข้าง socket ของ Host B คือคิวรับ เมื่อ burst ของ datagram 65 KB มาเร็วกว่าที่ thread ของ Fast DDS ดึงออก คิวจะเต็มและ kernel ทิ้งก้อนที่เหลือใน <code>__udp_enqueue_schedule_skb</code> ภาพนั้นจึงหายทั้งภาพ รอบที่สองตั้ง <code>receiveBufferSize</code> 4 MiB (kernel ให้จริง <code>rb8388608</code>) โดยไม่เปลี่ยนอย่างอื่น ผลคือไม่หายเลย',
-   facts:[['V','ค่าเริ่มต้น: ได้ <strong>13/20</strong> (หาย f0, f10, f13, f15, f16, f18, f19) · <code>RcvbufErrors = 45</code>'],['V','4 MiB: ได้ <strong>20/20</strong> · <code>RcvbufErrors = 0</code> · รันซ้ำ 2 รอบได้ตัวเลขเดิม'],['K','capture เห็น DATA_FRAG ครบ 15/15 ทุกภาพ เพราะ tcpdump อยู่ก่อนจุด drop · ระดับน้ำในกล่องและจำนวน drop ต่อภาพเป็นภาพประกอบ ยอดรวม 45 เป็นค่าจริง']],
+ { short:'ทดลอง 5–6 · rcvbuf', sub:'ทดลองจริง 24 พ.ย. · 13/20 → 20/20', layer:'capture · exp5–6', real:true, title:'ผลจริง: receive buffer ตัดสินว่าภาพจะรอดหรือไม่',
+   text:'ส่งภาพแบบ BEST_EFFORT 20 ภาพ (2 Hz) รอบแรกใช้ receive buffer ค่าเริ่มต้น (<code>rb212992</code>) กล่องข้าง socket ของ Host B คือคิวรับ เมื่อ burst ของ datagram 65 KB มาเร็วกว่าที่ thread ของ Fast DDS ดึงออก คิวจะเต็มและ kernel ทิ้งก้อนที่เหลือใน <code>__udp_enqueue_schedule_skb</code> ภาพนั้นจึงหายทั้งภาพ รอบที่สองตั้ง <code>receiveBufferSize</code> 4 MiB (kernel ให้จริง <code>rb8388608</code>) ผลคือไม่หายเลย (profile นี้เปลี่ยน send buffer และตัด SHM ด้วย การทดลองที่แยกเฉพาะ receive buffer อยู่ในภาค 3 §9)',
+   facts:[['V','ค่าเริ่มต้น: ได้ <strong>13/20</strong> (หาย f0, f10, f13, f15, f16, f18, f19) · <code>RcvbufErrors = 45</code> (รอบ 24 พ.ย. 2026)'],['V','4 MiB: ได้ <strong>20/20</strong> · <code>RcvbufErrors = 0</code> · รันซ้ำ 2 รอบเมื่อ 24 พ.ย. ได้ตัวเลขเดิม'],['V','รันซ้ำ 27 พ.ย. 2026: ค่าเริ่มต้นได้ 19/20 (เสียเฉพาะภาพแรก) · sweep เฉพาะ SO_RCVBUF ฝั่งรับ ≥ 1 MiB ได้ 20/20 · จำกัดอัตราด้วย tc 1 Gbit/s ค่าเริ่มต้นไม่หายเลย (ภาค 3 §6, §9, §11)'],['K','capture เห็น DATA_FRAG ครบ 15/15 ทุกภาพ เพราะ tcpdump อยู่ก่อนจุด drop · ระดับน้ำในกล่องและจำนวน drop ต่อภาพเป็นภาพประกอบ ยอดรวม 45 เป็นค่าจริง']],
    code: barsHTML('ภาพที่ได้รับ (BEST_EFFORT, 20 ภาพ)', [['rb 212 992 (default)', 0, 20, '#d64545', 'r1', '0/20'], ['rb 8 388 608 (4 MiB)', 0, 20, '#27a689', 'r2', '0/20']]) +
      barsHTML('Udp RcvbufErrors', [['default', 0, 45, '#d64545', 'e1', '0'], ['4 MiB', 0, 45, '#27a689', 'e2', '0']]) +
      codeBlock(`<span class="fn">ss</span> -uam | grep -o <span class="str">'rb[0-9]*'</span>   <span class="cm"># rb212992 → rb8388608</span>
@@ -1034,7 +1034,7 @@ ZENOH_CONFIG_OVERRIDE=<span class="str">'connect/endpoints=["tcp/hostB:7447","tc
            if (tok !== runToken) return;
          }
          await Promise.all(imgs); await sleep(900);
-         log('summary', phase ? 'รอบ 2: 20/20 · RcvbufErrors 0' : 'รอบ 1: 13/20 · RcvbufErrors 45', phase ? 'g' : 'x');
+         log('summary', phase ? 'รอบ 2: 20/20 · RcvbufErrors 0' : 'รอบ 1 (24 พ.ย.): 13/20 · RcvbufErrors 45', phase ? 'g' : 'x');
          if (!phase){ await sleep(700); }
        }
        callout([SW[0], 1.1, SW[2]], 'สรุป', 'network ไม่ได้ทำ packet หาย kernel ทิ้งที่ socket queue ของปลายทาง');
