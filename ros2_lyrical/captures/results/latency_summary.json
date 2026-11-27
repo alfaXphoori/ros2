@@ -1,0 +1,553 @@
+{
+ "unit": "microseconds",
+ "warmup_rule": "seq < 10 discarded per run",
+ "measured": "rclpy publish() call -> start of subscriber callback, same host kernel clock",
+ "configs": [
+  {
+   "config": "small_cross",
+   "topology": "cross",
+   "payload": "small",
+   "reliability": "reliable",
+   "depth": 10,
+   "count": 400,
+   "rate_hz": 100,
+   "runs": 30,
+   "sub_env": "",
+   "pub_env": "",
+   "warmup_discarded_per_run": 10,
+   "n_runs": 30,
+   "n_samples": 11700,
+   "expected_total": 12000,
+   "delivered_total": 12000,
+   "delivered_ratio": 1.0,
+   "duplicates": 0,
+   "out_of_order": 0,
+   "bad_length": 0,
+   "runs_with_missing": 0,
+   "runs_without_meta": 0,
+   "negative_latencies": 0,
+   "rcvbuf_errors_total": 0,
+   "runs_with_rcvbuf_errors": 0,
+   "rcvbuf_errors_max_per_run": 0,
+   "min_us": 60.08,
+   "median_us": 754.3115,
+   "mean_us": 722.0979572649572,
+   "p90_us": 799.1086,
+   "p99_us": 879.2210100000003,
+   "p999_us": 975.705881000002,
+   "max_us": 1559.356,
+   "frac_gt_10ms": 0.0,
+   "first_samples": {
+    "seq0": {
+     "received_in_runs": 30,
+     "min_us": 812.431,
+     "median_us": 1232.669,
+     "max_us": 1444.997
+    },
+    "seq1": {
+     "received_in_runs": 30,
+     "min_us": 493.331,
+     "median_us": 821.8240000000001,
+     "max_us": 886.563
+    }
+   },
+   "publish_call_us": {
+    "n": 11700,
+    "median": 207.284,
+    "p99": 275.13053,
+    "max": 469.419
+   },
+   "per_run_median_us": {
+    "min": 634.6795,
+    "median": 755.70025,
+    "max": 791.5865
+   },
+   "median_ci95_us": [
+    738.3256125,
+    766.6386
+   ],
+   "p90_ci95_us": [
+    792.6558399999999,
+    806.512625
+   ],
+   "p99_ci95_us": [
+    862.4878000000001,
+    893.6926100000001
+   ],
+   "bootstrap": {
+    "type": "cluster (runs resampled with replacement)",
+    "resamples": 2000,
+    "seed": 20261127,
+    "interval": "percentile 2.5/97.5"
+   }
+  },
+  {
+   "config": "small_same",
+   "topology": "same",
+   "payload": "small",
+   "reliability": "reliable",
+   "depth": 10,
+   "count": 400,
+   "rate_hz": 100,
+   "runs": 30,
+   "sub_env": "",
+   "pub_env": "",
+   "warmup_discarded_per_run": 10,
+   "n_runs": 30,
+   "n_samples": 11700,
+   "expected_total": 12000,
+   "delivered_total": 12000,
+   "delivered_ratio": 1.0,
+   "duplicates": 0,
+   "out_of_order": 0,
+   "bad_length": 0,
+   "runs_with_missing": 0,
+   "runs_without_meta": 0,
+   "negative_latencies": 0,
+   "rcvbuf_errors_total": 0,
+   "runs_with_rcvbuf_errors": 0,
+   "rcvbuf_errors_max_per_run": 0,
+   "min_us": 65.078,
+   "median_us": 715.951,
+   "mean_us": 699.4304107692308,
+   "p90_us": 754.6589,
+   "p99_us": 795.8872600000001,
+   "p999_us": 878.8896970000008,
+   "max_us": 2057.865,
+   "frac_gt_10ms": 0.0,
+   "first_samples": {
+    "seq0": {
+     "received_in_runs": 30,
+     "min_us": 997.208,
+     "median_us": 1083.868,
+     "max_us": 1176.536
+    },
+    "seq1": {
+     "received_in_runs": 30,
+     "min_us": 680.254,
+     "median_us": 800.0295,
+     "max_us": 831.019
+    }
+   },
+   "publish_call_us": {
+    "n": 11700,
+    "median": 154.65449999999998,
+    "p99": 194.68813,
+    "max": 280.939
+   },
+   "per_run_median_us": {
+    "min": 655.6985,
+    "median": 717.596,
+    "max": 747.8865000000001
+   },
+   "median_ci95_us": [
+    701.38955,
+    726.2205125
+   ],
+   "p90_ci95_us": [
+    748.6267,
+    758.0980324999999
+   ],
+   "p99_ci95_us": [
+    782.15596525,
+    808.22
+   ],
+   "bootstrap": {
+    "type": "cluster (runs resampled with replacement)",
+    "resamples": 2000,
+    "seed": 20261127,
+    "interval": "percentile 2.5/97.5"
+   }
+  },
+  {
+   "config": "image_cross_rel",
+   "topology": "cross",
+   "payload": "image",
+   "reliability": "reliable",
+   "depth": 10,
+   "count": 50,
+   "rate_hz": 10,
+   "runs": 30,
+   "sub_env": "",
+   "pub_env": "",
+   "warmup_discarded_per_run": 10,
+   "n_runs": 30,
+   "n_samples": 1200,
+   "expected_total": 1500,
+   "delivered_total": 1500,
+   "delivered_ratio": 1.0,
+   "duplicates": 0,
+   "out_of_order": 0,
+   "bad_length": 0,
+   "runs_with_missing": 0,
+   "runs_without_meta": 0,
+   "negative_latencies": 0,
+   "rcvbuf_errors_total": 130,
+   "runs_with_rcvbuf_errors": 30,
+   "rcvbuf_errors_max_per_run": 7,
+   "min_us": 1763.757,
+   "median_us": 7759.9885,
+   "mean_us": 7679.273472499999,
+   "p90_us": 7998.3818,
+   "p99_us": 8276.1623,
+   "p999_us": null,
+   "max_us": 15893.176,
+   "frac_gt_10ms": 0.0016666666666666668,
+   "first_samples": {
+    "seq0": {
+     "received_in_runs": 30,
+     "min_us": 19381.472,
+     "median_us": 22178.824,
+     "max_us": 23699.598
+    },
+    "seq1": {
+     "received_in_runs": 30,
+     "min_us": 5667.305,
+     "median_us": 7982.5545,
+     "max_us": 8318.053
+    }
+   },
+   "publish_call_us": {
+    "n": 1200,
+    "median": 3890.2219999999998,
+    "p99": 4274.3148599999995,
+    "max": 5627.205
+   },
+   "per_run_median_us": {
+    "min": 7601.4625,
+    "median": 7755.49475,
+    "max": 7977.3735
+   },
+   "median_ci95_us": [
+    7726.8634125,
+    7790.517599999999
+   ],
+   "p90_ci95_us": [
+    7935.3442724999995,
+    8046.155
+   ],
+   "p99_ci95_us": [
+    8153.58837,
+    8385.132959999999
+   ],
+   "bootstrap": {
+    "type": "cluster (runs resampled with replacement)",
+    "resamples": 2000,
+    "seed": 20261127,
+    "interval": "percentile 2.5/97.5"
+   }
+  },
+  {
+   "config": "image_same_rel",
+   "topology": "same",
+   "payload": "image",
+   "reliability": "reliable",
+   "depth": 10,
+   "count": 50,
+   "rate_hz": 10,
+   "runs": 30,
+   "sub_env": "",
+   "pub_env": "",
+   "warmup_discarded_per_run": 10,
+   "n_runs": 30,
+   "n_samples": 1200,
+   "expected_total": 1500,
+   "delivered_total": 1500,
+   "delivered_ratio": 1.0,
+   "duplicates": 0,
+   "out_of_order": 0,
+   "bad_length": 0,
+   "runs_with_missing": 0,
+   "runs_without_meta": 0,
+   "negative_latencies": 0,
+   "rcvbuf_errors_total": 0,
+   "runs_with_rcvbuf_errors": 0,
+   "rcvbuf_errors_max_per_run": 0,
+   "min_us": 1774.466,
+   "median_us": 5350.371499999999,
+   "mean_us": 10110.098173333334,
+   "p90_us": 15686.398,
+   "p99_us": 15875.124319999999,
+   "p999_us": null,
+   "max_us": 16851.1,
+   "frac_gt_10ms": 0.48583333333333334,
+   "first_samples": {
+    "seq0": {
+     "received_in_runs": 30,
+     "min_us": 19335.047,
+     "median_us": 20279.1665,
+     "max_us": 21548.056
+    },
+    "seq1": {
+     "received_in_runs": 30,
+     "min_us": 1444.019,
+     "median_us": 15547.239000000001,
+     "max_us": 16178.062
+    }
+   },
+   "publish_call_us": {
+    "n": 1200,
+    "median": 1012.1975,
+    "p99": 2102.63918,
+    "max": 2230.585
+   },
+   "per_run_median_us": {
+    "min": 4884.2225,
+    "median": 13133.764,
+    "max": 15631.849
+   },
+   "median_ci95_us": [
+    5102.432125,
+    15469.363025
+   ],
+   "p90_ci95_us": [
+    15653.3124,
+    15709.0563625
+   ],
+   "p99_ci95_us": [
+    15824.26403,
+    15983.423
+   ],
+   "bootstrap": {
+    "type": "cluster (runs resampled with replacement)",
+    "resamples": 2000,
+    "seed": 20261127,
+    "interval": "percentile 2.5/97.5"
+   }
+  },
+  {
+   "config": "image_cross_be",
+   "topology": "cross",
+   "payload": "image",
+   "reliability": "best_effort",
+   "depth": 10,
+   "count": 50,
+   "rate_hz": 10,
+   "runs": 30,
+   "sub_env": "",
+   "pub_env": "",
+   "warmup_discarded_per_run": 10,
+   "n_runs": 30,
+   "n_samples": 1200,
+   "expected_total": 1500,
+   "delivered_total": 1470,
+   "delivered_ratio": 0.98,
+   "duplicates": 0,
+   "out_of_order": 0,
+   "bad_length": 0,
+   "runs_with_missing": 30,
+   "runs_without_meta": 0,
+   "negative_latencies": 0,
+   "rcvbuf_errors_total": 126,
+   "runs_with_rcvbuf_errors": 30,
+   "rcvbuf_errors_max_per_run": 6,
+   "min_us": 1714.63,
+   "median_us": 7525.509,
+   "mean_us": 7342.262466666667,
+   "p90_us": 7756.1241,
+   "p99_us": 7994.68664,
+   "p999_us": null,
+   "max_us": 9400.179,
+   "frac_gt_10ms": 0.0,
+   "first_samples": {
+    "seq0": {
+     "received_in_runs": 0,
+     "min_us": null,
+     "median_us": null,
+     "max_us": null
+    },
+    "seq1": {
+     "received_in_runs": 30,
+     "min_us": 5886.779,
+     "median_us": 9096.1535,
+     "max_us": 10759.482
+    }
+   },
+   "publish_call_us": {
+    "n": 1200,
+    "median": 3679.6085000000003,
+    "p99": 4025.74027,
+    "max": 5525.157
+   },
+   "per_run_median_us": {
+    "min": 5336.9935000000005,
+    "median": 7530.782499999999,
+    "max": 7806.2545
+   },
+   "median_ci95_us": [
+    7500.2033,
+    7550.12215
+   ],
+   "p90_ci95_us": [
+    7690.1214199999995,
+    7814.402497499999
+   ],
+   "p99_ci95_us": [
+    7891.94323925,
+    8089.41
+   ],
+   "bootstrap": {
+    "type": "cluster (runs resampled with replacement)",
+    "resamples": 2000,
+    "seed": 20261127,
+    "interval": "percentile 2.5/97.5"
+   }
+  },
+  {
+   "config": "image_cross_rel_bigbuf",
+   "topology": "cross",
+   "payload": "image",
+   "reliability": "reliable",
+   "depth": 10,
+   "count": 50,
+   "rate_hz": 10,
+   "runs": 30,
+   "sub_env": "FASTDDS_DEFAULT_PROFILES_FILE=/exp/bigbuf.xml",
+   "pub_env": "",
+   "warmup_discarded_per_run": 10,
+   "n_runs": 30,
+   "n_samples": 1200,
+   "expected_total": 1500,
+   "delivered_total": 1500,
+   "delivered_ratio": 1.0,
+   "duplicates": 0,
+   "out_of_order": 0,
+   "bad_length": 0,
+   "runs_with_missing": 0,
+   "runs_without_meta": 0,
+   "negative_latencies": 0,
+   "rcvbuf_errors_total": 0,
+   "runs_with_rcvbuf_errors": 0,
+   "rcvbuf_errors_max_per_run": 0,
+   "min_us": 1955.302,
+   "median_us": 7706.718500000001,
+   "mean_us": 7577.289943333333,
+   "p90_us": 7929.8286,
+   "p99_us": 8150.2375,
+   "p999_us": null,
+   "max_us": 9401.508,
+   "frac_gt_10ms": 0.0,
+   "first_samples": {
+    "seq0": {
+     "received_in_runs": 30,
+     "min_us": 6850.804,
+     "median_us": 9292.816,
+     "max_us": 10480.395
+    },
+    "seq1": {
+     "received_in_runs": 30,
+     "min_us": 6012.424,
+     "median_us": 7950.2185,
+     "max_us": 8308.131
+    }
+   },
+   "publish_call_us": {
+    "n": 1200,
+    "median": 3851.9665,
+    "p99": 4198.80862,
+    "max": 5050.685
+   },
+   "per_run_median_us": {
+    "min": 5475.875,
+    "median": 7704.6645,
+    "max": 7972.7575
+   },
+   "median_ci95_us": [
+    7685.8698875,
+    7726.570475
+   ],
+   "p90_ci95_us": [
+    7887.623215,
+    7979.9381
+   ],
+   "p99_ci95_us": [
+    8036.307,
+    8252.254
+   ],
+   "bootstrap": {
+    "type": "cluster (runs resampled with replacement)",
+    "resamples": 2000,
+    "seed": 20261127,
+    "interval": "percentile 2.5/97.5"
+   }
+  },
+  {
+   "config": "small_same_udp",
+   "topology": "same",
+   "payload": "small",
+   "reliability": "reliable",
+   "depth": 10,
+   "count": 400,
+   "rate_hz": 100,
+   "runs": 30,
+   "sub_env": "FASTDDS_BUILTIN_TRANSPORTS=UDPv4",
+   "pub_env": "FASTDDS_BUILTIN_TRANSPORTS=UDPv4",
+   "warmup_discarded_per_run": 10,
+   "n_runs": 30,
+   "n_samples": 11700,
+   "expected_total": 12000,
+   "delivered_total": 12000,
+   "delivered_ratio": 1.0,
+   "duplicates": 0,
+   "out_of_order": 0,
+   "bad_length": 0,
+   "runs_with_missing": 0,
+   "runs_without_meta": 0,
+   "negative_latencies": 0,
+   "rcvbuf_errors_total": 0,
+   "runs_with_rcvbuf_errors": 0,
+   "rcvbuf_errors_max_per_run": 0,
+   "min_us": 77.236,
+   "median_us": 753.1814999999999,
+   "mean_us": 740.5430834188033,
+   "p90_us": 785.2146,
+   "p99_us": 827.7163000000004,
+   "p999_us": 915.4075220000038,
+   "max_us": 962.061,
+   "frac_gt_10ms": 0.0,
+   "first_samples": {
+    "seq0": {
+     "received_in_runs": 30,
+     "min_us": 1007.24,
+     "median_us": 1239.7820000000002,
+     "max_us": 1406.593
+    },
+    "seq1": {
+     "received_in_runs": 30,
+     "min_us": 675.527,
+     "median_us": 809.568,
+     "max_us": 920.757
+    }
+   },
+   "publish_call_us": {
+    "n": 11700,
+    "median": 193.549,
+    "p99": 245.58142000000004,
+    "max": 414.044
+   },
+   "per_run_median_us": {
+    "min": 708.7239999999999,
+    "median": 751.7225000000001,
+    "max": 782.05
+   },
+   "median_ci95_us": [
+    746.5438250000001,
+    759.497625
+   ],
+   "p90_ci95_us": [
+    779.5364925,
+    791.0114175
+   ],
+   "p99_ci95_us": [
+    816.93576925,
+    842.9265907500004
+   ],
+   "bootstrap": {
+    "type": "cluster (runs resampled with replacement)",
+    "resamples": 2000,
+    "seed": 20261127,
+    "interval": "percentile 2.5/97.5"
+   }
+  }
+ ]
+}

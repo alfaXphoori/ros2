@@ -1,0 +1,31 @@
+run_id,order,shape,qos,arm,published,delivered,missing
+1127230855_tbf1g_be_4194304_r01,1,tbf1g,be,4194304,20,20,
+1127230914_tbf1g_be_noxml_r01,2,tbf1g,be,noxml,20,20,
+1127230932_tbf1g_rel_noxml_r01,3,tbf1g,rel,noxml,20,20,
+1127230950_tbf1g_be_4194304_r02,4,tbf1g,be,4194304,20,20,
+1127231009_tbf1g_be_noxml_r02,5,tbf1g,be,noxml,20,20,
+1127231027_tbf1g_rel_noxml_r02,6,tbf1g,rel,noxml,20,20,
+1127231045_tbf1g_be_4194304_r03,7,tbf1g,be,4194304,20,20,
+1127231104_tbf1g_rel_noxml_r03,8,tbf1g,rel,noxml,20,20,
+1127231122_tbf1g_be_noxml_r03,9,tbf1g,be,noxml,20,20,
+1127231140_tbf1g_be_4194304_r04,10,tbf1g,be,4194304,20,20,
+1127231159_tbf1g_be_noxml_r04,11,tbf1g,be,noxml,20,20,
+1127231217_tbf1g_rel_noxml_r04,12,tbf1g,rel,noxml,20,20,
+1127231235_tbf1g_rel_noxml_r05,13,tbf1g,rel,noxml,20,20,
+1127231254_tbf1g_be_noxml_r05,14,tbf1g,be,noxml,20,20,
+1127231312_tbf1g_be_4194304_r05,15,tbf1g,be,4194304,20,20,
+1127231331_wifi_be_noxml_r01,1,wifi,be,noxml,20,17,f6 f14 f16
+1127231349_wifi_rel_noxml_r01,2,wifi,rel,noxml,20,20,
+1127231407_wifi_be_4194304_r01,3,wifi,be,4194304,20,18,f7 f19
+1127231425_wifi_rel_noxml_r02,4,wifi,rel,noxml,20,20,
+1127231444_wifi_be_4194304_r02,5,wifi,be,4194304,20,17,f7 f12 f17
+1127231502_wifi_be_noxml_r02,6,wifi,be,noxml,20,18,f9 f12
+1127231520_wifi_be_noxml_r03,7,wifi,be,noxml,20,17,f8 f16 f17
+1127231538_wifi_be_4194304_r03,8,wifi,be,4194304,20,16,f3 f8 f13 f16
+1127231557_wifi_rel_noxml_r03,9,wifi,rel,noxml,20,20,
+1127231615_wifi_be_noxml_r04,10,wifi,be,noxml,20,20,
+1127231633_wifi_rel_noxml_r04,11,wifi,rel,noxml,20,20,
+1127231652_wifi_be_4194304_r04,12,wifi,be,4194304,20,17,f5 f8 f16
+1127231710_wifi_be_4194304_r05,13,wifi,be,4194304,20,17,f0 f6 f15
+1127231728_wifi_be_noxml_r05,14,wifi,be,noxml,20,15,f2 f5 f6 f8 f9
+1127231746_wifi_rel_noxml_r05,15,wifi,rel,noxml,20,20,

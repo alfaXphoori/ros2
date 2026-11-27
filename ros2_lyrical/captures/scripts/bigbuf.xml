@@ -1,4 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  CONFOUNDED profile used for experiment 6 on 2026-11-24 (docs/03 §6), kept unchanged for
+  comparison. It changes more than the receive buffer: sendBufferSize is 4 MiB as well, and
+  useBuiltinTransports=false removes the builtin SHM transport and replaces the builtin UDPv4
+  transport by this user transport (other descriptor fields at their class defaults). It was
+  applied to BOTH containers. Superseded by socket_buffer_only.xml.in + run_rcvbuf_sweep.sh
+  (docs/03 §9), which changes only listenSocketBufferSize on the receiver.
+-->
 <dds xmlns="http://www.eprosima.com">
   <profiles>
     <transport_descriptors>

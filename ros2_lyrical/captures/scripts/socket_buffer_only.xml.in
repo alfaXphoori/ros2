@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  Template for run_rcvbuf_sweep.sh (docs/03 §9). The script replaces @ELEMENT@ with
+  listenSocketBufferSize (receiver arms) or sendSocketBufferSize (the "sndonly" arm) and @BYTES@
+  with the requested size, and writes the result to out/<sweep>/profiles/<arm>.xml.
+
+  Only ONE participant attribute is set. Builtin transports are left as they are (no
+  useBuiltinTransports / userTransports), so SHM + UDPv4 with their defaults (maxMessageSize,
+  non_blocking_send, locators) stay in place; Fast DDS copies listenSocketBufferSize into
+  receiveBufferSize (sendSocketBufferSize into sendBufferSize) of the builtin UDPv4 transport.
+  The effective SO_RCVBUF is checked per run with `ss -uamn` (skmem rb) in the receiver.
+-->
+<dds xmlns="http://www.eprosima.com">
+  <profiles>
+    <participant profile_name="socket_buffer_only" is_default_profile="true">
+      <rtps>
+        <@ELEMENT@>@BYTES@</@ELEMENT@>
+      </rtps>
+    </participant>
+  </profiles>
+</dds>

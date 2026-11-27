@@ -1,0 +1,14 @@
+date: 2026-11-27T22:15:31+07:00
+uname: Linux <host> 7.0.0-44-generic #44-Ubuntu SMP PREEMPT_DYNAMIC Fri Nov  6 02:38:04 UTC 2026 x86_64 GNU/Linux
+cpu: 12th Gen Intel(R) Core(TM) i3-12100
+nproc: 8
+governor: powersave
+docker: 29.1.3
+image: lyrical-wire:exp sha256:1dd67cf4c3cc9a7ec50845a585acbbb40f02f2ebebf757c3386ab2261a0671c4
+host net.core.rmem_default: 212992
+host net.core.rmem_max: 4194304
+loadavg_before: 0.68 0.45 0.20 2/615 68800
+params: runs=30 small_count=400 small_rate=100 image_count=50 image_rate=10 warmup=10
+configs: small_cross,small_same,small_same_udp,image_cross_rel,image_same_rel,image_cross_be,image_cross_rel_bigbuf
+wall_clock_s: 1584
+loadavg_after: 0.20 0.19 0.20 1/599 108711

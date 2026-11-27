@@ -1,0 +1,55 @@
+same-container transport check (2026-11-27T22:41:36+07:00), ROS_DOMAIN_ID=99, default Fast DDS transports
+== small: lat_sub: received=100/100 ooo=0 bad_len=0 exit=complete
+-- /dev/shm fastdds entries seen during the run (sampled every 0.5 s): size name
+549408 fastdds_21dacf07bb659cb6
+0 fastdds_21dacf07bb659cb6_el
+549408 fastdds_8d1049e245d81167
+0 fastdds_8d1049e245d81167_el
+52400 fastdds_port32161
+0 fastdds_port32161_el
+52400 fastdds_port32163
+0 fastdds_port32163_el
+52400 fastdds_port7000
+0 fastdds_port7000_el
+52400 fastdds_port7001
+0 fastdds_port7001_el
+32 sem.fastdds_port32161_mutex
+32 sem.fastdds_port32163_mutex
+32 sem.fastdds_port7000_mutex
+32 sem.fastdds_port7001_mutex
+-- writerEntityId of every RTPS submessage that carries one, all interfaces
+   (user writers end in 02/03, builtin writers in c2/c3)
+     37 0x000003c2
+     32 0x000004c2
+     41 0x000100c2
+      4 0x000200c2
+      8 0x000300c3
+      8 0x000301c3
+-- user-writer submessages on the wire: 0
+== image: lat_sub: received=20/20 ooo=0 bad_len=0 exit=complete
+-- /dev/shm fastdds entries seen during the run (sampled every 0.5 s): size name
+549408 fastdds_85108be02da4b604
+0 fastdds_85108be02da4b604_el
+549408 fastdds_dd31675838a46d83
+0 fastdds_dd31675838a46d83_el
+52400 fastdds_port32161
+0 fastdds_port32161_el
+52400 fastdds_port32163
+0 fastdds_port32163_el
+52400 fastdds_port7000
+0 fastdds_port7000_el
+52400 fastdds_port7001
+0 fastdds_port7001_el
+32 sem.fastdds_port32161_mutex
+32 sem.fastdds_port32163_mutex
+32 sem.fastdds_port7000_mutex
+32 sem.fastdds_port7001_mutex
+-- writerEntityId of every RTPS submessage that carries one, all interfaces
+   (user writers end in 02/03, builtin writers in c2/c3)
+     40 0x000003c2
+     34 0x000004c2
+     43 0x000100c2
+      4 0x000200c2
+      8 0x000300c3
+      8 0x000301c3
+-- user-writer submessages on the wire: 0

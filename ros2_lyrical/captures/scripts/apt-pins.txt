@@ -1,0 +1,13 @@
+iproute2=6.19.0-1ubuntu1.1
+ros-lyrical-demo-nodes-cpp=0.37.9-1resolute.20260915.065629
+ros-lyrical-fastcdr=2.3.6-1resolute.20260728.172850
+ros-lyrical-fastdds=3.6.2-1resolute.20260728.174239
+ros-lyrical-rclcpp=32.0.3-1resolute.20260915.061505
+ros-lyrical-rclpy=10.0.11-1resolute.20260915.061807
+ros-lyrical-rmw-fastrtps-cpp=9.4.10-1resolute.20260915.053043
+ros-lyrical-rmw-zenoh-cpp=0.10.6-1resolute.20260915.025944
+ros-lyrical-ros-base=0.13.0-3resolute.20260919.194435
+ros-lyrical-sensor-msgs=5.9.3-1resolute.20260915.051912
+ros-lyrical-zenoh-cpp-vendor=0.10.6-1resolute.20260914.173008
+tcpdump=4.99.6-1
+tshark=4.6.4-1

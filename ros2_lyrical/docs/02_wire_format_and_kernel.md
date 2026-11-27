@@ -385,7 +385,7 @@ rmw_publish                                      [tracepoint rmw_publish: V rmw_
 
 - `sendBufferSize` และ `receiveBufferSize` default = **0** [V: `SocketTransportDescriptor.hpp` บรรทัด 59–60]
 - เมื่อเป็น 0: อ่านค่าปัจจุบันของ socket (ค่า default ของระบบ) ถ้าต่ำกว่า `maxMessageSize` ให้ยกขึ้นเป็น `maxMessageSize` แล้วพยายาม `set_option` ถ้าไม่สำเร็จให้ลดลงครึ่งหนึ่งไปเรื่อย ๆ จนถึงค่าต่ำสุด [V: `asio_helpers.hpp` `configure_buffer_size`, `try_setting_buffer_size`]
-- บนเครื่องนี้ `net.core.rmem_default = wmem_default = 212992`, `rmem_max = 4194304` [V: sysctl] socket รับของ Fast DDS จึงเริ่มที่ราว 208 KiB ผลต่อการรับภาพอยู่ในหัวข้อ 5.3
+- บนเครื่องนี้ `net.core.rmem_default = wmem_default = 212992`, `rmem_max = 4194304` [V: sysctl] socket รับของ Fast DDS จึงเริ่มที่ราว 208 KiB ผลต่อการรับภาพอยู่ในหัวข้อ 5.3 วัดจริงด้วย `ss` (ภาค 3 §9): `<rtps><listenSocketBufferSize>N` ให้ `SO_RCVBUF` = 2 × min(N, `rmem_max`) บน listen socket ทุกตัว เช่น ขอ 212 992 ได้ 425 984 และขอ 8 MiB ได้ 8 388 608 เท่ากับขอ 4 MiB [V: ภาค 3 §9.3]
 
 ### 3.4 SHM transport ในระดับ OS
 
@@ -750,6 +750,13 @@ __udp_enqueue_schedule_skb
 ## 6. แบบจำลอง latency / CPU / memory bandwidth
 
 **ทุกตัวเลขในหัวข้อนี้เป็นประมาณการ** ไม่ใช่ผลวัด ใช้เพื่อบอกว่าช่วงใดน่าจะเป็นคอขวดและควรวางเครื่องมือวัดตรงไหน สมมติฐานของแบบจำลอง: CPU desktop รุ่นปัจจุบันที่ความถี่คงที่, 1 GbE, MTU 1500, Fast DDS UDP (ไม่ใช้ SHM), sync publish, kernel ไม่ใช่ RT, ระบบว่าง
+
+> **ผลวัดจริง:** latency end-to-end ที่วัดแล้ว (rclpy, Docker `veth` และ SHM, 30 รอบต่อ config, p99 พร้อม 95% CI) อยู่ใน[ภาค 3 §10](03_wire_experiments.md#10-การทดลองที่-8-latency-ที่วัดจริง-end-to-end-rclpy) ตารางข้างล่างวางคู่กับประมาณการเท่าที่มีกรณีใกล้เคียงกัน **ไม่ใช่การเทียบแบบเดียวกัน**: ประมาณการคิดสำหรับ C++ ข้ามเครื่องจริงบน 1 GbE ส่วนผลวัดผ่าน rclpy (รวม Python ทั้งสองฝั่ง) บน `veth` ในเครื่องเดียว (ไม่มีเวลาบนสาย ไม่มี NIC/driver) จึงควรอ่านผลวัดของข้อความเล็กเป็นขอบบนคร่าวๆ ที่ถูกครอบงำด้วย rclpy และผลวัดของภาพเป็นกรณีที่ขาดเวลาบนสาย 7.68 ms ไป ตัวเลขประมาณการในหัวข้อนี้ไม่ได้แก้ตามผลวัด
+>
+> | กรณี | ประมาณการ (หัวข้อนี้) | วัดจริง (ภาค 3 §10) median / p99 [95% CI] |
+> |---|---|---|
+> | ข้อความเล็ก ข้ามเครื่อง/ข้าม container | ≈ 15–150 µs (§6.1, C++, 1 GbE, CDR ≈ 100 B) | 754 [738–767] / 879 [862–894] µs (`small_cross`: `std_msgs/String` 64 ตัวอักษร, rclpy, `veth`) |
+> | ภาพ 640×480 rgb8 ข้ามเครื่อง/ข้าม container | ≈ 9–11 ms (§6.2, ในนั้นเป็นเวลาบนสาย 7.68 ms) | 7.76 [7.72–7.80] / 8.28 [8.15–8.39] ms (`image_cross_rel`, rclpy, `veth`, RELIABLE, 10 Hz) |
 
 ค่าพื้นฐานที่ใช้ (ทั้งหมด [K] ระดับ order of magnitude)
 

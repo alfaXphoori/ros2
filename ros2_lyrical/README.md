@@ -55,15 +55,22 @@ ros2_lyrical/
 ├── diagrams/        animated SVG 14 ภาพที่เอกสารฝังไว้
 ├── interactive/     data-paths.html, Lyrical Packet Lab (3D, Three.js)
 ├── captures/        pcap จากการทดลอง (กรอง hostname ของเครื่องออกแล้ว)
-│   └── scripts/     Dockerfile, run_experiments.sh และไฟล์ประกอบสำหรับทำซ้ำ
+│   ├── results/     สรุปผลการทดลองที่ 7–9 (CSV/JSON: rcvbuf sweep, latency, tc shaping)
+│   └── scripts/     Dockerfile, lib.sh, run_experiments.sh, run_rcvbuf_sweep.sh, run_latency.sh และไฟล์ประกอบ
 └── tools/           rtps_peek.py (ถอด packet) และสคริปต์สร้าง SVG
 ```
 
 ## ทำซ้ำและตรวจผล
 
 ```bash
-# รันการทดลองทั้ง 6 ชุด (ต้องมี Docker) ผลจะอยู่ใน ros2_lyrical/captures/scripts/out/
+# รันการทดลองทั้ง 6 ชุด (ต้องมี Docker, ราว 2 นาที) ผลจะอยู่ใน ros2_lyrical/captures/scripts/out/
+# ได้ทั้ง pcap ดิบ (*.raw.pcap) และที่กรองแล้ว (*.pcap), env.txt (สภาพแวดล้อม) และ summary.txt (ตัวเลขที่ใช้เทียบกับภาค 3)
 ros2_lyrical/captures/scripts/run_experiments.sh
+
+# การทดลองที่ 7 และ 9 (ภาค 3 §9, §11): sweep receive buffer และแบบจำกัดอัตราด้วย tc (ชุดเต็ม 81 run ราว 25 นาที)
+ros2_lyrical/captures/scripts/run_rcvbuf_sweep.sh --help
+# การทดลองที่ 8 (ภาค 3 §10): latency end-to-end 7 config × 30 รอบ (ราว 26 นาที)
+ros2_lyrical/captures/scripts/run_latency.sh --help
 
 # ถอด packet จาก pcap โดยไม่ต้องมี tshark (ใช้แค่ Python standard library)
 python3 ros2_lyrical/tools/rtps_peek.py frame ros2_lyrical/captures/exp1_fastdds_default.pcap 95
@@ -76,4 +83,4 @@ python3 ros2_lyrical/tools/gen_capture_svgs.py        ros2_lyrical/diagrams
 python3 ros2_lyrical/tools/gen_architecture_svgs.py   ros2_lyrical/diagrams
 ```
 
-> `run_experiments.sh` ไม่ได้กรอง traffic อื่นออกจาก pcap ถ้าจะเผยแพร่ไฟล์ที่ capture เอง ให้กรองตามวิธีใน[ภาค 3 §8](docs/03_wire_experiments.md#8-วิธีทำซ้ำ) ก่อน เพราะ mDNS ของเครื่อง host อาจติดชื่อเครื่องมาด้วย
+> `run_experiments.sh` กรอง pcap ให้เองแล้ว (เหลือ IPv4 และ ARP ระหว่าง container ด้วย filter เดียวกับไฟล์ใน `captures/` ดู[ภาค 3 §8](docs/03_wire_experiments.md#8-วิธีทำซ้ำ)) ถ้าจะเผยแพร่ไฟล์ที่ capture เอง ให้ใช้เฉพาะ `*.pcap` ที่กรองแล้ว อย่าใช้ `*.raw.pcap` เพราะ mDNS ของเครื่อง host อาจติดชื่อเครื่องมาด้วย Docker network, IP ของแต่ละ container และ helper สำหรับ script อื่นอยู่ใน `captures/scripts/lib.sh`
