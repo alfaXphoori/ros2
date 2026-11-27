@@ -858,7 +858,7 @@ kernel tracepoint ในตาราง [V: `__traceiter_net_dev_xmit`, `netif_r
 
 ## 7. ทิศทางวิจัยที่ตามมาโดยตรงจากหัวข้อ 1–6
 
-ทุกข้อเป็นข้อเสนอ ยังไม่ได้ตรวจว่ามีงานตีพิมพ์แล้วหรือไม่
+ทุกข้อเป็นข้อเสนอ งานที่เกี่ยวข้องเบื้องต้นของแต่ละข้ออยู่ใน[หัวข้อ 7.1](#71-งานที่เกี่ยวข้องของ-r1r9-ฉบับร่าง) (ตรวจเพียงระดับชื่อเรื่องและบทคัดย่อ ยังไม่ได้ยืนยันว่าไม่มีใครทำหัวข้อเดียวกันแล้ว)
 
 **R1. RTPS fragment ขนาดไม่เกิน MTU ร่วมกับ UDP GSO/GRO** (จาก 2.4, 2.5, 5.2)
 - สมมติฐาน: ตั้ง fragment ระดับ RTPS ≈ 1 400 B แล้วส่งเป็นชุดด้วย `UDP_SEGMENT` (สูงสุด 128 segment ต่อ syscall) จะ (ก) ลดตัวขยายการส่งซ้ำจาก 45 เหลือ 1 (ข) เลิกพึ่ง IP reassembly (ค) ได้ checksum offload คืน โดยต้นทุน syscall ต่อ byte ไม่แย่กว่า datagram 65 KB
@@ -897,6 +897,30 @@ kernel tracepoint ในตาราง [V: `__traceiter_net_dev_xmit`, `netif_r
 **R9. ผลของ driver ต่อผล benchmark ของ ROS 2** (จาก 5.7)
 - สมมติฐาน: ผลต่างระหว่าง NIC ระดับ consumer (r8169: copy ทุก packet, sw coalescing 20 µs) กับ NIC ที่ใช้ page pool มีขนาดเทียบได้กับผลต่างระหว่าง RMW ในบาง workload จึงต้องรายงาน driver และค่า coalescing ในทุก benchmark
 - วัด: workload เดียวกันบน NIC สองชนิด พร้อมแปร `gro_flush_timeout`, `napi_defer_hard_irqs`, `ethtool -C`
+
+### 7.1 งานที่เกี่ยวข้องของ R1–R9 (ฉบับร่าง)
+
+> **สถานะ (2026-11-27):** รวบรวมจาก web search (IEEE Xplore, arXiv, ACM, LIPIcs/ECRTS, เอกสาร kernel และเอกสารทางการของ ROS 2 / Fast DDS) **ยังไม่ได้อ่านฉบับเต็มของงานใด** คำอธิบายในตารางมาจากชื่อเรื่องและบทคัดย่อเท่านั้น ตัวเลขที่ยกมาต้องตรวจกับต้นฉบับก่อนอ้างใน paper งานที่เป็น preprint บน arXiv ควรค้นซ้ำว่ามีฉบับตีพิมพ์แล้วหรือไม่ และคอลัมน์ "ช่องว่างที่ R นี้เติม" เป็นข้อสันนิษฐาน ยังไม่ได้ทำ systematic search
+
+| R | งานที่เกี่ยวข้อง | เกี่ยวข้องอย่างไร | ช่องว่างที่ R นี้เติม (ข้อสันนิษฐาน) |
+|---|---|---|---|
+| R1 | [Optimizing ROS 2 Communication for Wireless Robotic Systems](https://arxiv.org/abs/2508.11366) (arXiv 2025) | ชี้ว่า DDS ไม่รู้เรื่อง IP fragmentation เสีย packet เดียวต้องส่ง RTPS message ใหม่ทั้งก้อน เสนอให้ message ≤ MTU และใช้ `LARGE_DATA` ผ่าน XML | ไม่พบว่าใช้ UDP GSO/GRO เพื่อชดเชยต้นทุน syscall ของ fragment เล็ก |
+| R1 | [Poster: How to Send Large Data in ROS 2](https://ieeexplore.ieee.org/abstract/document/11192433/) (IEEE) | การส่งข้อมูลใหญ่ใน ROS 2 โดยตรง | ยังไม่ได้อ่านฉบับเต็ม ต้องตรวจว่าครอบคลุม GSO หรือไม่ |
+| R1 | [QUIC is not Quick Enough over Fast Internet](https://arxiv.org/abs/2310.09423) (arXiv 2023); de Bruijn, [UDP GSO, LPC 2018 (draft)](https://webcf.waybackmachine.org/web/20200809183245/http://vger.kernel.org/lpc_net2018_talks/willemdebruijn-lpc2018-udpgso-paper-DRAFT-1.pdf) | หลักฐานจากฝั่ง QUIC ว่า GSO/GRO มีผลมากกับ throughput ของ UDP และที่มาของ `UDP_SEGMENT` | เป็นงานด้าน QUIC/HTTP3 ยังไม่ได้นำไปใช้กับ RTPS |
+| R2 | [An Analytical Latency Model of the Data Distribution Service in ROS 2](https://ieeexplore.ieee.org/document/11044454/) (IEEE) | แบบจำลอง closed-form ของ latency แบบ RELIABLE รายงาน error เฉลี่ย 6.88% ใน 35 กรณี | **ใกล้ R2 มากที่สุด** ต้องอ่านว่าแยกผลของ `heartbeat_period` ไว้แล้วหรือยัง |
+| R2 | [Probabilistic Latency Analysis of the DDS in ROS 2](https://arxiv.org/abs/2508.10413) (arXiv 2025) | จำลอง reliable delivery บนเครือข่ายไร้สายที่มี loss ด้วย dynamic programming โดยมี heartbeat period เป็นพารามิเตอร์ ตรวจกับ 270 กรณี | R2 วัดจาก trace ราย `writerSN` บนสายจริง ใช้ทดสอบแบบจำลองนี้ได้โดยตรง |
+| R2 | [StreamRTPS](https://arxiv.org/abs/2606.14214) (arXiv 2026); [Response-time analysis ของ DDS, ECRTS 2023](https://drops.dagstuhl.de/opus/volltexte/2023/18038/pdf/LIPIcs-ECRTS-2023-9.pdf) | StreamRTPS ตรวจจับ loss ก่อนถึงรอบ heartbeat ส่วน ECRTS ให้ขอบเขต worst-case ของ latency | R2 ให้การกระจายเชิงประจักษ์เพื่อเทียบกับทั้งสองแบบ |
+| R3 | [Analyzing Interoperability and Security Overhead of ROS2 DDS Middleware](https://ieeexplore.ieee.org/document/9837282/) (IEEE); [Security and Performance Considerations in ROS 2](https://arxiv.org/abs/1809.09566) (arXiv 2018) | วัด overhead ที่มาจากการตั้งค่า middleware (ด้าน security) | ไม่พบงานที่วัด overhead ของ `FASTDDS_STATISTICS` โดยเฉพาะ (ข้อสันนิษฐาน) |
+| R4 | [ROS 2 DDS tuning guide](https://docs.ros.org/en/lyrical/How-To-Guides/DDS-tuning.html); [Fast DDS Large Data](https://fast-dds.docs.eprosima.com/en/latest/fastdds/use_cases/large_data/large_data.html) | แนะนำ `rmem_max` ≈ 4 MB จากการทดลองของผู้เขียน และอธิบายว่า buffer เต็มทำให้ทิ้ง packet | เป็นคำแนะนำเชิงปฏิบัติ ไม่มีแบบจำลองจาก `truesize` ที่ทำนายขนาด buffer ได้ ไม่พบงานวิชาการ |
+| R5 | [ROS 2 Agnocast](https://arxiv.org/abs/2506.16882) (arXiv 2025); [Sensor-in-Memory](https://arxiv.org/abs/2510.11448) (arXiv 2025) | เทียบ zero-copy IPC กับ CycloneDDS, iceoryx, Fast DDS SHM และ Zenoh รายงานว่า latency ของ iceoryx กับ unsized type โตตามขนาดข้อความ | ไม่พบงานที่ศึกษาพฤติกรรมของ Fast DDS SHM เมื่อข้อความใหญ่กว่า segment (การทิ้งเงียบ, `overflows_count`) |
+| R6 | [When Discovery Becomes a Storm](https://arxiv.org/abs/2608.02242) (arXiv 2026); [Bloom filter-based discovery for DDS](https://doi.org/10.1016/j.jpdc.2011.05.001) (JPDC 2011); [CFDP](https://www.dre.vanderbilt.edu/~schmidt/PDF/debs2014_submission_163.pdf) (DEBS 2014, venue ยังไม่ยืนยัน) | แบบจำลอง discovery บนเครือข่ายไร้สาย และงานลด traffic ของ SPDP/SEDP | ไม่พบงานที่เทียบ DDS (รวม `ros_discovery_info`) กับ liveliness token ของ Zenoh ที่จำนวน node สูง ส่วนตัวเลขลด 97–99.9% ของ [Zenoh](https://zenoh.io/blog/2021-03-23-discovery/) เป็นตัวเลขที่ vendor วัดเอง |
+| R7 | [KBP: kernel busy poll สำหรับ VM/container](https://global.ieice.org/en_transactions/communications/10.1587/transcom.2021EBT0004/_pdf) (IEICE Trans. 2022); [Understanding Host Network Stack Latency](https://www.cs.virginia.edu/~ktq4vj/files/SIGCOMM_Understand_Latency.pdf) (SIGCOMM) | busy polling ลด tail latency โดยแลกกับ CPU | ไม่พบงานที่วัดกับ ROS 2/DDS |
+| R8 | [Linux kernel: MSG_ZEROCOPY](https://docs.kernel.org/networking/msg_zerocopy.html) | ระบุว่าคุ้มเมื่อเขียนครั้งละมากกว่าราว 10 KB เท่านั้น และไม่รับประกันว่าจะไม่ copy | ไม่พบงานที่ใช้ `MSG_ZEROCOPY` กับ RTPS |
+| R9 | [Latency Analysis of ROS2 Multi-Node Systems](https://ieeexplore.ieee.org/document/9591166/) (IEEE); Maruyama et al., [Exploring the performance of ROS2](https://doi.org/10.1145/2968478.2968502) (EMSOFT 2016); [OSRF TSC RMW report: reproducing](https://osrf.github.io/TSC-RMW-Reports/humble/eclipse-cyclonedds-report/reproducing.html) | benchmark ROS 2 ที่ใช้อ้างกันทั่วไป และวิธีทำซ้ำด้วย `performance_test` | ไม่พบงานที่รายงานหรือแปร driver/NIC และค่า coalescing ว่าเป็นตัวแปรของ benchmark |
+
+งานภาพรวมที่ควรอ้างในส่วน related work ทั่วไป: [ros2_tracing](https://ieeexplore.ieee.org/document/9772997/) (IEEE, เครื่องมือ trace สำหรับ R2/R7), [A Survey of Real-Time Support in ROS 2](https://arxiv.org/abs/2601.10722) (arXiv 2026), [ROS 2: Design, Architecture, and Uses In The Wild](https://arxiv.org/abs/2211.07752) และงานเทียบ middleware ([edge-to-edge/edge-to-cloud](https://arxiv.org/abs/2309.07496), [Zenoh/MQTT/Kafka/DDS](https://arxiv.org/abs/2303.09419), [FastDDS/Zenoh/vSomeIP](https://arxiv.org/abs/2505.02734))
+
+ขั้นต่อไป: อ่านฉบับเต็มของงานในแถว R2 และ R1 ก่อน (ใกล้หัวข้อมากที่สุด) แล้วค้นแบบ systematic ด้วย query เดียวกันใน IEEE Xplore, ACM DL, Scopus บันทึก query, วันที่ และจำนวนผลไว้ในตารางนี้
 
 ---
 
