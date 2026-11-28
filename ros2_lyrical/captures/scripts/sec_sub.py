@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Subscriber for exp15 (run_sros2.sh, docs/03 §17): counts std_msgs/String on 'chatter'
+"""Subscriber for exp15 (run_sros2.sh, docs/03 §2.4): counts std_msgs/String on 'chatter'
 (RELIABLE KEEP_LAST 10). Prints "subscription ready" once created, then one JSON line at exit:
 t_first_recv_ns (CLOCK_REALTIME, first statement of the first callback), received, and
 getrusage(RUSAGE_SELF) user/sys from the first sample to the end (cpu_user_s/cpu_sys_s).

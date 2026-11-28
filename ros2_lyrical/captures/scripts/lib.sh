@@ -47,7 +47,7 @@ IP_ZLISTENER="${IP_ZLISTENER:-172.20.0.3}"
 IP_ZTALKER="${IP_ZTALKER:-172.20.0.4}"
 ROS_SRC="${ROS_SRC:-source /opt/ros/lyrical/setup.bash}"
 # Keeps IPv4 + ARP between the containers. The committed captures contain ARP frames, so the
-# filter that produced them kept ARP; the older note in docs/03 §8 (`ip && ...`) would drop it and
+# filter that produced them kept ARP; the older note in docs/03 §9.1 (`ip && ...`) would drop it and
 # shift frame numbers. This filter leaves the committed pcaps unchanged (checked 2026-11-27).
 PCAP_FILTER="${PCAP_FILTER:-(ip || arp) && !(udp.port==5353) && !(ip.addr==${GATEWAY}) && !(arp.src.proto_ipv4==${GATEWAY}) && !(arp.dst.proto_ipv4==${GATEWAY})}"
 

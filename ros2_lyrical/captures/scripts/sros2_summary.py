@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Summarise exp15 (run_sros2.sh, docs/03 §17). Stdlib only; runs tshark inside lyrical-wire:exp.
+"""Summarise exp15 (run_sros2.sh, docs/03 §2.4). Stdlib only; runs tshark inside lyrical-wire:exp.
 usage: sros2_summary.py <out/sros2 dir> <results dir>
 writes <results>/sros2_runs.csv, sros2_summary.txt, sros2_governance.xml (copy of the generated, unsigned
 governance; no keys). Per pcap (only frames between 172.22.1.2 and 172.22.1.3 or their multicast):

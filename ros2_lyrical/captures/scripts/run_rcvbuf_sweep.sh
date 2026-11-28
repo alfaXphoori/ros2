@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Receive-buffer sweep and tc-shaped variant of the image experiments (docs/03 §9, §11, §12).
+# Receive-buffer sweep and tc-shaped variant of the image experiments (docs/03 §4.2, §4.3, §8).
 #
 # Each "arm" is one configuration; every run = one fresh receiver container (swB, $IP_B: tcpdump on
 # eth0 + img_sub.py) and one fresh sender container (swA, $IP_A: img_pub.py <qos> <n>), so the
@@ -12,14 +12,14 @@
 #                                      socket_buffer_only.xml.in), builtin transports untouched
 #                         oldbigbuf    bigbuf.xml (the confounded 2026-11-24 exp6 profile) on BOTH sides
 #                         sndonly      sender only: <rtps><sendSocketBufferSize>4194304; receiver no XML
-#                         largedata    BOTH sides FASTDDS_BUILTIN_TRANSPORTS=LARGE_DATA (docs/03 §15)
+#                         largedata    BOTH sides FASTDDS_BUILTIN_TRANSPORTS=LARGE_DATA (docs/03 §4.4)
 #                         mtu1400      fastdds_mtu1400.xml on BOTH sides: one UDPv4 transport with
-#                                      maxMessageSize 1400, no builtin transports (docs/03 §15)
+#                                      maxMessageSize 1400, no builtin transports (docs/03 §4.4)
 #                         flowctl      fastdds_flowctl.xml on BOTH sides: FIFO flow controller,
 #                                      max_bytes_per_period 125000 / period_ms 1 on the publisher, plus
-#                                      RMW_FASTRTPS_PUBLICATION_MODE=ASYNCHRONOUS (§15)
+#                                      RMW_FASTRTPS_PUBLICATION_MODE=ASYNCHRONOUS (docs/03 §4.4)
 #                         cyclone      BOTH sides RMW_IMPLEMENTATION=rmw_cyclonedds_cpp, Cyclone defaults
-#                                      (needs IMG=lyrical-wire:exp-extra; docs/03 §13)
+#                                      (needs IMG=lyrical-wire:exp-extra; docs/03 §4.4.6)
 #                  default: noxml,106496,212992,524288,1048576,2097152,4194304,8388608
 #   --sizes LIST   shorthand: adds the byte sizes in LIST as arms (e.g. 524288,1048576)
 #   --reps N       repetitions for arms without *reps (default 8). Order: round-robin by repetition,
@@ -119,7 +119,7 @@ RMEM_DEF=$(cat /proc/sys/net/core/rmem_default)
     case "$n" in
       noxml) echo "arm ${A_Q[$i]}:$n  no setsockopt -> expected SO_RCVBUF = rmem_default = $RMEM_DEF";;
       oldbigbuf) echo "arm ${A_Q[$i]}:$n  bigbuf.xml 4194304 -> expected $(( 2 * (4194304 < RMEM_MAX ? 4194304 : RMEM_MAX) ))$( [ 4194304 -gt "$RMEM_MAX" ] && echo ' CAPPED by rmem_max')";;
-      largedata|mtu1400|flowctl|cyclone) echo "arm ${A_Q[$i]}:$n  transport/RMW variant (docs/03 §13/§15); SO_RCVBUF read from ss -uamn per run";;
+      largedata|mtu1400|flowctl|cyclone) echo "arm ${A_Q[$i]}:$n  transport/RMW variant (docs/03 §4.4); SO_RCVBUF read from ss -uamn per run";;
       sndonly) echo "arm ${A_Q[$i]}:$n  sender SO_SNDBUF request 4194304 -> expected $(( 2 * (4194304 < WMEM_MAX ? 4194304 : WMEM_MAX) ))$( [ 4194304 -gt "$WMEM_MAX" ] && echo ' CAPPED by wmem_max'); receiver default";;
       *) e=$(( 2 * (n < RMEM_MAX ? n : RMEM_MAX) ))
          if [ "$n" -gt "$RMEM_MAX" ]; then

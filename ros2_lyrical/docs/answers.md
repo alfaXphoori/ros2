@@ -40,7 +40,7 @@ tsh -r /c/exp4_samehost_shm.pcap    -T fields -e ip.src -e ip.dst -e udp.dstport
 | user multicast = 7400 + 1 | 7401 | 7401 |
 | user unicast = 7400 + 11 + 2·pid | 7411 | 7413 |
 
-**คำตอบ:** `exp1` เห็น 7400 (multicast), 7410 และ 7411 ทั้งสองทิศ เพราะ talker และ listener อยู่คนละ container (คนละ network namespace) แต่ละตัวจึงเป็น participant แรกของ "เครื่อง" ตัวเองและได้ participant id 0 ทั้งคู่ ส่วน `exp4` มีสอง participant ใน namespace เดียวกัน ตัวที่สองจึงได้ id 1 และเห็น 7412 (metatraffic ของ participant 1) บน `lo` ไม่เห็น 7411/7413 เลยเพราะ user data ไปทาง SHM (ข้อ 1.4) ทั้งที่[ภาค 3 §5](03_wire_experiments.md#5-การทดลองที่-4-เครื่องเดียวกัน-fast-dds-shm)พบไฟล์ `fastdds_port7411` และ `fastdds_port7413` ใน `/dev/shm` ซึ่งตั้งชื่อตาม port เดียวกันนี้ port 7401 (user multicast) ไม่ปรากฏเพราะ endpoint ใน ROS ไม่ได้ใช้ multicast สำหรับข้อมูล และ port **7000** ไม่ได้มาจากสูตร เป็น unicast locator ที่ reader ของ `ros_discovery_info` ประกาศไว้ (สาเหตุในโค้ดยังเป็น [K] ตาม[ภาค 3 §2](03_wire_experiments.md#2-การทดลองที่-1-หนึ่ง-sample-ของ-talker-บนสายจริง))
+**คำตอบ:** `exp1` เห็น 7400 (multicast), 7410 และ 7411 ทั้งสองทิศ เพราะ talker และ listener อยู่คนละ container (คนละ network namespace) แต่ละตัวจึงเป็น participant แรกของ "เครื่อง" ตัวเองและได้ participant id 0 ทั้งคู่ ส่วน `exp4` มีสอง participant ใน namespace เดียวกัน ตัวที่สองจึงได้ id 1 และเห็น 7412 (metatraffic ของ participant 1) บน `lo` ไม่เห็น 7411/7413 เลยเพราะ user data ไปทาง SHM (ข้อ 1.4) ทั้งที่[ภาค 3 §5.1](03_wire_experiments.md#51-fast-dds-shm-ในเครื่องเดียวกัน-การทดลองที่-4)พบไฟล์ `fastdds_port7411` และ `fastdds_port7413` ใน `/dev/shm` ซึ่งตั้งชื่อตาม port เดียวกันนี้ port 7401 (user multicast) ไม่ปรากฏเพราะ endpoint ใน ROS ไม่ได้ใช้ multicast สำหรับข้อมูล และ port **7000** ไม่ได้มาจากสูตร เป็น unicast locator ที่ reader ของ `ros_discovery_info` ประกาศไว้ (สาเหตุในโค้ดยังเป็น [K] ตาม[ภาค 3 §2.1](03_wire_experiments.md#21-fast-dds-ค่าเริ่มต้น-หนึ่ง-sample-ของ-talker-การทดลองที่-1))
 
 ### 1.2 แยกชั้นของ frame 198 B
 
@@ -78,7 +78,7 @@ tsh -r /c/exp1_fastdds_default.pcap -Y 'frame contains "ros_discovery_info"' -V 
                     topic: ros_discovery_info
 ```
 
-**คำตอบ:** chatter 9 sample × 198 B = 1 782 B จาก RTPS 53 434 B = **3.3%** อีก 96.7% เป็น discovery (SPDP, SEDP, HEARTBEAT/ACKNACK, `ros_discovery_info`) ตรงกับตารางใน[ภาค 3 §2](03_wire_experiments.md#2-การทดลองที่-1-หนึ่ง-sample-ของ-talker-บนสายจริง) frame 162 ยาว 198 B เหมือนกันแต่มาจาก writer `00.00.01.03` ซึ่ง SEDP `DATA(w)` ประกาศว่าเป็น writer ของ topic `ros_discovery_info` บทเรียนคือ filter ตามขนาด frame ไม่พอ ต้องแยกตาม writerId (หรือชื่อ topic ใน SEDP) ข้อนี้นับเฉพาะ 14 วินาทีแรก สัดส่วนจะลดลงเมื่อรันนานขึ้นเพราะ discovery หลังช่วงเริ่มต้นมีแค่ SPDP ทุก 3 s กับ heartbeat
+**คำตอบ:** chatter 9 sample × 198 B = 1 782 B จาก RTPS 53 434 B = **3.3%** อีก 96.7% เป็น discovery (SPDP, SEDP, HEARTBEAT/ACKNACK, `ros_discovery_info`) ตรงกับตารางใน[ภาค 3 §2.1](03_wire_experiments.md#21-fast-dds-ค่าเริ่มต้น-หนึ่ง-sample-ของ-talker-การทดลองที่-1) frame 162 ยาว 198 B เหมือนกันแต่มาจาก writer `00.00.01.03` ซึ่ง SEDP `DATA(w)` ประกาศว่าเป็น writer ของ topic `ros_discovery_info` บทเรียนคือ filter ตามขนาด frame ไม่พอ ต้องแยกตาม writerId (หรือชื่อ topic ใน SEDP) ข้อนี้นับเฉพาะ 14 วินาทีแรก สัดส่วนจะลดลงเมื่อรันนานขึ้นเพราะ discovery หลังช่วงเริ่มต้นมีแค่ SPDP ทุก 3 s กับ heartbeat
 
 ### 1.4 ทำไม `exp4` เห็น discovery แต่ไม่เห็นข้อมูล
 
@@ -95,7 +95,7 @@ pk sms ros2_lyrical/captures/exp4_samehost_shm.pcap DATA DATA_FRAG \
      40 flags 0x05 00.01.00.c2
 ```
 
-**คำตอบ:** ทุก DATA มาจาก builtin writer (`…c2`: SPDP `00.01.00.c2`, SEDP publications `00.00.03.c2`, SEDP subscriptions `00.00.04.c2`) ไม่มี writer ที่ลงท้าย `03` และไม่มี DATA_FRAG เลย ทั้งที่ listener ได้ทุกข้อความ ข้อมูลจึงไปทาง Fast DDS SHM transport ซึ่งเปิดเป็น default เมื่อ participant อยู่บนเครื่องเดียวกัน ([ภาค 1 §3.1](01_network_stack_deep_dive.md#31-rmw_fastrtps_cpp--fast-dds-36x-default-v-เวอร์ชัน--k-รายละเอียด-protocol)) ส่วน discovery ยังวิ่งบน UDP เพราะ SPDP ต้องประกาศให้เครื่องอื่นใน subnet เห็นด้วย (multicast 7400 ออกทั้ง `lo` และ interface ของ container) และ SEDP ใช้ metatraffic unicast locator ของ UDP flags `0x03` คือ DATA ที่มีแค่ inline QoS (`STATUS_INFO` dispose/unregister ตอนปิด node) ตาม[ภาค 3 §5](03_wire_experiments.md#5-การทดลองที่-4-เครื่องเดียวกัน-fast-dds-shm)
+**คำตอบ:** ทุก DATA มาจาก builtin writer (`…c2`: SPDP `00.01.00.c2`, SEDP publications `00.00.03.c2`, SEDP subscriptions `00.00.04.c2`) ไม่มี writer ที่ลงท้าย `03` และไม่มี DATA_FRAG เลย ทั้งที่ listener ได้ทุกข้อความ ข้อมูลจึงไปทาง Fast DDS SHM transport ซึ่งเปิดเป็น default เมื่อ participant อยู่บนเครื่องเดียวกัน ([ภาค 1 §3.1](01_network_stack_deep_dive.md#31-rmw_fastrtps_cpp--fast-dds-36x-default-v-เวอร์ชัน--k-รายละเอียด-protocol)) ส่วน discovery ยังวิ่งบน UDP เพราะ SPDP ต้องประกาศให้เครื่องอื่นใน subnet เห็นด้วย (multicast 7400 ออกทั้ง `lo` และ interface ของ container) และ SEDP ใช้ metatraffic unicast locator ของ UDP flags `0x03` คือ DATA ที่มีแค่ inline QoS (`STATUS_INFO` dispose/unregister ตอนปิด node) ตาม[ภาค 3 §5.1](03_wire_experiments.md#51-fast-dds-shm-ในเครื่องเดียวกัน-การทดลองที่-4)
 
 ---
 
@@ -216,7 +216,7 @@ tsh -r /c/exp3_zenoh.pcap -Y 'frame.number==142' -x 2>/dev/null
 
 **คำตอบ:** IPv4 total length `00 93` = 147, TCP data offset `0x80` = 8 word = 32 B (20 + timestamp option 12), TCP payload 95 B จึงได้ 14 + 20 + 32 + 95 = **161 B** TCP payload เริ่มที่ offset 0x42 ด้วย `5d 00` = u16 little-endian 0x005d = **93** = ความยาว batch ที่ตามมา (2 + 93 = 95) byte ถัดไป `25` คือ FRAME (`0x05` + flag R) และ `1d` คือ PUSH ตาม[ภาค 2 §4.1–§4.2](02_wire_format_and_kernel.md#42-framing-บน-tcp)
 
-attachment อยู่ที่ offset 0x68–0x88 (33 B): sequence number `01 00 … 00` = 1 (8 B), source timestamp (8 B), ความยาว GID `10` = 16 (1 B), GID 16 B จากนั้น `17` = 23 คือความยาว payload และ payload 23 B ที่ 0x8a–0xa0 = `00 01 00 00` + `0f 00 00 00` + `"Hello World: 1\0"` ไม่มี pad เพราะ Zenoh ไม่บังคับ alignment แบบ submessage ของ RTPS byte `21` (= 33) ที่ 0x67 ก่อน attachment น่าจะเป็นความยาวของ extension และการแยก field ระหว่าง `1d` ถึง 0x66 เป็นการตีความตามลำดับ codec ที่ภาค 3 §4 ระบุว่ายังไม่ได้เทียบกับ Zenoh dissector [K]
+attachment อยู่ที่ offset 0x68–0x88 (33 B): sequence number `01 00 … 00` = 1 (8 B), source timestamp (8 B), ความยาว GID `10` = 16 (1 B), GID 16 B จากนั้น `17` = 23 คือความยาว payload และ payload 23 B ที่ 0x8a–0xa0 = `00 01 00 00` + `0f 00 00 00` + `"Hello World: 1\0"` ไม่มี pad เพราะ Zenoh ไม่บังคับ alignment แบบ submessage ของ RTPS byte `21` (= 33) ที่ 0x67 ก่อน attachment น่าจะเป็นความยาวของ extension และการแยก field ระหว่าง `1d` ถึง 0x66 เป็นการตีความตามลำดับ codec ที่ภาค 3 §2.3 ระบุว่ายังไม่ได้เทียบกับ Zenoh dissector [K]
 
 ### 2.5 `SO_RCVBUF` กับ `truesize`
 
@@ -268,7 +268,7 @@ done
 {"frames": 12860, "datafrag_total": 300, "datafrag_unique": 300, …, "nackfrag": 0, "sn_seen": 20, "sn_complete": 20, "ip_frags_per_dgram": 45, …}
 ```
 
-**คำตอบ:** ทั้งสองไฟล์มี DATA_FRAG 300 ก้อน (20 × 15) และภาพที่ fragment ครบ 20/20 capture จึงไม่บอกว่าภาพหาย เพราะ tcpdump เห็น packet ที่ AF_PACKET tap (ขั้นที่ 6 ของตาราง RX ใน[ภาค 1 §5.5](01_network_stack_deep_dive.md#55-เส้นทางใน-linux-kernel-ทีละฟังก์ชัน-tx-และ-rx)) ก่อน IP reassembly และก่อนเข้า socket การทิ้งเกิดที่ `__udp_enqueue_schedule_skb` (ขั้นที่ 12) เมื่อ `sk_rcvbuf` เต็ม และนับใน `Udp RcvbufErrors` ของ `/proc/net/snmp` ซึ่งเป็น 45 ในรอบ 2026-11-24 ของ `exp5` (13/20 ภาพ) ตาม[ภาค 3 §6](03_wire_experiments.md#6-การทดลองที่-56-receive-buffer-ตัดสินว่าภาพจะรอดหรือไม่) ภาพ BEST_EFFORT ที่ขาด DATA_FRAG เดียวจะหายทั้งภาพ `exp6` ไม่ใช่การเปลี่ยนตัวแปรเดียว เพราะ `bigbuf.xml` ตั้ง send buffer ด้วย ปิด builtin transport (ไม่มี SHM) และใส่ให้ทั้งสองฝั่ง ([ภาค 3 §9.1](03_wire_experiments.md#91-ตัวแปรกวนในการทดลองที่-6)) นอกจากนี้ pcap ของ `exp6` capture คนละวันกับตัวนับในตาราง §6
+**คำตอบ:** ทั้งสองไฟล์มี DATA_FRAG 300 ก้อน (20 × 15) และภาพที่ fragment ครบ 20/20 capture จึงไม่บอกว่าภาพหาย เพราะ tcpdump เห็น packet ที่ AF_PACKET tap (ขั้นที่ 6 ของตาราง RX ใน[ภาค 1 §5.5](01_network_stack_deep_dive.md#55-เส้นทางใน-linux-kernel-ทีละฟังก์ชัน-tx-และ-rx)) ก่อน IP reassembly และก่อนเข้า socket การทิ้งเกิดที่ `__udp_enqueue_schedule_skb` (ขั้นที่ 12) เมื่อ `sk_rcvbuf` เต็ม และนับใน `Udp RcvbufErrors` ของ `/proc/net/snmp` ซึ่งเป็น 45 ในรอบ 2026-11-24 ของ `exp5` (13/20 ภาพ) ตาม[ภาค 3 §4.2.1](03_wire_experiments.md#421-การทดลองที่-56-ค่าเริ่มต้นเทียบกับ-bigbufxml-2026-11-24) ภาพ BEST_EFFORT ที่ขาด DATA_FRAG เดียวจะหายทั้งภาพ `exp6` ไม่ใช่การเปลี่ยนตัวแปรเดียว เพราะ `bigbuf.xml` ตั้ง send buffer ด้วย ปิด builtin transport (ไม่มี SHM) และใส่ให้ทั้งสองฝั่ง ([ภาค 3 §4.2.3](03_wire_experiments.md#423-ตัวแปรกวนในการทดลองที่-6)) นอกจากนี้ pcap ของ `exp6` capture คนละวันกับตัวนับในตารางของภาค 3 §4.2.1
 
 ### 3.2 อ่านผล rcvbuf sweep
 
@@ -292,7 +292,7 @@ PY
 | `sndonly` | 5 | 212 992 | 8 388 608 | 19/20 ทุก run | 3 (2–5) |
 | `524288` | 8 | 1 048 576 | 212 992 | 20/20 ทุก run | 0 (0–0) |
 
-**คำตอบ:** ข้อมูลรองรับว่า บนเครื่องนี้ (veth, ภาพ 921 600 B ทุก 0.5 s, 2026-11-27) การเพิ่ม `SO_RCVBUF` ของผู้รับเพียงอย่างเดียวเป็น 1 048 576 ทำให้ภาพไม่หายใน 8/8 run ขณะที่การเพิ่ม send buffer ของผู้ส่ง (`sndonly`) ไม่เปลี่ยนผล ทุกแขนเห็น DATA_FRAG ครบ 300 ใน capture การสูญหายจึงอยู่ที่ socket ผู้รับ ข้อมูล**ไม่**รองรับ (1) อัตราการสูญหายบนเครือข่ายจริง เพราะ veth ส่งเร็วกว่า 1 GbE และเมื่อจำกัดอัตราที่ 1 Gbit/s ค่า default ก็ไม่หาย ([ภาค 3 §11](03_wire_experiments.md#11-การทดลองที่-9-จำกัดอัตราส่งด้วย-tc-จำลอง-link-1-gbits)) (2) ค่าที่พอดีระหว่าง 425 984 กับ 1 048 576 (3) ความน่าจะเป็นต่ำ ๆ เพราะ n = 5–8 และช่วงที่รายงานเป็น min–max ไม่ใช่ CI (4) กรณีไม่เปิด tcpdump ([ภาค 3 §12.1](03_wire_experiments.md#121-ข้อจำกัดของผลในภาคนี้))
+**คำตอบ:** ข้อมูลรองรับว่า บนเครื่องนี้ (veth, ภาพ 921 600 B ทุก 0.5 s, 2026-11-27) การเพิ่ม `SO_RCVBUF` ของผู้รับเพียงอย่างเดียวเป็น 1 048 576 ทำให้ภาพไม่หายใน 8/8 run ขณะที่การเพิ่ม send buffer ของผู้ส่ง (`sndonly`) ไม่เปลี่ยนผล ทุกแขนเห็น DATA_FRAG ครบ 300 ใน capture การสูญหายจึงอยู่ที่ socket ผู้รับ ข้อมูล**ไม่**รองรับ (1) อัตราการสูญหายบนเครือข่ายจริง เพราะ veth ส่งเร็วกว่า 1 GbE และเมื่อจำกัดอัตราที่ 1 Gbit/s ค่า default ก็ไม่หาย ([ภาค 3 §4.3](03_wire_experiments.md#43-จำกัดอัตราส่งด้วย-tc-จำลอง-link-1-gbits-การทดลองที่-9)) (2) ค่าที่พอดีระหว่าง 425 984 กับ 1 048 576 (3) ความน่าจะเป็นต่ำ ๆ เพราะ n = 5–8 และช่วงที่รายงานเป็น min–max ไม่ใช่ CI (4) กรณีไม่เปิด tcpdump ([ภาค 3 §8.1](03_wire_experiments.md#81-ข้อจำกัดของผลในภาคนี้))
 
 ### 3.3 latency ของข้อความเล็ก
 
@@ -310,7 +310,7 @@ small_same 11700 716.0 [701.4-726.2] 795.9 [782.2-808.2] 154.7
 small_same_udp 11700 753.2 [746.5-759.5] 827.7 [816.9-842.9] 193.5
 ```
 
-**คำตอบ:** (ก) `small_same_udp` กับ `small_cross` มี median 753.2 และ 754.3 µs ที่ CI ซ้อนกัน การ "อยู่ container เดียวกัน" โดยยังใช้ UDP จึงไม่ทำให้เร็วขึ้นที่ median ส่วน `small_same` (SHM) 716.0 [701.4–726.2] ไม่ซ้อนกับ 753.2 [746.5–759.5] จึงเร็วกว่าราว 37 µs ซึ่งเป็นผลของ SHM ที่ tail `veth` แย่กว่า loopback (p99 879.2 [862.5–893.7] เทียบ 827.7 [816.9–842.9] ไม่ซ้อนกัน) (ข) latency ส่วนใหญ่ไม่ได้อยู่ที่ transport: เฉพาะการเรียก `publish()` ใน rclpy ก็ใช้ median 155–207 µs แล้ว และผลต่างระหว่าง transport มีเพียงหลักสิบ µs จากราว 700–750 µs ข้อจำกัด ([ภาค 3 §10.6](03_wire_experiments.md#106-ข้อจำกัด)): วัดผ่าน rclpy, governor `powersave`, ไม่ pin CPU, วัดช่วงเวลาเดียว, `veth` ไม่ใช่ NIC จึงใช้ตัวเลขนี้เป็นขอบบนของ rmw/transport ไม่ใช่ค่าของ C++ node
+**คำตอบ:** (ก) `small_same_udp` กับ `small_cross` มี median 753.2 และ 754.3 µs ที่ CI ซ้อนกัน การ "อยู่ container เดียวกัน" โดยยังใช้ UDP จึงไม่ทำให้เร็วขึ้นที่ median ส่วน `small_same` (SHM) 716.0 [701.4–726.2] ไม่ซ้อนกับ 753.2 [746.5–759.5] จึงเร็วกว่าราว 37 µs ซึ่งเป็นผลของ SHM ที่ tail `veth` แย่กว่า loopback (p99 879.2 [862.5–893.7] เทียบ 827.7 [816.9–842.9] ไม่ซ้อนกัน) (ข) latency ส่วนใหญ่ไม่ได้อยู่ที่ transport: เฉพาะการเรียก `publish()` ใน rclpy ก็ใช้ median 155–207 µs แล้ว และผลต่างระหว่าง transport มีเพียงหลักสิบ µs จากราว 700–750 µs ข้อจำกัด ([ภาค 3 §7.1.6](03_wire_experiments.md#716-ข้อจำกัด)): วัดผ่าน rclpy, governor `powersave`, ไม่ pin CPU, วัดช่วงเวลาเดียว, `veth` ไม่ใช่ NIC จึงใช้ตัวเลขนี้เป็นขอบบนของ rmw/transport ไม่ใช่ค่าของ C++ node
 
 ### 3.4 จังหวะการมาถึงของภาพ
 
@@ -335,12 +335,12 @@ wifi 5 95.499 151.16 13 0
 
 | เงื่อนไข | burst ต่อภาพ median (ms) | ระยะห่าง IP fragment (µs) | ภาพหายที่ buffer default |
 |---|---|---|---|
-| veth 2026-11-24 (`exp5`) | 1.042 | 1 | 7/20 (ภาค 3 §6) |
+| veth 2026-11-24 (`exp5`) | 1.042 | 1 | 7/20 (ภาค 3 §4.2.1) |
 | veth 2026-11-27 (`exp6`, และแถว `none` ของ shaping) | 3.601 (min 1.026) / 3.454 | 4 / 3.10 | 5% = ภาพแรกทุก run |
 | `tbf1g` (1 Gbit/s) | 7.633 | 11.92 | 0 |
 | 1 GbE คำนวณ (`image_wire_us_1g`) | 7.684 | | |
 
-**คำตอบ:** veth ส่งภาพหนึ่งภาพเร็วกว่าสาย 1 GbE 2–7 เท่า และเร็วต่างกันตามวัน ในวันที่ทุกภาพมาถึงใน ~1 ms ภาพหาย 7/20 ในวันที่ภาพส่วนใหญ่ใช้ ~3.5 ms (เหลือภาพแรกที่ยังเร็ว ~1 ms) มีเพียงภาพแรกที่หาย และเมื่อบังคับให้ทุกภาพใช้ ~7.6 ms ด้วย tbf ไม่มีภาพหายเลยแม้ buffer เป็นค่า default สิ่งที่เป็น [V]: เวลาและจำนวนการสูญหายทุกตัว (จาก pcap และ CSV) สิ่งที่เป็นสมมติฐาน: ว่าความเร็วของการมาถึงเป็นสาเหตุของการสูญหาย (สอดคล้องกับกลไกใน[ภาค 2 §5.3](02_wire_format_and_kernel.md#53-so_rcvbuf-นับอะไร-และทำไมภาพหายทั้งที่-cpu-ว่าง) แต่ยังไม่ได้ทดลองแบบเปลี่ยนเฉพาะอัตราที่ buffer เดียวกันหลายระดับ) และสาเหตุที่ผู้ส่งช้าลงในวันที่ 27 (governor, kernel) ยังไม่ได้ตรวจ ([ภาค 3 §9.6](03_wire_experiments.md#96-เทียบกับข้อสรุปเดิม)) ข้อควรระวัง: `exp6` ใช้ `bigbuf.xml` คนละ config กับ `exp5` จึงใช้เทียบได้เฉพาะเรื่องจังหวะของวัน ไม่ใช่เรื่อง buffer
+**คำตอบ:** veth ส่งภาพหนึ่งภาพเร็วกว่าสาย 1 GbE 2–7 เท่า และเร็วต่างกันตามวัน ในวันที่ทุกภาพมาถึงใน ~1 ms ภาพหาย 7/20 ในวันที่ภาพส่วนใหญ่ใช้ ~3.5 ms (เหลือภาพแรกที่ยังเร็ว ~1 ms) มีเพียงภาพแรกที่หาย และเมื่อบังคับให้ทุกภาพใช้ ~7.6 ms ด้วย tbf ไม่มีภาพหายเลยแม้ buffer เป็นค่า default สิ่งที่เป็น [V]: เวลาและจำนวนการสูญหายทุกตัว (จาก pcap และ CSV) สิ่งที่เป็นสมมติฐาน: ว่าความเร็วของการมาถึงเป็นสาเหตุของการสูญหาย (สอดคล้องกับกลไกใน[ภาค 2 §5.3](02_wire_format_and_kernel.md#53-so_rcvbuf-นับอะไร-และทำไมภาพหายทั้งที่-cpu-ว่าง) แต่ยังไม่ได้ทดลองแบบเปลี่ยนเฉพาะอัตราที่ buffer เดียวกันหลายระดับ) และสาเหตุที่ผู้ส่งช้าลงในวันที่ 27 (governor, kernel) ยังไม่ได้ตรวจ ([ภาค 3 §4.2.8](03_wire_experiments.md#428-เทียบกับข้อสรุปเดิม)) ข้อควรระวัง: `exp6` ใช้ `bigbuf.xml` คนละ config กับ `exp5` จึงใช้เทียบได้เฉพาะเรื่องจังหวะของวัน ไม่ใช่เรื่อง buffer
 
 ### 3.5 RELIABLE บน link ช้า
 
@@ -359,7 +359,7 @@ PY
 drops/run 12.0 upper bound needed/retrans % 0.98 wire/needed 5.07
 ```
 
-**คำตอบ:** qdisc ฝั่งผู้ส่งทิ้งเฉลี่ย 12 frame ต่อ run ซึ่งทำให้ DATA_FRAG เสียได้อย่างมาก 12 ก้อน แต่ writer ส่งซ้ำเฉลี่ย 1 220.2 ก้อน (หลัง NACK_FRAG 173.2 ฉบับ) การส่งซ้ำที่จำเป็นจริงจึงไม่เกินราว **1%** และ traffic ภาพบนสายเป็น 1 520.2 / 300 = **5.07 เท่า** ของที่ต้องใช้ ทั้งที่ได้ครบ 20/20 สอดคล้องกับ[ภาค 3 §11.4](03_wire_experiments.md#114-ผล-v) ข้อ 4 ว่าภาระมาจากจังหวะ heartbeat/NACK เมื่อภาพหนึ่งใช้ ~95 ms มากกว่าจาก loss ข้อจำกัด: ขอบบนนี้นับเฉพาะ `tcA_dropped` (egress ของผู้ส่ง) ไม่รวม frame ที่ qdisc ฝั่งผู้รับอาจทิ้ง (เช่น NACK_FRAG/ACKNACK), ค่า netem "wifi" เป็นค่าที่เลือกเองไม่ใช่ Wi-Fi จริง และ n = 5 ([ภาค 3 §11.5](03_wire_experiments.md#115-ข้อจำกัดของการจำลอง))
+**คำตอบ:** qdisc ฝั่งผู้ส่งทิ้งเฉลี่ย 12 frame ต่อ run ซึ่งทำให้ DATA_FRAG เสียได้อย่างมาก 12 ก้อน แต่ writer ส่งซ้ำเฉลี่ย 1 220.2 ก้อน (หลัง NACK_FRAG 173.2 ฉบับ) การส่งซ้ำที่จำเป็นจริงจึงไม่เกินราว **1%** และ traffic ภาพบนสายเป็น 1 520.2 / 300 = **5.07 เท่า** ของที่ต้องใช้ ทั้งที่ได้ครบ 20/20 สอดคล้องกับ[ภาค 3 §4.3.4](03_wire_experiments.md#434-ผล-v) ข้อ 4 ว่าภาระมาจากจังหวะ heartbeat/NACK เมื่อภาพหนึ่งใช้ ~95 ms มากกว่าจาก loss ข้อจำกัด: ขอบบนนี้นับเฉพาะ `tcA_dropped` (egress ของผู้ส่ง) ไม่รวม frame ที่ qdisc ฝั่งผู้รับอาจทิ้ง (เช่น NACK_FRAG/ACKNACK), ค่า netem "wifi" เป็นค่าที่เลือกเองไม่ใช่ Wi-Fi จริง และ n = 5 ([ภาค 3 §4.3.5](03_wire_experiments.md#435-ข้อจำกัดของการจำลอง))
 
 ---
 
@@ -385,7 +385,7 @@ tsh -r /c/exp3_zenoh.pcap -Y 'tcp.flags.syn==1' -T fields -e frame.number -e ip.
 | listener 172.20.0.3:37302 → router 172.20.0.2:7447 | listener (frame 4) | 55 | 9 021 |
 | listener 172.20.0.3:57268 → talker 172.20.0.4:35545 | listener (frame 60) | 100 | ~15 kB |
 
-**คำตอบ:** sample 161 B ทั้ง 8 frame ในข้อ 2.4 วิ่งบน connection ตรงระหว่าง talker กับ listener ไม่ผ่าน router connection กับ router ใช้สำหรับ discovery (gossip, liveliness token) จึงเป็น control plane ส่วน connection ตรงเป็น data plane ตาม[ภาค 4 §2.3](04_architectures.md#23-zenoh-router-rmw_zenoh-default-v-ภาค-1-33) และข้อสังเกตเชิงสถาปัตยกรรมใน[ภาค 4 §1](04_architectures.md#1-rmw-เป็น-plugin-middleware-4-ตัวหลัง-c-abi-เดียวกัน) ใน capture นี้ฝ่ายที่เปิด connection ตรงคือ **listener** (SYN จาก 172.20.0.3:57268 ไปยัง port 35545 ของ talker) ซึ่งต่างจากประโยคใน[ภาค 3 §4](03_wire_experiments.md#4-การทดลองที่-3-sample-เดียวกันผ่าน-rmw_zenoh)ที่ว่า talker เปิด TCP ไปหา listener (แจ้งผู้ดูแลเอกสารแล้ว) เชิงเหตุผล: ถ้า router ล่มหลังจาก peer เชื่อมกันแล้ว data plane ที่มีอยู่ไม่ได้พึ่ง router แต่ node ที่เริ่มใหม่จะหากันไม่เจอเพราะ multicast scouting ปิดเป็น default ([ภาค 4 §2.4](04_architectures.md#24-เปรียบเทียบ) ระบุไว้เป็น [K]) การออกแบบจึงต้องถือว่า router เป็นจุดเสียของ discovery
+**คำตอบ:** sample 161 B ทั้ง 8 frame ในข้อ 2.4 วิ่งบน connection ตรงระหว่าง talker กับ listener ไม่ผ่าน router connection กับ router ใช้สำหรับ discovery (gossip, liveliness token) จึงเป็น control plane ส่วน connection ตรงเป็น data plane ตาม[ภาค 4 §2.3](04_architectures.md#23-zenoh-router-rmw_zenoh-default-v-ภาค-1-33) และข้อสังเกตเชิงสถาปัตยกรรมใน[ภาค 4 §1](04_architectures.md#1-rmw-เป็น-plugin-middleware-4-ตัวหลัง-c-abi-เดียวกัน) ใน capture นี้ฝ่ายที่เปิด connection ตรงคือ **listener** (SYN จาก 172.20.0.3:57268 ไปยัง port 35545 ของ talker) ตรงกับ[ภาค 3 §2.3](03_wire_experiments.md#23-zenoh-sample-เดียวกันผ่าน-rmw_zenoh_cpp-การทดลองที่-3) (ฉบับก่อนของภาค 3 เขียนว่า talker เป็นผู้เปิด และแก้แล้วเมื่อ 2026-11-28) เชิงเหตุผล: ถ้า router ล่มหลังจาก peer เชื่อมกันแล้ว data plane ที่มีอยู่ไม่ได้พึ่ง router แต่ node ที่เริ่มใหม่จะหากันไม่เจอเพราะ multicast scouting ปิดเป็น default ([ภาค 4 §2.4](04_architectures.md#24-เปรียบเทียบ) ระบุไว้เป็น [K]) การออกแบบจึงต้องถือว่า router เป็นจุดเสียของ discovery
 
 ### 4.2 ต้นทุนของ simple discovery
 
@@ -438,7 +438,7 @@ tbf1g rel noxml 20 0 0 20 3 7.721
 
 | ขา | ทางเลือก | ตัวเลขที่อ้าง | ความเสี่ยง |
 |---|---|---|---|
-| (ก) ในเครื่องเดียวกัน | ถ้า node อยู่ใน process เดียวกันได้ ใช้ composition + intra-process (0 copy, [ภาค 4 §4](04_architectures.md#4-data-path-ภายในเครื่องเดียวกัน)) ถ้าต้องข้าม process อย่าถือว่า SHM default ดีกว่าเสมอ | `image_same_rel` median 5.35 ms แต่ p90 15.69 และ p99 15.88 ms (bimodal) เทียบกับ UDP ข้าม container p99 8.28 ms; ฝั่งดีคือ `publish()` 1.01 เทียบ 3.89 ms | โหมด ~15 ms ของ SHM ยังไม่รู้สาเหตุ ([ภาค 3 §10.5](03_wire_experiments.md#105-การตีความ-จำกัดเฉพาะที่ข้อมูลรองรับ) ข้อ 5); ถ้า deadline ของงานต่ำกว่า ~16 ms ต้องวัดทางเลือกอื่น (loaned + data-sharing, `rosidl::Buffer`, UDPv4 ล้วน) ก่อนเลือก |
+| (ก) ในเครื่องเดียวกัน | ถ้า node อยู่ใน process เดียวกันได้ ใช้ composition + intra-process (0 copy, [ภาค 4 §4](04_architectures.md#4-data-path-ภายในเครื่องเดียวกัน)) ถ้าต้องข้าม process อย่าถือว่า SHM default ดีกว่าเสมอ | `image_same_rel` median 5.35 ms แต่ p90 15.69 และ p99 15.88 ms (bimodal) เทียบกับ UDP ข้าม container p99 8.28 ms; ฝั่งดีคือ `publish()` 1.01 เทียบ 3.89 ms | โหมด ~15 ms ของ SHM ยังไม่รู้สาเหตุ ([ภาค 3 §7.1.5](03_wire_experiments.md#715-การตีความ-จำกัดเฉพาะที่ข้อมูลรองรับ) ข้อ 5); ถ้า deadline ของงานต่ำกว่า ~16 ms ต้องวัดทางเลือกอื่น (loaned + data-sharing, `rosidl::Buffer`, UDPv4 ล้วน) ก่อนเลือก |
 | (ข) ข้ามเครื่อง 1 GbE | BEST_EFFORT (ข้อมูลเซนเซอร์ ภาพใหม่มาแทนภาพเก่า) + `listenSocketBufferSize` ≥ 524 288 ที่ผู้รับเป็นค่าเผื่อ | `tbf1g` BE ได้ 20/20, `RcvbufErrors` 0 แม้ buffer default; บน veth ค่า default เสียภาพแรก (`image_cross_be` 1 470/1 500) และ buffer ใหญ่ทำให้ `RcvbufErrors` 130 → 0 และ max 15.89 → 9.40 ms; RELIABLE ที่ 1 Gbit/s มี NACK_FRAG 20 ฉบับและส่งซ้ำ 3 ก้อนต่อ run โดยไม่มีอะไรหาย | ภาพหนึ่งภาพใช้สาย 7.68 ms ที่ 10 Hz คือราว 7.7% ของ link; ที่ 30 fps เป็น 230 Mb/s (ภาค 2 §2.4); buffer default ยังเสี่ยงเมื่อ thread รับถูกหน่วง > ~0.5 ms |
 
-สิ่งที่ต้องวัดเพิ่มก่อนใช้จริง: (1) ทำซ้ำบน NIC จริงสองเครื่องตาม protocol ใน[ภาค 3 §12.2](03_wire_experiments.md#122-protocol-สำหรับ-2-เครื่องจริง-ยังไม่ได้รัน) พร้อมตัวนับ `ethtool -S` (2) วัด `image_same` ด้วย `FASTDDS_BUILTIN_TRANSPORTS=UDPv4` และทางเลือก zero-copy เพื่อแยกสาเหตุของโหมด ~15 ms (3) วัดด้วย node C++ (rclcpp) และหลาย subscriber เพราะผลทั้งหมดในไฟล์นี้มาจาก rclpy และ subscriber ตัวเดียว
+สิ่งที่ต้องวัดเพิ่มก่อนใช้จริง: (1) ทำซ้ำบน NIC จริงสองเครื่องตาม protocol ใน[ภาค 3 §8.2](03_wire_experiments.md#82-protocol-สำหรับ-2-เครื่องจริง-ยังไม่ได้รัน) พร้อมตัวนับ `ethtool -S` (2) วัด `image_same` ด้วย `FASTDDS_BUILTIN_TRANSPORTS=UDPv4` และทางเลือก zero-copy เพื่อแยกสาเหตุของโหมด ~15 ms (3) วัดด้วย node C++ (rclcpp) และหลาย subscriber เพราะผลทั้งหมดในไฟล์นี้มาจาก rclpy และ subscriber ตัวเดียว

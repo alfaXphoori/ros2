@@ -1,4 +1,4 @@
-# Derived image for the Medium-priority experiments (docs/03 §13 onward, docs/02 §1.6 and §6.5,
+# Derived image for the Medium-priority experiments (docs/03 §2.2-§2.4, §3, §4.4-§7.2,
 # docs/04 §5.5 and §6.3). Adds packages that the base experiment image does not have, so the
 # base Dockerfile (and every number measured with lyrical-wire:exp) stays untouched.
 #

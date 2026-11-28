@@ -15,7 +15,7 @@
 >
 > **ภาค 3 (ทดลองจริง):** [03_wire_experiments.md](03_wire_experiments.md) packet capture จาก Docker พร้อม pcap และสคริปต์ทำซ้ำ
 >
-> **ภาค 2 (ลึกกว่า):** [02_wire_format_and_kernel.md](02_wire_format_and_kernel.md) ครอบคลุม discovery ระดับ byte, reliable protocol และ DATA_FRAG, Fast DDS internals, Zenoh framing, การนับ `SO_RCVBUF`, latency/CPU budget และหัวข้อวิจัย R1–R9
+> **ภาค 2 (ลึกกว่า):** [02_wire_format_and_kernel.md](02_wire_format_and_kernel.md) ครอบคลุม discovery ระดับ byte, reliable protocol และ DATA_FRAG, Fast DDS internals, Zenoh framing, การนับ `SO_RCVBUF`, latency/CPU budget, template การทดลอง และหัวข้อวิจัย R1–R13
 
 **วัตถุประสงค์การเรียนรู้** อ่านภาคนี้จบแล้วควรทำได้ดังนี้
 1. อธิบายเส้นทางของ sample จาก `publish()` ผ่าน rcl → rmw → middleware → syscall และบอกได้ว่า copy เกิดที่ใด (§1–§2, §4)
@@ -185,14 +185,14 @@ User unicast     = 7400 + 250·domain + 11 + 2·participantId
 
 **Transports ของ Fast DDS**
 - `UDPv4` (default) และ `SHM` (default บนเครื่องเดียวกัน: Fast DDS เปิด SHM transport ให้อัตโนมัติ)
-- `FASTDDS_BUILTIN_TRANSPORTS=DEFAULT|UDPv4|SHM|LARGE_DATA|...` โดย `LARGE_DATA` ใช้ TCP สำหรับ user data + UDP สำหรับ discovery + SHM ช่วยแก้ปัญหา IP fragmentation ของข้อความใหญ่ (ดูตาราง tuning และผลวัดใน[ภาค 3 §15](03_wire_experiments.md#15-การทดลองที่-13-dds-tuning))
+- `FASTDDS_BUILTIN_TRANSPORTS=DEFAULT|UDPv4|SHM|LARGE_DATA|...` โดย `LARGE_DATA` ใช้ TCP สำหรับ user data + UDP สำหรับ discovery + SHM ช่วยแก้ปัญหา IP fragmentation ของข้อความใหญ่ (ดูตาราง tuning และผลวัดใน[ภาค 3 §4.4](03_wire_experiments.md#44-dds-tuning-ต่อ-rmw-การทดลองที่-13))
 - **Data-sharing delivery**: zero-copy ระหว่าง DataWriter/DataReader บน host เดียวกัน แต่ `rmw_fastrtps_cpp` ของ Lyrical **สั่ง `data_sharing().off()` เป็นค่าเริ่มต้น** ทั้ง writer และ reader จะเปิดได้ต้องตั้ง `RMW_FASTRTPS_USE_QOS_FROM_XML=1` พร้อม XML profile [แก้ไข 2026-11-24 ตามภาค 2]
 - Native Buffers / `rosidl::Buffer` integration [V] (ข่าวจาก eProsima และ release notes)
 
 **SHM ในระดับ OS** [K]: Fast DDS 3.6.x สร้าง segment ใน `/dev/shm` ชื่อ `fastdds_port<N>` และ `fastdds_<uuid>` (data-sharing ใช้ `fast_datasharing_…`) [แก้ไข 2026-11-24 ตามภาค 2] แล้ว map ด้วย `mmap` ใช้ named semaphore/futex แจ้งเตือน และมี port file ไว้ประกาศ "SHM port" ถ้า process crash อาจมีไฟล์ค้าง ล้างได้ด้วย `fastdds shm clean`
 
 ### 3.2 `rmw_cyclonedds_cpp` + Cyclone DDS 11.0.x [V: เวอร์ชัน · K: รายละเอียด]
-- ตั้งค่าผ่าน XML ใน `CYCLONEDDS_URI` (เช่น `General/Interfaces`, `Internal/SocketReceiveBufferSize`, `General/MaxMessageSize`) ดูตาราง tuning และผลวัดใน[ภาค 3 §15](03_wire_experiments.md#15-การทดลองที่-13-dds-tuning)
+- ตั้งค่าผ่าน XML ใน `CYCLONEDDS_URI` (เช่น `General/Interfaces`, `Internal/SocketReceiveBufferSize`, `General/MaxMessageSize`) ดูตาราง tuning และผลวัดใน[ภาค 3 §4.4](03_wire_experiments.md#44-dds-tuning-ต่อ-rmw-การทดลองที่-13)
 - SHM ทำผ่าน **iceoryx** (`release_2.0` อยู่ใน ros2.repos) ต้องรัน RouDi daemon (`iox-roudi`) และเปิด `<SharedMemory><Enable>true`
 - เอกสาร ROS แนะนำให้เพิ่ม `net.core.rmem_max` เพราะ Cyclone ขอ socket receive buffer ขนาดใหญ่
 
@@ -431,50 +431,13 @@ Reliability ของ RTPS อยู่ใน user space (HEARTBEAT / ACKNACK / 
 
 ## 7. ช่องว่างงานวิจัยและแนวทางพัฒนาต่อ (ข้อเสนอ ยังไม่ได้ตรวจว่ามีคนทำแล้วหรือไม่)
 
-> **รายการนี้ซ้อนกับ R1–R9 ใน[ภาค 2 §7](02_wire_format_and_kernel.md#7-ทิศทางวิจัยที่ตามมาโดยตรงจากหัวข้อ-16)** ซึ่งละเอียดกว่า (สมมติฐาน, สิ่งที่วัด, งานที่เกี่ยวข้องใน §7.1, threats to validity ใน §7.2, แผนสู่ paper ของ R4/R2 ใน §7.3) ให้ใช้ R1–R9 เป็นรายการหลัก ข้อ 1–7 ข้างล่างคงไว้ตามเดิม ตารางนี้จับคู่ให้ ข้อที่ไม่มีคู่อาจเสนอเป็น R10 ขึ้นไปในภายหลัง (ยังไม่ได้เพิ่มใน R1–R9)
->
-> | ข้อในภาค 1 | คู่ใน R1–R9 ของภาค 2 | หมายเหตุ |
-> |---|---|---|
-> | 1 `rosidl::Buffer` backend RDMA/RoCE/AF_XDP | ไม่มีใน R1–R9 | ข้อเสนอ R10; R7 ใน §7.1 อ้าง AF_XDP เพียงเป็นทางเลือก |
-> | 2 kernel zero-copy (`MSG_ZEROCOPY`, io_uring zero-copy RX, UDP GSO/GRO) | R8 (`MSG_ZEROCOPY`), R1 (GSO/GRO) | io_uring zero-copy RX ไม่มีใน R1–R9 |
-> | 3 EventsCBGExecutor บน PREEMPT_RT | บางส่วน: R7 (วัดบน PREEMPT_RT แต่ตัวแปรคือ busy polling) | การเทียบ executor ไม่มีใน R1–R9 (ข้อเสนอ R11) |
-> | 4 เปรียบเทียบ 4 Tier-1 RMW | บางส่วน: R6 (discovery 10–500 node), R9 (การรายงาน driver ใน benchmark) | benchmark ข้าม RMW ทั้งชุดไม่มีใน R1–R9 |
-> | 5 Zenoh SHM | ไม่มีใน R1–R9 (R5 ศึกษาเฉพาะ SHM ของ Fast DDS) | ข้อเสนอ R12 ใช้แบบการวัดของ R5 ได้ |
-> | 6 Content Filtered Topic | ไม่มีใน R1–R9 | ข้อเสนอ R13 |
-> | 7 observability pipeline (หายที่ชั้นไหน) | บางส่วน: R4 (การทิ้งที่ socket), R2 (การซ่อมของ RELIABLE) และระเบียบวิธีใน[ภาค 2 §6.4–6.5](02_wire_format_and_kernel.md#65-ระเบียบวิธีวัด-clock-sync-และ-trace-จริงหนึ่ง-sample) | ภาค 3 §19 ทำส่วน userspace + capture แล้ว ส่วน kernel ยังต้องใช้สิทธิ์ root |
-
-1. **`rosidl::Buffer` backend สำหรับ RDMA / RoCE / AF_XDP**: interface ถูกออกแบบให้ backend เป็น "memory substrate or transport technology" และมี discovery hook ต่อ peer จึงเหมาะจะทำ backend ที่ส่ง descriptor ผ่าน DDS แล้วส่ง payload ผ่าน RDMA verbs (ข้ามเครื่องแบบ zero-copy)
-2. **Kernel zero-copy**: ทดลองใช้ `MSG_ZEROCOPY` (TX), io_uring zero-copy RX (มีใน Linux รุ่นใหม่), UDP GSO/GRO ใน Fast DDS UDP transport แล้ววัด CPU/throughput ของข้อความ ≥1 MB
-3. **ประเมิน EventsCBGExecutor**: วัด latency distribution (p50/p99/p99.9) บน PREEMPT_RT เทียบกับ executor อื่น และวัดร่วมกับ SHM ของแต่ละ RMW
-4. **เปรียบเทียบ 4 Tier-1 RMW บน Lyrical**: ระบบเดียวกันกับ payload 64 B–32 MB ภายใต้ intra-host (UDP lo / SHM) และ inter-host (Ethernet 1/10 GbE, Wi-Fi 6) รวมถึงช่วง discovery time ตอนมี node 10–500 ตัว
-5. **Zenoh SHM**: ค่า default ปิดไว้เพราะ "until fully tested" ซึ่งเป็นโอกาสทำ characterization (pool size, threshold 512 B) และหาจุดเสีย
-6. **Content Filtered Topic**: `rcl_subscription_is_cft_supported` ช่วยให้วัดผลการกรองฝั่ง writer (ลด bandwidth) ข้าม RMW ได้อย่างเป็นระบบ
-7. **Observability pipeline**: ใช้ rosbag2 message-loss events + ros2_tracing snapshot mode + eBPF kernel drop (`kfree_skb` reason) เพื่อตอบว่า **หายที่ชั้นไหน** (rmw history / socket buffer / reassembly / NIC)
+หัวข้อวิจัยรวมไว้ที่เดียวใน[ภาค 2 §7](02_wire_format_and_kernel.md#7-ทิศทางวิจัยที่ตามมาโดยตรงจากหัวข้อ-16): R1–R9 (สมมติฐาน สิ่งที่วัด งานที่เกี่ยวข้อง threats to validity และแผนสู่ paper) และข้อเสนอ 7 ข้อจากภาคนี้ (`rosidl::Buffer` backend แบบ RDMA, kernel zero-copy, EventsCBGExecutor บน PREEMPT_RT, เปรียบเทียบ 4 RMW, Zenoh SHM, Content Filtered Topic, observability pipeline) ซึ่งจับคู่กับ R1–R9 แล้ว ข้อที่ไม่มีคู่เสนอเป็น R10–R13 ใน[ภาค 2 §7.4](02_wire_format_and_kernel.md#74-ข้อเสนอเพิ่มเติมจากภาค-1-นอก-r1r9)
 
 ---
 
 ## 8. Template การทดลอง (methodology)
 
-**ตัวแปรอิสระ**: RMW × transport (UDP / SHM / Buffer backend) × payload size × QoS (reliability, history depth) × executor × kernel (generic / PREEMPT_RT) × จำนวน subscriber
-
-**ตัวแปรตาม**: end-to-end latency (ใช้ timestamp จาก ros2_tracing: `rclcpp_publish` → `rmw_publish` → `rmw_take` → `callback_start`), jitter, throughput, CPU (%/core), memory, message loss, discovery time
-
-**เครื่องมือ**
-- Benchmark: `apex.ai performance_test`, `irobot ros2-performance` (ตรวจว่ารองรับ Lyrical หรือยัง)
-- Tracing: `ros2_tracing` + `tracetools_analysis`, LTTng kernel events (`net_dev_xmit`, `netif_receive_skb`, `sched_switch`)
-- Kernel: `bpftrace`, `perf sched`, `nstat`
-- Packet: Wireshark (มี dissector สำหรับ RTPS; Zenoh มี dissector แยก)
-
-**แนวปฏิบัติ**: ปิด CPU frequency scaling (`performance` governor), isolate core (`isolcpus`, `nohz_full`), ทำซ้ำ ≥30 รอบ, รายงาน p99/p99.9 ไม่ใช่แค่ค่าเฉลี่ย, ระบุเวอร์ชัน (`ros2 doctor --report` ใน Lyrical รายงาน env ได้ด้วย)
-
-ตัวอย่างสลับ RMW ระหว่างการทดลอง:
-```bash
-export RMW_IMPLEMENTATION=rmw_fastrtps_cpp   # | rmw_cyclonedds_cpp | rmw_zenoh_cpp | rmw_connextdds
-export FASTDDS_BUILTIN_TRANSPORTS=UDPv4       # บังคับไม่ใช้ SHM เพื่อวัด kernel path
-# Zenoh + SHM
-ros2 run rmw_zenoh_cpp rmw_zenohd &
-export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
-```
+template การทดลอง (ตัวแปรอิสระ/ตัวแปรตาม เครื่องมือ แนวปฏิบัติ เช่น ทำซ้ำ ≥30 รอบและรายงาน p99/p99.9 และตัวอย่างการสลับ RMW) ย้ายไปรวมกับระเบียบวิธีวัดใน[ภาค 2 §6.6](02_wire_format_and_kernel.md#66-template-การทดลอง-ตัวแปร-เครื่องมือ-และแนวปฏิบัติ) จุดวัดรายช่วงอยู่ใน[ภาค 2 §6.4](02_wire_format_and_kernel.md#64-แผนวัดให้ครบทุกช่วง) และการ sync นาฬิกาข้ามเครื่องใน[ภาค 2 §6.5](02_wire_format_and_kernel.md#65-ระเบียบวิธีวัด-clock-sync-และ-trace-จริงหนึ่ง-sample)
 
 ---
 
@@ -488,6 +451,8 @@ export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
 - rmw_zenoh (Lyrical) README + default configs: https://github.com/ros2/rmw_zenoh/tree/lyrical
 - eProsima announcement: https://discourse.openrobotics.org/t/ros-2-lyrical-luth-and-11-years-of-fast-dds-as-ros-2-default-middleware/55062
 - RMW feature freeze thread: https://discourse.openrobotics.org/t/upcomming-rmw-feature-freeze-april-6th-2026-ros-lyrical/53696
+
+source code (commit) ของ Fast DDS, rmw, Zenoh และ Linux kernel ที่ใช้ตรวจเชิงลึก: [ภาค 2 §9](02_wire_format_and_kernel.md#9-sources-ตรวจเมื่อ-2026-11-24)
 
 มาตรฐาน/พื้นฐาน (ควรอ้างในงานวิจัย)
 - OMG DDS-RTPS (DDSI-RTPS) v2.5 Specification; OMG DDS v1.4; OMG DDS-Security v1.1

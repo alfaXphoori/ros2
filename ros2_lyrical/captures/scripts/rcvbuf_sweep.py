@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Row extraction and summary for run_rcvbuf_sweep.sh (docs/03 §9 and §11). Standard library only.
+"""Row extraction and summary for run_rcvbuf_sweep.sh (docs/03 §4.2 and §4.3). Standard library only.
 
   rcvbuf_sweep.py row <run-prefix> <key=value>...      print the CSV header (if --header) or one CSV row
       <run-prefix> is out/<sweep>/runs/<run-id>; reads the files the shell script left there:
@@ -37,7 +37,7 @@ FIELDS = [
     # qdisc stats (root qdisc on eth0) after the run
     'tcA_pkts', 'tcA_dropped', 'tcA_overlimits', 'tcB_pkts', 'tcB_dropped', 'tcB_overlimits',
     'exit_A', 'exit_B', 'wall_s', 'note',
-    # added for docs/03 §13 and §15 (columns appended so older runs.csv files keep their meaning)
+    # added for docs/03 §4.4 (columns appended so older runs.csv files keep their meaning)
     'rmw', 'env_extra', 'sd_frames', 'sd_bytes', 'ds_frames', 'ds_bytes', 'tcp_sd_segs', 'tcp_sd_payload',
     'tcp_sd_retrans', 'acknack', 'heartbeat', 'lat_ms_med', 'lat_ms_max', 'lat_n',
 ]

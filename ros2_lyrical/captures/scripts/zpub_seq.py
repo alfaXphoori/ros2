@@ -1,4 +1,4 @@
-# Sequence-numbered std_msgs/String publisher for experiment 11 (docs/03 §14): 10 Hz, "n=<k>".
+# Sequence-numbered std_msgs/String publisher for experiment 11 (docs/03 §6): 10 Hz, "n=<k>".
 import sys, time, rclpy
 from rclpy.node import Node
 from std_msgs.msg import String

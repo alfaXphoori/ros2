@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Analysis for run_zenoh_extra.sh (docs/03 §14, experiments 11-12). Standard library only.
+"""Analysis for run_zenoh_extra.sh (docs/03 §6 and §4.5, experiments 11-12). Standard library only.
 
   zenoh_extra_analyze.py kill  <out/zenoh_extra/kill>   [--csv out.csv]   one row per repetition
   zenoh_extra_analyze.py image <out/zenoh_extra/image>  [--csv out.csv]   one row per run (qos)

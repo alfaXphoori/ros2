@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!--
-  Template for run_rcvbuf_sweep.sh (docs/03 §9). The script replaces @ELEMENT@ with
+  Template for run_rcvbuf_sweep.sh (docs/03 §4.2). The script replaces @ELEMENT@ with
   listenSocketBufferSize (receiver arms) or sendSocketBufferSize (the "sndonly" arm) and @BYTES@
   with the requested size, and writes the result to out/<sweep>/profiles/<arm>.xml.
 

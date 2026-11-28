@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Experiment 13 (docs/03 §15): Fast DDS tuning variants + Cyclone DDS on the 640x480 image workload,
+# Experiment 13 (docs/03 §4.4): Fast DDS tuning variants + Cyclone DDS on the 640x480 image workload,
 # under the default veth and under the tc tbf1g shaping, BEST_EFFORT and RELIABLE.
 # A thin driver around run_rcvbuf_sweep.sh (arms noxml, largedata, mtu1400, cyclone; optional flowctl):
 # one invocation per (shape, qos), each under its own EXCLUSIVE lock so other experiments get turns.

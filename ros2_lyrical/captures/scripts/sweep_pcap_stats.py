@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Per-run counts from a receiver-side capture of the image workload (standard library only).
 
-Used by run_rcvbuf_sweep.sh (docs/03 §9 and §11). Prints ONE JSON object on stdout:
+Used by run_rcvbuf_sweep.sh (docs/03 §4.2 and §4.3). Prints ONE JSON object on stdout:
 
   frames              all frames in the capture
   datafrag_total      DATA_FRAG submessages sender -> receiver (fragmentsInSubmessage summed)
@@ -96,7 +96,7 @@ def main():
     dg = {}                      # (ip id) -> {'t0','t1','n','bytes','ts':[...]}  for src->dst fragmented/UDP datagrams
     dg_key = {}                  # ip id -> list of (writer, sn, fragStart, inSub, fragSize, sampleSize)
     nack = 0
-    # extra counters (docs/03 §13 and §15): all frames/bytes per direction, TCP payload sender->receiver
+    # extra counters (docs/03 §4.4): all frames/bytes per direction, TCP payload sender->receiver
     # (FASTDDS_BUILTIN_TRANSPORTS=LARGE_DATA moves user data to TCP), ACKNACK/HEARTBEAT submessages
     sd_frames = sd_bytes = ds_frames = ds_bytes = 0
     tcp_segs = tcp_payload = tcp_retrans = 0; tcp_seen = set()

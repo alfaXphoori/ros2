@@ -13,8 +13,9 @@
 3. คำนวณ `fragmentSize`, จำนวน DATA_FRAG, IP fragment และเวลาบนสายของภาพ 640×480 rgb8 (§2.4)
 4. ถอด Zenoh บน TCP: length prefix, FRAME/PUSH/PUT และ attachment ของ `rmw_zenoh_cpp` (§4)
 5. คำนวณ `SO_RCVBUF` ที่ kernel ใช้จริงและจำนวน datagram 65 KB ที่ buffer รับได้ตาม `truesize` โดยแยกผลวัดออกจากประมาณการ (§3.3, §5.3, §6)
+6. วางแผนวัด latency รายช่วงข้ามชั้น พร้อมตัวแปร เครื่องมือ และแนวปฏิบัติของการทดลอง แล้วเลือกหัวข้อวิจัยจาก R1–R13 (§6.4–§6.6, §7)
 
-**พื้นฐานที่ควรมี** ภาค 1 §3–§5 และภาค 3 §2–§6 (ตามลำดับการอ่านใน README) · bitmap/bit flag และ little-endian · อ่าน C struct ได้ · ใช้ Wireshark หรือ tshark เบื้องต้น
+**พื้นฐานที่ควรมี** ภาค 1 §3–§5 และภาค 3 §2, §4.1–§4.2 และ §5.1 (การทดลองที่ 1–6 ตามลำดับการอ่านใน README) · bitmap/bit flag และ little-endian · อ่าน C struct ได้ · ใช้ Wireshark หรือ tshark เบื้องต้น
 
 แบบฝึกหัด: [exercises.md ภาค 2](exercises.md#ภาค-2) · คำศัพท์: [glossary.md](glossary.md) · สรุปย่อหนึ่งหน้า: [cheatsheet.md](cheatsheet.md)
 
@@ -22,7 +23,7 @@
 
 **ระดับความเชื่อมั่น**
 
-- **[V: แหล่ง]** ตรวจกับ source code หรือเครื่องจริงแล้ว ระบุแหล่งไว้ในวงเล็บ รายการ commit อยู่ในหัวข้อ 10
+- **[V: แหล่ง]** ตรวจกับ source code หรือเครื่องจริงแล้ว ระบุแหล่งไว้ในวงเล็บ รายการ commit อยู่ในหัวข้อ 9
 - **[K]** ความรู้มาตรฐานที่ยังไม่ได้ตรวจกับ source ของเวอร์ชันนี้
 - **ประมาณการ** ตัวเลขที่คำนวณหรือประเมินเอง แสดงเหตุผลกำกับทุกครั้ง ไม่ใช่ผลวัด
 
@@ -127,14 +128,14 @@ parameter หลักของ `DATA(w)` ตามลำดับใน `Writer
 | `PID_PROTOCOL_VERSION`, `PID_VENDORID` | `0x0015`, `0x0016` | |
 | `PID_DURABILITY` | `0x001d` | เขียนเมื่อ `should_be_sent` (ค่าจริงบนสายของ PID QoS ในตารางนี้และเงื่อนไขที่ส่ง ดู [§1.6](#16-qos--byte-บนสาย)) |
 | `PID_DEADLINE`, `PID_LATENCY_BUDGET`, `PID_LIVELINESS` | `0x0023`, `0x0027`, `0x001b` | เขียนเมื่อไม่ใช่ default |
-| `PID_RELIABILITY` | `0x001a` | kind: `BEST_EFFORT = 1`, `RELIABLE = 2` [V: `QosPolicies.hpp`] |
+| `PID_RELIABILITY` | `0x001a` | kind: `BEST_EFFORT = 1`, `RELIABLE = 2` [V: `QosPolicies.hpp`] บน `DATA(w)` เขียน**เฉพาะเมื่อ BEST_EFFORT** (RELIABLE เป็น default ของ writer) ส่วน `DATA(r)` มีทุกตัว [V: capture `exp1_fastdds_default.pcap`: `DATA(w)` 21 ฉบับไม่มี PID นี้, `DATA(r)` 17 ฉบับมีทุกฉบับ; `exp16_qos_mm_rel.pcap` frame 35 = writer BEST_EFFORT ตาม §1.6] |
 | `PID_LIFESPAN`, `PID_OWNERSHIP`, `PID_DESTINATION_ORDER`, `PID_PRESENTATION`, `PID_PARTITION` | `0x002b`, `0x001f`, `0x0025`, `0x0021`, `0x0029` | เขียนเมื่อไม่ใช่ default |
 | `PID_USER_DATA` | `0x002c` | ROS 2 ใส่ type hash ที่นี่ |
 | `PID_DATASHARING` | `0x8006` | เขียนเมื่อเปิด data-sharing |
 | `PID_TYPE_INFORMATION` | `0x0075` | XTypes TypeInformation |
 | `PID_PROPERTY_LIST` | `0x0059` | |
 | `PID_DATA_REPRESENTATION` | `0x0073` | |
-| `PID_HISTORY` | `0x0040` | |
+| `PID_HISTORY` | `0x0040` | เขียน**เฉพาะเมื่อไม่ใช่ KEEP_LAST depth 1** (default ของ DDS) เช่น `rt/chatter` ของ demo talker = KEEP_LAST 7 [V: capture `exp16_qos_tl_d1.pcap` frame 42: writer KEEP_LAST 1 ไม่มี PID นี้, `tl_d10` = KEEP_LAST 10, `tl_all` = KEEP_ALL depth 10; `exp1_fastdds_default.pcap`: SEDP `DATA` 57 ฉบับ (19 ฉบับเป็น dispose/unregister ไม่มี ParameterList) มี PID นี้ 36 ฉบับ ที่ไม่มีคือ writer ของ `ros_discovery_info` (KEEP_LAST 1) ตาม §1.6] |
 | `PID_SENTINEL` | `0x0001` | |
 
 - **ชื่อ topic**: prefix `rt` (topic), `rq` (service request), `rr` (service reply) [V: `rmw_fastrtps_shared_cpp/src/namespace_prefix.cpp`]
@@ -181,7 +182,7 @@ size ≈ 4 (encapsulation) + 16 (gid) + 4 (seq len)
 
 ### 1.6 QoS → byte บนสาย
 
-QoS ของ ROS 2 ไปถึงสายได้ 2 ทาง: (1) เป็น parameter ใน ParameterList ของ SEDP `DATA(w)`/`DATA(r)` ซึ่งส่งครั้งเดียวต่อคู่ participant (ดู §1.3) และ (2) เป็นพฤติกรรมของ reliable protocol (HEARTBEAT/ACKNACK/DATA ที่ส่งซ้ำ) หรือ traffic ของ builtin endpoint บางตัว หัวข้อนี้อ่านทั้งสองทางจาก capture ของ[การทดลองที่ 16 ในภาค 3](03_wire_experiments.md#18-การทดลองที่-16-qos-บนสาย) (`rclpy` + `rmw_fastrtps_cpp` + Fast DDS 3.6.2, 2 container, UDPv4, topic `/qos_demo` ชนิด `std_msgs/String`) ทุกบรรทัดที่ยกมาถอดด้วย [`tools/rtps_peek.py`](../tools/rtps_peek.py) (โหมด `sedp`, `params`, `stats` และ option `-v` ที่เพิ่มสำหรับหัวข้อนี้) และตรวจไขว้กับ tshark 4.6.4 ใน image แล้วสำหรับ ACKNACK (bitmap, count, F), HEARTBEAT (firstSN/lastSN, count, flag F/L), INFO_TS, GAP และ PID durability/reliability/history/liveliness/deadline/lifespan [V: tshark `-V` บน frame ที่อ้างในหัวข้อนี้ ค่าตรงกันทุก field]
+QoS ของ ROS 2 ไปถึงสายได้ 2 ทาง: (1) เป็น parameter ใน ParameterList ของ SEDP `DATA(w)`/`DATA(r)` ซึ่งส่งครั้งเดียวต่อคู่ participant (ดู §1.3) และ (2) เป็นพฤติกรรมของ reliable protocol (HEARTBEAT/ACKNACK/DATA ที่ส่งซ้ำ) หรือ traffic ของ builtin endpoint บางตัว หัวข้อนี้อ่านทางแรกระดับ byte จาก capture ของ[การทดลองที่ 16 ในภาค 3 §3](03_wire_experiments.md#3-qos-บนสาย-การทดลองที่-16) ส่วนทางที่สอง (พฤติกรรมขณะรัน) สรุปไว้ท้ายหัวข้อพร้อมลิงก์ไปยังผลใน ภาค 3 §3.2–3.7 (`rclpy` + `rmw_fastrtps_cpp` + Fast DDS 3.6.2, 2 container, UDPv4, topic `/qos_demo` ชนิด `std_msgs/String`) ทุกบรรทัดที่ยกมาถอดด้วย [`tools/rtps_peek.py`](../tools/rtps_peek.py) (โหมด `sedp`, `params`, `stats` และ option `-v` ที่เพิ่มสำหรับหัวข้อนี้) และตรวจไขว้กับ tshark 4.6.4 ใน image แล้วสำหรับ ACKNACK (bitmap, count, F), HEARTBEAT (firstSN/lastSN, count, flag F/L), INFO_TS, GAP และ PID durability/reliability/history/liveliness/deadline/lifespan [V: tshark `-V` บน frame ที่อ้างในหัวข้อนี้ ค่าตรงกันทุก field]
 
 **ตารางสรุป** (frame = เลข frame ใน `captures/exp16_qos_<case>.pcap`, นับแบบ Wireshark; DATA(w) ที่ถูก IP fragment นับที่ frame สุดท้ายของ datagram)
 
@@ -189,7 +190,7 @@ QoS ของ ROS 2 ไปถึงสายได้ 2 ทาง: (1) เป็
 |---|---|---|---|---|---|
 | durability | `0x001d` | ทุก `DATA(w)` และ `DATA(r)` รวม VOLATILE | u32 kind: 0 VOLATILE, 1 TRANSIENT_LOCAL | TRANSIENT_LOCAL: writer ส่ง sample ที่ยังอยู่ใน history ซ้ำให้ reader ที่มาทีหลัง (DATA + INFO_TS เดิม) | [V: `tl_d10` frame 43 (w), 26 (r); `vol_d10` frame 42] |
 | reliability | `0x001a` | `DATA(r)` ทุกตัว (RELIABLE); `DATA(w)` **เฉพาะเมื่อ BEST_EFFORT** (RELIABLE เป็น default ของ writer จึงไม่ส่ง) | u32 kind (1 BEST_EFFORT, 2 RELIABLE) + `max_blocking_time` Duration_t 8 B (ค่าที่เห็น 0.1 s ทุกตัว) | RELIABLE: HEARTBEAT/ACKNACK; BEST_EFFORT: ไม่มี | [V: `mm_rel` frame 35 (w BEST_EFFORT), 42 (r RELIABLE); `tl_d10` frame 43 ไม่มี PID นี้] |
-| history | `0x0040` | **เฉพาะเมื่อไม่ใช่ KEEP_LAST 1** (default ของ DDS) | u32 kind (0 KEEP_LAST, 1 KEEP_ALL) + i32 depth (KEEP_ALL ยังส่ง depth 10 ของ rclpy ไปด้วย) | ไม่มี traffic ของตัวเอง แต่กำหนดว่า SN ใดยังส่งซ้ำได้ (ดู ก. และ ข.) | [V: `tl_d10` frame 43 = KEEP_LAST 10; `tl_all` frame 43 = KEEP_ALL depth 10; `tl_d1` frame 42 ไม่มี PID นี้] |
+| history | `0x0040` | **เฉพาะเมื่อไม่ใช่ KEEP_LAST 1** (default ของ DDS) | u32 kind (0 KEEP_LAST, 1 KEEP_ALL) + i32 depth (KEEP_ALL ยังส่ง depth 10 ของ rclpy ไปด้วย) | ไม่มี traffic ของตัวเอง แต่กำหนดว่า SN ใดยังส่งซ้ำได้ (ดู[ภาค 3 §3.2](03_wire_experiments.md#32-transient_local-สิ่งที่ส่งซ้ำให้-reader-ที่มาทีหลัง) และ[§3.3](03_wire_experiments.md#33-history-depth-ตอนมี-packet-loss-gap)) | [V: `tl_d10` frame 43 = KEEP_LAST 10; `tl_all` frame 43 = KEEP_ALL depth 10; `tl_d1` frame 42 ไม่มี PID นี้] |
 | resource limits | `0x0041` | ไม่พบใน capture ใดเลย (rclpy ไม่ได้ตั้ง แม้แต่ KEEP_ALL) | 3 × i32 | - | [V: ไม่มีใน 11 capture] |
 | liveliness | `0x001b` | เมื่อไม่ใช่ default (rclpy `SYSTEM_DEFAULT` = ไม่ส่ง) | u32 kind (0 AUTOMATIC, 1 MANUAL_BY_PARTICIPANT, 2 MANUAL_BY_TOPIC) + lease Duration_t | AUTOMATIC: `DATA(m)` จาก builtin writer `00.02.00.c2` ทุก 1.000 s ที่ lease 1.5 s; MANUAL_BY_TOPIC: HEARTBEAT ที่ตั้ง flag L ต่อการ assert 1 ครั้ง | [V: `live_auto` frame 24, `live_man` frame 35] |
 | deadline | `0x0023` | เมื่อไม่ใช่ infinite ทั้ง w และ r | Duration_t | ไม่มี (ตรวจที่ปลายทั้งสองเอง) | [V: `dl_ls` frame 24, 44] |
@@ -212,78 +213,14 @@ frame 43 172.21.0.3 -> 172.21.0.2 DATA writer 00.00.03.c2 reader 00.00.03.c7 SN 
     [428] 0x0001 SENTINEL                             len 0
 ```
 
-#### ก. TRANSIENT_LOCAL: สิ่งที่ส่งซ้ำให้ reader ที่มาทีหลัง
+**พฤติกรรมขณะรันที่เห็นบนสาย** (ผลวัดเต็ม, ลำดับ submessage และเลข frame อยู่ใน[ภาค 3 §3](03_wire_experiments.md#3-qos-บนสาย-การทดลองที่-16))
 
-writer RELIABLE + TRANSIENT_LOCAL publish `q1`..`q20` (SN 1–20) ที่ 50 Hz ก่อน แล้ว reader TRANSIENT_LOCAL KEEP_LAST 20 จึงเริ่ม ลำดับที่เห็นใน `exp16_qos_tl_d10.pcap` (writer KEEP_LAST 10, `rtps_peek.py -v sms ... HEARTBEAT ACKNACK DATA` เฉพาะ entity `00.00.06.03/04`):
-
-```
-frame 27  .3 -> .2  HEARTBEAT reader 00.00.06.04 writer 00.00.06.03 firstSN 11 lastSN 20 count 1 F=0 L=0
-frame 50  .2 -> .3  ACKNACK   base 0 numBits 0 -> ขอ SN [] count 1 F=0
-frame 52  .3 -> .2  HEARTBEAT firstSN 11 lastSN 20 count 2 F=0 L=0
-frame 54  .2 -> .3  ACKNACK   base 11 numBits 10 -> ขอ SN [11..20] count 2 F=0
-frame 55  .3 -> .2  INFO_TS 1795798286.328121620, DATA SN 11 'q11', HEARTBEAT 11..20 count 3,
-                    INFO_TS ..., DATA SN 12, HEARTBEAT count 4, ... DATA SN 20, HEARTBEAT count 12   (datagram เดียว 938 B)
-frame 58  .2 -> .3  ACKNACK   base 21 numBits 0 -> ขอ SN [] count 3 F=1
-```
-
-- writer บอกช่วงที่ยังมีด้วย `firstSN` ของ HEARTBEAT: depth 10 → `11..20`, depth 1 → `20..20`, KEEP_ALL → `1..20` แล้ว reader ขอทุก SN ในช่วงนั้นด้วย bitmap ของ ACKNACK [V: `tl_d10` frame 27, 54; `tl_d1` frame 37, 54; `tl_all` frame 37, 54]
-- SN ที่ส่งซ้ำ: depth 1 → `[20]` (1 DATA, frame 57), depth 10 → `[11..20]` (10 DATA), KEEP_ALL → `[1..20]` (20 DATA) และ reader ได้รับ 1/10/20 sample ตามลำดับ [V: `qos_summary.csv` คอลัมน์ `SNs_sent`, `sub_received`] คือความลึกของ history ฝั่ง writer เป็นตัวกำหนดว่าคนมาทีหลังได้อะไร
-- **ไม่มี GAP**: SN 1–10 ที่หลุดจาก history ไม่ถูกประกาศด้วย GAP แต่สื่อผ่าน `firstSN` = 11 ของ HEARTBEAT แทน [V: GAP = 0 ในทั้ง 4 case]
-- sample ที่ส่งซ้ำมี INFO_TS เป็นเวลา publish เดิม ไม่ใช่เวลาที่ส่งซ้ำ: frame 55 ส่งที่ 287.563 แต่ INFO_TS ของ SN 11 = 286.328121620 ซึ่งตรงกับ log `PUB 11` ของ publisher (wall 286.328) [V: `tl_d10` frame 55 + `qos_node_logs.txt`] ใน `tl_d1` SN 20 ถูกส่งซ้ำ 1.25 s หลัง publish (INFO_TS 277.786, frame 57 ที่ 279.033)
-- ใน datagram ที่ส่งซ้ำ Fast DDS ใส่ HEARTBEAT ต่อท้าย DATA ทุกตัว (count 3–12) จึงเห็น HEARTBEAT ของ user writer 12 ครั้งใน `tl_d10` เทียบกับ 3 ใน `tl_d1` [V]
-- **VOLATILE** (`vol_d10`, writer KEEP_LAST 10 เหมือนกัน): HEARTBEAT `firstSN 21 lastSN 20` (ช่วงว่าง) reader ตอบ ACKNACK `base 21` F=1 และไม่มี DATA ของ user writer เลย [V: `vol_d10` frame 27, 54; `user_DATA` = 0]
-- ACKNACK แรกของ reader (`base 0 numBits 0`, F=0) ถูกส่งก่อนได้ HEARTBEAT ที่จับคู่แล้ว ทุก case ที่ reader มาทีหลัง [V: frame 50 ของ `tl_*`/`vol_d10`]
-
-#### ข. history depth ตอนมี packet loss: GAP
-
-เพื่อดูว่า depth มีผลบนสายเมื่อไม่ได้ใช้ TRANSIENT_LOCAL ด้วย ใส่ `tc netem loss 20%` ที่ `eth0` ของ container ผู้ส่ง (namespace ของ container เท่านั้น) แล้วส่ง 50 sample ที่ 200 Hz, RELIABLE VOLATILE, reader KEEP_LAST 50 รอบละ 1 run (loss สุ่ม ตัวเลขเปลี่ยนทุก run; capture อยู่ฝั่งผู้รับจึงไม่เห็น frame ที่ netem ทิ้ง)
-
-| case | writer history | DATA ที่ผู้รับเห็น | sample ที่ subscriber ได้ | ACKNACK ที่ขอ SN จริง | GAP |
-|---|---|---|---|---|---|
-| `loss_d1` | KEEP_LAST 1 | 38 (SN ที่ขาด: 1, 3, 6, 8, 15, 19, 30, 32, 35, 39, 45, 49) | **38/50** | 0 (ทุก ACKNACK `numBits 0`) | 0 |
-| `loss_d50` | KEEP_LAST 50 | 50 (42 ครั้งแรก + 8 ส่งซ้ำ) | **50/50** | frame 100: `base 8 numBits 41 -> ขอ SN [8, 9, 17, 26, 36, 46, 47, 48]` | 0 |
-
-[V: `qos_summary.csv`, `qos_node_logs.txt`]
-
-- KEEP_LAST 1: writer แนบ HEARTBEAT ต่อท้าย DATA ทุกตัวโดย `firstSN = lastSN = SN ล่าสุด` (เช่น frame 86: DATA SN 4 + `HEARTBEAT firstSN 4 lastSN 4`) reader จึงถือว่า SN ที่ขาด (3) ไม่มีให้ขอแล้วและตอบ ACKNACK `base 5 numBits 0 F=1` ทันที **RELIABLE + KEEP_LAST 1 จึงไม่รับประกันว่าได้ทุก sample** ข้อมูลที่หายไม่ถูกขอซ้ำเลย [V: `loss_d1` frame 84–95]
-- KEEP_LAST 50: HEARTBEAT `firstSN 1 lastSN 50` ต่อท้าย DATA สุดท้าย (frame 99) แล้ว reader ขอ 8 SN ที่ขาดใน ACKNACK เดียว และ writer ส่งซ้ำครบ [V: `loss_d50` frame 99–102]
-- HEARTBEAT ต่อท้าย DATA ทุกตัวเห็นเมื่อ history ของ writer เต็ม (`loss_d1` ทุก sample, `tl_d10` ตอนส่งซ้ำ 10 ตัว) แต่ไม่เห็นใน `loss_d50` ช่วงที่ history ยังไม่เต็ม [V] ตรงกับเงื่อนไขข้อ 1 `history_->isFull()` ของการแนบ HEARTBEAT ใน [§2.3](#23-ค่าเวลา-default-ของ-fast-dds-36x)
-- **ไม่พบ GAP submessage ใน capture ใดเลย** (11 capture ของการทดลองนี้ และ exp1–exp6 เดิม) [V: `rtps_peek.py sms <pcap> GAP` ว่างทุกไฟล์] Fast DDS 3.6.2 ในสถานการณ์เหล่านี้ใช้ `firstSN` ของ HEARTBEAT บอกว่า SN ก่อนหน้าไม่มีแล้ว ตัวถอด GAP ของ `rtps_peek.py -v` จึงตรวจกับ tshark ด้วย frame สังเคราะห์ (GAP `gapStart 3`, `gapList base 7 numBits 5 bitmap 10100` → SN 3..7, 9) แทน capture จริง
-
-#### ค. liveliness
-
-ทั้ง writer และ reader ตั้ง lease 1.5 s (`PID_LIVELINESS` = `AUTOMATIC` / `MANUAL_BY_TOPIC`, lease `sec 1 fraction 0x80000000`) [V: `live_auto` frame 24/42, `live_man` frame 35/43]
-
-- **AUTOMATIC** (`live_auto`): builtin ParticipantMessage writer `00.02.00.c2` ส่ง `DATA(m)` ไป reader `00.02.00.c7` **ทุก 1.000 s** (frame 73, 78, 81, 90, 93, 96 = SN 1–6, ห่างกัน 1.000 s ± 0.2 ms) คือ 2/3 ของ lease 1.5 s payload 28 B = encapsulation `00 01` + guidPrefix ของ participant 12 B + kind `00 00 00 01` (AUTOMATIC_LIVELINESS_UPDATE) + 8 byte ศูนย์ [V: `live_auto`; ความหมายของ kind จาก spec [K]] ไม่มี HEARTBEAT ที่ตั้ง flag L ใน case นี้
-- **MANUAL_BY_TOPIC** (`live_man`, publisher เรียก `assert_liveliness()` ทุก 0.5 s เป็นเวลา 3 s แล้วหยุด): **ไม่มี `DATA(m)` เลย** แต่ user writer ส่ง HEARTBEAT flags `0x07` (E, F, **L**) ทันทีต่อการ assert แต่ละครั้ง 6 ครั้ง (frame 70, 77, 78, 79, 80, 83; เวลาตรงกับบรรทัด `ASSERT` ใน log ภายใน 1 ms) ส่วน HEARTBEAT ตามคาบปกติ (frame 86, `F=0 L=0`) มาที่ 3.000 s หลัง DATA สุดท้าย [V]
-  ```
-  frame 70  HEARTBEAT flags 0x07 reader 00.00.06.04 writer 00.00.06.03 firstSN 1 lastSN 3 count 2 F=1 L=1
-  frame 83  HEARTBEAT flags 0x07 ... firstSN 1 lastSN 3 count 7 F=1 L=1     (assert ครั้งสุดท้าย 1795798334.969)
-  frame 86  HEARTBEAT flags 0x01 ... firstSN 1 lastSN 3 count 8 F=0 L=0     (คาบปกติ)
-  ```
-- เมื่อหยุด assert: subscriber log `liveliness_changed alive 0 not_alive 1` ที่ wall 336.469 และ publisher log `liveliness_lost` ที่ 336.468 คือ **1.50 s หลัง assert สุดท้าย = lease** [V: `qos_node_logs.txt` case `live_man`] ตัดสินที่ปลายแต่ละข้างจากเวลาที่ไม่ได้รับ/ไม่ได้ส่ง ไม่มี packet แจ้ง "lost" บนสาย
-- ใน `live_auto` เหตุการณ์ `alive 0 not_alive 0` ตอนท้ายเกิดเมื่อ publisher ปิดตัว (unmatch) ไม่ใช่ lease หมด [V: เวลาเดียวกับ `DONE` ของ publisher]
-
-#### ง. deadline และ lifespan
-
-`DATA(w)` มี `DEADLINE` 0.5 s (fraction `0x80000000`) และ `LIFESPAN` 2 s, `DATA(r)` มี `DEADLINE` 0.5 s [V: `dl_ls` frame 24, 44] หลัง sample สุดท้าย (frame 76) ทั้งสองข้าง log `deadline_missed` ทุก ~0.5 s (subscriber 10 ครั้ง, publisher 4 ครั้งก่อนปิด) แต่ระหว่าง frame 77–80 (3.1 s จนถึงการปิด node ที่ frame 81) มีเพียง SPDP ตามคาบ ไม่มี submessage ใดจาก user writer `00.00.06.03` เลย [V: `dl_ls`] deadline และ lifespan จึงถูกบังคับใช้ในเครื่องล้วน ๆ (lifespan ทำให้ sample หมดอายุใน history ของ writer/reader [K: ไม่ได้ทดสอบกับคนมาทีหลังใน case นี้])
-
-#### จ. QoS ไม่เข้ากัน
-
-| case | `DATA(w)` | `DATA(r)` | user DATA บนสาย | ข้อความที่ node พิมพ์ |
-|---|---|---|---|---|
-| `mm_rel` | RELIABILITY = BEST_EFFORT (frame 35) | RELIABILITY = RELIABLE (frame 42) | 0 frame จาก `00.00.06.03` (ไม่มีแม้ HEARTBEAT) ทั้งที่ publish 10 ครั้ง | subscriber: `New publisher discovered on topic 'qos_demo', offering incompatible QoS. No messages will be received from it. Last incompatible policy: RELIABILITY` |
-| `mm_dur` | DURABILITY = VOLATILE (frame 24) | DURABILITY = TRANSIENT_LOCAL (frame 43) | 0 frame | `... Last incompatible policy: DURABILITY` |
-
-[V: `qos_summary.csv`, `qos_node_logs.txt`] SEDP ของทั้งคู่ถูกแลกกันครบ (การตัดสินว่าเข้ากันไม่ได้ทำหลังอ่าน PID เหล่านี้) แต่ writer ไม่ match กับ reader จึงไม่ส่งอะไรเลย ฝั่ง publisher ไม่พิมพ์ `offered_incompatible_qos` ในทั้ง 2 case แม้ลง callback ไว้ [V: `qos_node_logs.txt`] สาเหตุยังไม่ได้ไล่ [K] ส่วน `ros2 topic info -v` ไม่ได้รัน
-
-#### สิ่งที่ไม่ปรากฏบนสาย
-
-- KEEP_LAST depth 1 (ไม่มี `PID_HISTORY`), RELIABLE ของ writer (ไม่มี `PID_RELIABILITY`) และ liveliness/deadline/lifespan ที่เป็น default: ฝั่งรับต้องเติม default ของ DDS เอง การอ่าน pcap จึงต้องรู้ default ของ spec ไม่ใช่ของ ROS 2 [V]
-- `PID_RESOURCE_LIMITS`: ไม่พบ [V]
-- depth ของ **reader** ส่งไปใน `DATA(r)` (เช่น KEEP_LAST 20) แต่ไม่มีผลต่อ traffic ใน case เหล่านี้ [V: `tl_*` frame 26/36]
-- ขนาดคิว/ความช้าของ callback, deadline miss, lifespan expiry, liveliness lost: ไม่มี packet ใดบอก [V: ง., ค.]
-- GAP สำหรับ sample ที่หลุดจาก history ตอนคนมาทีหลัง: Fast DDS ใช้ `firstSN` ของ HEARTBEAT แทน [V: ก.]
+- **TRANSIENT_LOCAL**: writer บอกช่วง SN ที่ยังอยู่ใน history ด้วย `firstSN` ของ HEARTBEAT แล้วส่งซ้ำเฉพาะช่วงนั้นให้ reader ที่มาทีหลัง (DATA + INFO_TS เวลา publish เดิม) โดยไม่ใช้ GAP: [ภาค 3 §3.2](03_wire_experiments.md#32-transient_local-สิ่งที่ส่งซ้ำให้-reader-ที่มาทีหลัง)
+- **history depth ตอนมี packet loss**: RELIABLE + KEEP_LAST 1 ไม่ขอ SN ที่หายซ้ำเลย ส่วน depth ที่พอรับช่วงที่หายซ่อมได้ครบด้วย ACKNACK ฉบับเดียว และไม่พบ GAP submessage ใน capture ใดเลย: [ภาค 3 §3.3](03_wire_experiments.md#33-history-depth-ตอนมี-packet-loss-gap)
+- **liveliness**: AUTOMATIC ส่ง `DATA(m)` จาก builtin writer `00.02.00.c2` ตามคาบ ส่วน MANUAL_BY_TOPIC ใช้ HEARTBEAT ที่ตั้ง flag L ต่อการ assert แต่ละครั้ง และไม่มี packet แจ้ง "lost": [ภาค 3 §3.4](03_wire_experiments.md#34-liveliness)
+- **deadline และ lifespan**: มีเฉพาะ PID ใน SEDP ไม่มี traffic ขณะรัน บังคับใช้ในเครื่องล้วน ๆ: [ภาค 3 §3.5](03_wire_experiments.md#35-deadline-และ-lifespan)
+- **QoS ไม่เข้ากัน**: SEDP แลกกันครบ แต่ writer ไม่ส่ง user DATA (แม้แต่ HEARTBEAT) และมีเพียง warning ฝั่ง subscriber: [ภาค 3 §3.6](03_wire_experiments.md#36-qos-ไม่เข้ากัน)
+- **สิ่งที่ไม่ปรากฏบนสาย**: ค่า default (KEEP_LAST 1, RELIABLE ของ writer, liveliness/deadline/lifespan ที่เป็น default) ฝั่งรับต้องเติม default ของ DDS ไม่ใช่ของ ROS 2 และไม่มี packet ใดบอก deadline miss, lifespan expiry หรือ liveliness lost: [ภาค 3 §3.7](03_wire_experiments.md#37-สิ่งที่ไม่ปรากฏบนสาย)
 
 ---
 
@@ -478,7 +415,7 @@ rmw_publish                                      [tracepoint rmw_publish: V rmw_
 4. **ปฏิเสธ datagram ที่ใหญ่กว่า send buffer**: `if (total_bytes > configuration()->sendBufferSize) return false;` [V: บรรทัด 582]
 5. **ไม่ใช้ non-blocking โดย default**: `non_blocking_send = false` [V: `BuiltinTransports.hpp`, `UDPTransportInterface.cpp` บรรทัด 293] ถ้าเปิดแล้ว socket buffer เต็ม โค้ดจะ log "UDP send would have blocked. Packet is dropped." [V: บรรทัด 625]
 6. **memory policy**: rmw ตั้ง `PREALLOCATED_WITH_REALLOC_MEMORY_MODE` ให้ทั้ง writer, reader และ builtin endpoint [V: `publisher.cpp` บรรทัด 252, `subscription.cpp` บรรทัด 413, `participant.cpp` บรรทัด 333–336]
-7. **`transport_priority` ไม่ถูกใช้ทั้ง UDP และ TCP**: พารามิเตอร์ถูก comment ชื่อทิ้งในทั้งสอง transport (`const int32_t /* transport_priority */`) และ grep `IP_TOS|IPV6_TCLASS|SO_PRIORITY|dscp|DSCP` ใน `src/` กับ `include/` ของ 3.6.x ได้ 0 รายการ [V: `UDPTransportInterface.cpp` บรรทัด 543, `TCPTransportInterface.cpp` บรรทัด 1498] ดูหัวข้อ 8
+7. **`transport_priority` ไม่ถูกใช้ทั้ง UDP และ TCP**: พารามิเตอร์ถูก comment ชื่อทิ้งในทั้งสอง transport (`const int32_t /* transport_priority */`) และ grep `IP_TOS|IPV6_TCLASS|SO_PRIORITY|dscp|DSCP` ใน `src/` กับ `include/` ของ 3.6.x ได้ 0 รายการ [V: `UDPTransportInterface.cpp` บรรทัด 543, `TCPTransportInterface.cpp` บรรทัด 1498] (ภาค 1 §6 แก้ตามข้อนี้แล้ว) ส่วน Cyclone DDS มี field `m_diffserv` ใน `ddsi_udp.c` แต่ยังไม่ได้ไล่ว่าใช้อย่างไร
 
 ### 3.2 Thread model
 
@@ -502,11 +439,11 @@ rmw_publish                                      [tracepoint rmw_publish: V rmw_
 
 - `sendBufferSize` และ `receiveBufferSize` default = **0** [V: `SocketTransportDescriptor.hpp` บรรทัด 59–60]
 - เมื่อเป็น 0: อ่านค่าปัจจุบันของ socket (ค่า default ของระบบ) ถ้าต่ำกว่า `maxMessageSize` ให้ยกขึ้นเป็น `maxMessageSize` แล้วพยายาม `set_option` ถ้าไม่สำเร็จให้ลดลงครึ่งหนึ่งไปเรื่อย ๆ จนถึงค่าต่ำสุด [V: `asio_helpers.hpp` `configure_buffer_size`, `try_setting_buffer_size`]
-- บนเครื่องนี้ `net.core.rmem_default = wmem_default = 212992`, `rmem_max = 4194304` [V: sysctl] socket รับของ Fast DDS จึงเริ่มที่ราว 208 KiB ผลต่อการรับภาพอยู่ในหัวข้อ 5.3 วัดจริงด้วย `ss` (ภาค 3 §9): `<rtps><listenSocketBufferSize>N` ให้ `SO_RCVBUF` = 2 × min(N, `rmem_max`) บน listen socket ทุกตัว เช่น ขอ 212 992 ได้ 425 984 และขอ 8 MiB ได้ 8 388 608 เท่ากับขอ 4 MiB [V: ภาค 3 §9.3]
+- บนเครื่องนี้ `net.core.rmem_default = wmem_default = 212992`, `rmem_max = 4194304` [V: sysctl] socket รับของ Fast DDS จึงเริ่มที่ราว 208 KiB ผลต่อการรับภาพอยู่ในหัวข้อ 5.3 วัดจริงด้วย `ss` ([ภาค 3 §4.2.5](03_wire_experiments.md#425-ตรวจตัวแปร-ค่าที่-kernel-ใช้จริงและสิ่งที่ไม่เปลี่ยน-v)): `<rtps><listenSocketBufferSize>N` ให้ `SO_RCVBUF` = 2 × min(N, `rmem_max`) บน listen socket ทุกตัว เช่น ขอ 212 992 ได้ 425 984 และขอ 8 MiB ได้ 8 388 608 เท่ากับขอ 4 MiB [V: ภาค 3 §4.2.5]
 
 ### 3.4 SHM transport ในระดับ OS
 
-**ชื่อ object** (domain ของ SHM manager คือสตริง `"fastdds"` [V: `SharedMemTransport.cpp` `#define SHM_MANAGER_DOMAIN ("fastdds")`]; directory คือ `/dev/shm` บน Linux [V: `SharedDir.hpp`])
+**ชื่อ object** (domain ของ SHM manager คือสตริง `"fastdds"` [V: `SharedMemTransport.cpp` บรรทัด 42 `#define SHM_MANAGER_DOMAIN ("fastdds")`; ไม่พบ prefix `fastrtps_` ในไฟล์ที่ตรวจ]; directory คือ `/dev/shm` บน Linux [V: `SharedDir.hpp`])
 
 | object | ชื่อ | บทบาท | ที่มา |
 |---|---|---|---|
@@ -545,7 +482,7 @@ rmw_publish                                      [tracepoint rmw_publish: V rmw_
 - segment ของ payload pool: `fast_datasharing_<guidPrefix>_<entityId>` ของ writer; segment ของ notification: ชื่อรูปแบบเดียวกันจาก GUID ของ reader [V: `DataSharingPayloadPool.hpp` บรรทัด 89–91, 350–360; `DataSharingNotification.hpp` บรรทัด 94–125]
 - writer แจ้ง reader ด้วย `new_data.store(true)` แล้ว `notification_cv.notify_all()` [V: `DataSharingNotification.hpp` บรรทัด 58–61]
 - data-sharing ไม่ส่ง fragment (comment ใน `StatefulReader::process_data_frag_msg`: `Datasharing communication will never send fragments`) [V]
-- **ใน ROS 2 Lyrical data-sharing ถูกปิดเป็น default**: `rmw_fastrtps_cpp` เรียก `writer_qos.data_sharing().off()` และ `reader_qos.data_sharing().off()` เมื่อไม่ได้ตั้ง `RMW_FASTRTPS_USE_QOS_FROM_XML` (`leave_middleware_default_qos == false`) [V: `publisher.cpp` บรรทัด 245–256, `subscription.cpp` บรรทัด 412–417 และ 684–688] ดูหัวข้อ 8
+- **ใน ROS 2 Lyrical data-sharing ถูกปิดเป็น default**: `rmw_fastrtps_cpp` เรียก `writer_qos.data_sharing().off()` และ `reader_qos.data_sharing().off()` เมื่อไม่ได้ตั้ง `RMW_FASTRTPS_USE_QOS_FROM_XML` (`leave_middleware_default_qos == false`) [V: `publisher.cpp` บรรทัด 245–256, `subscription.cpp` บรรทัด 412–417 และ 684–688] (ภาค 1 §3.1 แก้ตามข้อนี้แล้ว)
 
 ### 3.6 Flow controller
 
@@ -553,7 +490,7 @@ rmw_publish                                      [tracepoint rmw_publish: V rmw_
 - scheduler policy: `FIFO`, `ROUND_ROBIN`, `HIGH_PRIORITY`, `PRIORITY_WITH_RESERVATION` [V: `FlowControllerSchedulerPolicy.hpp`]
 - implementation เป็น template `FlowControllerImpl<PublishMode, SampleScheduler>` มี publish mode 4 แบบ: PureSync, Sync, Async, LimitedAsync [V: `FlowControllerFactory.cpp`, `FlowControllerImpl.hpp`] comment ระบุว่า PureSync ใช้กับ writer แบบ volatile best-effort
 - เมื่อจำกัด bandwidth ขนาด fragment จะถูกบีบตาม: `get_max_payload()` คืน `max_bytes_per_period` สำหรับ LimitedAsync และ `BaseWriter::get_max_allowed_payload_size` ใช้ค่าน้อยสุดระหว่าง flow controller, participant และ writer [V: `FlowControllerImpl.hpp` บรรทัด 1531–1543, `BaseWriter.cpp` บรรทัด 176–188]
-- ผลข้างเคียง: flow controller ที่ตั้ง `max_bytes_per_period` เล็กกว่า MTU จะบังคับให้ fragment ระดับ RTPS เล็กพอที่ไม่เกิด IP fragmentation ซึ่งเป็นวิธีแก้ปัญหาหัวข้อ 2.5 ที่ทำได้ด้วย config ล้วน (ข้อสรุปจากโค้ด; ยังไม่ได้ทดลอง) ดูตาราง tuning และผลวัดใน[ภาค 3 §15](03_wire_experiments.md#15-การทดลองที่-13-dds-tuning)
+- ผลข้างเคียง: flow controller ที่ตั้ง `max_bytes_per_period` เล็กกว่า MTU จะบังคับให้ fragment ระดับ RTPS เล็กพอที่ไม่เกิด IP fragmentation ซึ่งเป็นวิธีแก้ปัญหาหัวข้อ 2.5 ที่ทำได้ด้วย config ล้วน (ข้อสรุปจากโค้ด; ยังไม่ได้ทดลอง) ดูตาราง tuning และผลวัดใน[ภาค 3 §4.4](03_wire_experiments.md#44-dds-tuning-ต่อ-rmw-การทดลองที่-13)
 
 ### 3.7 Build option ที่เปลี่ยน byte บนสาย
 
@@ -577,7 +514,7 @@ rmw_publish                                      [tracepoint rmw_publish: V rmw_
 | + statistics 60 | 140 | 182 |
 | + ทั้งสองอย่าง | 156 | 198 (frame 95 ใน `exp1_fastdds_default.pcap` ซึ่งภาค 1 §5.4 ใช้เป็นตัวอย่างแล้ว [V: capture ภาค 3]) |
 
-`INFO_DST` ถูกเพิ่มเมื่อ `current_dst_ != destination_guid_prefix` โดย `current_dst_` เริ่มที่ `c_GuidPrefix_Unknown` [V: `RTPSMessageGroup.cpp` บรรทัด 429, 520–524] เงื่อนไขที่ `destination_guid_prefix()` คืนค่าที่ไม่ใช่ unknown เป็น [K]
+`INFO_DST` ยาว 16 B รวม header (header 4 + guidPrefix 12; `info_dst_message_length = 16` ใน `BaseWriter.cpp` [V]) ถูกเพิ่มเมื่อ `current_dst_ != destination_guid_prefix` โดย `current_dst_` เริ่มที่ `c_GuidPrefix_Unknown` [V: `RTPSMessageGroup.cpp` บรรทัด 429, 520–524] เงื่อนไขที่ `destination_guid_prefix()` คืนค่าที่ไม่ใช่ unknown เป็น [K]
 
 ---
 
@@ -689,7 +626,7 @@ len16 | FRAME hdr | sn | PUSH hdr | key_scope [key_suffix] | [QoS ext] | PUT hdr
 - ความต่างอยู่ที่ loss: TCP ส่งซ้ำ **1 segment (1448 B)** ต่อ frame ที่หาย ไม่ใช่ 45 frame และไม่มี IP fragmentation จึงไม่แตะ `ipfrag_*`
 - ต้นทุนที่แลกมา: head-of-line blocking ทุก topic ที่ใช้ session และ priority เดียวกันรอ segment ที่หาย และ congestion control ของ TCP ลด rate หลัง loss [K]
 - ฝั่ง kernel: TCP ใช้ TSO/GSO และ GRO ได้เต็มที่ NIC ของเครื่องนี้เปิด `tx-tcp-segmentation: on` [V: `ethtool -k enp2s0`] ขณะที่ `tx-udp-segmentation: off [fixed]` [V: `ethtool -k enp2s0`]
-- **ผลวัด 2026-11-28 [V: ภาค 3 §14]:** ประมาณการนี้ตรงในจำนวน: ภาพ 921 648 B ถูกตัดเป็น FRAGMENT 15 batch ต่อภาพจริง และ `Tcp OutSegs` ของผู้ส่งเฉลี่ย 643 ต่อภาพ (รวม traffic อื่น) ต่างตรงที่ batch ยาว 65 160 B (45 × 1448) ไม่ใช่ 65 535 B ดู[ภาค 3 §14.2](03_wire_experiments.md#142-การทดลองที่-12-ภาพ-640480-ผ่าน-zenohtcp)
+- **ผลวัด (การทดลองที่ 12):** จำนวน FRAGMENT ต่อภาพตรงกับประมาณการ แต่ความยาว batch ไม่ใช่ 65 535 B ตัวเลขทั้งหมดอยู่ใน[ภาค 3 §4.5](03_wire_experiments.md#45-ภาพ-640480-ผ่าน-zenohtcp-การทดลองที่-12)
 
 ---
 
@@ -860,7 +797,7 @@ __udp_enqueue_schedule_skb
 ### 5.7 ข้อเท็จจริงเฉพาะ driver `r8169` ที่กระทบผลวัด
 
 - เส้นทางรับ**คัดลอกทุก packet**: `rtl_rx` เรียก `napi_alloc_skb(&tp->napi, pkt_size)` แล้ว `skb_copy_to_linear_data(skb, rx_buf, pkt_size)` จาก buffer DMA ขนาด 16 KiB − 1 (`R8169_RX_BUF_SIZE`) ที่จองด้วย `alloc_pages_node` ไม่ได้ใช้ page pool [V: `drivers/net/ethernet/realtek/r8169_main.c` v7.0 บรรทัด 72, 4162, 4816–4827]
-- ยังเรียก `napi_gro_receive()` ซึ่งใน v7.0 เป็น `static inline` ห่อ `gro_receive_skb(&napi->gro, skb)` [V: `include/linux/netdevice.h` v7.0 บรรทัด 4251–4255; kallsyms มี `gro_receive_skb` ไม่มี `napi_gro_receive`]
+- ยังเรียก `napi_gro_receive()` ซึ่งใน v7.0 เป็น `static inline` ห่อ `gro_receive_skb(&napi->gro, skb)` [V: `include/linux/netdevice.h` v7.0 บรรทัด 4251–4255; `r8169_main.c` บรรทัด 4840; kallsyms มี `gro_receive_skb` ไม่มี `napi_gro_receive`]
 - ผลวัด latency/CPU บน r8169 จึงรวม copy เพิ่มหนึ่งรอบและ coalescing 20 µs ซึ่ง NIC ระดับ server (เช่นที่ใช้ page pool) ไม่มี ไม่ควรนำตัวเลขไปเทียบข้าม driver โดยตรง
 
 ---
@@ -869,9 +806,9 @@ __udp_enqueue_schedule_skb
 
 **ทุกตัวเลขในหัวข้อนี้เป็นประมาณการ** ไม่ใช่ผลวัด ใช้เพื่อบอกว่าช่วงใดน่าจะเป็นคอขวดและควรวางเครื่องมือวัดตรงไหน สมมติฐานของแบบจำลอง: CPU desktop รุ่นปัจจุบันที่ความถี่คงที่, 1 GbE, MTU 1500, Fast DDS UDP (ไม่ใช้ SHM), sync publish, kernel ไม่ใช่ RT, ระบบว่าง
 
-> **ผลวัดจริง:** latency end-to-end ที่วัดแล้ว (rclpy, Docker `veth` และ SHM, 30 รอบต่อ config, p99 พร้อม 95% CI) อยู่ใน[ภาค 3 §10](03_wire_experiments.md#10-การทดลองที่-8-latency-ที่วัดจริง-end-to-end-rclpy) ตารางข้างล่างวางคู่กับประมาณการเท่าที่มีกรณีใกล้เคียงกัน **ไม่ใช่การเทียบแบบเดียวกัน**: ประมาณการคิดสำหรับ C++ ข้ามเครื่องจริงบน 1 GbE ส่วนผลวัดผ่าน rclpy (รวม Python ทั้งสองฝั่ง) บน `veth` ในเครื่องเดียว (ไม่มีเวลาบนสาย ไม่มี NIC/driver) จึงควรอ่านผลวัดของข้อความเล็กเป็นขอบบนคร่าวๆ ที่ถูกครอบงำด้วย rclpy และผลวัดของภาพเป็นกรณีที่ขาดเวลาบนสาย 7.68 ms ไป ตัวเลขประมาณการในหัวข้อนี้ไม่ได้แก้ตามผลวัด
+> **ผลวัดจริง:** latency end-to-end ที่วัดแล้ว (rclpy, Docker `veth` และ SHM, 30 รอบต่อ config, p99 พร้อม 95% CI) อยู่ใน[ภาค 3 §7.1](03_wire_experiments.md#71-latency-end-to-end-ที่วัดจริงด้วย-rclpy-การทดลองที่-8) ตารางข้างล่างวางคู่กับประมาณการเท่าที่มีกรณีใกล้เคียงกัน **ไม่ใช่การเทียบแบบเดียวกัน**: ประมาณการคิดสำหรับ C++ ข้ามเครื่องจริงบน 1 GbE ส่วนผลวัดผ่าน rclpy (รวม Python ทั้งสองฝั่ง) บน `veth` ในเครื่องเดียว (ไม่มีเวลาบนสาย ไม่มี NIC/driver) จึงควรอ่านผลวัดของข้อความเล็กเป็นขอบบนคร่าวๆ ที่ถูกครอบงำด้วย rclpy และผลวัดของภาพเป็นกรณีที่ขาดเวลาบนสาย 7.68 ms ไป ตัวเลขประมาณการในหัวข้อนี้ไม่ได้แก้ตามผลวัด
 >
-> | กรณี | ประมาณการ (หัวข้อนี้) | วัดจริง (ภาค 3 §10) median / p99 [95% CI] |
+> | กรณี | ประมาณการ (หัวข้อนี้) | วัดจริง (ภาค 3 §7.1) median / p99 [95% CI] |
 > |---|---|---|
 > | ข้อความเล็ก ข้ามเครื่อง/ข้าม container | ≈ 15–150 µs (§6.1, C++, 1 GbE, CDR ≈ 100 B) | 754 [738–767] / 879 [862–894] µs (`small_cross`: `std_msgs/String` 64 ตัวอักษร, rclpy, `veth`) |
 > | ภาพ 640×480 rgb8 ข้ามเครื่อง/ข้าม container | ≈ 9–11 ms (§6.2, ในนั้นเป็นเวลาบนสาย 7.68 ms) | 7.76 [7.72–7.80] / 8.28 [8.15–8.39] ms (`image_cross_rel`, rclpy, `veth`, RELIABLE, 10 Hz) |
@@ -981,7 +918,7 @@ kernel tracepoint ในตาราง [V: `__traceiter_net_dev_xmit`, `netif_r
 
 ### 6.5 ระเบียบวิธีวัด: clock sync และ trace จริงหนึ่ง sample
 
-หัวข้อนี้มีสองส่วน ส่วนแรกเป็น **protocol** สำหรับวัด latency ทางเดียวข้ามสองเครื่อง (ยังไม่ได้รันบน 2 เครื่อง ต่อยอดข้อ 10 ของ[ภาค 3 §12.2](03_wire_experiments.md#122-protocol-สำหรับ-2-เครื่องจริง-ยังไม่ได้รัน) และหมายเหตุ two-host ใน `run_latency.sh --help`) ส่วนที่สองสรุป trace จริงหนึ่ง sample จาก[ภาค 3 §19](03_wire_experiments.md#19-การทดลองที่-17-trace-หนึ่ง-sample-ข้ามชั้น)
+หัวข้อนี้มีสองส่วน ส่วนแรกเป็น **protocol** สำหรับวัด latency ทางเดียวข้ามสองเครื่อง (ยังไม่ได้รันบน 2 เครื่อง ต่อยอดข้อ 10 ของ[ภาค 3 §8.2](03_wire_experiments.md#82-protocol-สำหรับ-2-เครื่องจริง-ยังไม่ได้รัน) และหมายเหตุ two-host ใน `run_latency.sh --help`) ส่วนที่สอง (ฉ.–ช.) ชี้ไปยัง trace จริงหนึ่ง sample ใน[ภาค 3 §7.2](03_wire_experiments.md#72-trace-หนึ่ง-sample-ข้ามชั้น-การทดลองที่-17) และช่วงที่ยังต้องใช้ kernel tracing
 
 #### ก. นาฬิกาที่เครื่องมือแต่ละตัวในชุดนี้อ่าน
 
@@ -989,8 +926,8 @@ kernel tracepoint ในตาราง [V: `__traceiter_net_dev_xmit`, `netif_r
 |---|---|---|
 | `lat_pub.py` / `lat_sub.py` | `--clock monotonic` (default) หรือ `--clock realtime` [V: `lat_pub.py` บรรทัด 36, `lat_sub.py` บรรทัด 31] | ข้ามเครื่องต้องใช้ `realtime` ที่ sync แล้ว: CLOCK_MONOTONIC ของสองเครื่องมีจุดเริ่มต่างกัน (นับจาก boot) เทียบกันไม่ได้ |
 | tcpdump / tshark | CLOCK_REALTIME ของ kernel ตอน packet ผ่าน tap [K]; ความละเอียด µs เป็น default ต้องสั่ง `--time-stamp-precision=nano` ถ้าต้องการ ns | `-j adapter_unsynced` / `adapter` ใช้ hardware timestamp ของ NIC ได้เฉพาะเมื่อ `tcpdump -J -i <if>` แสดงชนิดนั้น บน veth ของการทดลองนี้มีแค่ `host` [V: `trace_env.txt`] |
-| LTTng-UST (ros2_tracing) | CLOCK_MONOTONIC เป็น cycle (ns) + `offset` ใน metadata ที่ใช้แปลงเป็น realtime [V: metadata ของ trace ภาค 3 §19 `clock { name = "monotonic"; freq = 1000000000; offset = ... }`] | babeltrace2 แสดงเป็น realtime โดย default (`--clock-cycles` แสดงค่าดิบ) offset ถูกบันทึกตอนสร้าง session จึงผิดได้ถ้า realtime ถูก **step** ระหว่างนั้น |
-| `rmw_publish.timestamp` / `rmw_take.source_timestamp` / RTPS INFO_TS | CLOCK_REALTIME ของผู้ส่ง (source timestamp) [V: ค่าเดียวกันทั้งสามที่ใน §19] | ใช้เป็น key จับคู่ข้ามชั้นได้ และถ้านาฬิกา sync แล้วใช้คำนวณ latency ทางเดียวได้โดยไม่ต้องแก้แอป |
+| LTTng-UST (ros2_tracing) | CLOCK_MONOTONIC เป็น cycle (ns) + `offset` ใน metadata ที่ใช้แปลงเป็น realtime [V: metadata ของ trace ภาค 3 §7.2 `clock { name = "monotonic"; freq = 1000000000; offset = ... }`] | babeltrace2 แสดงเป็น realtime โดย default (`--clock-cycles` แสดงค่าดิบ) offset ถูกบันทึกตอนสร้าง session จึงผิดได้ถ้า realtime ถูก **step** ระหว่างนั้น |
+| `rmw_publish.timestamp` / `rmw_take.source_timestamp` / RTPS INFO_TS | CLOCK_REALTIME ของผู้ส่ง (source timestamp) [V: ค่าเดียวกันทั้งสามที่ใน ภาค 3 §7.2.1] | ใช้เป็น key จับคู่ข้ามชั้นได้ และถ้านาฬิกา sync แล้วใช้คำนวณ latency ทางเดียวได้โดยไม่ต้องแก้แอป |
 
 ข้อควรระวัง [K]: (1) การปรับ realtime แบบ **slew** (chrony/NTP ปรับความถี่) มีผลกับ CLOCK_MONOTONIC ด้วย แต่การ **step** (`chronyc makestep`, ตั้งเวลาใหม่, leap second) เปลี่ยนเฉพาะ realtime จึงทำให้ offset monotonic→realtime ที่ LTTng บันทึกไว้ผิด ควรตรวจว่าไม่มี step ระหว่าง run (ดู `chronyc tracking` "Last offset" และ log ของ chrony) (2) container บนเครื่องเดียวกันใช้นาฬิกาของ kernel host ร่วมกัน (ไม่มี time namespace ใน `docker run` ปกติ) การทดลองบน veth จึงไม่ต้อง sync แต่ก็**ไม่ได้ทดสอบ**ปัญหานาฬิกาเลย (3) CLOCK_REALTIME ระหว่างสองเครื่องต่างกันด้วย offset + drift ซึ่งเปลี่ยนตามเวลาและอุณหภูมิ ต้องวัดก่อนและหลังทุก run ไม่ใช่ครั้งเดียว
 
@@ -1021,22 +958,11 @@ kernel tracepoint ในตาราง [V: `__traceiter_net_dev_xmit`, `netif_r
 - **ping-pong สองทาง** (ไม่ขึ้นกับ chrony/PTP): A ส่งข้อความพร้อม `t1` (realtime ของ A), B บันทึก `t2` และตอบกลับทันทีพร้อม `t3`, A บันทึก `t4` แล้ว offset ≈ ((t2 − t1) − (t4 − t3)) / 2 และ RTT = (t4 − t1) − (t3 − t2) ทำซ้ำหลายร้อยครั้ง ใช้ค่าจากคู่ที่ RTT ต่ำสุด (แบบเดียวกับ NTP) ทำได้ด้วย `lat_pub.py`/`lat_sub.py` คู่ที่สองในทิศกลับ (ต้องเพิ่ม mode echo: ยังไม่มีใน script)
 - **ทดสอบความสมมาตร:** วัด latency ทางเดียว A→B และ B→A พร้อมกันด้วยนาฬิกาที่ sync แล้ว ถ้าเส้นทางสมมาตร median ของสองทิศควรใกล้กัน ผลต่างครึ่งหนึ่งเป็นตัวประมาณ offset ที่เหลือ (รวม asymmetry ของเส้นทาง ซึ่งแยกจาก offset ไม่ได้ด้วยวิธีสองทางใด ๆ)
 - **ขอบเขต:** ให้ `ε` = max(|offset| ก่อน run, |offset| หลัง run, |offset จาก ping-pong|) latency ทางเดียวที่วัดได้ `L` มีความไม่แน่นอน ±`ε` (ไม่ใช่ ±`ε`/√n เพราะ offset เป็น bias ร่วมของทุก sample ไม่ใช่ noise อิสระ) รายงาน `L` คู่กับ `ε` เสมอ และตีความเฉพาะผลต่างระหว่างแขนที่มากกว่า 2`ε` หรือแขนที่วัดในช่วงเวลาสลับกันภายใต้ offset เดียวกัน
-- **บันทึกในไฟล์ env** (เพิ่มจากรายการ ก. ของ[ภาค 3 §12.2](03_wire_experiments.md#122-protocol-สำหรับ-2-เครื่องจริง-ยังไม่ได้รัน)): วิธี sync (chrony/PTP HW/PTP SW), `ethtool -T` ของทั้งสองเครื่อง, output ของ `chronyc tracking`/`sourcestats` หรือ `pmc` ก่อนและหลัง, ผล ping-pong (offset, RTT ต่ำสุด), `ε` ที่ใช้, clock ที่แต่ละเครื่องมือใช้ (`--clock`, `--time-stamp-precision`, `tcpdump -J`) และ clocksource ของ kernel
+- **บันทึกในไฟล์ env** (เพิ่มจากรายการ ก. ของ[ภาค 3 §8.2](03_wire_experiments.md#82-protocol-สำหรับ-2-เครื่องจริง-ยังไม่ได้รัน)): วิธี sync (chrony/PTP HW/PTP SW), `ethtool -T` ของทั้งสองเครื่อง, output ของ `chronyc tracking`/`sourcestats` หรือ `pmc` ก่อนและหลัง, ผล ping-pong (offset, RTT ต่ำสุด), `ε` ที่ใช้, clock ที่แต่ละเครื่องมือใช้ (`--clock`, `--time-stamp-precision`, `tcpdump -J`) และ clocksource ของ kernel
 
-#### ฉ. trace จริงหนึ่ง sample (ภาค 3 §19) และการเทียบกับ §6.1
+#### ฉ. trace จริงหนึ่ง sample (การทดลองที่ 17) เทียบกับ §6.1
 
-ทำได้โดยไม่ใช้สิทธิ์ host: LTTng-UST ใน container (`lttng-sessiond --no-kernel`, event `ros2:*`) สองตัว + tcpdump บน `eth0` ทั้งสองฝั่ง จับคู่ด้วย **source timestamp** ซึ่งเป็นค่าเดียวกันใน `rmw_publish.timestamp`, INFO_TS ของ frame และ `rmw_take.source_timestamp` [V] การจัด LTTng (monotonic) กับ tcpdump (realtime) ให้ตรงกันใช้ offset ใน metadata ซึ่งต่างจากค่าที่วัดซ้ำในแต่ละ container ไม่เกิน 5 ns ผลของ sample `"Hello World: 10"` และการกระจายของ 35 sample อยู่ใน[ภาค 3 §19.2–19.3](03_wire_experiments.md#19-การทดลองที่-17-trace-หนึ่ง-sample-ข้ามชั้น) (C++ talker/listener, `veth`, 1 Hz, run เดียว รวม overhead ของ tracing)
-
-| แถวของ §6.1 | ประมาณการ | สิ่งที่วัดได้ใน §19 (median, min–max) | สรุป |
-|---|---|---|---|
-| 1 serialize (`rclcpp_publish` → `rmw_publish`) | 0.1–0.5 µs | 2.4 µs (ผลรวม median สามช่วง; sample 10: 0.93 µs) | สูงกว่าเล็กน้อย แต่ช่วงนี้**อาจไม่มี serialize อยู่เลย**: ใน `rmw_fastrtps` การ serialize น่าจะเกิดใน `DataWriter::write` หลัง tracepoint `rmw_publish` [K: ยังไม่ได้ตรวจ source] ถ้าเป็นเช่นนั้น คอลัมน์ "วัดด้วย" ของแถว 1 ควรแก้ |
-| 2–4 writer + `setsockopt` + `sendmsg` ถึง driver | 2.2–8.5 µs | `rmw_publish` → frame ที่ tap ของ A: 113.9 µs (37.6–141.1) | **ขัดกับประมาณการราว 1 ลำดับขนาด** แยกไม่ได้ว่าเวลาอยู่ที่ Fast DDS (serialize, history, statistics ของ build `.deb`) หรือที่ kernel เพราะไม่มี syscall tracepoint ข้อสันนิษฐานที่ต้องทดสอบ: การตื่นจาก idle ที่ 1 Hz กับ governor `powersave`, งานของ statistics module ต่อ send, overhead ของ tracing |
-| 5 สาย + switch | 2–2.5 µs + store-and-forward | veth + bridge: 20.3 µs (7.3–32.0) | **เทียบกันไม่ได้**: veth ไม่มีสาย ช่วงนี้คืองานของ kernel (backlog + bridge) |
-| 6–9 IRQ/softirq + ปลุก `dds.udp.*` + `recvmsg`/parse + ปลุก executor | 7–130 µs | frame ที่ tap ของ B → `rmw_take`: 258.0 µs (84.2–331.7) | **สูงกว่าขอบบน** ทั้งที่ veth ไม่มี IRQ coalescing (แถว 6 ควรเล็กกว่าบน r8169) ช่วงนี้ยังรวม take + deserialize ด้วยเพราะ `rmw_take` ถูกบันทึกหลัง take เสร็จ แยกต่อไม่ได้หากไม่มี `sched:*`/`sock:*` |
-| 10 take + deserialize (`rmw_take` → `callback_start`) | 0.5–2 µs | 7.3 µs (ผลรวม median สามช่วง) | สูงกว่า และ deserialize ส่วนใหญ่น่าจะอยู่ก่อน `rmw_take` แล้ว (ดูแถวบน) |
-| รวม `rclcpp_publish` → `callback_start` | 15–150 µs | 404.3 µs (131.9–481.0) | สูงกว่าขอบบนราว 2.7 เท่า แต่ต่ำกว่าผล rclpy `small_cross` (754 µs) |
-
-ข้อสรุป: บนเครื่องนี้ **ชั้นที่ ros2_tracing เห็นข้างใน (rclcpp/rcl/rmw ทั้งสองฝั่ง) รวมกันราว 10 µs** ส่วนเวลาที่เหลือกว่า 90% อยู่ในสองช่วงที่ต้องใช้ kernel tracing จึงจะแยกได้ ข้อสรุปของ §6.1 ที่ว่า "wakeup และ coalescing กินสัดส่วนมากที่สุด" **ยังไม่ได้รับการยืนยันหรือปฏิเสธ** ผลวัดบอกได้เพียงว่าช่วงที่รวม wakeup อยู่ใหญ่ที่สุด และตัวเลขทั้งหมดของ §6.1 ต่ำกว่าที่เห็นบนเครื่องนี้
+trace หนึ่ง sample ข้ามชั้นโดยไม่ใช้สิทธิ์ host (LTTng-UST ใน container + tcpdump สองฝั่ง จับคู่ด้วย source timestamp) อยู่ใน[ภาค 3 §7.2](03_wire_experiments.md#72-trace-หนึ่ง-sample-ข้ามชั้น-การทดลองที่-17) และตารางเทียบรายแถวกับ §6.1 อยู่ใน[ภาค 3 §7.2.4](03_wire_experiments.md#724-เทียบกับแบบจำลอง-latency-ของภาค-2-61) โดยย่อ: ชั้น rclcpp/rcl/rmw ที่ ros2_tracing เห็นรวมกันราว 10 µs ส่วนเวลาที่เหลือกว่า 90% อยู่ในสองช่วงที่ต้องใช้ kernel tracing ข้อสรุปของ §6.1 เรื่อง wakeup และ coalescing จึงยังไม่ได้รับการยืนยันหรือปฏิเสธ
 
 #### ช. ช่วงที่ยังไม่ได้สังเกต และเงื่อนไขบน host (protocol)
 
@@ -1053,13 +979,38 @@ kernel tracepoint ในตาราง [V: `__traceiter_net_dev_xmit`, `netif_r
 
 key ร่วมระหว่าง kernel trace กับ user trace: วิธีที่เสนอใน §6.4 (อ่าน `writerSN` จาก payload ของ skb) ใช้ได้ หรือใช้ source timestamp (INFO_TS อยู่ที่ offset คงที่ของ RTPS message ที่ Fast DDS สร้าง) ซึ่งตรงกับ field ใน `rmw_publish`/`rmw_take` อยู่แล้ว
 
+### 6.6 Template การทดลอง: ตัวแปร เครื่องมือ และแนวปฏิบัติ
+
+จุดวัดรายช่วงอยู่ใน §6.4 ส่วนนาฬิกาและขอบเขตความไม่แน่นอนอยู่ใน §6.5 หัวข้อนี้รวม template การทดลองที่ย้ายมาจาก §8 ของภาค 1 เพื่อให้ระเบียบวิธีอยู่ที่เดียว
+
+**ตัวแปรอิสระ**: RMW × transport (UDP / SHM / Buffer backend) × payload size × QoS (reliability, history depth) × executor × kernel (generic / PREEMPT_RT) × จำนวน subscriber
+
+**ตัวแปรตาม**: end-to-end latency (ใช้ timestamp จาก ros2_tracing: `rclcpp_publish` → `rmw_publish` → `rmw_take` → `callback_start` แยกรายช่วงต่อตาม §6.4), jitter, throughput, CPU (%/core), memory, message loss, discovery time
+
+**เครื่องมือ**
+- Benchmark: `apex.ai performance_test`, `irobot ros2-performance` (ตรวจว่ารองรับ Lyrical หรือยัง)
+- Tracing: `ros2_tracing` + `tracetools_analysis`; ฝั่ง kernel ใช้ LTTng kernel events (`net_dev_xmit`, `netif_receive_skb`, `sched_switch`) หรือ tracepoint ชุดเดียวกันผ่าน `bpftrace`/`perf` ตามตาราง §6.4 (ต้องมีสิทธิ์บน host ตาม §6.5 ช.)
+- Kernel: `bpftrace`, `perf sched`, `nstat`
+- Packet: Wireshark (มี dissector สำหรับ RTPS; Zenoh มี dissector แยก)
+
+**แนวปฏิบัติ**: ปิด CPU frequency scaling (`performance` governor), isolate core (`isolcpus`, `nohz_full`), ทำซ้ำ ≥30 รอบ, รายงาน p99/p99.9 ไม่ใช่แค่ค่าเฉลี่ย, ระบุเวอร์ชัน (`ros2 doctor --report` ใน Lyrical รายงาน env ได้ด้วย) และเมื่อวัดทางเดียวข้ามเครื่องให้รายงานขอบเขต offset ของนาฬิกาคู่กับผลตาม §6.5 จ.
+
+ตัวอย่างสลับ RMW ระหว่างการทดลอง:
+```bash
+export RMW_IMPLEMENTATION=rmw_fastrtps_cpp   # | rmw_cyclonedds_cpp | rmw_zenoh_cpp | rmw_connextdds
+export FASTDDS_BUILTIN_TRANSPORTS=UDPv4       # บังคับไม่ใช้ SHM เพื่อวัด kernel path
+# Zenoh + SHM
+ros2 run rmw_zenoh_cpp rmw_zenohd &
+export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
+```
+
 ---
 
 ## 7. ทิศทางวิจัยที่ตามมาโดยตรงจากหัวข้อ 1–6
 
 ทุกข้อเป็นข้อเสนอ งานที่เกี่ยวข้องเบื้องต้นของแต่ละข้ออยู่ใน[หัวข้อ 7.1](#71-งานที่เกี่ยวข้องของ-r1r9-ฉบับร่าง) (ตรวจเพียงระดับชื่อเรื่องและบทคัดย่อ ยังไม่ได้ยืนยันว่าไม่มีใครทำหัวข้อเดียวกันแล้ว)
 
-รายการช่องว่างงานวิจัย 7 ข้อใน[ภาค 1 §7](01_network_stack_deep_dive.md#7-ช่องว่างงานวิจัยและแนวทางพัฒนาต่อ-ข้อเสนอ-ยังไม่ได้ตรวจว่ามีคนทำแล้วหรือไม่) ซ้อนกับ R1–R9 บางส่วน ตารางจับคู่อยู่ที่หัวข้อนั้น ข้อจำกัดด้านความตรงของแต่ละข้ออยู่ใน[หัวข้อ 7.2](#72-ข้อจำกัดด้านความตรง-threats-to-validity-ของ-r1r9) และแผนสู่ paper ของ R4 และ R2 ใน[หัวข้อ 7.3](#73-เส้นทางสู่-paper-แผนสำหรับ-r4-และ-r2-แผน-ยังไม่ได้ทำ)
+ข้อเสนอ 7 ข้อที่ย้ายมาจากภาค 1 §7 (จับคู่กับ R1–R9 และข้อที่ไม่มีคู่เสนอเป็น R10–R13) อยู่ใน[หัวข้อ 7.4](#74-ข้อเสนอเพิ่มเติมจากภาค-1-นอก-r1r9) ข้อจำกัดด้านความตรงของแต่ละข้ออยู่ใน[หัวข้อ 7.2](#72-ข้อจำกัดด้านความตรง-threats-to-validity-ของ-r1r9) และแผนสู่ paper ของ R4 และ R2 ใน[หัวข้อ 7.3](#73-เส้นทางสู่-paper-แผนสำหรับ-r4-และ-r2-แผน-ยังไม่ได้ทำ)
 
 **R1. RTPS fragment ขนาดไม่เกิน MTU ร่วมกับ UDP GSO/GRO** (จาก 2.4, 2.5, 5.2)
 - สมมติฐาน: ตั้ง fragment ระดับ RTPS ≈ 1 400 B แล้วส่งเป็นชุดด้วย `UDP_SEGMENT` (สูงสุด 128 segment ต่อ syscall) จะ (ก) ลดตัวขยายการส่งซ้ำจาก 45 เหลือ 1 (ข) เลิกพึ่ง IP reassembly (ค) ได้ checksum offload คืน โดยต้นทุน syscall ต่อ byte ไม่แย่กว่า datagram 65 KB
@@ -1125,14 +1076,14 @@ key ร่วมระหว่าง kernel trace กับ user trace: วิ�
 
 ### 7.2 ข้อจำกัดด้านความตรง (threats to validity) ของ R1–R9
 
-ข้อจำกัดที่ใช้ร่วมกันทุกข้อ (veth ไม่ใช่สาย, CPU เดียวกัน, tcpdump เพิ่มภาระ, จังหวะเปลี่ยนข้ามวัน, `rmem_max` ของ host, workload เดียว) อยู่ใน[ภาค 3 §12.1](03_wire_experiments.md#121-ข้อจำกัดของผลในภาคนี้) และ protocol 2 เครื่องใน[ภาค 3 §12.2](03_wire_experiments.md#122-protocol-สำหรับ-2-เครื่องจริง-ยังไม่ได้รัน) ตารางนี้ระบุเฉพาะข้อที่เป็นของแต่ละทิศทาง (I = internal, E = external, C = construct)
+ข้อจำกัดที่ใช้ร่วมกันทุกข้อ (veth ไม่ใช่สาย, CPU เดียวกัน, tcpdump เพิ่มภาระ, จังหวะเปลี่ยนข้ามวัน, `rmem_max` ของ host, workload เดียว) อยู่ใน[ภาค 3 §8.1](03_wire_experiments.md#81-ข้อจำกัดของผลในภาคนี้) และ protocol 2 เครื่องใน[ภาค 3 §8.2](03_wire_experiments.md#82-protocol-สำหรับ-2-เครื่องจริง-ยังไม่ได้รัน) ตารางนี้ระบุเฉพาะข้อที่เป็นของแต่ละทิศทาง (I = internal, E = external, C = construct)
 
 | R | ภัยหลักเฉพาะทิศทางนี้ | วิธีลด |
 |---|---|---|
 | R1 | I: ลด fragment ด้วย `maxMessageSize`/flow controller เปลี่ยนจำนวน syscall และจังหวะส่งไปพร้อมกัน ผลต่อ loss แยกจากผลต่อ pacing ไม่ได้ · E: veth ไม่มี GSO segmentation ใน hardware (ไม่มี NIC) ผลของ `UDP_SEGMENT` บน veth อาจต่างจาก NIC ที่ทำ USO | แขนควบคุมที่ pacing เท่ากันแต่ขนาด fragment ต่าง; วัดบน NIC จริงที่ `ethtool -k` แสดง `tx-udp-segmentation` |
-| R2 | C: "เวลากู้คืน" ต้องนิยามจากเวลาที่ fragment หายจริงถึง `callback_start` ของ SN นั้น ไม่ใช่ latency รวม · I: `tc netem loss` สุ่ม ทิ้งได้ทั้ง DATA, HEARTBEAT และ ACKNACK (ภาค 3 §11.4 ข้อ 2 แสดงการส่งซ้ำโดยไม่มีอะไรหายเมื่อ link ช้า) · E: ค่า default ของ heartbeat/NACK เป็นของ Fast DDS 3.6.x (§2.3) เวอร์ชันอื่นหรือ Cyclone ใช้ค่าต่างกัน | ทิ้งแบบกำหนดได้ตาม `writerSN`; นับ HEARTBEAT/NACK ที่หายแยกออกมา; บันทึกเวอร์ชันและค่าที่ตั้งจริงจาก XML ทุก run |
+| R2 | C: "เวลากู้คืน" ต้องนิยามจากเวลาที่ fragment หายจริงถึง `callback_start` ของ SN นั้น ไม่ใช่ latency รวม · I: `tc netem loss` สุ่ม ทิ้งได้ทั้ง DATA, HEARTBEAT และ ACKNACK (ภาค 3 §4.3.4 ข้อ 2 แสดงการส่งซ้ำโดยไม่มีอะไรหายเมื่อ link ช้า) · E: ค่า default ของ heartbeat/NACK เป็นของ Fast DDS 3.6.x (§2.3) เวอร์ชันอื่นหรือ Cyclone ใช้ค่าต่างกัน | ทิ้งแบบกำหนดได้ตาม `writerSN`; นับ HEARTBEAT/NACK ที่หายแยกออกมา; บันทึกเวอร์ชันและค่าที่ตั้งจริงจาก XML ทุก run |
 | R3 | C: build `FASTDDS_STATISTICS=OFF` ต้อง compile เองจึงเปลี่ยน compiler flag/เวอร์ชันได้พร้อมกัน · E: ผลต่อ CPU ขึ้นกับจำนวน locator ของ statistics (ไม่มี subscriber ของ statistics topic ในการทดลอง) | build ทั้งสองแบบจาก source เดียวกันด้วย flag เดียวกัน ต่างเฉพาะ option นั้น; ตรวจ byte บนสาย (60 B) ยืนยันว่า build ถูก |
-| R4 | E: veth ไม่มี NIC ring, coalescing และ driver copy (r8169 คัดลอกทุก packet ลง skb ใหม่ §5.7) `truesize` ต่อ datagram บน veth จึงไม่ใช่ของ NIC จริง · I: อัตราการมาถึงบน veth เร็วกว่า 1 GbE 2–10 เท่า (ภาค 3 §11.3) และเปลี่ยนข้ามวัน · C: `RcvbufErrors` นับ datagram ไม่ใช่ภาพ | วัด `truesize` จริงด้วย kprobe บนทั้ง veth และ NIC; แปรอัตราด้วย `--shape tbf1g`; รายงานทั้งระดับ datagram และภาพ |
+| R4 | E: veth ไม่มี NIC ring, coalescing และ driver copy (r8169 คัดลอกทุก packet ลง skb ใหม่ §5.7) `truesize` ต่อ datagram บน veth จึงไม่ใช่ของ NIC จริง · I: อัตราการมาถึงบน veth เร็วกว่า 1 GbE 2–10 เท่า (ภาค 3 §4.3.3) และเปลี่ยนข้ามวัน · C: `RcvbufErrors` นับ datagram ไม่ใช่ภาพ | วัด `truesize` จริงด้วย kprobe บนทั้ง veth และ NIC; แปรอัตราด้วย `--shape tbf1g`; รายงานทั้งระดับ datagram และภาพ |
 | R5 | C: SHM ทิ้งแบบเงียบ ไม่มีตัวนับใน kernel ต้องพึ่ง `overflows_count` ใน log ตอนปิด segment · I: `/dev/shm` ของ Docker default 64 MB จำกัดขนาด segment ที่ขยายได้ | ตั้ง `--shm-size` ให้พอและบันทึก; นับ sample ที่ผู้รับได้เทียบที่ส่งต่อ SN |
 | R6 | E: การวาง node บน container/เครื่องเดียวทำให้ multicast discovery ไม่ผ่าน switch จริง (ไม่มี IGMP snooping/AP) · I: เวลาที่ "graph ลู่เข้า" ขึ้นกับคาบ SPDP announcement และ `ros2 node list` daemon cache | ใช้ capture นับ byte แทนเวลาอย่างเดียว; ปิด ros2 daemon หรือรีสตาร์ททุก run |
 | R7 | E: veth ไม่มี NAPI ของ NIC จริงที่ busy polling ทำงานด้วย (busy poll ต้องมี NAPI ID ของ RX queue) ผลบน veth ไม่ได้บอกอะไรเกี่ยวกับ NIC · I: governor `powersave` และ C-state เปลี่ยน baseline ของ wakeup | ทำบน NIC จริงเท่านั้น; ตรึง governor/C-state และบันทึก; ต้องมี clock sync ตาม §6.5 |
@@ -1167,7 +1118,7 @@ key ร่วมระหว่าง kernel trace กับ user trace: วิ�
 
 **ตำแหน่งเทียบงานอื่น** แถว R4 ของ[§7.1](#71-งานที่เกี่ยวข้องของ-r1r9-ฉบับร่าง) (ROS 2 DDS tuning guide, Fast DDS Large Data ซึ่งให้ค่าแนะนำเชิงปฏิบัติ) และแถว R9 (benchmark ที่ไม่รายงาน driver) **ประเภท venue:** workshop หรือ short paper ด้าน robotics software/middleware หรือ track experience/measurement ของ conference ด้าน embedded/real-time systems (ตรวจ scope ของ venue จริงก่อนส่ง)
 
-**checklist** (1) เพิ่ม option ขนาดภาพและอัตรา (2) script bpftrace `truesize` + ขออนุญาต root บนเครื่องทดลอง (3) pilot ช่วงละเอียด 1 วัน (4) ชุดเต็มบน veth + tbf (5) ทำซ้ำบน 2 เครื่องจริงตาม §12.2 ของภาค 3 พร้อม NIC สองชนิด (6) วิเคราะห์ + ร่าง paper
+**checklist** (1) เพิ่ม option ขนาดภาพและอัตรา (2) script bpftrace `truesize` + ขออนุญาต root บนเครื่องทดลอง (3) pilot ช่วงละเอียด 1 วัน (4) ชุดเต็มบน veth + tbf (5) ทำซ้ำบน 2 เครื่องจริงตาม ภาค 3 §8.2 พร้อม NIC สองชนิด (6) วิเคราะห์ + ร่าง paper
 
 #### 7.3.2 R2: เวลากู้คืนของ RELIABLE กับ `heartbeat_period`
 
@@ -1179,11 +1130,11 @@ key ร่วมระหว่าง kernel trace กับ user trace: วิ�
 - H3: จำนวน DATA_FRAG ที่ส่งซ้ำต่อภาพบน link ที่ช้ากว่าเวลาในการส่งภาพหนึ่งภาพเพิ่มขึ้นเมื่อ `heartbeat_period` ลดลง แม้ loss คงที่
 
 **ออกแบบการทดลอง (ใช้ harness เดิม)**
-- ใช้ได้ทันที: `run_rcvbuf_sweep.sh --qos rel --shape tbf1g|wifi --keep-pcap N` (นับ NACK_FRAG, DATA_FRAG ส่งซ้ำ ต่อ run), `run_latency.sh --configs image_cross_rel,small_cross` (latency ต่อ sample แต่ไม่ฉีด loss), และวิธีของ[ภาค 3 §19](03_wire_experiments.md#19-การทดลองที่-17-trace-หนึ่ง-sample-ข้ามชั้น) (`run_trace.sh`: source timestamp เป็น key ร่วมของ `rmw_publish`, frame และ `rmw_take` จึงได้เวลาต่อ SN ทุกชั้นโดยไม่ต้องใช้ root)
+- ใช้ได้ทันที: `run_rcvbuf_sweep.sh --qos rel --shape tbf1g|wifi --keep-pcap N` (นับ NACK_FRAG, DATA_FRAG ส่งซ้ำ ต่อ run), `run_latency.sh --configs image_cross_rel,small_cross` (latency ต่อ sample แต่ไม่ฉีด loss), และวิธีของ[ภาค 3 §7.2](03_wire_experiments.md#72-trace-หนึ่ง-sample-ข้ามชั้น-การทดลองที่-17) (`run_trace.sh`: source timestamp เป็น key ร่วมของ `rmw_publish`, frame และ `rmw_take` จึงได้เวลาต่อ SN ทุกชั้นโดยไม่ต้องใช้ root)
 - ต้องเพิ่ม: (1) XML profile ของ data writer ที่ตั้ง heartbeat period (template แบบ `socket_buffer_only.xml.in`; ชื่อ element ต้องตรวจกับ `fastdds_profiles.xsd` ใน image) (2) การทิ้งแบบกำหนดได้ตาม `writerSN` เช่น `tc filter ... u32` ที่ offset ของ writerSN หรือ eBPF `tc` program ใน netns ของผู้ส่ง (`--cap-add NET_ADMIN` พอสำหรับ `tc` แต่การโหลด eBPF ต้องมี `CAP_BPF`: เงื่อนไขบน host) ทางสำรองที่ไม่ต้องใช้สิทธิ์คือ `netem loss` แบบสุ่มแล้วใช้ capture ระบุว่า SN ใดหาย (3) ตัววิเคราะห์ pcap ต่อ SN: เวลา DATA แรก, NACK, การส่งซ้ำ, ถึงผู้รับ (4) `run_trace.sh` รุ่นที่รับ QoS/อัตรา/ขนาดข้อความ (ตอนนี้ใช้ `demo_nodes_cpp` 1 Hz ข้อความเล็ก)
 - ตัวแปรอิสระ: `heartbeat_period` (3 s, 500 ms, 100 ms, 20 ms ตาม R2), คาบการส่ง (0.1, 1, 5 s), ขนาด (ข้อความเล็ก, ภาพ 0.9 MB), loss (กำหนดได้ 1 SN ต่อ 10; สุ่ม 0.02% ต่อ frame), อัตรา link (veth, tbf 1 g, `wifi`)
 - ตัวแปรตาม: เวลากู้คืนต่อ SN ที่หาย (`rmw_publish` → `callback_start` ของ SN นั้น ลบด้วย median ของ SN ที่ไม่หาย), HEARTBEAT/ACKNACK/NACK_FRAG ต่อวินาที, DATA_FRAG ส่งซ้ำต่อภาพแยกเป็นจำเป็น/ไม่จำเป็น (เทียบกับ frame ที่ netem ทิ้งจริง)
-- ควบคุม: depth/history เท่ากัน, ผู้รับไม่ช้า (callback ว่าง), `SO_RCVBUF` 8 MiB เพื่อไม่ให้มี loss ที่ socket ปน (§9 แสดงว่าค่านี้ไม่ทิ้ง), เวอร์ชัน Fast DDS ตรึงด้วย image
+- ควบคุม: depth/history เท่ากัน, ผู้รับไม่ช้า (callback ว่าง), `SO_RCVBUF` 8 MiB เพื่อไม่ให้มี loss ที่ socket ปน (ภาค 3 §4.2 แสดงว่าค่านี้ไม่ทิ้ง), เวอร์ชัน Fast DDS ตรึงด้วย image
 - จำนวน: ≥ 200 SN ที่หายต่อเงื่อนไข (เพื่อประมาณ p95 ของเวลากู้คืนได้) ที่ heartbeat 3 s ต้องใช้เวลานาน จึงใช้ 50 SN ที่หายที่ 3 s และ 200 ที่ค่าอื่น
 - สถิติ: เวลากู้คืนรายงานเป็น median/p95 พร้อม bootstrap CI (การกระจายไม่ปกติ มีขอบบนที่ `heartbeat_period`), ทดสอบ H1 ด้วยการเทียบการกระจายกับ uniform(0, `heartbeat_period`) (Kolmogorov–Smirnov) และ effect size เป็นอัตราส่วน median ระหว่างค่า `heartbeat_period`
 - รูปและตาราง: Fig. 1 ECDF ของเวลากู้คืน (x: ms, log) แยกเส้นตาม `heartbeat_period`; Fig. 2 median เวลากู้คืน (y) เทียบ `heartbeat_period` (x) แยกตามคาบการส่ง; Fig. 3 DATA_FRAG ส่งซ้ำต่อภาพ (y) เทียบ `heartbeat_period` (x) แยกตาม link; Fig. 4 timeline ของ SN หนึ่ง (DATA, HB, NACK, repair, take) จาก pcap + trace; Table 1 ค่าเวลา default ที่ใช้จริงและเวอร์ชัน
@@ -1194,47 +1145,58 @@ key ร่วมระหว่าง kernel trace กับ user trace: วิ�
 
 **checklist** (1) อ่านฉบับเต็มของงานในแถว R2 (2) XML heartbeat + ตัวทิ้งตาม SN (3) ขยาย `run_trace.sh` ให้รับ QoS/อัตรา (4) pilot 1 เงื่อนไข ตรวจว่าวัดเวลากู้คืนได้ครบชั้น (5) ชุดเต็มบน veth + tbf (6) ทำซ้ำบน 2 เครื่องพร้อม clock sync ตาม §6.5 (7) วิเคราะห์ + ร่าง paper
 
----
+### 7.4 ข้อเสนอเพิ่มเติมจากภาค 1 (นอก R1–R9)
 
-## 8. ข้อที่ขัดหรือควรแก้ในเอกสารภาค 1
+ย้ายมาจากภาค 1 §7 (ช่องว่างงานวิจัย 7 ข้อ เป็นข้อเสนอที่ยังไม่ได้ตรวจว่ามีคนทำแล้วหรือไม่) ข้อที่ไม่มีคู่ใน R1–R9 เสนอเป็น R10–R13 ซึ่งยังเป็นเพียงข้อเสนอ ยังไม่มีงานที่เกี่ยวข้องใน §7.1 และ threats ใน §7.2 ข้อที่ซ้อนกับ R เดิมบางส่วนเก็บไว้เฉพาะส่วนที่ R เดิมไม่ครอบคลุม
 
-| # | ข้อความในภาค 1 | สิ่งที่พบ | หลักฐาน |
-|---|---|---|---|
-| 1 | §3.1 "Data-sharing delivery: zero-copy ระหว่าง DataWriter/DataReader บน host เดียวกัน (ใช้กับ loaned messages)" | ใน `rmw_fastrtps_cpp` ของ Lyrical data-sharing ถูกสั่ง `off()` ทั้ง writer และ reader เป็น default จะเปิดได้ต้องใช้ `RMW_FASTRTPS_USE_QOS_FROM_XML=1` พร้อม XML ควรเพิ่มเงื่อนไขนี้ | `rmw_fastrtps_cpp/src/publisher.cpp` บรรทัด 245–256; `subscription.cpp` บรรทัด 412–417, 684–688 |
-| 2 | §6 ตาราง "QoS ในระดับเครือข่าย: DSCP/`SO_PRIORITY` ผ่าน XML profile" สำหรับ DDS | Fast DDS 3.6.x ไม่มีการตั้ง `IP_TOS`/`SO_PRIORITY` ใน source และทั้ง UDP กับ TCP transport ทิ้งพารามิเตอร์ `transport_priority` ข้อความนี้ไม่เป็นจริงสำหรับ Fast DDS (Cyclone มี field `m_diffserv` ใน `ddsi_udp.c` แต่ยังไม่ได้ไล่ว่าใช้อย่างไร) | grep ใน `src/`, `include/` ได้ 0 รายการ; `UDPTransportInterface.cpp` บรรทัด 543; `TCPTransportInterface.cpp` บรรทัด 1498 |
-| 3 | §5.4 frame ตัวอย่าง: RTPS version `02 03`, 122 B, ไม่มี INFO_DST และไม่มี submessage ท้าย | (ก) version เป็น 2.3 เฉพาะ build ที่ `SECURITY=ON` ซึ่ง**ตรงกับ binary `.deb` ของ Lyrical** (ตรวจเพิ่มภายหลังจาก `debian/rules`) ส่วน build default ของ CMake ได้ 2.2 (ข) build default มี statistics submessage `0x80` ยาว 60 B ต่อท้ายทุก message (ค) unicast ถึง participant เดียวมี INFO_DST frame จริงจึงน่าจะเป็น 138–198 B ไม่ใช่ 122 B ภาค 1 ระบุไว้แล้วว่าเป็นค่าตัวอย่าง แต่ควรระบุ build variant **แก้แล้ว (2026-11-27):** ภาค 1 §5.4 เปลี่ยนตัวอย่างเป็น frame จริง 198 B และ type `example_interfaces/msg/String` | `Types.hpp` บรรทัด 108–117; `CMakeLists.txt` บรรทัด 278, 428; `RTPSMessageGroup.cpp` บรรทัด 520–524, 973–984 ภายหลังยืนยันด้วย capture ใน[ภาค 3](03_wire_experiments.md) แล้ว: version 2.3, INFO_DST 16 B, statistics 60 B, frame 198 B |
-| 4 | §5.4 "`INFO_DST` (12 B)" | submessage `INFO_DST` รวม header ยาว 16 B (header 4 + guidPrefix 12) | `info_dst_message_length = 16` ใน `BaseWriter.cpp` |
-| 5 | §5.5 RX แถว 1 "DMA frame ลง RX ring (page pool)" และ §2.1 ที่นับ copy ฝั่งรับ 1 รอบใน kernel | สำหรับ r8169 ซึ่งเป็น driver ตัวอย่างของภาค 1: ไม่ใช้ page pool และ**คัดลอกทุก packet** จาก buffer DMA ไป skb ใหม่ จึงมี copy ฝั่งรับใน kernel 2 รอบ | `r8169_main.c` v7.0 บรรทัด 4162, 4816–4827 |
-| 6 | §5.5 "`napi_gro_receive` ในเวอร์ชันนี้กลายเป็น `gro_receive_skb`" | ถูกต้องในระดับ symbol แต่ควรเสริมว่า `napi_gro_receive()` ยังมีอยู่เป็น `static inline` ที่ห่อ `gro_receive_skb()` และ driver ยังเรียกชื่อเดิม | `include/linux/netdevice.h` v7.0 บรรทัด 4251–4255; `r8169_main.c` บรรทัด 4840 |
-| 7 | §5.5 "… `UDPTransportInterface::send` → asio `send_to()` → `sendmsg()`" | ขาด `setsockopt(SO_SNDTIMEO)` ที่ถูกเรียกก่อน `send_to` ทุกครั้ง: 2 syscall ต่อ datagram | `UDPTransportInterface.cpp` บรรทัด 608–619 |
-| 8 | §3.1 "ชื่อขึ้นต้นด้วย `fastrtps_` / `fastdds_`" [K] | ใน 3.6.x domain ของ SHM transport คือ `fastdds` (`fastdds_port<N>`, `fastdds_<uuid>`) และ data-sharing ใช้ `fast_datasharing_…` ไม่พบ prefix `fastrtps_` ในไฟล์ที่ตรวจ | `SharedMemTransport.cpp` บรรทัด 42; `DataSharingPayloadPool.hpp` บรรทัด 89–91 |
-| 9 | §5.3 "แตกเป็น fragment ราว 44 ชิ้น" | สำหรับ message เต็มของ Fast DDS (UDP 65 476 B) ได้ 45 ชิ้น; 44 เป็นตัวเลขของ comment ใน kernel สำหรับ 64K ต่างกันเล็กน้อย ไม่ใช่ข้อผิดพลาด | คำนวณในหัวข้อ 2.4 |
-| 10 | §4 ตาราง "ส่ง UDP: `sendmsg` / `sendmmsg` (บาง impl)" | ไม่พบ `sendmmsg`/`recvmmsg` ใน Fast DDS 3.6.x, Cyclone 11.0.x และ Zenoh 1.10.1 (เฉพาะ repo หลัก) | grep หัวข้อ 5.2 |
+| ข้อในภาค 1 เดิม | คู่ใน R1–R9 | ส่วนที่อยู่นอก R1–R9 |
+|---|---|---|
+| 1 `rosidl::Buffer` backend RDMA/RoCE/AF_XDP | ไม่มี (R7 ใน §7.1 อ้าง AF_XDP เพียงเป็นทางเลือก) | ทั้งข้อ: R10 |
+| 2 kernel zero-copy (`MSG_ZEROCOPY`, io_uring zero-copy RX, UDP GSO/GRO) | R8 (`MSG_ZEROCOPY`), R1 (GSO/GRO) | io_uring zero-copy RX (รายการข้างล่าง) |
+| 3 EventsCBGExecutor บน PREEMPT_RT | บางส่วน: R7 (วัดบน PREEMPT_RT แต่ตัวแปรคือ busy polling) | การเทียบ executor: R11 |
+| 4 เปรียบเทียบ 4 Tier-1 RMW | บางส่วน: R6 (discovery 10–500 node), R9 (การรายงาน driver ใน benchmark) | benchmark ข้าม RMW ทั้งชุด (รายการข้างล่าง) |
+| 5 Zenoh SHM | ไม่มี (R5 ศึกษาเฉพาะ SHM ของ Fast DDS) | ทั้งข้อ: R12 |
+| 6 Content Filtered Topic | ไม่มี | ทั้งข้อ: R13 |
+| 7 observability pipeline (หายที่ชั้นไหน) | บางส่วน: R4 (การทิ้งที่ socket), R2 (การซ่อมของ RELIABLE) และระเบียบวิธีใน §6.4–6.6 | pipeline ที่รวมทุกชั้น (รายการข้างล่าง) |
 
-ไม่พบข้อขัดแย้งในส่วน kernel function chain, สูตร port, และค่าของ Zenoh config ที่ภาค 1 อ้าง
+**R10 (ข้อเสนอ). `rosidl::Buffer` backend สำหรับ RDMA / RoCE / AF_XDP**: interface ถูกออกแบบให้ backend เป็น "memory substrate or transport technology" และมี discovery hook ต่อ peer (ภาค 1 §2.4) จึงเหมาะจะทำ backend ที่ส่ง descriptor ผ่าน DDS แล้วส่ง payload ผ่าน RDMA verbs (ข้ามเครื่องแบบ zero-copy)
 
----
+**R11 (ข้อเสนอ). ประเมิน EventsCBGExecutor**: วัด latency distribution (p50/p99/p99.9) บน PREEMPT_RT เทียบกับ executor อื่น และวัดร่วมกับ SHM ของแต่ละ RMW
 
-## 9. สิ่งที่ยังไม่ได้ verify
+**R12 (ข้อเสนอ). Zenoh SHM**: ค่า default ปิดไว้เพราะ "until fully tested" ซึ่งเป็นโอกาสทำ characterization (pool size, threshold 512 B) และหาจุดเสีย ใช้แบบการวัดของ R5 ได้
 
-1. ~~**ไม่มี packet capture**~~ capture แล้วใน[ภาค 3](03_wire_experiments.md) (Docker, `veth`, 5 pcap) ยืนยัน layout หลักของหัวข้อ 1, 2, 3.7, 4.4 แล้ว (SPDP `DATA(p)`, frame 198 B, DATA_FRAG/NACK_FRAG, Zenoh length prefix/attachment/CDR) ส่วนที่ยังไม่ได้ยืนยัน: การแบ่ง field ภายใน `PUT` ของ Zenoh, ค่า `PID_BUILTIN_ENDPOINT_SET` เทียบกับที่ทำนาย และผลบน NIC จริง (r8169) เพราะ capture ผ่าน `veth`
-2. ~~build option ของ binary `.deb`~~ ตรวจแล้ว: `debian/rules` ของ Lyrical ใส่ `-DSECURITY=ON` และไม่ได้ปิด `FASTDDS_STATISTICS` และยืนยันบนสายแล้วใน[ภาค 3](03_wire_experiments.md) (RTPS 2.3 + submessage `0x80`)
-3. **OMG DDSI-RTPS 2.5** ไม่ได้อ่านต้นฉบับ ความหมายของ field (เช่น ความหมายของ bitmap, GAP) เป็น [K]
-4. พฤติกรรมของ `rmw_dds_common::Context` ว่าส่ง `ParticipantEntitiesInfo` เมื่อใดบ้าง (หัวข้อ 1.4)
-5. เส้นทางเต็มของ HEARTBEAT ใน `StatefulWriter` (ตรวจเฉพาะ `send_heartbeat_piggyback_nts_` และค่า default) ข้อสรุปเรื่องเวลากู้คืน 3 s เป็นสมมติฐาน
-6. รายละเอียดการส่งซ้ำเฉพาะ fragment ที่ขอใน NACK_FRAG ฝั่ง writer (ตรวจถึง `perform_nack_response` → `add_old_sample`)
-7. source ของ asio (ว่า `send_to` แบบหลาย buffer ลงเป็น `sendmsg` + iovec) และพฤติกรรมของ `get_option` ต่อ `SO_RCVBUF` บน Linux
-8. `sizeof(StatisticsSubmessageData)` = 56 คำนวณจากนิยาม struct ไม่ได้ compile
-9. การแบ่ง field ภายใน `PUT` ของ Zenoh (ขนาดรวมวัดแล้ว: TCP payload 95 B ใน[ภาค 3](03_wire_experiments.md)), รูปแบบ ZenohId ใน timestamp, handshake INIT/OPEN และความต่างของ codec ระหว่าง zenoh 1.8.0 (`2687c51`) ที่อยู่ใน `.deb` จริงกับ source 1.10.1 ที่ใช้อ่าน (ดูหมายเหตุเวอร์ชันในหัวข้อ 4)
-10. `truesize` จริงของ packet แต่ละขนาดบนเครื่องนี้ และพฤติกรรมเมื่อ frag memory เกิน `ipfrag_high_thresh`
-11. คำสั่ง `bpftrace`/`perf` ทั้งหมดยังไม่ได้รัน (ยังเป็นเช่นนั้น: เครื่องทดลองปิด kernel tracing สำหรับผู้ใช้ทั่วไป ดูเงื่อนไขบน host ใน[หัวข้อ 6.5](#65-ระเบียบวิธีวัด-clock-sync-และ-trace-จริงหนึ่ง-sample) ส่วน userspace ของตาราง 6.4 วัดแล้วด้วย ros2_tracing ใน[ภาค 3 §19](03_wire_experiments.md#19-การทดลองที่-17-trace-หนึ่ง-sample-ข้ามชั้น))
-12. ตัวเลขทั้งหมดในหัวข้อ 6.1–6.3 เป็นประมาณการ (หัวข้อ 6.5 เทียบแถวของ 6.1 กับ trace จริงหนึ่ง run บน `veth`: ชั้น rclcpp/rcl/rmw สอดคล้องในระดับ µs แต่ช่วงที่รวม kernel ยาวกว่าประมาณการราว 1 ลำดับขนาด และยังแยกภายในไม่ได้)
-13. Cyclone DDS และ Connext ไม่ได้วิเคราะห์ในระดับเดียวกับ Fast DDS; Connext เป็น closed source
-14. Wireshark dissector อ่านจาก branch `master` ไม่ใช่ release ที่มากับ Ubuntu 26.04
+**R13 (ข้อเสนอ). Content Filtered Topic**: `rcl_subscription_is_cft_supported` ช่วยให้วัดผลการกรองฝั่ง writer (ลด bandwidth) ข้าม RMW ได้อย่างเป็นระบบ
+
+ส่วนที่ขยาย R เดิม
+- **Kernel zero-copy** (ข้อ 2 เดิม): ทดลองใช้ `MSG_ZEROCOPY` (TX), io_uring zero-copy RX (มีใน Linux รุ่นใหม่), UDP GSO/GRO ใน Fast DDS UDP transport แล้ววัด CPU/throughput ของข้อความ ≥1 MB ส่วนที่ R8/R1 ยังไม่ครอบคลุมคือ io_uring zero-copy RX ซึ่ง §5.2 พบว่าในเวอร์ชันนี้รับผ่าน TCP เท่านั้น จึงทดลองได้กับ transport แบบ TCP (Zenoh, Fast DDS `LARGE_DATA`) ไม่ใช่ RTPS/UDP
+- **เปรียบเทียบ 4 Tier-1 RMW บน Lyrical** (ข้อ 4 เดิม): ระบบเดียวกันกับ payload 64 B–32 MB ภายใต้ intra-host (UDP lo / SHM) และ inter-host (Ethernet 1/10 GbE, Wi-Fi 6) รวมถึงช่วง discovery time ตอนมี node 10–500 ตัว
+- **Observability pipeline** (ข้อ 7 เดิม): ใช้ rosbag2 message-loss events + ros2_tracing snapshot mode + eBPF kernel drop (`kfree_skb` reason) เพื่อตอบว่า **หายที่ชั้นไหน** (rmw history / socket buffer / reassembly / NIC) [ภาค 3 §7.2](03_wire_experiments.md#72-trace-หนึ่ง-sample-ข้ามชั้น-การทดลองที่-17) ทำส่วน userspace + capture แล้ว ส่วน kernel ยังต้องใช้สิทธิ์ root (§6.5 ช.)
 
 ---
 
-## 10. Sources (ตรวจเมื่อ 2026-11-24)
+## 8. ประเด็นที่ยังเปิดอยู่
+
+ข้อขัดกับภาค 1 ที่เคยรวบรวมไว้ในหัวข้อนี้ (10 ข้อ) แก้ในภาค 1 ครบแล้ว (ข้อความที่แก้ส่วนใหญ่ติดป้าย "แก้ไข 2026-11-24 ตามภาค 2" หรือ "แก้ไข 2026-11-27 ตาม capture ภาค 3") หลักฐานของแต่ละข้ออยู่ในเนื้อหาของภาคนี้ (§2.4, §3.1, §3.4, §3.5, §3.7, §5.2, §5.7) และไม่พบข้อขัดแย้งในส่วน kernel function chain, สูตร port และค่าของ Zenoh config ที่ภาค 1 อ้าง ผลการทดลองที่ภาคนี้ยังไม่ได้ระบุอยู่ใน[ภาค 3 §8.4](03_wire_experiments.md#84-ประเด็นที่ยังเปิดอยู่-ผลที่เอกสารภาค-12-ยังไม่ได้ระบุ)
+
+**สิ่งที่ยังไม่ได้ verify**
+
+1. ค่า `PID_BUILTIN_ENDPOINT_SET` บนสายเทียบกับที่ทำนายใน §1.2 และผลทั้งหมดบน NIC จริง (r8169): capture ใน[ภาค 3](03_wire_experiments.md) ผ่าน `veth` ทั้งหมด
+2. **OMG DDSI-RTPS 2.5** ไม่ได้อ่านต้นฉบับ ความหมายของ field (เช่น ความหมายของ bitmap, GAP) เป็น [K]
+3. พฤติกรรมของ `rmw_dds_common::Context` ว่าส่ง `ParticipantEntitiesInfo` เมื่อใดบ้าง (หัวข้อ 1.4)
+4. เส้นทางเต็มของ HEARTBEAT ใน `StatefulWriter` (ตรวจเฉพาะ `send_heartbeat_piggyback_nts_` และค่า default) ข้อสรุปเรื่องเวลากู้คืน 3 s เป็นสมมติฐาน
+5. รายละเอียดการส่งซ้ำเฉพาะ fragment ที่ขอใน NACK_FRAG ฝั่ง writer (ตรวจถึง `perform_nack_response` → `add_old_sample`)
+6. source ของ asio (ว่า `send_to` แบบหลาย buffer ลงเป็น `sendmsg` + iovec) และพฤติกรรมของ `get_option` ต่อ `SO_RCVBUF` บน Linux
+7. `sizeof(StatisticsSubmessageData)` = 56 คำนวณจากนิยาม struct ไม่ได้ compile
+8. การแบ่ง field ภายใน `PUT` ของ Zenoh (ขนาดรวมวัดแล้ว: TCP payload 95 B ใน[ภาค 3](03_wire_experiments.md)), รูปแบบ ZenohId ใน timestamp, handshake INIT/OPEN และความต่างของ codec ระหว่าง zenoh 1.8.0 (`2687c51`) ที่อยู่ใน `.deb` จริงกับ source 1.10.1 ที่ใช้อ่าน (ดูหมายเหตุเวอร์ชันในหัวข้อ 4)
+9. `truesize` จริงของ packet แต่ละขนาดบนเครื่องนี้ และพฤติกรรมเมื่อ frag memory เกิน `ipfrag_high_thresh`
+10. คำสั่ง `bpftrace`/`perf` ทั้งหมดยังไม่ได้รัน (ยังเป็นเช่นนั้น: เครื่องทดลองปิด kernel tracing สำหรับผู้ใช้ทั่วไป ดูเงื่อนไขบน host ใน[หัวข้อ 6.5](#65-ระเบียบวิธีวัด-clock-sync-และ-trace-จริงหนึ่ง-sample) ส่วน userspace ของตาราง 6.4 วัดแล้วด้วย ros2_tracing ใน[ภาค 3 §7.2](03_wire_experiments.md#72-trace-หนึ่ง-sample-ข้ามชั้น-การทดลองที่-17))
+11. ตัวเลขทั้งหมดในหัวข้อ 6.1–6.3 เป็นประมาณการ ([ภาค 3 §7.2.4](03_wire_experiments.md#724-เทียบกับแบบจำลอง-latency-ของภาค-2-61) เทียบแถวของ 6.1 กับ trace จริงหนึ่ง run บน `veth`: ชั้น rclcpp/rcl/rmw สอดคล้องในระดับ µs แต่ช่วงที่รวม kernel ยาวกว่าประมาณการราว 1 ลำดับขนาด และยังแยกภายในไม่ได้) และคอลัมน์ "วัดด้วย" ของแถว 1 ใน §6.1 อาจต้องแก้ เพราะการ serialize ของ `rmw_fastrtps` น่าจะเกิดหลัง tracepoint `rmw_publish` (ยังไม่ได้ตรวจ source)
+12. Cyclone DDS และ Connext ไม่ได้วิเคราะห์ในระดับเดียวกับ Fast DDS; Connext เป็น closed source
+13. Wireshark dissector อ่านจาก branch `master` ไม่ใช่ release ที่มากับ Ubuntu 26.04
+
+---
+
+## 9. Sources (ตรวจเมื่อ 2026-11-24)
 
 **Fast DDS** — `eProsima/Fast-DDS` branch `3.6.x`, commit `daf9116dd83fc321c5eaedfb8e6fde98dec8e355`, `package.xml` version 3.6.2
 https://github.com/eProsima/Fast-DDS/tree/3.6.x
@@ -1274,7 +1236,7 @@ https://github.com/eProsima/Fast-DDS/tree/3.6.x
 - `commons/zenoh-codec/src/core/zint.rs`, `network/push.rs`, `zenoh/put.rs`
 - `io/zenoh-links/zenoh-link-tcp/src/{lib,unicast,utils}.rs`, `io/zenoh-transport/src/uring.rs`, `zenoh/Cargo.toml`, `io/zenoh-transport/Cargo.toml`, `Cargo.toml`
 
-**Cyclone DDS** — `eclipse-cyclonedds/cyclonedds` branch `releases/11.0.x`, commit `c6fbafb7d45fb3c32f65b8f1f858df1c980dfaaf` (ใช้เฉพาะ grep ในหัวข้อ 5.2 และ 8)
+**Cyclone DDS** — `eclipse-cyclonedds/cyclonedds` branch `releases/11.0.x`, commit `c6fbafb7d45fb3c32f65b8f1f858df1c980dfaaf` (ใช้เฉพาะ grep ในหัวข้อ 5.2 และ 3.1)
 
 **ros2_tracing** — `ros2/ros2_tracing` branch `lyrical`, commit `1bbbcfd0570f575e2adaa85d6df45d69db08eab8`: `tracetools/include/tracetools/tp_call.h`
 

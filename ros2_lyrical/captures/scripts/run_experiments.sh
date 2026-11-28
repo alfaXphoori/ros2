@@ -5,7 +5,7 @@
 # Output in ./out/ (git-ignored):
 #   env.txt, dpkg_*.txt, ros2_doctor.txt     environment of the run (lib.sh write_env)
 #   expN_*.raw.pcap                          what tcpdump wrote (unfiltered)
-#   expN_*.pcap                              filtered like the committed captures (docs/03 §8)
+#   expN_*.pcap                              filtered like the committed captures (docs/03 §9.1)
 #   expN_*.listener.log / .talker.log        node output;  expN_*.snmp.txt  /proc/net/snmp of Host B
 #   expN_*.tcpdump.log                       tcpdump's "captured / dropped by kernel" counts
 #   summary.txt                              the numbers docs/03 compares against
@@ -92,7 +92,7 @@ docker run --rm --shm-size=256m -v "$OUT:/out" "$IMG" bash -c "$ROS_SRC
 filter_pcap "$OUT/exp4_samehost_shm.raw.pcap" "$OUT/exp4_samehost_shm.pcap"
 
 # Experiments 5-6 are the two end points of the receive-buffer question; run_rcvbuf_sweep.sh
-# (docs/03 §9) sweeps it properly with repetitions. They stay here unchanged for comparison.
+# (docs/03 §4.2) sweeps it properly with repetitions. They stay here unchanged for comparison.
 log "[5] Image BEST_EFFORT, default receive buffer"
 run_pair exp5_image_besteffort "timeout 16 python3 /exp/img_sub.py be" "python3 /exp/img_pub.py be 20" "subscription ready"
 
@@ -100,7 +100,7 @@ log "[6] Image BEST_EFFORT, 4 MiB receive buffer (Fast DDS XML profile)"
 run_pair exp6_image_besteffort_bigbuf "timeout 16 python3 /exp/img_sub.py be" "python3 /exp/img_pub.py be 20" "subscription ready" \
   -e FASTDDS_DEFAULT_PROFILES_FILE=/exp/bigbuf.xml
 
-# ---- summary: the numbers docs/03 §2, §3 and §6 compare against ----
+# ---- summary: the numbers docs/03 §2.1, §4.1 and §4.2 compare against ----
 snmp() {  # <snmp.txt> <Udp|Ip> <field>  (column looked up by name)
   awk -v p="$2:" -v f="$3" '$1==p && !h {for(i=2;i<=NF;i++) if($i==f) c=i; h=1; next} $1==p && h {print $c}' "$1"
 }

@@ -1,4 +1,4 @@
-# Subscriber for experiment 11 (docs/03 §14): logs every received "n=<k>" with the ROS log timestamp.
+# Subscriber for experiment 11 (docs/03 §6): logs every received "n=<k>" with the ROS log timestamp.
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String

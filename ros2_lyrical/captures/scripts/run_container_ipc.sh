@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Experiment 14 (docs/03 §16): does Fast DDS SHM work between two containers?
+# Experiment 14 (docs/03 §5.2): does Fast DDS SHM work between two containers?
 # Demo talker in container c_A, demo listener in container c_B, Fast DDS default transports
 # (rmw_fastrtps_cpp, UDPv4 + SHM). The arms vary only the namespaces/mounts docker gives c_B:
 #

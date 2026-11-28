@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Publisher for exp15 (run_sros2.sh, docs/03 §17). std_msgs/String "Hello World: N" on 'chatter',
+"""Publisher for exp15 (run_sros2.sh, docs/03 §2.4). std_msgs/String "Hello World: N" on 'chatter',
 RELIABLE KEEP_LAST 10, published by a timer from the moment the node exists (no wait for a match,
 like the demo talker). Prints one JSON line at exit:
   t_create_ns   CLOCK_REALTIME just after the publisher was created

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Experiment 10 (docs/03 §13): demo talker -> listener with RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+# Experiment 10 (docs/03 §2.2): demo talker -> listener with RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 # across two containers, captured on the listener's eth0 (the Cyclone equivalent of experiment 1).
-# The image part of §13 runs through run_tuning.sh / run_rcvbuf_sweep.sh (arm "cyclone").
+# The image part (docs/03 §4.4.6) runs through run_tuning.sh / run_rcvbuf_sweep.sh (arm "cyclone").
 #
 # Usage: ./run_cyclone.sh [--talker-s 6] [--out DIR]
 #   Output (default ./out/cyclone/): exp10_cyclone_default.{raw.pcap,pcap,listener.log,talker.log,tcpdump.log},

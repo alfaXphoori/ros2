@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Byte-level helper for run_container_ipc.sh (exp14, docs/03 §16). Stdlib only.
+"""Byte-level helper for run_container_ipc.sh (exp14, docs/03 §5.2). Stdlib only.
 
 usage: ipc_shm_locators.py <pcap>...
 Prints, per pcap, (1) every distinct 24-byte SHM locator (kind 0x13 = Fast DDS SHM) found in

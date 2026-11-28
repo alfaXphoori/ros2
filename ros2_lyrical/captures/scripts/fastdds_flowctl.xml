@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!--
-  "flowctl" arm of run_rcvbuf_sweep.sh (docs/03 §15, experiment 13, optional variant).
+  "flowctl" arm of run_rcvbuf_sweep.sh (docs/03 §4.4, experiment 13, optional variant).
   A FIFO flow controller limited to 125000 B per 1 ms period (= 1 Gbit/s average) registered on the
   participant. rmw_fastrtps uses it only if the DataWriter QoS names it, which the XML can do with a
   default data_writer profile (publishMode/flowControllerName). Builtin transports untouched.

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Experiments 11-12 (docs/03 §14), rmw_zenoh_cpp with one router, each node in its own container.
+# Experiments 11-12 (docs/03 §6 and §4.5), rmw_zenoh_cpp with one router, each node in its own container.
 #
 # Usage: ./run_zenoh_extra.sh kill  [--reps 3] [--down-s 10]     experiment 11: router SIGKILL mid-stream
 #        ./run_zenoh_extra.sh image [--qos "be rel"] [--images 20] experiment 12: 640x480 image over Zenoh/TCP

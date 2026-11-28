@@ -15,16 +15,16 @@
 | 3 | [Packet Lab](https://alfaxphoori.github.io/ros2/ros2_lyrical/interactive/lyrical-packet-lab.html) บทที่ 1–16 | ดูสิ่งที่อ่านในขั้น 2 เป็นภาพ 3D ทีละบท | 30 นาที |
 | 4 | [ภาค 1](docs/01_network_stack_deep_dive.md) §5–§6 | packet ระดับ byte และเส้นทางใน Linux kernel ทีละฟังก์ชัน | 30 นาที |
 | 5 | [ภาค 4](docs/04_architectures.md) | มองระดับระบบ: discovery, data path ในเครื่อง, deployment, security | 30 นาที |
-| 6 | [ภาค 3](docs/03_wire_experiments.md) แล้วดู Packet Lab บทที่ 17–20 | ผลการทดลองจริง เทียบกับที่อ่านมาในขั้น 2–5 | 30 นาที |
+| 6 | [ภาค 3](docs/03_wire_experiments.md) (เริ่มจากตารางสรุปผลใน[§1.1](docs/03_wire_experiments.md#11-สรุปผลสำคัญของการทดลองที่-117)) แล้วดู Packet Lab บทที่ 17–20 | ผลการทดลองจริง เทียบกับที่อ่านมาในขั้น 2–5 | 30 นาที |
 | 7 | [ภาค 2](docs/02_wire_format_and_kernel.md) §1–§6 | รายละเอียดเชิงลึก: wire format, reliability, Fast DDS internals, `truesize`, latency budget | 1–2 ชั่วโมง |
-| 8 | [ภาค 2 §7](docs/02_wire_format_and_kernel.md#7-ทิศทางวิจัยที่ตามมาโดยตรงจากหัวข้อ-16) และ [ภาค 1 §7–§8](docs/01_network_stack_deep_dive.md#7-ช่องว่างงานวิจัยและแนวทางพัฒนาต่อ-ข้อเสนอ-ยังไม่ได้ตรวจว่ามีคนทำแล้วหรือไม่) | หัวข้อวิจัย R1–R9 และ template การทดลอง | 30 นาที |
+| 8 | [ภาค 2 §7](docs/02_wire_format_and_kernel.md#7-ทิศทางวิจัยที่ตามมาโดยตรงจากหัวข้อ-16) และ [ภาค 2 §6.4–§6.6](docs/02_wire_format_and_kernel.md#64-แผนวัดให้ครบทุกช่วง) | หัวข้อวิจัย R1–R13 และระเบียบวิธีวัด (template การทดลอง) | 30 นาที |
 
 ทางลัดตามเป้าหมาย
 
 - **อยากเห็นภาพรวมเร็ว ๆ**: ขั้น 1 → 3 → 6
 - **จะตั้งค่าระบบจริง**: ขั้น 1 → 2 → 5 (ดูตารางเลือกสถาปัตยกรรมในภาค 4 §8) → 6
 - **จะหาหัวข้อวิจัย**: ขั้น 1 → 6 → 8 แล้วย้อนอ่านหัวข้อในภาค 2 ที่ R แต่ละข้ออ้างถึง
-- **จะทำการทดลองซ้ำ**: ขั้น 6 แล้วไปที่หัวข้อ “ทำซ้ำและตรวจผล” ด้านล่าง
+- **จะทำการทดลองซ้ำ**: ขั้น 6 แล้วไปที่หัวข้อ “ทำซ้ำและตรวจผล” ด้านล่าง คำสั่งเต็มของทุกชุดอยู่ในภาคผนวก[ภาค 3 §9](docs/03_wire_experiments.md#9-ภาคผนวก-วิธีทำซ้ำทุกการทดลอง)
 - **ใช้สอนหรือทบทวนตัวเอง**: ต้นแต่ละภาคมีวัตถุประสงค์การเรียนรู้และพื้นฐานที่ควรมี ทำ[แบบฝึกหัด](docs/exercises.md)ของภาคนั้นหลังอ่านจบ (เฉลยใน [answers.md](docs/answers.md)) และเปิด[อภิธานศัพท์](docs/glossary.md)กับ[สรุปย่อหนึ่งหน้า](docs/cheatsheet.md)ไว้ข้างกันระหว่างอ่าน
 
 ## เอกสาร
@@ -34,8 +34,8 @@
 | ภาค | ไฟล์ | เนื้อหา |
 |---|---|---|
 | 1 | [docs/01_network_stack_deep_dive.md](docs/01_network_stack_deep_dive.md) | ภาพรวม stack, เทียบกับ OSI, RMW ทั้ง 4 ตัว, discovery, transport, packet anatomy และเส้นทางใน kernel ขา TX/RX |
-| 2 | [docs/02_wire_format_and_kernel.md](docs/02_wire_format_and_kernel.md) | RTPS ระดับ byte, DATA_FRAG/NACK_FRAG, Zenoh framing, การคิด `truesize` ของ SO_RCVBUF, latency budget และหัวข้อวิจัย R1–R9 |
-| 3 | [docs/03_wire_experiments.md](docs/03_wire_experiments.md) | การทดลอง 17 ชุดใน Docker พร้อม pcap เทียบคำทำนายกับสิ่งที่เกิดบนสายจริง: ชุดที่ 1–6 (frame, fragment, Zenoh, SHM, receive buffer), 7–9 (rcvbuf sweep, latency, tc shaping), 10–13 (Cyclone DDS, Zenoh router ล้ม/ภาพผ่าน Zenoh, DDS tuning), 14–15 (SHM ข้าม container, SROS2 Enforce), 16–17 (QoS บนสาย, trace หนึ่ง sample) |
+| 2 | [docs/02_wire_format_and_kernel.md](docs/02_wire_format_and_kernel.md) | RTPS ระดับ byte, DATA_FRAG/NACK_FRAG, Zenoh framing, การคิด `truesize` ของ SO_RCVBUF, latency budget, ระเบียบวิธีวัด และหัวข้อวิจัย R1–R13 |
+| 3 | [docs/03_wire_experiments.md](docs/03_wire_experiments.md) | การทดลอง 17 ชุดใน Docker พร้อม pcap เทียบคำทำนายกับสิ่งที่เกิดบนสายจริง จัดตามหัวข้อ: สรุปผลสำคัญและสภาพแวดล้อม, หนึ่ง sample บนสายผ่าน Fast DDS, Cyclone DDS, Zenoh และ SROS2 (ชุดที่ 1, 10, 3, 15), QoS บนสาย (16), message ใหญ่และ reliability: fragment, receive buffer, tc shaping, DDS tuning, ภาพผ่าน Zenoh (2, 5–7, 9, 13, 12), SHM ในเครื่องและข้าม container (4, 14), Zenoh router ล้ม (11), latency และ trace หนึ่ง sample (8, 17), ข้อจำกัดและ protocol สำหรับ 2 เครื่องจริง และภาคผนวกวิธีทำซ้ำ (ภาค 3 §9) |
 | 4 | [docs/04_architectures.md](docs/04_architectures.md) | rmw plugin และ internals ของ middleware 4 ตัว, discovery 3 แบบ, topic/service/action บน DDS และ Zenoh, data path ในเครื่องเดียวกัน 6 ทาง, deployment (LAN, fleet, cloud, micro-ROS), security และตารางเลือกสถาปัตยกรรม |
 | แบบฝึกหัด | [docs/exercises.md](docs/exercises.md) | แบบฝึกหัด 17 ข้อ แยกตามภาค 1–4 (ง่าย → ยาก) ทุกข้อตอบได้จาก pcap, CSV และสคริปต์ใน repo |
 | เฉลย | [docs/answers.md](docs/answers.md) | คำสั่งที่รันจริง ผลที่ได้ และคำอธิบายพร้อมลิงก์ไปยังหัวข้อในเอกสาร |
@@ -68,27 +68,27 @@ ros2_lyrical/
 ## ทำซ้ำและตรวจผล
 
 ```bash
-# รันการทดลองทั้ง 6 ชุด (ต้องมี Docker, ราว 2 นาที) ผลจะอยู่ใน ros2_lyrical/captures/scripts/out/
+# รันการทดลองทั้ง 6 ชุด (ภาค 3 §9.2; ต้องมี Docker, ราว 2 นาที) ผลจะอยู่ใน ros2_lyrical/captures/scripts/out/
 # ได้ทั้ง pcap ดิบ (*.raw.pcap) และที่กรองแล้ว (*.pcap), env.txt (สภาพแวดล้อม) และ summary.txt (ตัวเลขที่ใช้เทียบกับภาค 3)
 ros2_lyrical/captures/scripts/run_experiments.sh
 
-# การทดลองที่ 7 และ 9 (ภาค 3 §9, §11): sweep receive buffer และแบบจำกัดอัตราด้วย tc (ชุดเต็ม 81 run ราว 25 นาที)
+# การทดลองที่ 7 และ 9 (ภาค 3 §4.2, §4.3; คำสั่ง §9.3): sweep receive buffer และแบบจำกัดอัตราด้วย tc (ชุดเต็ม 81 run ราว 25 นาที)
 ros2_lyrical/captures/scripts/run_rcvbuf_sweep.sh --help
-# การทดลองที่ 8 (ภาค 3 §10): latency end-to-end 7 config × 30 รอบ (ราว 26 นาที)
+# การทดลองที่ 8 (ภาค 3 §7.1; คำสั่ง §9.4): latency end-to-end 7 config × 30 รอบ (ราว 26 นาที)
 ros2_lyrical/captures/scripts/run_latency.sh --help
 
 # การทดลองที่ 10–17 ใช้ image lyrical-wire:exp-extra (เพิ่ม rmw_cyclonedds_cpp, ros2trace, babeltrace2 จาก Dockerfile.extra)
 cd ros2_lyrical/captures/scripts
 docker build -t lyrical-wire:exp . && docker build -t lyrical-wire:exp-extra -f Dockerfile.extra .
 L=out/exp.lock   # flock -x = การทดลองที่ได้ตัวเลขเวลา/การสูญหาย (รันทีละชุด), flock -s = การทดลองเชิง functional
-flock -s $L ./run_cyclone.sh                 # ชุดที่ 10 (ภาค 3 §13) ราว 20 วินาที
-flock -x $L ./run_zenoh_extra.sh kill        # ชุดที่ 11 (§14) router ล้มกลางทาง 3 รอบ ราว 3.5 นาที
-flock -x $L ./run_zenoh_extra.sh image       # ชุดที่ 12 (§14) ภาพ 640×480 ผ่าน Zenoh ราว 1 นาที
-./run_tuning.sh                              # ชุดที่ 13 (§15) 60 run ราว 19 นาที (ถือ lock เอง; --extra-arms สำหรับ flowctl)
-./run_container_ipc.sh --all 3               # ชุดที่ 14 (§16) SHM ข้าม container 7 แขน × 3 ราว 7 นาที
-./run_sros2.sh --all 3                       # ชุดที่ 15 (§17) SROS2 Enforce ราว 3 นาที (สร้าง keystore ใหม่ใน out/sros2 ทุกครั้ง)
-flock -s $L ./run_qos.sh tl_d1 tl_d10 tl_all vol_d10   # ชุดที่ 16 (§18, ภาค 2 §1.6) ดูรายชื่อ case ใน run_qos.sh
-flock -x $L ./run_trace.sh                   # ชุดที่ 17 (§19, ภาค 2 §6.5) LTTng-UST + tcpdump ราว 1 นาที
+flock -s $L ./run_cyclone.sh                 # ชุดที่ 10 (ภาค 3 §2.2, §4.4.6; คำสั่ง §9.5) ราว 20 วินาที
+flock -x $L ./run_zenoh_extra.sh kill        # ชุดที่ 11 (ภาค 3 §6; §9.6) router ล้มกลางทาง 3 รอบ ราว 3.5 นาที
+flock -x $L ./run_zenoh_extra.sh image       # ชุดที่ 12 (ภาค 3 §4.5; §9.6) ภาพ 640×480 ผ่าน Zenoh ราว 1 นาที
+./run_tuning.sh                              # ชุดที่ 13 (ภาค 3 §4.4; §9.7) 60 run ราว 19 นาที (ถือ lock เอง; --extra-arms สำหรับ flowctl)
+./run_container_ipc.sh --all 3               # ชุดที่ 14 (ภาค 3 §5.2; §9.8) SHM ข้าม container 7 แขน × 3 ราว 7 นาที
+./run_sros2.sh --all 3                       # ชุดที่ 15 (ภาค 3 §2.4; §9.9) SROS2 Enforce ราว 3 นาที (สร้าง keystore ใหม่ใน out/sros2 ทุกครั้ง)
+flock -s $L ./run_qos.sh tl_d1 tl_d10 tl_all vol_d10   # ชุดที่ 16 (ภาค 3 §3; §9.10) ดูรายชื่อ case ใน run_qos.sh
+flock -x $L ./run_trace.sh                   # ชุดที่ 17 (ภาค 3 §7.2; §9.11) LTTng-UST + tcpdump ราว 1 นาที
 cd -
 
 # ถอด packet จาก pcap โดยไม่ต้องมี tshark (ใช้แค่ Python standard library)
@@ -103,4 +103,4 @@ python3 ros2_lyrical/tools/gen_capture_svgs.py        ros2_lyrical/diagrams
 python3 ros2_lyrical/tools/gen_architecture_svgs.py   ros2_lyrical/diagrams
 ```
 
-> `run_experiments.sh` กรอง pcap ให้เองแล้ว (เหลือ IPv4 และ ARP ระหว่าง container ด้วย filter เดียวกับไฟล์ใน `captures/` ดู[ภาค 3 §8](docs/03_wire_experiments.md#8-วิธีทำซ้ำ)) ถ้าจะเผยแพร่ไฟล์ที่ capture เอง ให้ใช้เฉพาะ `*.pcap` ที่กรองแล้ว อย่าใช้ `*.raw.pcap` เพราะ mDNS ของเครื่อง host อาจติดชื่อเครื่องมาด้วย Docker network, IP ของแต่ละ container และ helper สำหรับ script อื่นอยู่ใน `captures/scripts/lib.sh`
+> `run_experiments.sh` กรอง pcap ให้เองแล้ว (เหลือ IPv4 และ ARP ระหว่าง container ด้วย filter เดียวกับไฟล์ใน `captures/` ดู[ภาค 3 §9.1](docs/03_wire_experiments.md#91-ขั้นตอนร่วม)) ถ้าจะเผยแพร่ไฟล์ที่ capture เอง ให้ใช้เฉพาะ `*.pcap` ที่กรองแล้ว อย่าใช้ `*.raw.pcap` เพราะ mDNS ของเครื่อง host อาจติดชื่อเครื่องมาด้วย Docker network, IP ของแต่ละ container และ helper สำหรับ script อื่นอยู่ใน `captures/scripts/lib.sh`

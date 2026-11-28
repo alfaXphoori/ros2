@@ -15,7 +15,7 @@ pk()  { python3 ros2_lyrical/tools/rtps_peek.py "$@"; }
 tsh() { docker run --rm --network none -v "$PWD/ros2_lyrical/captures:/c:ro" lyrical-wire:exp tshark "$@"; }
 ```
 
-ถ้ายังไม่มี image `lyrical-wire:exp` ให้ build ตาม[ภาค 3 §8](03_wire_experiments.md#8-วิธีทำซ้ำ) หรือใช้ Wireshark บนเครื่องตัวเองแทน (ต้อง `gunzip` ไฟล์ `.gz` ก่อน) ข้อที่ใช้ `pk` อย่างเดียวไม่ต้องมี Docker
+ถ้ายังไม่มี image `lyrical-wire:exp` ให้ build ตาม[ภาค 3 §9.1](03_wire_experiments.md#91-ขั้นตอนร่วม) หรือใช้ Wireshark บนเครื่องตัวเองแทน (ต้อง `gunzip` ไฟล์ `.gz` ก่อน) ข้อที่ใช้ `pk` อย่างเดียวไม่ต้องมี Docker
 
 | pcap | การทดลอง (ภาค 3) |
 |---|---|
@@ -56,7 +56,7 @@ tsh() { docker run --rm --network none -v "$PWD/ros2_lyrical/captures:/c:ro" lyr
 - **เป้าหมาย:** พิสูจน์จาก pcap ว่าใน `exp4` ไม่มี DATA/DATA_FRAG จาก user writer เลย แล้วอธิบายว่าข้อมูลไปทางไหนและทำไม discovery ยังวิ่งบน UDP
 - **ไฟล์:** `exp4_samehost_shm.pcap` (link type 276, Linux cooked v2)
 - **คำใบ้:** `pk sms ros2_lyrical/captures/exp4_samehost_shm.pcap DATA DATA_FRAG | grep -o 'flags 0x.. .*writer [0-9a-f.]*' | awk '{print $1,$2,$NF}' | sort | uniq -c` ไบต์สุดท้ายของ entityId `0xc2` = builtin writer, `0x03` = user writer ไม่มี key
-- **รูปแบบคำตอบ:** ตารางนับ submessage ตาม writer, ข้อสรุปว่ามี user writer หรือไม่ และหนึ่งย่อหน้าเชื่อมกับ[ภาค 1 §3.1](01_network_stack_deep_dive.md#31-rmw_fastrtps_cpp--fast-dds-36x-default-v-เวอร์ชัน--k-รายละเอียด-protocol) (SHM default) และ[ภาค 3 §5](03_wire_experiments.md#5-การทดลองที่-4-เครื่องเดียวกัน-fast-dds-shm)
+- **รูปแบบคำตอบ:** ตารางนับ submessage ตาม writer, ข้อสรุปว่ามี user writer หรือไม่ และหนึ่งย่อหน้าเชื่อมกับ[ภาค 1 §3.1](01_network_stack_deep_dive.md#31-rmw_fastrtps_cpp--fast-dds-36x-default-v-เวอร์ชัน--k-รายละเอียด-protocol) (SHM default) และ[ภาค 3 §5.1](03_wire_experiments.md#51-fast-dds-shm-ในเครื่องเดียวกัน-การทดลองที่-4)
 
 ---
 
@@ -85,7 +85,7 @@ tsh() { docker run --rm --network none -v "$PWD/ros2_lyrical/captures:/c:ro" lyr
 
 ### 2.4 ถอด Zenoh sample 161 B (กลาง)
 
-- **เป้าหมาย:** ใน `exp3` หา frame ที่บรรจุ `"Hello World: 1"` แยกเป็น Ethernet / IPv4 / TCP / Zenoh ถอด length prefix และหา attachment 33 B กับ CDR payload ตาม[ภาค 2 §4.2](02_wire_format_and_kernel.md#42-framing-บน-tcp) และ[ภาค 3 §4](03_wire_experiments.md#4-การทดลองที่-3-sample-เดียวกันผ่าน-rmw_zenoh)
+- **เป้าหมาย:** ใน `exp3` หา frame ที่บรรจุ `"Hello World: 1"` แยกเป็น Ethernet / IPv4 / TCP / Zenoh ถอด length prefix และหา attachment 33 B กับ CDR payload ตาม[ภาค 2 §4.2](02_wire_format_and_kernel.md#42-framing-บน-tcp) และ[ภาค 3 §2.3](03_wire_experiments.md#23-zenoh-sample-เดียวกันผ่าน-rmw_zenoh_cpp-การทดลองที่-3)
 - **ไฟล์:** `exp3_zenoh.pcap`
 - **คำใบ้:** `tsh -r /c/exp3_zenoh.pcap -Y 'frame.len==161' -T fields -e frame.number -e ip.src -e tcp.srcport -e ip.dst -e tcp.dstport -e tcp.len` แล้ว `tsh -r /c/exp3_zenoh.pcap -Y 'frame.number==142' -x` ความยาว GID 16 B นำหน้าด้วย byte `0x10`
 - **รูปแบบคำตอบ:** 14 + 20 + 32 + 95, ค่า prefix เป็น hex และฐานสิบ, offset ของ attachment (sequence 8 + timestamp 8 + GID len 1 + GID 16) และ payload 23 B พร้อมคำอธิบายว่าทำไม RTPS pad เป็น 24 B แต่ Zenoh ไม่ pad
@@ -103,16 +103,16 @@ tsh() { docker run --rm --network none -v "$PWD/ros2_lyrical/captures:/c:ro" lyr
 
 ### 3.1 capture เห็นครบ แต่ภาพหาย (ง่าย)
 
-- **เป้าหมาย:** นับ DATA_FRAG และจำนวนภาพที่ fragment ครบใน `exp5` และ `exp6` แล้วอธิบายว่าทำไม capture เห็นครบทั้งสองไฟล์ ทั้งที่[ภาค 3 §6](03_wire_experiments.md#6-การทดลองที่-56-receive-buffer-ตัดสินว่าภาพจะรอดหรือไม่)รายงานว่า `exp5` ได้รับเพียง 13/20 ภาพ ภาพหายที่ชั้นไหน และตัวนับใดยืนยัน
+- **เป้าหมาย:** นับ DATA_FRAG และจำนวนภาพที่ fragment ครบใน `exp5` และ `exp6` แล้วอธิบายว่าทำไม capture เห็นครบทั้งสองไฟล์ ทั้งที่[ภาค 3 §4.2.1](03_wire_experiments.md#421-การทดลองที่-56-ค่าเริ่มต้นเทียบกับ-bigbufxml-2026-11-24)รายงานว่า `exp5` ได้รับเพียง 13/20 ภาพ ภาพหายที่ชั้นไหน และตัวนับใดยืนยัน
 - **ไฟล์:** `exp5_image_besteffort.pcap.gz`, `exp6_image_besteffort_bigbuf.pcap.gz`
 - **คำใบ้:** `python3 ros2_lyrical/captures/scripts/sweep_pcap_stats.py <file>` (ดู `datafrag_total`, `sn_complete`) หรือ `pk sms <file> DATA_FRAG | grep -o 'SN [0-9]*' | sort | uniq -c` จุดที่ tcpdump เห็น packet อยู่ในตาราง RX ของ[ภาค 1 §5.5](01_network_stack_deep_dive.md#55-เส้นทางใน-linux-kernel-ทีละฟังก์ชัน-tx-และ-rx)
-- **รูปแบบคำตอบ:** ตัวเลข 2 ไฟล์, ชื่อฟังก์ชันใน kernel ที่ทิ้ง, ชื่อตัวนับ และหนึ่งประโยคว่าทำไม `exp6` ไม่ใช่การทดลองที่เปลี่ยนตัวแปรเดียว ([ภาค 3 §9.1](03_wire_experiments.md#91-ตัวแปรกวนในการทดลองที่-6))
+- **รูปแบบคำตอบ:** ตัวเลข 2 ไฟล์, ชื่อฟังก์ชันใน kernel ที่ทิ้ง, ชื่อตัวนับ และหนึ่งประโยคว่าทำไม `exp6` ไม่ใช่การทดลองที่เปลี่ยนตัวแปรเดียว ([ภาค 3 §4.2.3](03_wire_experiments.md#423-ตัวแปรกวนในการทดลองที่-6))
 
 ### 3.2 อ่านผล rcvbuf sweep แบบมีขอบเขต (กลาง)
 
 - **เป้าหมาย:** เทียบแขน `noxml`, `sndonly` และ `524288` ใน `rcvbuf_sweep_summary.csv` แล้วเขียนข้อสรุปหนึ่งย่อหน้าที่บอกทั้งสิ่งที่ข้อมูลรองรับและสิ่งที่ไม่รองรับ
 - **ไฟล์:** `captures/results/rcvbuf_sweep_summary.csv`
-- **คำใบ้:** คอลัมน์ `n, rb_eff_B, tb_A_max, delivered_mean, loss_pct, rcvbuferr_med, datafrag_wire_mean, sn_complete_min` ข้อจำกัดอยู่ใน[ภาค 3 §12.1](03_wire_experiments.md#121-ข้อจำกัดของผลในภาคนี้)
+- **คำใบ้:** คอลัมน์ `n, rb_eff_B, tb_A_max, delivered_mean, loss_pct, rcvbuferr_med, datafrag_wire_mean, sn_complete_min` ข้อจำกัดอยู่ใน[ภาค 3 §8.1](03_wire_experiments.md#81-ข้อจำกัดของผลในภาคนี้)
 - **รูปแบบคำตอบ:** ตาราง 3 แถว, ข้อสรุป 2–3 ประโยค และข้อจำกัดอย่างน้อย 3 ข้อ
 
 ### 3.3 latency: SHM ช่วยข้อความเล็กแค่ไหน (กลาง)
@@ -120,13 +120,13 @@ tsh() { docker run --rm --network none -v "$PWD/ros2_lyrical/captures:/c:ro" lyr
 - **เป้าหมาย:** จาก `latency_summary.csv` เทียบ `small_cross`, `small_same_udp` และ `small_same` ที่ median และ p99 พร้อม 95% CI แล้วตอบว่า (ก) ความต่างจาก "อยู่ container เดียวกัน" กับจาก "SHM" แยกได้หรือไม่ (ข) ส่วนใหญ่ของ latency อยู่ที่ใด
 - **ไฟล์:** `captures/results/latency_summary.csv`
 - **คำใบ้:** คอลัมน์ `median_us, median_ci_lo, median_ci_hi, p99_us, p99_ci_lo, p99_ci_hi, publish_call_median_us` CI สองช่วงที่ไม่ซ้อนกันคือหลักฐานว่าต่างกัน
-- **รูปแบบคำตอบ:** ตาราง 3 config, ผลต่างเป็น µs, ข้อสรุปพร้อมข้อจำกัดจาก[ภาค 3 §10.6](03_wire_experiments.md#106-ข้อจำกัด)
+- **รูปแบบคำตอบ:** ตาราง 3 config, ผลต่างเป็น µs, ข้อสรุปพร้อมข้อจำกัดจาก[ภาค 3 §7.1.6](03_wire_experiments.md#716-ข้อจำกัด)
 
 ### 3.4 จังหวะการมาถึงของภาพ: veth สองวันกับ 1 Gbit/s (ยาก)
 
 - **เป้าหมาย:** วัดระยะเวลาที่ภาพหนึ่งภาพใช้บนสาย (IP fragment แรก → สุดท้าย) ใน `exp5` (2026-11-24) และ `exp6` (2026-11-27) แล้วเทียบกับแถว `tbf1g` ใน `shaping_summary.csv` และค่าคำนวณ 7.684 ms ของ 1 GbE ใช้ผลนี้อธิบายว่าทำไมการสูญหายที่ buffer ค่าเริ่มต้นเปลี่ยนไปตามวันและหายไปเมื่อจำกัดอัตรา
 - **ไฟล์:** `exp5_image_besteffort.pcap.gz`, `exp6_image_besteffort_bigbuf.pcap.gz`, `captures/results/shaping_summary.csv`
-- **คำใบ้:** `sweep_pcap_stats.py` ให้ `burst_ms_med`, `burst_ms_min`, `gap_us_med`, `image_wire_us_1g` เชื่อมกับกลไกใน[ภาค 2 §5.3](02_wire_format_and_kernel.md#53-so_rcvbuf-นับอะไร-และทำไมภาพหายทั้งที่-cpu-ว่าง) และ[ภาค 3 §9.6](03_wire_experiments.md#96-เทียบกับข้อสรุปเดิม)
+- **คำใบ้:** `sweep_pcap_stats.py` ให้ `burst_ms_med`, `burst_ms_min`, `gap_us_med`, `image_wire_us_1g` เชื่อมกับกลไกใน[ภาค 2 §5.3](02_wire_format_and_kernel.md#53-so_rcvbuf-นับอะไร-และทำไมภาพหายทั้งที่-cpu-ว่าง) และ[ภาค 3 §4.2.8](03_wire_experiments.md#428-เทียบกับข้อสรุปเดิม)
 - **รูปแบบคำตอบ:** ตาราง burst (ms) ของ 3 เงื่อนไข, ข้อสรุป 1 ย่อหน้า และระบุว่าส่วนไหนเป็น [V] ส่วนไหนเป็นสมมติฐาน
 
 ### 3.5 RELIABLE บน link ช้า: การส่งซ้ำที่จำเป็นจริง (ยาก)
@@ -134,7 +134,7 @@ tsh() { docker run --rm --network none -v "$PWD/ros2_lyrical/captures:/c:ro" lyr
 - **เป้าหมาย:** จากแถว `wifi,rel,noxml` ใน `shaping_summary.csv` คำนวณขอบบนของสัดส่วน DATA_FRAG ที่ส่งซ้ำเพื่อซ่อมสิ่งที่หายจริง (ใช้จำนวน frame ที่ qdisc ทิ้ง) และ overhead ของ traffic ภาพเทียบกับ 300 DATA_FRAG ที่จำเป็น
 - **ไฟล์:** `captures/results/shaping_summary.csv`
 - **คำใบ้:** คอลัมน์ `n, datafrag_wire_mean, retrans_mean, nackfrag_mean, tcA_dropped_sum` frame ที่หายหนึ่ง frame ทำให้ DATA_FRAG เสียได้อย่างมากหนึ่งก้อน
-- **รูปแบบคำตอบ:** ตัวเลข 3–4 ค่า, ขอบบนเป็น %, ข้อสรุปพร้อมข้อจำกัดของการจำลอง "wifi" ([ภาค 3 §11.5](03_wire_experiments.md#115-ข้อจำกัดของการจำลอง))
+- **รูปแบบคำตอบ:** ตัวเลข 3–4 ค่า, ขอบบนเป็น %, ข้อสรุปพร้อมข้อจำกัดของการจำลอง "wifi" ([ภาค 3 §4.3.5](03_wire_experiments.md#435-ข้อจำกัดของการจำลอง))
 
 ---
 
@@ -158,5 +158,5 @@ tsh() { docker run --rm --network none -v "$PWD/ros2_lyrical/captures:/c:ro" lyr
 
 - **เป้าหมาย:** หุ่นยนต์มีกล้อง 640×480 rgb8 ที่ 10 Hz ต้องส่งภาพไปยัง (ก) node ประมวลผลในเครื่องเดียวกัน และ (ข) คอมพิวเตอร์อีกเครื่องผ่าน 1 GbE เลือกเส้นทาง/QoS/การตั้งค่า buffer สำหรับแต่ละขา โดยอ้างตัวเลขจาก `latency_summary.csv` (`image_*`) และ `shaping_summary.csv` อย่างน้อยขาละ 2 ตัวเลข แล้วบอกว่าต้องวัดอะไรเพิ่มก่อนนำไปใช้จริง
 - **ไฟล์:** `captures/results/latency_summary.csv`, `captures/results/shaping_summary.csv`, [ภาค 4 §4](04_architectures.md#4-data-path-ภายในเครื่องเดียวกัน) และ [§8](04_architectures.md#8-ตารางเลือกสถาปัตยกรรม)
-- **คำใบ้:** ดู median กับ p90/p99 ของ `image_same_rel` เทียบ `image_cross_rel` (และ[ภาค 3 §10.5](03_wire_experiments.md#105-การตีความ-จำกัดเฉพาะที่ข้อมูลรองรับ) ข้อ 5) และแถว `tbf1g` ทั้ง BE/REL
+- **คำใบ้:** ดู median กับ p90/p99 ของ `image_same_rel` เทียบ `image_cross_rel` (และ[ภาค 3 §7.1.5](03_wire_experiments.md#715-การตีความ-จำกัดเฉพาะที่ข้อมูลรองรับ) ข้อ 5) และแถว `tbf1g` ทั้ง BE/REL
 - **รูปแบบคำตอบ:** ตารางการตัดสินใจ 2 แถว (ขา, ทางเลือก, ตัวเลขที่อ้าง, ความเสี่ยง) และรายการสิ่งที่ต้องวัดเพิ่ม 3 ข้อ

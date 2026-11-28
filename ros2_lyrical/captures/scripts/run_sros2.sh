@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Experiment 15 (docs/03 §17): SROS2 Enforce on the wire, Fast DDS (rmw_fastrtps_cpp) default.
+# Experiment 15 (docs/03 §2.4): SROS2 Enforce on the wire, Fast DDS (rmw_fastrtps_cpp) default.
 # Two containers on bridge network ctrnet (talker 172.22.1.3 -> listener 172.22.1.2, exp1 layout),
 # tcpdump on the listener's eth0. A fresh keystore is generated every time the script runs a
 # "keystore" step (never committed: out/ is git-ignored and **/sros2_keystore/ is ignored too).
