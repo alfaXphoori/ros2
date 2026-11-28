@@ -1,0 +1,41 @@
+# host clock / NIC timestamping state, read-only unprivileged checks, 2026-11-27T23:55:14+07:00
+# (hostname and MAC addresses omitted; nothing was changed on the host)
+## ethtool -T enp2s0 (driver r8169)
+Time stamping parameters for enp2s0:
+Capabilities:
+	software-transmit
+	software-receive
+	software-system-clock
+PTP Hardware Clock: none
+Hardware Transmit Timestamp Modes: none
+Hardware Receive Filter Modes: none
+## chronyc tracking
+Reference ID    : B97DBE7B (ntp-nts-3.ps5.canonical.com)
+Stratum         : 3
+Ref time (UTC)  : Fri Nov 27 16:41:28 2026
+System time     : 0.001039390 seconds slow of NTP time
+Last offset     : +0.000199289 seconds
+RMS offset      : 0.000366917 seconds
+Frequency       : 21.574 ppm slow
+Residual freq   : -0.002 ppm
+Skew            : 0.051 ppm
+Root delay      : 0.186354414 seconds
+Root dispersion : 0.002575058 seconds
+Update interval : 1026.6 seconds
+Leap status     : Normal
+## chronyc sources (server names kept: public NTP pool)
+MS Name/IP address         Stratum Poll Reach LastRx Last sample               
+===============================================================================
+^+ ntp-nts-2.ps5.canonical.>     2  10   377   711  +1227us[+1227us] +/-   96ms
+^* ntp-nts-3.ps5.canonical.>     2  10   377   825   +827us[+1026us] +/-   95ms
+^+ ntp-nts-2.ps6.canonical.>     2  10   375   738   -161us[ -161us] +/-  163ms
+^+ ntp-nts-3.ps6.canonical.>     2  10   375   641   -274us[ -274us] +/-  157ms
+^- ntp-nts-1.ps5.canonical.>     2  10   377   764   +100us[ +100us] +/-   94ms
+## timedatectl show (subset)
+LocalRTC=no
+CanNTP=yes
+NTP=yes
+NTPSynchronized=yes
+## /dev/ptp*: none
+## linuxptp tools: ptp4l=absent phc2sys=absent pmc=absent
+## clocksource: tsc  available: tsc hpet acpi_pm 

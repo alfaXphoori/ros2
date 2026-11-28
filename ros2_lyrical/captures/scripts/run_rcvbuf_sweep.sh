@@ -12,6 +12,14 @@
 #                                      socket_buffer_only.xml.in), builtin transports untouched
 #                         oldbigbuf    bigbuf.xml (the confounded 2026-11-24 exp6 profile) on BOTH sides
 #                         sndonly      sender only: <rtps><sendSocketBufferSize>4194304; receiver no XML
+#                         largedata    BOTH sides FASTDDS_BUILTIN_TRANSPORTS=LARGE_DATA (docs/03 §15)
+#                         mtu1400      fastdds_mtu1400.xml on BOTH sides: one UDPv4 transport with
+#                                      maxMessageSize 1400, no builtin transports (docs/03 §15)
+#                         flowctl      fastdds_flowctl.xml on BOTH sides: FIFO flow controller,
+#                                      max_bytes_per_period 125000 / period_ms 1 on the publisher, plus
+#                                      RMW_FASTRTPS_PUBLICATION_MODE=ASYNCHRONOUS (§15)
+#                         cyclone      BOTH sides RMW_IMPLEMENTATION=rmw_cyclonedds_cpp, Cyclone defaults
+#                                      (needs IMG=lyrical-wire:exp-extra; docs/03 §13)
 #                  default: noxml,106496,212992,524288,1048576,2097152,4194304,8388608
 #   --sizes LIST   shorthand: adds the byte sizes in LIST as arms (e.g. 524288,1048576)
 #   --reps N       repetitions for arms without *reps (default 8). Order: round-robin by repetition,
@@ -96,7 +104,7 @@ for t in "${toks[@]}"; do
   q="$QOS"; r="$REPS"
   case "$t" in *:*) q="${t%%:*}"; t="${t#*:}";; esac
   case "$t" in *'*'*) r="${t#*\*}"; t="${t%%\**}";; esac
-  case "$t" in noxml|oldbigbuf|sndonly) ;; *[!0-9]*|'') echo "bad arm '$t'" >&2; exit 2;; esac
+  case "$t" in noxml|oldbigbuf|sndonly|largedata|mtu1400|flowctl|cyclone) ;; *[!0-9]*|'') echo "bad arm '$t'" >&2; exit 2;; esac
   A_Q+=("$q"); A_N+=("$t"); A_R+=("$r")
 done
 
@@ -111,6 +119,7 @@ RMEM_DEF=$(cat /proc/sys/net/core/rmem_default)
     case "$n" in
       noxml) echo "arm ${A_Q[$i]}:$n  no setsockopt -> expected SO_RCVBUF = rmem_default = $RMEM_DEF";;
       oldbigbuf) echo "arm ${A_Q[$i]}:$n  bigbuf.xml 4194304 -> expected $(( 2 * (4194304 < RMEM_MAX ? 4194304 : RMEM_MAX) ))$( [ 4194304 -gt "$RMEM_MAX" ] && echo ' CAPPED by rmem_max')";;
+      largedata|mtu1400|flowctl|cyclone) echo "arm ${A_Q[$i]}:$n  transport/RMW variant (docs/03 §13/§15); SO_RCVBUF read from ss -uamn per run";;
       sndonly) echo "arm ${A_Q[$i]}:$n  sender SO_SNDBUF request 4194304 -> expected $(( 2 * (4194304 < WMEM_MAX ? 4194304 : WMEM_MAX) ))$( [ 4194304 -gt "$WMEM_MAX" ] && echo ' CAPPED by wmem_max'); receiver default";;
       *) e=$(( 2 * (n < RMEM_MAX ? n : RMEM_MAX) ))
          if [ "$n" -gt "$RMEM_MAX" ]; then
@@ -142,19 +151,19 @@ CAP=(); [ -n "$SHAPE_CMD" ] && CAP=(--cap-add NET_ADMIN)
 PEERENV=(); [ -n "$PEER" ] && PEERENV=(-e "ROS_STATIC_PEERS=$PEER")
 
 # snapshot of the node scripts used (other scripts in this directory may change while we run)
-cp img_pub.py img_sub.py bigbuf.xml "$OUTD/exp/"
+cp img_pub.py img_sub.py bigbuf.xml fastdds_mtu1400.xml fastdds_flowctl.xml "$OUTD/exp/"
 gen_profile() {  # <element> <bytes> <file>
   sed -e "s/@ELEMENT@/$1/g" -e "s/@BYTES@/$2/g" socket_buffer_only.xml.in > "$3"
 }
 for i in "${!A_N[@]}"; do
   case "${A_N[$i]}" in
-    noxml|oldbigbuf) ;;
+    noxml|oldbigbuf|largedata|mtu1400|flowctl|cyclone) ;;
     sndonly) gen_profile sendSocketBufferSize 4194304 "$OUTD/profiles/sndonly.xml";;
     *) gen_profile listenSocketBufferSize "${A_N[$i]}" "$OUTD/profiles/rb${A_N[$i]}.xml";;
   esac
 done
 [ -f "$OUTD/env.txt" ] || write_env "$OUTD"
-{ echo; echo "# run_rcvbuf_sweep.sh $(date -Is) shape=$SHAPE seed=$SEED role=$ROLE net=$NETW"
+{ echo; echo "# run_rcvbuf_sweep.sh $(date -Is) shape=$SHAPE seed=$SEED role=$ROLE net=$NETW image=$IMG arms=$ARMS"
   sha256sum "$OUTD"/exp/* socket_buffer_only.xml.in; } >> "$OUTD/env.txt"
 [ -f "$OUTD/runs.csv" ] || python3 rcvbuf_sweep.py header > "$OUTD/runs.csv"
 
@@ -191,17 +200,17 @@ cat /proc/net/snmp > $R.snmp1_A.txt
 tc -s qdisc show dev $IFACE > $R.tc_A.txt
 wait; exit $RC'
 
-start_B() {  # <run-id> <profile-in-container or "">
-  local id="$1" prof="$2" env=()
-  [ -n "$prof" ] && env=(-e "FASTDDS_DEFAULT_PROFILES_FILE=$prof")
+start_B() {  # <run-id> <profile-in-container or "">   (+ global ARM_ENV: extra -e args for this arm)
+  local id="$1" prof="$2" env=("${ARM_ENV[@]}")
+  [ -n "$prof" ] && env+=(-e "FASTDDS_DEFAULT_PROFILES_FILE=$prof")
   docker run -d --name swB "${NETARGS_B[@]}" "${CAP[@]}" "${PEERENV[@]}" "${env[@]}" \
     -v "$OUTD/exp:/exp:ro" -v "$OUTD:/out" \
     -e R="/out/runs/$id" -e Q="$CQ" -e N="$NIMG" -e IFACE="$IFACE" -e SHAPE_CMD="$SHAPE_CMD" \
     -e SUBTO="$SUBTO" -e ROLE="$ROLE" "$IMG" bash -c "$B_SCRIPT" >/dev/null
 }
 start_A() {
-  local id="$1" prof="$2" env=()
-  [ -n "$prof" ] && env=(-e "FASTDDS_DEFAULT_PROFILES_FILE=$prof")
+  local id="$1" prof="$2" env=("${ARM_ENV[@]}")
+  [ -n "$prof" ] && env+=(-e "FASTDDS_DEFAULT_PROFILES_FILE=$prof")
   docker run -d --name swA "${NETARGS_A[@]}" "${CAP[@]}" "${PEERENV[@]}" "${env[@]}" \
     -v "$OUTD/exp:/exp:ro" -v "$OUTD:/out" \
     -e R="/out/runs/$id" -e Q="$CQ" -e N="$NIMG" -e IFACE="$IFACE" -e SHAPE_CMD="$SHAPE_CMD" \
@@ -213,13 +222,19 @@ for o in "${ORDER[@]}"; do
   rep="${o%%:*}"; i="${o#*:}"; CQ="${A_Q[$i]}"; arm="${A_N[$i]}"; k=$((k + 1))
   id=$(printf '%s_%s_%s_%s_r%02d' "$(date +%m%d%H%M%S)" "$SHAPE" "$CQ" "$arm" "$rep")
   P="$OUTD/runs/$id"
-  profB=""; profA=""; req=""; pB=none; pA=none
+  profB=""; profA=""; req=""; pB=none; pA=none; ARM_ENV=(); RMW=rmw_fastrtps_cpp; ENVX=""
   case "$arm" in
     noxml) ;;
+    largedata) ENVX="FASTDDS_BUILTIN_TRANSPORTS=LARGE_DATA";;
+    mtu1400) profB=/exp/fastdds_mtu1400.xml; profA=/exp/fastdds_mtu1400.xml; pB=fastdds_mtu1400.xml; pA=fastdds_mtu1400.xml;;
+    flowctl) profB=/exp/fastdds_flowctl.xml; profA=/exp/fastdds_flowctl.xml; pB=fastdds_flowctl.xml; pA=fastdds_flowctl.xml
+             ENVX="RMW_FASTRTPS_PUBLICATION_MODE=ASYNCHRONOUS";;   # rmw_fastrtps forces SYNCHRONOUS otherwise
+    cyclone) RMW=rmw_cyclonedds_cpp; ENVX="RMW_IMPLEMENTATION=rmw_cyclonedds_cpp";;
     oldbigbuf) profB=/exp/bigbuf.xml; profA=/exp/bigbuf.xml; req=4194304; pB=bigbuf.xml; pA=bigbuf.xml;;
     sndonly) profA=/out/profiles/sndonly.xml; pA=sendSocketBufferSize=4194304;;
     *) profB=/out/profiles/rb$arm.xml; req=$arm; pB=listenSocketBufferSize=$arm;;
   esac
+  for e in $ENVX; do ARM_ENV+=(-e "$e"); done   # ENVX: space-separated VAR=value list
   log "[$k/${#ORDER[@]}] rep $rep $SHAPE $CQ:$arm -> $id"
   t1=$(date +%s); note=""
   clean "${MINE[@]}"
@@ -245,7 +260,7 @@ for o in "${ORDER[@]}"; do
   rm -f "$P.started" "$P.stop"
   python3 rcvbuf_sweep.py row "$P" run_id="$id" start="$(date -d @"$t1" -Is)" rep="$rep" order="$k" \
     shape="$SHAPE" qos="$CQ" arm="$arm" profile_B="$pB" profile_A="$pA" req_bytes="$req" n_pub="$NIMG" \
-    ip_sender="$IPS" ip_receiver="$IPR" wall_s="$(( $(date +%s) - t1 ))" note="${note# }" >> "$OUTD/runs.csv"
+    ip_sender="$IPS" ip_receiver="$IPR" wall_s="$(( $(date +%s) - t1 ))" note="${note# }" rmw="$RMW" env_extra="$ENVX" >> "$OUTD/runs.csv"
   tail -1 "$OUTD/runs.csv" | python3 -c 'import csv,sys
 h=next(csv.reader(open(sys.argv[1]))); r=next(csv.reader(sys.stdin)); d=dict(zip(h,r))
 print("   delivered %s/%s rb_B %s RcvbufErrors %s sockdrops %s DATA_FRAG %s NACK_FRAG %s burst %s ms tcA %s/%s/%s" % (d["delivered"], d["published"], d["rb_B_port"], d["B_RcvbufErrors"], d["drops_B_port"], d["datafrag_total"], d["nackfrag"], d["burst_ms_med"], d["tcA_pkts"], d["tcA_dropped"], d["tcA_overlimits"]))' "$OUTD/runs.csv" >&2

@@ -1,0 +1,3 @@
+run_id,qos,published,delivered,data_conn,other_conns_pub_to_sub,tcp_payload_bytes,tcpdump_segs,tcpdump_seg_max,tcpdump_seg_med,stream_bytes_reassembled,unparsed_tail,batches,batch_ids,fragment_batches,fragment_last_M0,fragment_batches_per_msg,fragment_batch_bytes_max,fragment_batch_bytes_med,payload_per_image,overhead_per_image_vs_921652,pub_Tcp_OutSegs,pub_Tcp_RetransSegs,sub_Tcp_InSegs
+image_1128001510_be,be,20,20,172.20.0.4:34776->172.20.0.3:34747,0,18440926,404,65160,65160.0,18440926,0,348,0x01:1 0x02:1 0x03:1 0x05:45 0x06:300,300,20,15.0,65160,65160.0,922046,394,12868,0,0
+image_1128001559_rel,rel,20,20,172.20.0.4:40749->172.20.0.3:48622,0,18440925,401,65160,65160,18440925,0,348,0x01:1 0x02:1 0x03:1 0x05:45 0x06:300,300,20,15.0,65160,65160.0,922046,394,12851,0,0

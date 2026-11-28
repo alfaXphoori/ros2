@@ -1,0 +1,4 @@
+# exp17 side check (2026-11-27): writer frames of rt/chatter from talker A, raw pcap out/trace/run/A/A.raw.pcap
+# command: tshark -Y 'ip.src==172.23.0.3 && rtps' -T fields -e frame.time_epoch -e _ws.col.Info | grep rt/chatter; delay = HEARTBEAT time - preceding DATA time
+DATA frames 39 HEARTBEAT frames 13 span_s 39.0
+HEARTBEAT-after-DATA delays_us [324.2, 456.1, 511.4, 542.4, 557.2, 609.6, 682.8, 753.6, 798.5, 863.6, 913.1, 981.1]

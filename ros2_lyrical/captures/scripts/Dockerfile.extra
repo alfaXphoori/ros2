@@ -1,0 +1,25 @@
+# Derived image for the Medium-priority experiments (docs/03 §13 onward, docs/02 §1.6 and §6.5,
+# docs/04 §5.5 and §6.3). Adds packages that the base experiment image does not have, so the
+# base Dockerfile (and every number measured with lyrical-wire:exp) stays untouched.
+#
+#   docker build -t lyrical-wire:exp .                                    # base (pinned digest)
+#   docker build -t lyrical-wire:exp-extra -f Dockerfile.extra .          # this file
+#
+# Same pin policy as the base image: install latest, record, compare with apt-pins-extra.txt
+# (result in /opt/exp/apt-pin-check-extra.txt; `--build-arg STRICT_PINS=1` fails on mismatch).
+# sros2 and lttng-tools/lttng-ust are already in the base image (pulled in by ros-base).
+ARG BASE=lyrical-wire:exp
+FROM ${BASE}
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+      ros-lyrical-rmw-cyclonedds-cpp ros-lyrical-ros2trace babeltrace2 python3-bt2 \
+      openssl procps && rm -rf /var/lib/apt/lists/*
+COPY apt-pins-extra.txt /opt/exp/apt-pins-extra.txt
+ARG STRICT_PINS=0
+RUN dpkg -l > /opt/exp/dpkg-l-extra.txt \
+ && while IFS='=' read -r p v; do \
+      have=$(dpkg-query -W -f '${Version}' "$p" 2>/dev/null || echo MISSING); \
+      if [ "$have" = "$v" ]; then echo "OK $p $v"; else echo "MISMATCH $p pinned=$v installed=$have"; fi; \
+    done < /opt/exp/apt-pins-extra.txt > /opt/exp/apt-pin-check-extra.txt \
+ && if grep -q MISMATCH /opt/exp/apt-pin-check-extra.txt; then \
+      echo "WARNING: package versions differ from apt-pins-extra.txt:"; grep MISMATCH /opt/exp/apt-pin-check-extra.txt; \
+      [ "$STRICT_PINS" != 1 ]; fi

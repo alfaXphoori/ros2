@@ -1,0 +1,68 @@
+== func plain (3 reps)
+  received: [9, 9, 9]  median 9
+  t_spdp_to_first_sample_ms: [1007.2, 1006.9, 1006.4]  median 1006.9
+  frames_spdp_to_first_sample: [79, 79, 79]  median 79
+  bytes_spdp_to_first_sample: [40410, 40410, 40410]  median 40410
+  auth_handshake_msgs: [0, 0, 0]  median 0
+  auth_handshake_bytes: [0, 0, 0]  median 0
+  auth_handshake_msg_sizes: ['', '', '']
+  volatile_secure_frames: [0, 0, 0]  median 0
+  srtps_frames: [0, 0, 0]  median 0
+  frames_total: [155, 155, 155]  median 155
+  user_port_frame_len_top3: ['198x9 170x2', '198x9 170x2', '198x9 170x2']
+  pub_match_ms: ['', '', '']
+  pub_create_to_first_recv_ms: ['', '', '']
+  published_after_match: ['', '', '']
+  pub_cpu_s: ['', '', '']
+  sub_cpu_s: ['', '', '']
+== func sec (3 reps)
+  received: [9, 9, 9]  median 9
+  t_spdp_to_first_sample_ms: [1007.0, 1007.5, 1008.5]  median 1007.5
+  frames_spdp_to_first_sample: [132, 136, 136]  median 136
+  bytes_spdp_to_first_sample: [88140, 89324, 89324]  median 89324
+  auth_handshake_msgs: [3, 3, 3]  median 3
+  auth_handshake_bytes: [12150, 12150, 12150]  median 12150
+  auth_handshake_msg_sizes: ['790 5536 5824', '790 5536 5824', '790 5536 5824']
+  volatile_secure_frames: [32, 32, 32]  median 32
+  srtps_frames: [118, 124, 123]  median 123
+  frames_total: [211, 217, 216]  median 216
+  user_port_frame_len_top3: ['426x9 298x2', '426x9 298x3', '426x9 298x3']
+  pub_match_ms: ['', '', '']
+  pub_create_to_first_recv_ms: ['', '', '']
+  published_after_match: ['', '', '']
+  pub_cpu_s: ['', '', '']
+  sub_cpu_s: ['', '', '']
+== timing plain (3 reps)
+  received: [10001, 10001, 10000]  median 10001
+  t_spdp_to_first_sample_ms: [113.7, 112.5, 113.5]  median 113.5
+  frames_spdp_to_first_sample: [58, 58, 58]  median 58
+  bytes_spdp_to_first_sample: [32688, 32688, 32688]  median 32688
+  auth_handshake_msgs: [0, 0, 0]  median 0
+  auth_handshake_bytes: [0, 0, 0]  median 0
+  auth_handshake_msg_sizes: ['', '', '']
+  volatile_secure_frames: [0, 0, 0]  median 0
+  srtps_frames: [0, 0, 0]  median 0
+  frames_total: [10822, 10828, 10824]  median 10824
+  user_port_frame_len_top3: ['202x6027 234x3965 198x9', '202x6045 234x3946 198x10', '202x6035 234x3956 198x9']
+  pub_match_ms: [91.5, 90.3, 91.4]  median 91.4
+  pub_create_to_first_recv_ms: [92.4, 91.1, 92.2]  median 92.2
+  published_after_match: [10000, 10000, 9999]  median 10000
+  pub_cpu_s: [5.119, 4.844, 4.46]  median 4.844
+  sub_cpu_s: [4.282, 4.131, 3.817]  median 4.131
+== timing sec (3 reps)
+  received: [9990, 10002, 10001]  median 10001
+  t_spdp_to_first_sample_ms: [242.4, 232.8, 233.6]  median 233.6
+  frames_spdp_to_first_sample: [129, 114, 114]  median 114
+  bytes_spdp_to_first_sample: [85198, 78648, 78648]  median 78648
+  auth_handshake_msgs: [3, 3, 3]  median 3
+  auth_handshake_bytes: [12150, 12150, 12150]  median 12150
+  auth_handshake_msg_sizes: ['790 5536 5824', '790 5536 5824', '790 5536 5824']
+  volatile_secure_frames: [32, 32, 32]  median 32
+  srtps_frames: [10791, 10797, 10793]  median 10793
+  frames_total: [10885, 10891, 10886]  median 10886
+  user_port_frame_len_top3: ['430x6071 518x3919 298x4', '430x6072 518x3930 298x4', '430x6057 518x3944 298x5']
+  pub_match_ms: [207.0, 211.6, 212.2]  median 211.6
+  pub_create_to_first_recv_ms: [217.8, 211.8, 212.4]  median 212.4
+  published_after_match: [9991, 10001, 10000]  median 10000
+  pub_cpu_s: [4.392, 4.912, 4.935]  median 4.912
+  sub_cpu_s: [4.019, 4.471, 4.424]  median 4.424

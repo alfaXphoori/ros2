@@ -1,0 +1,92 @@
+# experiment 17 (run_trace.sh): environment, clocks, correlation summary
+# run parameters
+date: 2026-11-27T23:53:19+07:00  seconds=40 sample=10
+image: lyrical-wire:exp-extra sha256:c1286ed1b30d996f11e0aead3d48842a586fecbf3939e0558d54867ecbaeb3f3
+docker: 29.1.3
+network: trcnet 172.23.0.0/16  talker A=172.23.0.3  listener B=172.23.0.2  ROS_DOMAIN_ID=17  RMW default (rmw_fastrtps_cpp)
+tracetools status: Tracing enabled
+lttng (LTTng Trace Control) 2.14.1 - Orbitales
+Babeltrace 2.1.2 "Brossard"
+tcpdump version 4.99.6
+ros-lyrical-demo-nodes-cpp 0.37.9-1resolute.20260915.065629
+ros-lyrical-fastdds 3.6.2-1resolute.20260728.174239
+ros-lyrical-rcl 10.4.5-1resolute.20260915.060844
+ros-lyrical-rclcpp 32.0.3-1resolute.20260915.061505
+ros-lyrical-rmw-fastrtps-cpp 9.4.10-1resolute.20260915.053043
+ros-lyrical-tracetools 8.10.2-1resolute.20260728.204752
+
+# host checks (read only, unprivileged) 2026-11-27T23:53:19+07:00
+uname -r: 7.0.0-44-generic
+kernel.perf_event_paranoid = 4
+kernel.unprivileged_bpf_disabled = 2
+kernel.kptr_restrict = 1
+tracefs readable by this user: no
+lttng kernel modules installed for 7.0.0-44-generic: 0
+bpftrace on host: /usr/bin/bpftrace  perf on host: /usr/bin/perf
+clocksource: tsc
+governor cpu0: powersave
+loadavg_before: 1.23 0.60 0.35 1/618 246897
+loadavg_after: 0.71 0.56 0.36 1/688 250572
+tcpdump -J (container A eth0): Time stamp types for eth0 (use option -j to set):   host (Host) 
+tcpdump -J (container B eth0): Time stamp types for eth0 (use option -j to set):   host (Host) 
+
+# clock alignment (ns). LTTng metadata clock offset = realtime - monotonic at session setup
+A metadata offset          1795576296136471712
+B metadata offset          1795576296136471713
+A before clock_offset.py   1795576296136471713 (+-54)
+A after  clock_offset.py   1795576296136471713 (+-54)
+B before clock_offset.py   1795576296136471718 (+-58)
+B after  clock_offset.py   1795576296136471714 (+-58)
+max |measured - metadata| = 5 ns (alignment error between LTTng and tcpdump timestamps)
+samples with full chain: 39 (N=1..39); stats use N>=5: n=35
+negative stage durations: none
+one sample: N=10 writerSN=10 frame_len=198 source_timestamp(INFO_TS)=1795798422197331881
+/chatter rmw_publisher_handle=0x606B01CCD770 rmw_subscription_handle=0x5A3004DF1840
+
+# lttng session (talker side)
+Session trc created.
+Traces will be output to /out/A/ctf
+Enabled user space event rule with pattern `ros2:*` and attached to channel `channel0`
+user space context vpid added to all channels
+user space context vtid added to all channels
+user space context procname added to all channels
+Tracing started for session `trc`
+Waiting for data availability
+Tracing stopped for session `trc`
+Recording session trc: [inactive]
+    Trace output: /out/A/ctf
+
+=== Domain: User space ===
+
+Buffering scheme: per-user
+
+Tracked process attributes
+  Virtual process IDs:  all
+  Virtual user IDs:     all
+  Virtual group IDs:    all
+
+Channels:
+-------------
+- channel0: [enabled]
+
+    Attributes:
+      Allocation policy: per-cpu
+      Event-loss mode:   discard
+      Sub-buffer size:   524288 bytes
+      Sub-buffer count:  4
+      Switch timer:      inactive
+      Read timer:        inactive
+      Monitor timer:     1000000 µs
+      Blocking timeout:  0 µs
+      Trace file count:  1 per stream
+      Trace file size:   unlimited
+      Output mode:       mmap
+
+    Statistics:
+      Discarded events: 0
+
+    Recording event rules:
+      ros2:* (type: tracepoint) [enabled]
+
+Destroying session `trc`..
+Session `trc` destroyed

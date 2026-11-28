@@ -1,0 +1,22 @@
+arm,rep,published,received,hello_frames_ip,hello_frames_lo,same_ipcns,same_netns,same_hostname,shm_hostids,n_distinct_hostids,A_shm_segments,A_shm_ports,B_shm_segments,B_shm_ports,shm_size,talker2_published,B_shm_after_kill,B_shm_after_talker2
+a,1,7,7,7,0,0,0,0,4a cf / de 5b,2,1,10911 7000,1,10911 7000,,0,,
+a,2,7,7,7,0,0,0,0,4a cf / de 5b,2,1,10911 7000,1,10911 7000,,0,,
+a,3,7,7,7,0,0,0,0,4a cf / de 5b,2,1,10911 7000,1,10911 7000,,0,,
+b_ipc,1,7,7,7,0,1,0,0,4a cf / de 5b,2,2,10911 10913 7000 7001,2,10911 10913 7000 7001,,0,,
+b_ipc,2,7,7,7,0,1,0,0,4a cf / de 5b,2,2,10911 10913 7000 7001,2,10911 10913 7000 7001,,0,,
+b_ipc,3,7,7,7,0,1,0,0,4a cf / de 5b,2,2,10911 10913 7000 7001,2,10911 10913 7000 7001,,0,,
+b_ipc_samehost,1,7,7,7,0,1,0,1,4a cf / de 5b,2,2,10911 10913 7000 7001,2,10911 10913 7000 7001,,0,,
+b_ipc_samehost,2,7,7,7,0,1,0,1,4a cf / de 5b,2,2,10911 10913 7000 7001,2,10911 10913 7000 7001,,0,,
+b_ipc_samehost,3,7,7,7,0,1,0,1,4a cf / de 5b,2,2,10911 10913 7000 7001,2,10911 10913 7000 7001,,0,,
+b_vol,1,7,7,7,0,0,0,0,4a cf / de 5b,2,2,10911 10913 7000 7001,2,10911 10913 7000 7001,tmpfs,0,,
+b_vol,2,7,7,7,0,0,0,0,4a cf / de 5b,2,2,10911 10913 7000 7001,2,10911 10913 7000 7001,tmpfs,0,,
+b_vol,3,7,7,7,0,0,0,0,4a cf / de 5b,2,2,10911 10913 7000 7001,2,10911 10913 7000 7001,tmpfs,0,,
+c_both,1,7,7,0,0,1,1,1,de 5b,1,2,10911 10913 7000 7001,2,10911 10913 7000 7001,,0,,
+c_both,2,7,7,0,0,1,1,1,de 5b,1,2,10911 10913 7000 7001,2,10911 10913 7000 7001,,0,,
+c_both,3,7,7,0,0,1,1,1,de 5b,1,2,10911 10913 7000 7001,2,10911 10913 7000 7001,,0,,
+c_net,1,7,0,0,0,0,1,1,de 5b,1,1,10913 7000,1,10911 7000,,0,,
+c_net,2,7,0,0,0,0,1,1,de 5b,1,1,10913 7000,1,10911 7000,,0,,
+c_net,3,7,0,0,0,0,1,1,de 5b,1,1,10913 7000,1,10911 7000,,0,,
+kill,1,3,8,8,0,0,0,0,4a cf / de 5b,2,2,10911 10913 7000 7001,2,10911 10913 7000 7001,tmpfs,5,fastdds_5c848566b84b0190 fastdds_5c848566b84b0190_el fastdds_e37feed06b967f00 fastdds_e37feed06b967f00_el fastdds_port10911 fastdds_port10911_el fastdds_port10913 fastdds_port10913_el fastdds_port7000 fastdds_port7000_el fastdds_port7001 fastdds_port7001_el,fastdds_5c848566b84b0190 fastdds_5c848566b84b0190_el fastdds_e37feed06b967f00 fastdds_e37feed06b967f00_el fastdds_port10911 fastdds_port10911_el fastdds_port7000 fastdds_port7000_el
+kill,2,3,8,8,0,0,0,0,4a cf / de 5b,2,2,10911 10913 7000 7001,2,10911 10913 7000 7001,tmpfs,5,fastdds_3ccd525a92636b3f fastdds_3ccd525a92636b3f_el fastdds_f1ca564a75d48a6b fastdds_f1ca564a75d48a6b_el fastdds_port10911 fastdds_port10911_el fastdds_port10913 fastdds_port10913_el fastdds_port7000 fastdds_port7000_el fastdds_port7001 fastdds_port7001_el,fastdds_3ccd525a92636b3f fastdds_3ccd525a92636b3f_el fastdds_f1ca564a75d48a6b fastdds_f1ca564a75d48a6b_el fastdds_port10911 fastdds_port10911_el fastdds_port7000 fastdds_port7000_el
+kill,3,3,8,8,0,0,0,0,4a cf / de 5b,2,2,10911 10913 7000 7001,2,10911 10913 7000 7001,tmpfs,5,fastdds_033138c28484bca1 fastdds_033138c28484bca1_el fastdds_cfa1859650ab497c fastdds_cfa1859650ab497c_el fastdds_port10911 fastdds_port10911_el fastdds_port10913 fastdds_port10913_el fastdds_port7000 fastdds_port7000_el fastdds_port7001 fastdds_port7001_el,fastdds_033138c28484bca1 fastdds_033138c28484bca1_el fastdds_cfa1859650ab497c fastdds_cfa1859650ab497c_el fastdds_port10911 fastdds_port10911_el fastdds_port7000 fastdds_port7000_el

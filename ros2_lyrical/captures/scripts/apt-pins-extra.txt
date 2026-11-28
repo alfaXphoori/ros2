@@ -1,0 +1,9 @@
+ros-lyrical-rmw-cyclonedds-cpp=4.1.5-1resolute.20260915.051853
+ros-lyrical-cyclonedds=11.0.1-4resolute.20260728.175307
+ros-lyrical-iceoryx-posh=2.0.6-1resolute.20260728.174737
+ros-lyrical-ros2trace=8.10.2-1resolute.20260915.082311
+ros-lyrical-tracetools-trace=8.10.2-1resolute.20260728.205922
+ros-lyrical-sros2=0.16.6-1resolute.20260915.080327
+lttng-tools=2.14.1-1build1
+babeltrace2=2.1.2-1build2
+python3-bt2=2.1.2-1build2

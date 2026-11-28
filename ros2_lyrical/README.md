@@ -25,6 +25,7 @@
 - **จะตั้งค่าระบบจริง**: ขั้น 1 → 2 → 5 (ดูตารางเลือกสถาปัตยกรรมในภาค 4 §8) → 6
 - **จะหาหัวข้อวิจัย**: ขั้น 1 → 6 → 8 แล้วย้อนอ่านหัวข้อในภาค 2 ที่ R แต่ละข้ออ้างถึง
 - **จะทำการทดลองซ้ำ**: ขั้น 6 แล้วไปที่หัวข้อ “ทำซ้ำและตรวจผล” ด้านล่าง
+- **ใช้สอนหรือทบทวนตัวเอง**: ต้นแต่ละภาคมีวัตถุประสงค์การเรียนรู้และพื้นฐานที่ควรมี ทำ[แบบฝึกหัด](docs/exercises.md)ของภาคนั้นหลังอ่านจบ (เฉลยใน [answers.md](docs/answers.md)) และเปิด[อภิธานศัพท์](docs/glossary.md)กับ[สรุปย่อหนึ่งหน้า](docs/cheatsheet.md)ไว้ข้างกันระหว่างอ่าน
 
 ## เอกสาร
 
@@ -34,8 +35,12 @@
 |---|---|---|
 | 1 | [docs/01_network_stack_deep_dive.md](docs/01_network_stack_deep_dive.md) | ภาพรวม stack, เทียบกับ OSI, RMW ทั้ง 4 ตัว, discovery, transport, packet anatomy และเส้นทางใน kernel ขา TX/RX |
 | 2 | [docs/02_wire_format_and_kernel.md](docs/02_wire_format_and_kernel.md) | RTPS ระดับ byte, DATA_FRAG/NACK_FRAG, Zenoh framing, การคิด `truesize` ของ SO_RCVBUF, latency budget และหัวข้อวิจัย R1–R9 |
-| 3 | [docs/03_wire_experiments.md](docs/03_wire_experiments.md) | การทดลอง 6 ชุดใน Docker พร้อม pcap เทียบคำทำนายกับสิ่งที่เกิดบนสายจริง |
+| 3 | [docs/03_wire_experiments.md](docs/03_wire_experiments.md) | การทดลอง 17 ชุดใน Docker พร้อม pcap เทียบคำทำนายกับสิ่งที่เกิดบนสายจริง: ชุดที่ 1–6 (frame, fragment, Zenoh, SHM, receive buffer), 7–9 (rcvbuf sweep, latency, tc shaping), 10–13 (Cyclone DDS, Zenoh router ล้ม/ภาพผ่าน Zenoh, DDS tuning), 14–15 (SHM ข้าม container, SROS2 Enforce), 16–17 (QoS บนสาย, trace หนึ่ง sample) |
 | 4 | [docs/04_architectures.md](docs/04_architectures.md) | rmw plugin และ internals ของ middleware 4 ตัว, discovery 3 แบบ, topic/service/action บน DDS และ Zenoh, data path ในเครื่องเดียวกัน 6 ทาง, deployment (LAN, fleet, cloud, micro-ROS), security และตารางเลือกสถาปัตยกรรม |
+| แบบฝึกหัด | [docs/exercises.md](docs/exercises.md) | แบบฝึกหัด 17 ข้อ แยกตามภาค 1–4 (ง่าย → ยาก) ทุกข้อตอบได้จาก pcap, CSV และสคริปต์ใน repo |
+| เฉลย | [docs/answers.md](docs/answers.md) | คำสั่งที่รันจริง ผลที่ได้ และคำอธิบายพร้อมลิงก์ไปยังหัวข้อในเอกสาร |
+| อภิธานศัพท์ | [docs/glossary.md](docs/glossary.md) | คำศัพท์ที่ใช้ในเอกสาร (RTPS, SPDP, DATA_FRAG, `SO_RCVBUF`, `truesize`, Zenoh ฯลฯ) พร้อมหัวข้อที่อธิบาย |
+| สรุปย่อ | [docs/cheatsheet.md](docs/cheatsheet.md) | หนึ่งหน้า: สูตร port, ตัวแปรแวดล้อม, sysctl, คำสั่งที่ใช้บ่อย และตัวเลขหลักที่วัดได้ |
 
 ## หน้า interactive (GitHub Pages)
 
@@ -55,8 +60,8 @@ ros2_lyrical/
 ├── diagrams/        animated SVG 14 ภาพที่เอกสารฝังไว้
 ├── interactive/     data-paths.html, Lyrical Packet Lab (3D, Three.js)
 ├── captures/        pcap จากการทดลอง (กรอง hostname ของเครื่องออกแล้ว)
-│   ├── results/     สรุปผลการทดลองที่ 7–9 (CSV/JSON: rcvbuf sweep, latency, tc shaping)
-│   └── scripts/     Dockerfile, lib.sh, run_experiments.sh, run_rcvbuf_sweep.sh, run_latency.sh และไฟล์ประกอบ
+│   ├── results/     สรุปผลการทดลองที่ 7–17 (CSV/JSON/txt: rcvbuf sweep, latency, tc shaping, tuning, cyclone, zenoh, ipc, sros2, qos, trace)
+│   └── scripts/     Dockerfile (+ Dockerfile.extra), lib.sh, run_experiments.sh, run_rcvbuf_sweep.sh, run_latency.sh, run_tuning.sh, run_cyclone.sh, run_zenoh_extra.sh, run_container_ipc.sh, run_sros2.sh, run_qos.sh, run_trace.sh และไฟล์ประกอบ
 └── tools/           rtps_peek.py (ถอด packet) และสคริปต์สร้าง SVG
 ```
 
@@ -72,9 +77,24 @@ ros2_lyrical/captures/scripts/run_rcvbuf_sweep.sh --help
 # การทดลองที่ 8 (ภาค 3 §10): latency end-to-end 7 config × 30 รอบ (ราว 26 นาที)
 ros2_lyrical/captures/scripts/run_latency.sh --help
 
+# การทดลองที่ 10–17 ใช้ image lyrical-wire:exp-extra (เพิ่ม rmw_cyclonedds_cpp, ros2trace, babeltrace2 จาก Dockerfile.extra)
+cd ros2_lyrical/captures/scripts
+docker build -t lyrical-wire:exp . && docker build -t lyrical-wire:exp-extra -f Dockerfile.extra .
+L=out/exp.lock   # flock -x = การทดลองที่ได้ตัวเลขเวลา/การสูญหาย (รันทีละชุด), flock -s = การทดลองเชิง functional
+flock -s $L ./run_cyclone.sh                 # ชุดที่ 10 (ภาค 3 §13) ราว 20 วินาที
+flock -x $L ./run_zenoh_extra.sh kill        # ชุดที่ 11 (§14) router ล้มกลางทาง 3 รอบ ราว 3.5 นาที
+flock -x $L ./run_zenoh_extra.sh image       # ชุดที่ 12 (§14) ภาพ 640×480 ผ่าน Zenoh ราว 1 นาที
+./run_tuning.sh                              # ชุดที่ 13 (§15) 60 run ราว 19 นาที (ถือ lock เอง; --extra-arms สำหรับ flowctl)
+./run_container_ipc.sh --all 3               # ชุดที่ 14 (§16) SHM ข้าม container 7 แขน × 3 ราว 7 นาที
+./run_sros2.sh --all 3                       # ชุดที่ 15 (§17) SROS2 Enforce ราว 3 นาที (สร้าง keystore ใหม่ใน out/sros2 ทุกครั้ง)
+flock -s $L ./run_qos.sh tl_d1 tl_d10 tl_all vol_d10   # ชุดที่ 16 (§18, ภาค 2 §1.6) ดูรายชื่อ case ใน run_qos.sh
+flock -x $L ./run_trace.sh                   # ชุดที่ 17 (§19, ภาค 2 §6.5) LTTng-UST + tcpdump ราว 1 นาที
+cd -
+
 # ถอด packet จาก pcap โดยไม่ต้องมี tshark (ใช้แค่ Python standard library)
 python3 ros2_lyrical/tools/rtps_peek.py frame ros2_lyrical/captures/exp1_fastdds_default.pcap 95
 python3 ros2_lyrical/tools/rtps_peek.py sms   ros2_lyrical/captures/exp2_image_reliable.pcap.gz NACK_FRAG
+python3 ros2_lyrical/tools/rtps_peek.py sedp  ros2_lyrical/captures/exp16_qos_tl_d10.pcap      # QoS PID ใน SEDP (มี params, stats และ -v ด้วย)
 
 # สร้าง SVG ใหม่ (13 จาก 14 ภาพ; anim-lyrical-packet-path.svg เขียนด้วยมือ)
 python3 ros2_lyrical/tools/gen_stack_osi_svgs.py      ros2_lyrical/diagrams

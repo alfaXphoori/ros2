@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  "fragment <= MTU" arm of run_rcvbuf_sweep.sh (docs/03 §15, experiment 13).
+  Replaces the builtin transports (SHM + UDPv4 with maxMessageSize 65500) by ONE UDPv4 transport
+  whose maxMessageSize is 1400 B, so every RTPS message (and therefore every DATA_FRAG of the
+  921 652 B image) fits in one UDP datagram of <= 1400 B = one IP packet of <= 1428 B on a 1500 B
+  MTU: no IP fragmentation. Side effect: SHM transport removed too (irrelevant between two
+  containers, which do not share /dev/shm). Loaded on BOTH sides via FASTDDS_DEFAULT_PROFILES_FILE.
+  Element names checked against /opt/ros/lyrical/share/fastdds/fastdds_profiles.xsd (Fast DDS 3.6.2).
+-->
+<dds xmlns="http://www.eprosima.com">
+  <profiles>
+    <transport_descriptors>
+      <transport_descriptor>
+        <transport_id>udp_mtu1400</transport_id>
+        <type>UDPv4</type>
+        <maxMessageSize>1400</maxMessageSize>
+      </transport_descriptor>
+    </transport_descriptors>
+    <participant profile_name="mtu1400" is_default_profile="true">
+      <rtps>
+        <userTransports>
+          <transport_id>udp_mtu1400</transport_id>
+        </userTransports>
+        <useBuiltinTransports>false</useBuiltinTransports>
+      </rtps>
+    </participant>
+  </profiles>
+</dds>

@@ -1,0 +1,47 @@
+# environment of this run (written by lib.sh write_env)
+date: 2026-11-27T23:59:00+07:00
+uname -a: Linux <host> 7.0.0-44-generic #44-Ubuntu SMP PREEMPT_DYNAMIC Fri Nov  6 02:38:04 UTC 2026 x86_64 GNU/Linux
+nproc: 8
+cpu: 12th Gen Intel(R) Core(TM) i3-12100
+docker client: 29.1.3
+docker server: 29.1.3
+image lyrical-wire:exp-extra id: sha256:c1286ed1b30d996f11e0aead3d48842a586fecbf3939e0558d54867ecbaeb3f3
+image lyrical-wire:exp-extra created: 2026-11-27T23:42:43.398068618+07:00
+base image (Dockerfile FROM): ros:lyrical-ros-base@sha256:c69a7a39142b0a19c8cc5e80a35e9087e2ae46080dfa0a59961ff72287fdc5f6
+base image local RepoDigests: ["ros@sha256:c69a7a39142b0a19c8cc5e80a35e9087e2ae46080dfa0a59961ff72287fdc5f6"]
+network rosnet: 172.20.0.0/16 gw 172.20.0.1
+
+# sysctl (read only). host = init network namespace of the host;
+# container = a fresh container on rosnet (its own network namespace; values shown are what /proc/sys exposes there)
+host      net.core.rmem_max = 4194304
+host      net.core.rmem_default = 212992
+host      net.core.wmem_max = 4194304
+host      net.core.wmem_default = 212992
+container net.core.rmem_max = 4194304
+container net.core.rmem_default = 212992
+container net.core.wmem_max = 4194304
+container net.core.wmem_default = 212992
+
+# tools inside lyrical-wire:exp-extra
+TShark (Wireshark) 4.6.4.
+tcpdump version 4.99.6
+libpcap version 1.10.6 (64-bit time_t, with TPACKET_V3)
+PRETTY_NAME="Ubuntu 26.04.1 LTS"
+
+# apt pin check inside lyrical-wire:exp-extra (/opt/exp/apt-pin-check.txt; absent if the image predates it)
+OK iproute2 6.19.0-1ubuntu1.1
+OK ros-lyrical-demo-nodes-cpp 0.37.9-1resolute.20260915.065629
+OK ros-lyrical-fastcdr 2.3.6-1resolute.20260728.172850
+OK ros-lyrical-fastdds 3.6.2-1resolute.20260728.174239
+OK ros-lyrical-rclcpp 32.0.3-1resolute.20260915.061505
+OK ros-lyrical-rclpy 10.0.11-1resolute.20260915.061807
+OK ros-lyrical-rmw-fastrtps-cpp 9.4.10-1resolute.20260915.053043
+OK ros-lyrical-rmw-zenoh-cpp 0.10.6-1resolute.20260915.025944
+OK ros-lyrical-ros-base 0.13.0-3resolute.20260919.194435
+OK ros-lyrical-sensor-msgs 5.9.3-1resolute.20260915.051912
+OK ros-lyrical-zenoh-cpp-vendor 0.10.6-1resolute.20260914.173008
+OK tcpdump 4.99.6-1
+OK tshark 4.6.4-1
+
+# ros-lyrical packages: see dpkg_ros_lyrical.txt (211 lines), full list: dpkg_all.txt
+ros2 doctor --report: ok in 5 s -> ros2_doctor.txt

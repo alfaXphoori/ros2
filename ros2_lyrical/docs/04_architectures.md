@@ -21,6 +21,16 @@
 | 7. สถาปัตยกรรมสำหรับงาน real-time | (ตาราง) |
 | 8. ตารางเลือกสถาปัตยกรรม | (ตาราง) |
 
+**วัตถุประสงค์การเรียนรู้** อ่านภาคนี้จบแล้วควรทำได้ดังนี้
+1. อธิบายว่า rmw เป็น plugin อย่างไร และสิ่งใดเปลี่ยนเมื่อสลับ `RMW_IMPLEMENTATION` (§1)
+2. เปรียบเทียบ discovery 3 แบบ (simple, Discovery Server, Zenoh router) ด้าน multicast, single point of failure และ traffic (§2)
+3. แปลง topic/service/action ของ ROS เป็น endpoint ของ DDS และ Zenoh (§3)
+4. เลือก data path ในเครื่องเดียวกัน, รูปแบบ deployment และ security ให้เหมาะกับโจทย์ โดยอ้างตัวเลขที่วัดได้ในภาค 3 (§4–§8)
+
+**พื้นฐานที่ควรมี** ภาค 1 §0–§4 · แนวคิด ROS 2 เรื่อง service/action, QoS และ domain id · LAN, multicast และ NAT · PKI เบื้องต้น (certificate, CA) สำหรับ §6
+
+แบบฝึกหัด: [exercises.md ภาค 4](exercises.md#ภาค-4) · คำศัพท์: [glossary.md](glossary.md) · สรุปย่อหนึ่งหน้า: [cheatsheet.md](cheatsheet.md)
+
 ---
 
 ## 1. rmw เป็น plugin: middleware 4 ตัวหลัง C ABI เดียวกัน
@@ -190,6 +200,94 @@ syntax ของค่า array ใน `ZENOH_CONFIG_OVERRIDE` ควรตร�
 | DDS ภายใน + `zenoh-bridge-ros2dds` | ระบบเดิมที่ต้องต่อ cloud โดยไม่เปลี่ยน RMW | เพิ่ม hop และเพิ่ม process ที่ต้องดูแล |
 | micro-ROS + agent | sensor/actuator บน MCU | ผูกกับ DDS, bandwidth ของ serial ต่ำ |
 
+### 5.5 Container และ Kubernetes
+
+**Docker บนเครื่องเดียว** [V: การทดลองที่ 14 ใน[ภาค 3 §16](03_wire_experiments.md#16-การทดลองที่-14-fast-dds-shm-ข้าม-container-ipc-namespace) ยกเว้นที่ระบุ]
+
+| ตัวเลือก | discovery | เส้นทางของ user data (Fast DDS default) | หมายเหตุ |
+|---|---|---|---|
+| bridge network เดียวกัน (default) | SPDP multicast ภายใน bridge ใช้ได้ [V: ทุกแขนในภาค 3] | **UDP** ผ่าน veth แม้จะแชร์ `/dev/shm` ด้วย `--ipc=container:` หรือ tmpfs volume ร่วมกัน | Fast DDS ใช้ SHM เฉพาะเมื่อ "host id" ใน SHM locator ของอีกฝั่งตรงกับของตัวเอง และค่านี้ต่างกันเมื่อ IP ต่างกัน (ดู §16) |
+| bridge คนละ host | multicast ไม่ข้าม host; container ประกาศ IP ภายใน bridge ซึ่ง host อื่น route ไม่ถึง (ปัญหาเดียวกับ NAT) [K] | ไปไม่ถึง | port mapping (`-p`) ช่วยไม่ได้เพราะ port ของ RTPS คำนวณจาก domain และ participant ID (สูตรในภาค 3 §2 แถว dst port) และ IP อยู่ใน payload ใช้ `--net=host`, Discovery Server + routable IP หรือ Zenoh แทน |
+| `--network container:<A>` (netns เดียวกัน) แต่ IPC แยก | ได้ | **ไม่มีข้อมูลถึงผู้รับเลย** ในการทดลองที่ 14: Fast DDS เลือก SHM (host id ตรงกัน) แต่ segment อยู่คนละ `/dev/shm` และไม่ถอยกลับไป UDP | กับดักที่เงียบ: ไม่มี error ใน log ต้องบังคับ `FASTDDS_BUILTIN_TRANSPORTS=UDPv4` หรือแชร์ IPC ด้วย |
+| `--network container:<A>` + `--ipc=container:<A>` | ได้ | **SHM** (ไม่มี user DATA บน interface ใด) | ตรงกับ container หลายตัวใน pod เดียวกันของ Kubernetes |
+| `--net=host` (ไม่ได้รัน เพราะแตะ network ของ host) | multicast บน LAN จริง | [K] ถ้า container ทุกตัวใช้ `--net=host` ก็มี IP ชุดเดียวกับ host จึงได้ host id เดียวกัน: ต้องใช้ `--ipc=host` (หรือแชร์ `/dev/shm`) ด้วย มิฉะนั้นเข้ากรณีแถวที่ 3 | `--net=host` เทียบได้กับแขน `c_net`/`c_both` ของ §16 ในแง่ "netns เดียวกัน" แต่ไม่ได้ verify โดยตรง |
+
+ข้อควรรู้เรื่อง `/dev/shm` [V: `ls -la /dev/shm` ในการทดลองที่ 14]
+- Docker ให้ `/dev/shm` ขนาด **64 MB** ต่อ container เป็นค่าเริ่มต้น (`df` เห็น `shm 64M`) participant ของ Fast DDS หนึ่งตัวใช้ segment 549 408 B (512 KiB + header) บวก port file 52 400 B ต่อ port ดังนั้น node เล็กไม่กี่ตัวไม่ชนขีดนี้ แต่ระบบที่มีหลายสิบ participant หรือตั้ง segment ใหญ่สำหรับภาพ/point cloud ควรตั้ง `--shm-size` (เมื่อ segment เต็ม Fast DDS ทิ้งเงียบ ภาค 2 §3.4)
+- ไฟล์ใน `/dev/shm` ถูกสร้างเป็นของ user ที่รัน process ด้วย mode `rw-r--r--` (เห็น `root root` ทุกไฟล์ในการทดลองนี้) ถ้า container สองตัวแชร์ `/dev/shm` แต่รันด้วย UID ต่างกัน ฝั่งหนึ่งจะเปิด segment ของอีกฝั่งเพื่อเขียนไม่ได้ [K: ไม่ได้ทดลองกรณี UID ต่างกัน] ให้รันด้วย UID เดียวกัน
+- port ของ SHM ก็ใช้ชื่อตามสูตร port ของ UDP (`fastdds_port<port>`) เมื่อแชร์ `/dev/shm` ระหว่าง container ที่ netns ต่างกัน participant ที่เริ่มทีหลังจะเลื่อนไปใช้ participant ID ถัดไป (เห็น port 10911 และ 10913 พร้อมกันใน domain 14) เพราะชื่อ port ชนกันใน `/dev/shm` แม้ UDP port จะไม่ชน
+
+**Kubernetes (ทั้งหมดในส่วนนี้เป็น [K]/protocol: ไม่มี cluster ในการทดลองชุดนี้ ไม่ได้รัน manifest ใดเลย)**
+
+ปัญหาใน Kubernetes คือปัญหาเดียวกับ Docker แต่ควบคุม network ได้น้อยกว่า: pod ได้ IP จาก CNI plugin ซึ่งอาจไม่ส่ง multicast ต่อ ดังนั้น simple discovery (SPDP multicast 239.255.0.1:7400) อาจใช้ไม่ได้ทั้งที่ unicast ข้าม node ทำงานปกติ
+
+| ทางเลือก | discovery | ข้อดี | ข้อเสีย |
+|---|---|---|---|
+| CNI ที่ส่ง multicast (เช่น Multus + `macvlan`/`ipvlan` เป็น interface ที่สองบน LAN จริง; Weave Net เคยรองรับ multicast) | simple discovery ตามปกติ | ไม่ต้องแก้ config ของ ROS | ขึ้นกับ CNI และรุ่น [K: flannel และ Calico โดยทั่วไปไม่ส่ง multicast ระหว่าง pod, Cilium มีฟีเจอร์ multicast ในบางรุ่นและบางโหมด] **ตรวจเอกสารของ CNI รุ่นที่ใช้** ก่อนพึ่ง |
+| `hostNetwork: true` | simple discovery บน LAN ของ node | เหมือน `--net=host` ใน Docker, หุ่นยนต์นอก cluster เห็น pod ได้ | ชน port กันได้ (participant ID จะเลื่อน), pod เห็น network ของ node ทั้งหมด, ต้องมีสิทธิ์ใน policy ของ cluster |
+| Fast DDS Discovery Server เป็น Deployment (1 replica) หรือ StatefulSet + headless Service | unicast ไปยัง server ที่ชื่อ DNS คงที่ | ไม่พึ่ง multicast, จำนวน discovery traffic เป็น O(n) | server เป็นจุดเดียว (รัน 2 ตัวแล้วใส่ทั้งคู่ใน `ROS_DISCOVERY_SERVER`), CLI ต้องเป็น super client |
+| initial peers / `ROS_STATIC_PEERS` + `ROS_AUTOMATIC_DISCOVERY_RANGE` | unicast ไปยังรายชื่อที่กำหนด | ไม่ต้องมี process เพิ่ม | ต้องรู้ชื่อ/IP ของ peer ล่วงหน้า (headless Service ช่วยได้) |
+| `rmw_zenoh_cpp` + router เป็น Deployment + Service (หรือ DaemonSet: router ต่อ node) | node ต่อ TCP ไปยัง router | TCP ผ่าน Service/NAT ได้, ไม่พึ่ง multicast | router เป็น hop เพิ่ม, ต้องตั้ง `connect/endpoints` ทุก pod |
+
+ข้อควรรู้
+- discovery ได้แล้วไม่ได้แปลว่าข้อมูลไปถึง: DDS ประกาศ **IP ของ pod เอง** ใน locator (ภาค 3 §2) ภายใน cluster ที่ pod network แบน (ทุก pod route ถึงกัน) ใช้ได้ แต่ node นอก cluster ที่มองเห็นแค่ Service/NodePort จะได้ locator ที่ route ไม่ถึง (ปัญหาเดียวกับ NAT ใน Docker) และการ map port ของ Service ใช้ไม่ได้กับ DDS เพราะ port ถูกคำนวณจาก domain และ participant ID (ภาค 1 §2, ภาค 2 §1.3) ทางออกคือ `hostNetwork`, Zenoh, หรือ bridge
+- container หลายตัวใน **pod เดียวกัน** ใช้ network namespace ร่วมกัน และโดยทั่วไปใช้ IPC namespace ร่วมกันด้วย [K: ขึ้นกับ container runtime] ซึ่งตรงกับแขน `c_both` ของการทดลองที่ 14 ถ้าต้องการ SHM ให้แน่ใจว่า `/dev/shm` เป็นอันเดียวกันและใหญ่พอ: mount `emptyDir` ที่ `medium: Memory` ไว้ที่ `/dev/shm` ในทุก container ของ pod (ขนาดนับรวมใน memory limit ของ pod) ข้าม pod ไม่มีทาง SHM นอกจาก `hostIPC: true` ซึ่งเปิด IPC ของ node ให้ pod (ข้อควรระวังด้าน security เทียบเท่า `--ipc=host`)
+- ถ้า container ใน pod เดียวกันใช้ netns ร่วมกันแต่ไม่ได้เห็น `/dev/shm` เดียวกัน จะตรงกับแขน `c_net` ของการทดลองที่ 14 (ดูผลในภาค 3 §16) ทางที่ปลอดภัยคือบังคับ `FASTDDS_BUILTIN_TRANSPORTS=UDPv4` ใน container เหล่านั้น
+
+ตัวอย่าง manifest **(template ที่ไม่ได้รัน [K]: ตรวจ field กับเอกสาร Kubernetes และ Fast DDS รุ่นที่ใช้)**
+
+Discovery Server เป็น StatefulSet 1 replica + headless Service ให้ชื่อ DNS คงที่
+```yaml
+apiVersion: v1
+kind: Service
+metadata: {name: fastdds-ds, namespace: ros}
+spec:
+  clusterIP: None              # headless: DNS ชี้ไปที่ IP ของ pod โดยตรง
+  selector: {app: fastdds-ds}
+  ports: [{name: ds, port: 11811, protocol: UDP}]
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata: {name: fastdds-ds, namespace: ros}
+spec:
+  serviceName: fastdds-ds
+  replicas: 1
+  selector: {matchLabels: {app: fastdds-ds}}
+  template:
+    metadata: {labels: {app: fastdds-ds}}
+    spec:
+      containers:
+      - name: ds
+        image: <image ที่มี ros-lyrical-fastdds>
+        command: ["bash", "-c", "source /opt/ros/lyrical/setup.bash && fastdds discovery --server-id 0 --port 11811"]
+# node ทุก pod:  env ROS_DISCOVERY_SERVER=fastdds-ds-0.fastdds-ds.ros.svc.cluster.local:11811
+# (ใช้ชื่อ DNS ได้หรือไม่และ CLI ของ fastdds discovery ในรุ่น 3.6 ให้ตรวจก่อน ดูหัวข้อ 9 ข้อ 3)
+```
+
+pod เดียวที่มี 2 container ใช้ SHM ร่วมกัน (เทียบแขน `c_both`)
+```yaml
+spec:
+  volumes:
+  - name: dshm
+    emptyDir: {medium: Memory, sizeLimit: 256Mi}
+  containers:
+  - name: camera
+    volumeMounts: [{name: dshm, mountPath: /dev/shm}]
+  - name: perception
+    volumeMounts: [{name: dshm, mountPath: /dev/shm}]
+```
+
+Zenoh: router เป็น Deployment + Service แล้วให้ทุก pod ต่อออกไปหา router
+```yaml
+env:
+- name: RMW_IMPLEMENTATION
+  value: rmw_zenoh_cpp
+- name: ZENOH_CONFIG_OVERRIDE
+  value: 'connect/endpoints=["tcp/zenoh-router.ros.svc.cluster.local:7447"]'
+```
+ในโหมด default ของ rmw_zenoh router ทำหน้าที่ discovery (gossip) แล้ว session ของ node ต่อ TCP ตรงถึงกัน ข้อมูลไม่ผ่าน router [V: ภาค 3 §4] ใน Kubernetes จึงต้องให้ pod IP route ถึงกันด้วย (pod network แบนใน cluster เดียวกันได้ตามปกติ) ส่วนทางเลือก router ต่อ node (DaemonSet) ให้ router ของแต่ละ node ต่อถึงกัน [K]
+
+
 ---
 
 ## 6. Security architecture
@@ -225,6 +323,22 @@ syntax ของค่า array ใน `ZENOH_CONFIG_OVERRIDE` ควรตร�
 | สิทธิ์ | permissions XML ต่อ topic (publish/subscribe) | ACL ต่อ key expression บน router |
 | ภาระ CPU | crypto ต่อ sample ต่อ reader (แล้วแต่ governance) | crypto ต่อ byte บน link |
 | ผ่าน NAT | ไม่ได้ (เป็นข้อจำกัดของ DDS ไม่ใช่ของ security) | ได้ |
+
+### 6.3 SROS2 ที่วัดจริง
+
+Fast DDS 3.6.2 จาก apt มี security plugin ครบ และ SROS2 Enforce ทำงานได้ใน container โดยไม่ต้องตั้งอะไรเพิ่ม ตัวเลขทั้งหมดมาจาก talker/listener 2 container บน veth เครื่องเดียว, governance default ของ `ros2 security create_keystore` (เข้ารหัส discovery, liveliness, metadata และ data; ลงนาม RTPS message) [V: [ภาค 3 §17](03_wire_experiments.md#17-การทดลองที่-15-sros2-enforce-บนสาย)]
+
+| สิ่งที่วัด | ไม่มี security | SROS2 Enforce |
+|---|---|---|
+| SPDP `DATA(p)` | 610 B | 838 B (เพิ่ม identity/permissions token) และ**ยังเป็นข้อความเปิด** |
+| authentication handshake | – | 3 message รวม 12 150 B (Request 5 536, Reply 5 824, Final 790 B; Request/Reply ถูกตัดเป็น IP fragment 4 ชิ้น) + crypto token 32 frame |
+| SPDP แรก → sample แรก (publisher 1 kHz, median 3 รอบ) | 113.5 ms | 233.6 ms (+~120 ms ต่อคู่ participant) |
+| byte บนสายในช่วงนั้น | 32 688 B | 78 648–85 198 B |
+| frame ของ `"Hello World: N"` หนึ่ง sample | 198 B | 426 B (+228 B: `SRTPS_PREFIX`/`POSTFIX` + `INFO_SRC` + `SEC_*` ครอบ `INFO_TS` และ `DATA` แยกกัน) |
+| CPU ต่อ 10 000 sample (rclpy) | – | แยกไม่ออกจาก noise ของ harness |
+
+สิ่งที่ยังเป็นเชิงคุณภาพหรือยังไม่ได้วัด: เวลา handshake เมื่อมีหลาย participant (handshake เป็นต่อคู่ จำนวนคู่จึงโตแบบ n²) [K], CPU ของ AES-GCM กับ message ใหญ่, governance แบบอื่น และ Zenoh TLS ข้อสังเกตเชิงออกแบบจากการวัด: SPDP, `enclave=…`, ชื่อผู้ใช้ใน `fastdds.physical_data.user`, permissions XML (รายการ topic ที่อนุญาต) และ statistics submessage `0x80` ของ Fast DDS ยังอ่านได้บนสาย การเปิด SROS2 จึงปกป้อง payload และชื่อ topic แต่ไม่ได้ซ่อนว่ามี participant ใด enclave อะไรอยู่ในเครือข่าย
+
 
 ---
 
@@ -265,6 +379,8 @@ syntax ของค่า array ใน `ZENOH_CONFIG_OVERRIDE` ควรตร�
 4. พฤติกรรมของ `zenoh_security_tools` และรูปแบบ config ที่สร้าง
 5. micro-ROS กับ Lyrical และ syntax ของ `ZENOH_CONFIG_OVERRIDE` สำหรับค่าแบบ array
 6. พฤติกรรมเมื่อ `rmw_zenohd` ตายระหว่างทำงาน (node ที่ match กันแล้วยังส่งข้อมูลได้หรือไม่ และ node ใหม่หากันเจอหรือไม่) เป็นการทดลองที่ทำได้ทันทีด้วยชุด Docker ของภาค 3
+7. ทุกอย่างเกี่ยวกับ Kubernetes ในหัวข้อ 5.5 (CNI กับ multicast, `hostNetwork`, manifest ตัวอย่าง, การแชร์ IPC ภายใน pod) ไม่มี cluster ให้ทดลอง ส่วน Docker ในหัวข้อเดียวกัน verify แล้วยกเว้น `--net=host`/`--ipc=host` และกรณี UID ต่างกัน (ภาค 3 §16)
+8. SROS2 (หัวข้อ 6.3): เวลา handshake เมื่อมีหลาย participant, CPU ของ crypto กับ message ใหญ่ (harness rclpy แยกไม่ออก) และ Zenoh TLS ยังไม่ได้วัด
 
 ## 10. แหล่งอ้างอิง
 

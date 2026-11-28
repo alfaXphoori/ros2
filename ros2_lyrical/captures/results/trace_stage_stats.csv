@@ -1,0 +1,14 @@
+from,to,n,median_ns,min_ns,max_ns
+rclcpp_publish,rcl_publish,35,1176,315,1539
+rcl_publish,source_timestamp,35,970,134,1393
+source_timestamp,rmw_publish,35,228,63,551
+rmw_publish,frame_tx_A_eth0,35,113935,37643,141123
+frame_tx_A_eth0,frame_rx_B_eth0,35,20273,7319,31972
+frame_rx_B_eth0,rmw_take,35,258021,84234,331674
+rmw_take,rcl_take,35,2326,575,2791
+rcl_take,rclcpp_take,35,1529,484,1714
+rclcpp_take,callback_start,35,3471,1129,4277
+callback_start,callback_end,35,91372,37423,4237079
+rclcpp_publish,callback_start,35,404316,131896,481042
+rmw_publish,rmw_take,35,394737,129196,471296
+frame_rx_B_eth0,callback_start,35,264989,86422,339275

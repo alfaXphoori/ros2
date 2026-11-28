@@ -37,6 +37,9 @@ FIELDS = [
     # qdisc stats (root qdisc on eth0) after the run
     'tcA_pkts', 'tcA_dropped', 'tcA_overlimits', 'tcB_pkts', 'tcB_dropped', 'tcB_overlimits',
     'exit_A', 'exit_B', 'wall_s', 'note',
+    # added for docs/03 §13 and §15 (columns appended so older runs.csv files keep their meaning)
+    'rmw', 'env_extra', 'sd_frames', 'sd_bytes', 'ds_frames', 'ds_bytes', 'tcp_sd_segs', 'tcp_sd_payload',
+    'tcp_sd_retrans', 'acknack', 'heartbeat', 'lat_ms_med', 'lat_ms_max', 'lat_n',
 ]
 
 
@@ -106,6 +109,14 @@ def row(prefix, kv, port):
     r['delivered'] = len(re.findall(r' got ', lg))
     tl = read(prefix + '.talker.log')
     r['published'] = len(re.findall(r'\bpublished \d+', tl)) if tl is not None else ''
+    # delivery latency from the ROS log timestamps (same host clock in both containers):
+    # time of the subscriber's 'got f<k>' line minus time of the publisher's 'published <k>' line,
+    # which rclpy writes right after publish() returned.
+    tp = {m.group(2): float(m.group(1)) for m in re.finditer(r'\[(\d+\.\d+)\] \[img_pub\]: published (\d+)', tl or '')}
+    lat = [(float(m.group(1)) - tp[m.group(2)]) * 1e3
+           for m in re.finditer(r'\[(\d+\.\d+)\] \[img_sub\]: got f(\d+) ', lg) if m.group(2) in tp]
+    if lat:
+        r['lat_ms_med'] = round(statistics.median(lat), 2); r['lat_ms_max'] = round(max(lat), 2); r['lat_n'] = len(lat)
     b0, b1 = snmp(read(prefix + '.snmp0_B.txt')), snmp(read(prefix + '.snmp1_B.txt'))
     for k in ('InDatagrams', 'InErrors', 'RcvbufErrors', 'NoPorts'):
         r['B_' + k] = delta(b0, b1, ('Udp', k))
@@ -193,7 +204,8 @@ def summary(out, files, only=None, shape=None):
             'sn_complete_min', 'nackfrag_mean', 'nackfrag_min', 'nackfrag_max', 'retrans_mean', 'retrans_min', 'retrans_max',
             'burst_ms_med', 'dgram_us_med', 'gap_us_med', 'image_wire_us_1g',
             'A_sndbuferr_max', 'tcA_pkts_med', 'tcA_dropped_sum', 'tcA_overlimits_med', 'tcpdump_dropped_max',
-            'shm_files_B', 'run_ids']
+            'shm_files_B', 'lat_ms_med', 'lat_ms_max', 'sd_frames_per_img', 'sd_bytes_per_img', 'tcp_sd_payload_mean',
+            'tcp_sd_retrans_mean', 'acknack_mean', 'heartbeat_mean', 'ds_frames_mean', 'rmw', 'run_ids']
     with open(out, 'w', newline='') as f:
         w = csv.writer(f)
         w.writerow(cols)
@@ -225,6 +237,13 @@ def summary(out, files, only=None, shape=None):
                         fmt(st('A_SndbufErrors', max)), fmt(st('tcA_pkts', statistics.median)), fmt(st('tcA_dropped', sum)),
                         fmt(st('tcA_overlimits', statistics.median)), fmt(st('tcpdump_dropped', max)),
                         '/'.join(sorted({r['shm_files_B'] for r in g})),
+                        fmt(st('lat_ms_med', statistics.median), 2), fmt(st('lat_ms_max', max), 2),
+                        fmt(sum(vals('sd_frames')) / sum(pb), 1) if pb and sum(pb) and vals('sd_frames') else '',
+                        fmt(sum(vals('sd_bytes')) / sum(pb), 0) if pb and sum(pb) and vals('sd_bytes') else '',
+                        fmt(st('tcp_sd_payload', statistics.mean), 0), fmt(st('tcp_sd_retrans', statistics.mean)),
+                        fmt(st('acknack', statistics.mean)), fmt(st('heartbeat', statistics.mean)),
+                        fmt(st('ds_frames', statistics.mean)),
+                        '/'.join(sorted({r.get('rmw') or '' for r in g})),
                         ' '.join(r['run_id'] for r in g)])
     print(f'wrote {out} ({len(groups)} groups, {sum(len(g) for g in groups.values())} runs)')
 

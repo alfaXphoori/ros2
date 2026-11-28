@@ -20,6 +20,11 @@ Used by run_rcvbuf_sweep.sh (docs/03 §9 and §11). Prints ONE JSON object on st
   image_wire_us_1g    the same image on 1000BASE-T: (bytes + 24 B per frame for FCS 4 +
                       preamble/SFD 8 + inter-frame gap 12) * 8 / 1e9 s      (a calculation, not a measurement)
 
+  sd_frames/sd_bytes, ds_frames/ds_bytes   all IPv4 frames (and Ethernet bytes) sender->receiver / back
+  tcp_sd_segs/tcp_sd_payload/tcp_sd_retrans TCP segments with payload sender->receiver, payload bytes,
+                      segments whose (port, seq, len) repeats (retransmissions)
+  acknack / heartbeat ACKNACK submessages receiver->sender / HEARTBEAT submessages sender->receiver (UDP)
+
 Timestamps are what tcpdump wrote (microsecond pcap, so gaps are multiples of 1 us). Only frames from --src to --dst are
 counted as data; NACK_FRAG is counted from --dst to --src.
 
@@ -60,7 +65,7 @@ def ip_udp(pkt):
     ihl = (ip[0] & 15) * 4
     fo = struct.unpack('>H', ip[6:8])[0]
     return dict(proto=ip[9], src='.'.join(map(str, ip[12:16])), dst='.'.join(map(str, ip[16:20])),
-                foff=(fo & 0x1fff) * 8, l4=ip[ihl:], id=struct.unpack('>H', ip[4:6])[0])
+                foff=(fo & 0x1fff) * 8, mf=bool(fo & 0x2000), l4=ip[ihl:], id=struct.unpack('>H', ip[4:6])[0])
 
 
 def submessages(payload):
@@ -91,21 +96,50 @@ def main():
     dg = {}                      # (ip id) -> {'t0','t1','n','bytes','ts':[...]}  for src->dst fragmented/UDP datagrams
     dg_key = {}                  # ip id -> list of (writer, sn, fragStart, inSub, fragSize, sampleSize)
     nack = 0
-    for _, ts, pkt in frames(path):
+    # extra counters (docs/03 §13 and §15): all frames/bytes per direction, TCP payload sender->receiver
+    # (FASTDDS_BUILTIN_TRANSPORTS=LARGE_DATA moves user data to TCP), ACKNACK/HEARTBEAT submessages
+    sd_frames = sd_bytes = ds_frames = ds_bytes = 0
+    tcp_segs = tcp_payload = tcp_retrans = 0; tcp_seen = set()
+    acknack = heartbeat = 0
+    for idx, (_, ts, pkt) in enumerate(frames(path)):
         n_frames += 1
         d = ip_udp(pkt)
-        if d is None or d['proto'] != 17:
+        if d is None:
+            continue
+        if d['src'] == src and d['dst'] == dst:
+            sd_frames += 1; sd_bytes += len(pkt)
+        elif d['src'] == dst and d['dst'] == src:
+            ds_frames += 1; ds_bytes += len(pkt)
+        if d['proto'] == 6 and d['src'] == src and d['dst'] == dst and len(d['l4']) >= 20:
+            th = d['l4']; doff = (th[12] >> 4) * 4; pl = len(th) - doff
+            if pl > 0:
+                key = (th[0:4], struct.unpack('>I', th[4:8])[0], pl)
+                tcp_segs += 1; tcp_payload += pl
+                if key in tcp_seen:
+                    tcp_retrans += 1
+                tcp_seen.add(key)
+            continue
+        if d['proto'] != 17:
             continue
         if d['src'] == dst and d['dst'] == src and d['foff'] == 0:
             for sid, e, body in submessages(d['l4'][8:]):
                 if sid == 0x12:
                     nack += 1
+                elif sid == 0x06:
+                    acknack += 1
             continue
         if d['src'] != src or d['dst'] != dst:
             continue
-        rec = dg.get(d['id'])
+        if d['foff'] == 0:
+            for sid, e, body in submessages(d['l4'][8:]):
+                if sid == 0x07:
+                    heartbeat += 1
+        # An unfragmented datagram (offset 0, MF clear) is its own record: the 16-bit IP ID is not
+        # guaranteed unique for DF packets, so keying them by IP ID alone could merge different datagrams.
+        dkey = ('u', idx) if (d['foff'] == 0 and not d['mf']) else d['id']
+        rec = dg.get(dkey)
         if rec is None or (d['foff'] == 0 and rec.get('have_first')):
-            rec = dg[d['id']] = {'t0': ts, 't1': ts, 'n': 0, 'bytes': 0, 'ts': []}
+            rec = dg[dkey] = {'t0': ts, 't1': ts, 'n': 0, 'bytes': 0, 'ts': []}
         rec['t0'] = min(rec['t0'], ts); rec['t1'] = max(rec['t1'], ts)
         rec['n'] += 1; rec['bytes'] += len(pkt); rec['ts'].append(ts)
         if d['foff'] == 0:
@@ -120,7 +154,7 @@ def main():
                     ssz = struct.unpack(e + 'I', body[28:32])[0]
                     keys.append((writer, (hi << 32) | lo, fs, insub, fsz, ssz))
             if keys:
-                dg_key[d['id']] = keys
+                dg_key[dkey] = keys
                 rec['keys'] = keys
 
     total = 0; seen = set(); per_sn = defaultdict(set); nfrag_needed = {}
@@ -181,6 +215,9 @@ def main():
         'image_frame_bytes': img_bytes,
         'image_frames': img_frames,
         'image_wire_us_1g': round((img_bytes + 24 * img_frames) * 8 / 1e9 * 1e6, 1) if img_bytes else None,
+        'sd_frames': sd_frames, 'sd_bytes': sd_bytes, 'ds_frames': ds_frames, 'ds_bytes': ds_bytes,
+        'tcp_sd_segs': tcp_segs, 'tcp_sd_payload': tcp_payload, 'tcp_sd_retrans': tcp_retrans,
+        'acknack': acknack, 'heartbeat': heartbeat,
     }
     print(json.dumps(out))
     return 0

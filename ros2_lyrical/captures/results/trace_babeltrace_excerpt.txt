@@ -1,0 +1,18 @@
+# babeltrace2 output (realtime via metadata offset, UTC) for N=10; only events between rclcpp_publish-2us and callback_end+2us
+## A
+[2026-11-27 16:53:42.197331018] (+0.000028543) e_trc_a ros2:rclcpp_publish: { cpu_id = 4 }, { vpid = 71, vtid = 71, procname = "talker" }, { message = 0x606B01CCFE20 }
+[2026-11-27 16:53:42.197331468] (+0.000000450) e_trc_a ros2:rcl_publish: { cpu_id = 4 }, { vpid = 71, vtid = 71, procname = "talker" }, { publisher_handle = 0x606B01CACD80, message = 0x606B01CCFE20 }
+[2026-11-27 16:53:42.197331949] (+0.000000481) e_trc_a ros2:rmw_publish: { cpu_id = 4 }, { vpid = 71, vtid = 71, procname = "talker" }, { rmw_publisher_handle = 0x606B01CCD770, message = 0x606B01CCFE20, timestamp = 1795798422197331881 }
+[2026-11-27 16:53:42.197415971] (+0.000084022) e_trc_a ros2:callback_end: { cpu_id = 4 }, { vpid = 71, vtid = 71, procname = "talker" }, { callback = 0x606B01C9F1B8 }
+[2026-11-27 16:53:42.197418735] (+0.000002764) e_trc_a ros2:rclcpp_executor_get_next_ready: { cpu_id = 4 }, { vpid = 71, vtid = 71, procname = "talker" }, { }
+[2026-11-27 16:53:42.197421472] (+0.000002737) e_trc_a ros2:rclcpp_executor_wait_for_work: { cpu_id = 4 }, { vpid = 71, vtid = 71, procname = "talker" }, { timeout = -1 }
+## B
+[2026-11-27 16:53:42.197508071] (+0.999492056) e_trc_b ros2:rclcpp_executor_get_next_ready: { cpu_id = 1 }, { vpid = 71, vtid = 71, procname = "listener" }, { }
+[2026-11-27 16:53:42.197510716] (+0.000002645) e_trc_b ros2:rclcpp_executor_execute: { cpu_id = 1 }, { vpid = 71, vtid = 71, procname = "listener" }, { handle = 0x5A3004DE85D0 }
+[2026-11-27 16:53:42.197546466] (+0.000035750) e_trc_b ros2:rmw_take: { cpu_id = 1 }, { vpid = 71, vtid = 71, procname = "listener" }, { rmw_subscription_handle = 0x5A3004DF1840, message = 0x5A3004E04750, source_timestamp = 1795798422197331881, taken = 1 }
+[2026-11-27 16:53:42.197548636] (+0.000002170) e_trc_b ros2:rcl_take: { cpu_id = 1 }, { vpid = 71, vtid = 71, procname = "listener" }, { message = 0x5A3004E04750 }
+[2026-11-27 16:53:42.197550191] (+0.000001555) e_trc_b ros2:rclcpp_take: { cpu_id = 1 }, { vpid = 71, vtid = 71, procname = "listener" }, { message = 0x5A3004E04750 }
+[2026-11-27 16:53:42.197553738] (+0.000003547) e_trc_b ros2:callback_start: { cpu_id = 1 }, { vpid = 71, vtid = 71, procname = "listener" }, { callback = 0x5A3004DE82D0, is_intra_process = 0 }
+[2026-11-27 16:53:42.201643169] (+0.004089431) e_trc_b ros2:rcl_publish: { cpu_id = 1 }, { vpid = 71, vtid = 71, procname = "listener" }, { publisher_handle = 0x7FFE93E8F878, message = 0x7FFE93E8F8D0 }
+[2026-11-27 16:53:42.201646204] (+0.000003035) e_trc_b ros2:rmw_publish: { cpu_id = 1 }, { vpid = 71, vtid = 71, procname = "listener" }, { rmw_publisher_handle = 0x5A3004C7C870, message = 0x7FFE93E8F8D0, timestamp = 1795798422201645444 }
+[2026-11-27 16:53:42.201684383] (+0.000038179) e_trc_b ros2:callback_end: { cpu_id = 1 }, { vpid = 71, vtid = 71, procname = "listener" }, { callback = 0x5A3004DE82D0 }

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  "flowctl" arm of run_rcvbuf_sweep.sh (docs/03 §15, experiment 13, optional variant).
+  A FIFO flow controller limited to 125000 B per 1 ms period (= 1 Gbit/s average) registered on the
+  participant. rmw_fastrtps uses it only if the DataWriter QoS names it, which the XML can do with a
+  default data_writer profile (publishMode/flowControllerName). Builtin transports untouched.
+  Loaded on BOTH sides via FASTDDS_DEFAULT_PROFILES_FILE (the subscriber side ignores it).
+  Element names checked against /opt/ros/lyrical/share/fastdds/fastdds_profiles.xsd (Fast DDS 3.6.2).
+-->
+<dds xmlns="http://www.eprosima.com">
+  <profiles>
+    <participant profile_name="flowctl_participant" is_default_profile="true">
+      <rtps>
+        <flow_controller_descriptor_list>
+          <flow_controller_descriptor>
+            <name>fc_1gbit</name>
+            <scheduler>FIFO</scheduler>
+            <max_bytes_per_period>125000</max_bytes_per_period>
+            <period_ms>1</period_ms>
+          </flow_controller_descriptor>
+        </flow_controller_descriptor_list>
+      </rtps>
+    </participant>
+    <data_writer profile_name="flowctl_writer" is_default_profile="true">
+      <qos>
+        <publishMode>
+          <kind>ASYNCHRONOUS</kind>
+          <flow_controller_name>fc_1gbit</flow_controller_name>
+        </publishMode>
+      </qos>
+    </data_writer>
+  </profiles>
+</dds>

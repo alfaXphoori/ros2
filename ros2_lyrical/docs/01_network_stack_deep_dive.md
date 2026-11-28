@@ -17,6 +17,19 @@
 >
 > **ภาค 2 (ลึกกว่า):** [02_wire_format_and_kernel.md](02_wire_format_and_kernel.md) ครอบคลุม discovery ระดับ byte, reliable protocol และ DATA_FRAG, Fast DDS internals, Zenoh framing, การนับ `SO_RCVBUF`, latency/CPU budget และหัวข้อวิจัย R1–R9
 
+**วัตถุประสงค์การเรียนรู้** อ่านภาคนี้จบแล้วควรทำได้ดังนี้
+1. อธิบายเส้นทางของ sample จาก `publish()` ผ่าน rcl → rmw → middleware → syscall และบอกได้ว่า copy เกิดที่ใด (§1–§2, §4)
+2. เปรียบเทียบ RMW 4 ตัวของ Lyrical ในด้าน discovery, SHM default และ daemon ที่ต้องรัน (§3, ตาราง §3.4)
+3. คำนวณ UDP port ของ RTPS จาก domain id และ participant id แล้วตรวจกับ pcap จริง (§3.1)
+4. ถอด frame 198 B ทีละชั้น (Ethernet/IPv4/UDP/RTPS) และบอกได้ว่าใครเขียนแต่ละ field (§5.4)
+5. ไล่ฟังก์ชันของ kernel ขา TX/RX และชี้จุดที่ packet ถูกทิ้งเมื่อ socket buffer เต็ม (§5.2, §5.3, §5.5)
+
+**พื้นฐานที่ควรมี** header ของ Ethernet/IPv4/UDP (port, MTU, fragmentation) · อ่าน hex และ little-endian · ROS 2 pub/sub ระดับใช้งาน (node, topic, `ros2 run`) · Linux CLI · ยังไม่ต้องอ่านภาคอื่นก่อน (แนะนำหน้า Data Paths ตามขั้น 1 ใน README)
+
+แบบฝึกหัด: [exercises.md ภาค 1](exercises.md#ภาค-1) · คำศัพท์: [glossary.md](glossary.md) · สรุปย่อหนึ่งหน้า: [cheatsheet.md](cheatsheet.md)
+
+---
+
 ## 0. ข้อเท็จจริงหลักของ Lyrical ที่เกี่ยวกับ network [V]
 
 | หัวข้อ | ค่าใน Lyrical | แหล่ง |
@@ -172,14 +185,14 @@ User unicast     = 7400 + 250·domain + 11 + 2·participantId
 
 **Transports ของ Fast DDS**
 - `UDPv4` (default) และ `SHM` (default บนเครื่องเดียวกัน: Fast DDS เปิด SHM transport ให้อัตโนมัติ)
-- `FASTDDS_BUILTIN_TRANSPORTS=DEFAULT|UDPv4|SHM|LARGE_DATA|...` โดย `LARGE_DATA` ใช้ TCP สำหรับ user data + UDP สำหรับ discovery + SHM ช่วยแก้ปัญหา IP fragmentation ของข้อความใหญ่
+- `FASTDDS_BUILTIN_TRANSPORTS=DEFAULT|UDPv4|SHM|LARGE_DATA|...` โดย `LARGE_DATA` ใช้ TCP สำหรับ user data + UDP สำหรับ discovery + SHM ช่วยแก้ปัญหา IP fragmentation ของข้อความใหญ่ (ดูตาราง tuning และผลวัดใน[ภาค 3 §15](03_wire_experiments.md#15-การทดลองที่-13-dds-tuning))
 - **Data-sharing delivery**: zero-copy ระหว่าง DataWriter/DataReader บน host เดียวกัน แต่ `rmw_fastrtps_cpp` ของ Lyrical **สั่ง `data_sharing().off()` เป็นค่าเริ่มต้น** ทั้ง writer และ reader จะเปิดได้ต้องตั้ง `RMW_FASTRTPS_USE_QOS_FROM_XML=1` พร้อม XML profile [แก้ไข 2026-11-24 ตามภาค 2]
 - Native Buffers / `rosidl::Buffer` integration [V] (ข่าวจาก eProsima และ release notes)
 
 **SHM ในระดับ OS** [K]: Fast DDS 3.6.x สร้าง segment ใน `/dev/shm` ชื่อ `fastdds_port<N>` และ `fastdds_<uuid>` (data-sharing ใช้ `fast_datasharing_…`) [แก้ไข 2026-11-24 ตามภาค 2] แล้ว map ด้วย `mmap` ใช้ named semaphore/futex แจ้งเตือน และมี port file ไว้ประกาศ "SHM port" ถ้า process crash อาจมีไฟล์ค้าง ล้างได้ด้วย `fastdds shm clean`
 
 ### 3.2 `rmw_cyclonedds_cpp` + Cyclone DDS 11.0.x [V: เวอร์ชัน · K: รายละเอียด]
-- ตั้งค่าผ่าน XML ใน `CYCLONEDDS_URI` (เช่น `General/Interfaces`, `Internal/SocketReceiveBufferSize`, `General/MaxMessageSize`)
+- ตั้งค่าผ่าน XML ใน `CYCLONEDDS_URI` (เช่น `General/Interfaces`, `Internal/SocketReceiveBufferSize`, `General/MaxMessageSize`) ดูตาราง tuning และผลวัดใน[ภาค 3 §15](03_wire_experiments.md#15-การทดลองที่-13-dds-tuning)
 - SHM ทำผ่าน **iceoryx** (`release_2.0` อยู่ใน ros2.repos) ต้องรัน RouDi daemon (`iox-roudi`) และเปิด `<SharedMemory><Enable>true`
 - เอกสาร ROS แนะนำให้เพิ่ม `net.core.rmem_max` เพราะ Cyclone ขอ socket receive buffer ขนาดใหญ่
 
@@ -417,6 +430,18 @@ Reliability ของ RTPS อยู่ใน user space (HEARTBEAT / ACKNACK / 
 ---
 
 ## 7. ช่องว่างงานวิจัยและแนวทางพัฒนาต่อ (ข้อเสนอ ยังไม่ได้ตรวจว่ามีคนทำแล้วหรือไม่)
+
+> **รายการนี้ซ้อนกับ R1–R9 ใน[ภาค 2 §7](02_wire_format_and_kernel.md#7-ทิศทางวิจัยที่ตามมาโดยตรงจากหัวข้อ-16)** ซึ่งละเอียดกว่า (สมมติฐาน, สิ่งที่วัด, งานที่เกี่ยวข้องใน §7.1, threats to validity ใน §7.2, แผนสู่ paper ของ R4/R2 ใน §7.3) ให้ใช้ R1–R9 เป็นรายการหลัก ข้อ 1–7 ข้างล่างคงไว้ตามเดิม ตารางนี้จับคู่ให้ ข้อที่ไม่มีคู่อาจเสนอเป็น R10 ขึ้นไปในภายหลัง (ยังไม่ได้เพิ่มใน R1–R9)
+>
+> | ข้อในภาค 1 | คู่ใน R1–R9 ของภาค 2 | หมายเหตุ |
+> |---|---|---|
+> | 1 `rosidl::Buffer` backend RDMA/RoCE/AF_XDP | ไม่มีใน R1–R9 | ข้อเสนอ R10; R7 ใน §7.1 อ้าง AF_XDP เพียงเป็นทางเลือก |
+> | 2 kernel zero-copy (`MSG_ZEROCOPY`, io_uring zero-copy RX, UDP GSO/GRO) | R8 (`MSG_ZEROCOPY`), R1 (GSO/GRO) | io_uring zero-copy RX ไม่มีใน R1–R9 |
+> | 3 EventsCBGExecutor บน PREEMPT_RT | บางส่วน: R7 (วัดบน PREEMPT_RT แต่ตัวแปรคือ busy polling) | การเทียบ executor ไม่มีใน R1–R9 (ข้อเสนอ R11) |
+> | 4 เปรียบเทียบ 4 Tier-1 RMW | บางส่วน: R6 (discovery 10–500 node), R9 (การรายงาน driver ใน benchmark) | benchmark ข้าม RMW ทั้งชุดไม่มีใน R1–R9 |
+> | 5 Zenoh SHM | ไม่มีใน R1–R9 (R5 ศึกษาเฉพาะ SHM ของ Fast DDS) | ข้อเสนอ R12 ใช้แบบการวัดของ R5 ได้ |
+> | 6 Content Filtered Topic | ไม่มีใน R1–R9 | ข้อเสนอ R13 |
+> | 7 observability pipeline (หายที่ชั้นไหน) | บางส่วน: R4 (การทิ้งที่ socket), R2 (การซ่อมของ RELIABLE) และระเบียบวิธีใน[ภาค 2 §6.4–6.5](02_wire_format_and_kernel.md#65-ระเบียบวิธีวัด-clock-sync-และ-trace-จริงหนึ่ง-sample) | ภาค 3 §19 ทำส่วน userspace + capture แล้ว ส่วน kernel ยังต้องใช้สิทธิ์ root |
 
 1. **`rosidl::Buffer` backend สำหรับ RDMA / RoCE / AF_XDP**: interface ถูกออกแบบให้ backend เป็น "memory substrate or transport technology" และมี discovery hook ต่อ peer จึงเหมาะจะทำ backend ที่ส่ง descriptor ผ่าน DDS แล้วส่ง payload ผ่าน RDMA verbs (ข้ามเครื่องแบบ zero-copy)
 2. **Kernel zero-copy**: ทดลองใช้ `MSG_ZEROCOPY` (TX), io_uring zero-copy RX (มีใน Linux รุ่นใหม่), UDP GSO/GRO ใน Fast DDS UDP transport แล้ววัด CPU/throughput ของข้อความ ≥1 MB

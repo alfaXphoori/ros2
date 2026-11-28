@@ -1,0 +1,73 @@
+run_id,order,shape,qos,arm,published,delivered,missing
+1127235426_none_be_cyclone_r01,1,none,be,cyclone,20,20,
+1127235444_none_be_noxml_r01,2,none,be,noxml,20,19,f0
+1127235502_none_be_mtu1400_r01,3,none,be,mtu1400,20,19,f0
+1127235521_none_be_largedata_r01,4,none,be,largedata,20,18,f0 f1
+1127235539_none_be_noxml_r02,5,none,be,noxml,20,19,f0
+1127235557_none_be_largedata_r02,6,none,be,largedata,20,18,f0 f1
+1127235615_none_be_cyclone_r02,7,none,be,cyclone,20,20,
+1127235634_none_be_mtu1400_r02,8,none,be,mtu1400,20,19,f0
+1127235652_none_be_mtu1400_r03,9,none,be,mtu1400,20,20,
+1127235710_none_be_cyclone_r03,10,none,be,cyclone,20,20,
+1127235729_none_be_largedata_r03,11,none,be,largedata,20,18,f0 f1
+1127235747_none_be_noxml_r03,12,none,be,noxml,20,19,f0
+1127235805_none_be_largedata_r04,13,none,be,largedata,20,18,f0 f1
+1127235823_none_be_noxml_r04,14,none,be,noxml,20,19,f0
+1127235841_none_be_mtu1400_r04,15,none,be,mtu1400,20,20,
+1127235938_none_rel_noxml_r01,1,none,rel,noxml,20,20,
+1127235956_none_rel_cyclone_r01,2,none,rel,cyclone,20,20,
+1128000014_none_rel_mtu1400_r01,3,none,rel,mtu1400,20,20,
+1128000033_none_rel_largedata_r01,4,none,rel,largedata,20,20,
+1128000051_none_rel_largedata_r02,5,none,rel,largedata,20,20,
+1128000109_none_rel_noxml_r02,6,none,rel,noxml,20,20,
+1128000128_none_rel_cyclone_r02,7,none,rel,cyclone,20,20,
+1128000146_none_rel_mtu1400_r02,8,none,rel,mtu1400,20,20,
+1128000205_none_rel_largedata_r03,9,none,rel,largedata,20,20,
+1128000223_none_rel_mtu1400_r03,10,none,rel,mtu1400,20,20,
+1128000241_none_rel_noxml_r03,11,none,rel,noxml,20,20,
+1128000259_none_rel_cyclone_r03,12,none,rel,cyclone,20,20,
+1128000318_none_rel_mtu1400_r04,13,none,rel,mtu1400,20,20,
+1128000336_none_rel_noxml_r04,14,none,rel,noxml,20,20,
+1128000354_none_rel_largedata_r04,15,none,rel,largedata,20,20,
+1128002300_none_be_flowctl_r01,1,none,be,flowctl,20,20,
+1128002319_none_rel_flowctl_r01,2,none,rel,flowctl,20,20,
+1128002337_none_be_flowctl_r02,3,none,be,flowctl,20,20,
+1128002355_none_rel_flowctl_r02,4,none,rel,flowctl,20,20,
+1128002413_none_be_flowctl_r03,5,none,be,flowctl,20,20,
+1128002431_none_rel_flowctl_r03,6,none,rel,flowctl,20,20,
+1128000640_tbf1g_be_cyclone_r01,1,tbf1g,be,cyclone,20,20,
+1128000658_tbf1g_be_noxml_r01,2,tbf1g,be,noxml,20,20,
+1128000717_tbf1g_be_mtu1400_r01,3,tbf1g,be,mtu1400,20,20,
+1128000735_tbf1g_be_largedata_r01,4,tbf1g,be,largedata,20,18,f0 f1
+1128000753_tbf1g_be_noxml_r02,5,tbf1g,be,noxml,20,20,
+1128000812_tbf1g_be_largedata_r02,6,tbf1g,be,largedata,20,18,f0 f1
+1128000830_tbf1g_be_cyclone_r02,7,tbf1g,be,cyclone,20,20,
+1128000848_tbf1g_be_mtu1400_r02,8,tbf1g,be,mtu1400,20,20,
+1128000907_tbf1g_be_mtu1400_r03,9,tbf1g,be,mtu1400,20,20,
+1128000925_tbf1g_be_cyclone_r03,10,tbf1g,be,cyclone,20,20,
+1128000944_tbf1g_be_largedata_r03,11,tbf1g,be,largedata,20,18,f0 f1
+1128001002_tbf1g_be_noxml_r03,12,tbf1g,be,noxml,20,20,
+1128001021_tbf1g_be_largedata_r04,13,tbf1g,be,largedata,20,18,f0 f1
+1128001039_tbf1g_be_noxml_r04,14,tbf1g,be,noxml,20,20,
+1128001057_tbf1g_be_mtu1400_r04,15,tbf1g,be,mtu1400,20,20,
+1128001652_tbf1g_rel_noxml_r01,1,tbf1g,rel,noxml,20,20,
+1128001711_tbf1g_rel_cyclone_r01,2,tbf1g,rel,cyclone,20,20,
+1128001729_tbf1g_rel_mtu1400_r01,3,tbf1g,rel,mtu1400,20,20,
+1128001748_tbf1g_rel_largedata_r01,4,tbf1g,rel,largedata,20,20,
+1128001806_tbf1g_rel_largedata_r02,5,tbf1g,rel,largedata,20,20,
+1128001825_tbf1g_rel_noxml_r02,6,tbf1g,rel,noxml,20,20,
+1128001843_tbf1g_rel_cyclone_r02,7,tbf1g,rel,cyclone,20,20,
+1128001901_tbf1g_rel_mtu1400_r02,8,tbf1g,rel,mtu1400,20,20,
+1128001920_tbf1g_rel_largedata_r03,9,tbf1g,rel,largedata,20,20,
+1128001938_tbf1g_rel_mtu1400_r03,10,tbf1g,rel,mtu1400,20,20,
+1128001957_tbf1g_rel_noxml_r03,11,tbf1g,rel,noxml,20,20,
+1128002015_tbf1g_rel_cyclone_r03,12,tbf1g,rel,cyclone,20,20,
+1128002034_tbf1g_rel_mtu1400_r04,13,tbf1g,rel,mtu1400,20,20,
+1128002052_tbf1g_rel_noxml_r04,14,tbf1g,rel,noxml,20,20,
+1128002110_tbf1g_rel_largedata_r04,15,tbf1g,rel,largedata,20,20,
+1128002606_tbf1g_be_flowctl_r01,1,tbf1g,be,flowctl,20,20,
+1128002624_tbf1g_rel_flowctl_r01,2,tbf1g,rel,flowctl,20,20,
+1128002642_tbf1g_be_flowctl_r02,3,tbf1g,be,flowctl,20,20,
+1128002700_tbf1g_rel_flowctl_r02,4,tbf1g,rel,flowctl,20,20,
+1128002719_tbf1g_be_flowctl_r03,5,tbf1g,be,flowctl,20,20,
+1128002737_tbf1g_rel_flowctl_r03,6,tbf1g,rel,flowctl,20,20,

@@ -1,0 +1,445 @@
+== tl_d1 pub (22 lines)
+[t=  0.025 wall=1795798277.396] QOS QoSProfile(history=1, depth=1, reliability=1, durability=1, lifespan=0 nanoseconds, deadline=0 nanoseconds, liveliness=0, liveliness_lease_duration=0 nanoseconds, avoid_ros_namespace_conventions=False)
+[t=  0.025 wall=1795798277.396] PUB 1
+[t=  0.045 wall=1795798277.416] PUB 2
+[t=  0.066 wall=1795798277.437] PUB 3
+[t=  0.086 wall=1795798277.457] PUB 4
+[t=  0.107 wall=1795798277.478] PUB 5
+[t=  0.127 wall=1795798277.498] PUB 6
+[t=  0.148 wall=1795798277.519] PUB 7
+[t=  0.168 wall=1795798277.540] PUB 8
+[t=  0.189 wall=1795798277.560] PUB 9
+[t=  0.210 wall=1795798277.581] PUB 10
+[t=  0.230 wall=1795798277.601] PUB 11
+[t=  0.251 wall=1795798277.622] PUB 12
+[t=  0.271 wall=1795798277.642] PUB 13
+[t=  0.292 wall=1795798277.663] PUB 14
+[t=  0.312 wall=1795798277.683] PUB 15
+[t=  0.333 wall=1795798277.704] PUB 16
+[t=  0.353 wall=1795798277.724] PUB 17
+[t=  0.374 wall=1795798277.745] PUB 18
+[t=  0.394 wall=1795798277.765] PUB 19
+[t=  0.415 wall=1795798277.786] PUB 20
+[t=  6.454 wall=1795798283.825] DONE
+== tl_d1 sub (3 lines)
+[t=  0.026 wall=1795798278.861] QOS QoSProfile(history=1, depth=20, reliability=1, durability=1, lifespan=0 nanoseconds, deadline=0 nanoseconds, liveliness=0, liveliness_lease_duration=0 nanoseconds, avoid_ros_namespace_conventions=False)
+[t=  0.199 wall=1795798279.034] RECV q20
+[t=  3.071 wall=1795798281.906] DONE
+== tl_d10 pub (22 lines)
+[t=  0.013 wall=1795798286.123] QOS QoSProfile(history=1, depth=10, reliability=1, durability=1, lifespan=0 nanoseconds, deadline=0 nanoseconds, liveliness=0, liveliness_lease_duration=0 nanoseconds, avoid_ros_namespace_conventions=False)
+[t=  0.013 wall=1795798286.123] PUB 1
+[t=  0.033 wall=1795798286.144] PUB 2
+[t=  0.054 wall=1795798286.164] PUB 3
+[t=  0.074 wall=1795798286.184] PUB 4
+[t=  0.095 wall=1795798286.205] PUB 5
+[t=  0.115 wall=1795798286.226] PUB 6
+[t=  0.136 wall=1795798286.246] PUB 7
+[t=  0.157 wall=1795798286.267] PUB 8
+[t=  0.177 wall=1795798286.287] PUB 9
+[t=  0.198 wall=1795798286.308] PUB 10
+[t=  0.218 wall=1795798286.328] PUB 11
+[t=  0.239 wall=1795798286.349] PUB 12
+[t=  0.259 wall=1795798286.369] PUB 13
+[t=  0.280 wall=1795798286.390] PUB 14
+[t=  0.300 wall=1795798286.410] PUB 15
+[t=  0.321 wall=1795798286.431] PUB 16
+[t=  0.341 wall=1795798286.452] PUB 17
+[t=  0.362 wall=1795798286.472] PUB 18
+[t=  0.382 wall=1795798286.492] PUB 19
+[t=  0.403 wall=1795798286.513] PUB 20
+[t=  6.440 wall=1795798292.550] DONE
+== tl_d10 sub (12 lines)
+[t=  0.013 wall=1795798287.378] QOS QoSProfile(history=1, depth=20, reliability=1, durability=1, lifespan=0 nanoseconds, deadline=0 nanoseconds, liveliness=0, liveliness_lease_duration=0 nanoseconds, avoid_ros_namespace_conventions=False)
+[t=  0.200 wall=1795798287.564] RECV q11
+[t=  0.200 wall=1795798287.565] RECV q12
+[t=  0.201 wall=1795798287.565] RECV q13
+[t=  0.201 wall=1795798287.565] RECV q14
+[t=  0.202 wall=1795798287.566] RECV q15
+[t=  0.202 wall=1795798287.566] RECV q16
+[t=  0.202 wall=1795798287.567] RECV q17
+[t=  0.203 wall=1795798287.567] RECV q18
+[t=  0.203 wall=1795798287.567] RECV q19
+[t=  0.203 wall=1795798287.568] RECV q20
+[t=  3.025 wall=1795798290.389] DONE
+== tl_all pub (22 lines)
+[t=  0.025 wall=1795798300.300] QOS QoSProfile(history=2, depth=10, reliability=1, durability=1, lifespan=0 nanoseconds, deadline=0 nanoseconds, liveliness=0, liveliness_lease_duration=0 nanoseconds, avoid_ros_namespace_conventions=False)
+[t=  0.025 wall=1795798300.300] PUB 1
+[t=  0.045 wall=1795798300.321] PUB 2
+[t=  0.066 wall=1795798300.341] PUB 3
+[t=  0.086 wall=1795798300.362] PUB 4
+[t=  0.106 wall=1795798300.382] PUB 5
+[t=  0.126 wall=1795798300.402] PUB 6
+[t=  0.147 wall=1795798300.423] PUB 7
+[t=  0.168 wall=1795798300.443] PUB 8
+[t=  0.188 wall=1795798300.464] PUB 9
+[t=  0.209 wall=1795798300.484] PUB 10
+[t=  0.229 wall=1795798300.505] PUB 11
+[t=  0.249 wall=1795798300.525] PUB 12
+[t=  0.270 wall=1795798300.546] PUB 13
+[t=  0.290 wall=1795798300.566] PUB 14
+[t=  0.311 wall=1795798300.586] PUB 15
+[t=  0.331 wall=1795798300.607] PUB 16
+[t=  0.351 wall=1795798300.627] PUB 17
+[t=  0.372 wall=1795798300.648] PUB 18
+[t=  0.393 wall=1795798300.668] PUB 19
+[t=  0.413 wall=1795798300.689] PUB 20
+[t=  6.444 wall=1795798306.719] DONE
+== tl_all sub (22 lines)
+[t=  0.025 wall=1795798301.746] QOS QoSProfile(history=1, depth=20, reliability=1, durability=1, lifespan=0 nanoseconds, deadline=0 nanoseconds, liveliness=0, liveliness_lease_duration=0 nanoseconds, avoid_ros_namespace_conventions=False)
+[t=  0.200 wall=1795798301.921] RECV q1
+[t=  0.201 wall=1795798301.921] RECV q2
+[t=  0.201 wall=1795798301.922] RECV q3
+[t=  0.201 wall=1795798301.922] RECV q4
+[t=  0.202 wall=1795798301.923] RECV q5
+[t=  0.202 wall=1795798301.923] RECV q6
+[t=  0.202 wall=1795798301.923] RECV q7
+[t=  0.203 wall=1795798301.924] RECV q8
+[t=  0.203 wall=1795798301.924] RECV q9
+[t=  0.203 wall=1795798301.924] RECV q10
+[t=  0.204 wall=1795798301.925] RECV q11
+[t=  0.204 wall=1795798301.925] RECV q12
+[t=  0.204 wall=1795798301.925] RECV q13
+[t=  0.204 wall=1795798301.925] RECV q14
+[t=  0.204 wall=1795798301.925] RECV q15
+[t=  0.204 wall=1795798301.925] RECV q16
+[t=  0.204 wall=1795798301.925] RECV q17
+[t=  0.204 wall=1795798301.925] RECV q18
+[t=  0.204 wall=1795798301.925] RECV q19
+[t=  0.204 wall=1795798301.925] RECV q20
+[t=  3.029 wall=1795798304.750] DONE
+== vol_d10 pub (22 lines)
+[t=  0.014 wall=1795798309.071] QOS QoSProfile(history=1, depth=10, reliability=1, durability=2, lifespan=0 nanoseconds, deadline=0 nanoseconds, liveliness=0, liveliness_lease_duration=0 nanoseconds, avoid_ros_namespace_conventions=False)
+[t=  0.014 wall=1795798309.071] PUB 1
+[t=  0.034 wall=1795798309.092] PUB 2
+[t=  0.054 wall=1795798309.112] PUB 3
+[t=  0.075 wall=1795798309.132] PUB 4
+[t=  0.095 wall=1795798309.152] PUB 5
+[t=  0.115 wall=1795798309.173] PUB 6
+[t=  0.135 wall=1795798309.193] PUB 7
+[t=  0.156 wall=1795798309.213] PUB 8
+[t=  0.176 wall=1795798309.234] PUB 9
+[t=  0.197 wall=1795798309.254] PUB 10
+[t=  0.217 wall=1795798309.275] PUB 11
+[t=  0.237 wall=1795798309.295] PUB 12
+[t=  0.258 wall=1795798309.315] PUB 13
+[t=  0.278 wall=1795798309.336] PUB 14
+[t=  0.298 wall=1795798309.356] PUB 15
+[t=  0.318 wall=1795798309.376] PUB 16
+[t=  0.339 wall=1795798309.396] PUB 17
+[t=  0.359 wall=1795798309.416] PUB 18
+[t=  0.379 wall=1795798309.437] PUB 19
+[t=  0.399 wall=1795798309.457] PUB 20
+[t=  6.426 wall=1795798315.484] DONE
+== vol_d10 sub (2 lines)
+[t=  0.014 wall=1795798310.351] QOS QoSProfile(history=1, depth=20, reliability=1, durability=2, lifespan=0 nanoseconds, deadline=0 nanoseconds, liveliness=0, liveliness_lease_duration=0 nanoseconds, avoid_ros_namespace_conventions=False)
+[t=  3.031 wall=1795798313.368] DONE
+== live_auto pub (6 lines)
+[t=  0.013 wall=1795798318.259] QOS QoSProfile(history=1, depth=10, reliability=1, durability=2, lifespan=0 nanoseconds, deadline=0 nanoseconds, liveliness=1, liveliness_lease_duration=1500000000 nanoseconds, avoid_ros_namespace_conventions=False)
+[t=  0.165 wall=1795798318.410] matched subscriptions 1
+[t=  0.670 wall=1795798318.915] PUB 1
+[t=  0.771 wall=1795798319.016] PUB 2
+[t=  0.871 wall=1795798319.117] PUB 3
+[t=  6.990 wall=1795798325.236] DONE
+== live_auto sub (7 lines)
+[t=  0.013 wall=1795798317.877] QOS QoSProfile(history=1, depth=10, reliability=1, durability=2, lifespan=0 nanoseconds, deadline=0 nanoseconds, liveliness=1, liveliness_lease_duration=1500000000 nanoseconds, avoid_ros_namespace_conventions=False)
+[t=  1.052 wall=1795798318.916] EVENT liveliness_changed alive 1 not_alive 0 alive_change 1 not_alive_change 0
+[t=  1.052 wall=1795798318.916] RECV q1
+[t=  1.153 wall=1795798319.017] RECV q2
+[t=  1.253 wall=1795798319.117] RECV q3
+[t=  7.373 wall=1795798325.237] EVENT liveliness_changed alive 0 not_alive 0 alive_change -1 not_alive_change 0
+[t= 10.040 wall=1795798327.904] DONE
+== live_man pub (13 lines)
+[t=  0.026 wall=1795798331.531] QOS QoSProfile(history=1, depth=10, reliability=1, durability=2, lifespan=0 nanoseconds, deadline=0 nanoseconds, liveliness=3, liveliness_lease_duration=1500000000 nanoseconds, avoid_ros_namespace_conventions=False)
+[t=  0.127 wall=1795798331.633] matched subscriptions 1
+[t=  0.630 wall=1795798332.136] PUB 1
+[t=  0.730 wall=1795798332.236] PUB 2
+[t=  0.831 wall=1795798332.337] PUB 3
+[t=  0.931 wall=1795798332.437] ASSERT
+[t=  1.436 wall=1795798332.941] ASSERT
+[t=  1.941 wall=1795798333.447] ASSERT
+[t=  2.447 wall=1795798333.953] ASSERT
+[t=  2.952 wall=1795798334.458] ASSERT
+[t=  3.463 wall=1795798334.969] ASSERT
+[t=  4.962 wall=1795798336.468] EVENT liveliness_lost total 1
+[t=  7.945 wall=1795798339.451] DONE
+== live_man sub (8 lines)
+[t=  0.026 wall=1795798331.090] QOS QoSProfile(history=1, depth=10, reliability=1, durability=2, lifespan=0 nanoseconds, deadline=0 nanoseconds, liveliness=3, liveliness_lease_duration=1500000000 nanoseconds, avoid_ros_namespace_conventions=False)
+[t=  1.073 wall=1795798332.136] RECV q1
+[t=  1.073 wall=1795798332.137] EVENT liveliness_changed alive 1 not_alive 0 alive_change 1 not_alive_change 0
+[t=  1.173 wall=1795798332.237] RECV q2
+[t=  1.273 wall=1795798332.337] RECV q3
+[t=  5.405 wall=1795798336.469] EVENT liveliness_changed alive 0 not_alive 1 alive_change -1 not_alive_change 1
+[t=  8.389 wall=1795798339.452] EVENT liveliness_changed alive 0 not_alive 0 alive_change 0 not_alive_change -1
+[t= 11.062 wall=1795798342.125] DONE
+== dl_ls pub (14 lines)
+[t=  0.013 wall=1795798344.800] QOS QoSProfile(history=1, depth=10, reliability=1, durability=2, lifespan=2000000000 nanoseconds, deadline=500000000 nanoseconds, liveliness=0, liveliness_lease_duration=0 nanoseconds, avoid_ros_namespace_conventions=False)
+[t=  0.165 wall=1795798344.951] matched subscriptions 1
+[t=  0.669 wall=1795798345.456] PUB 1
+[t=  0.770 wall=1795798345.557] PUB 2
+[t=  0.871 wall=1795798345.658] PUB 3
+[t=  0.972 wall=1795798345.758] PUB 4
+[t=  1.073 wall=1795798345.859] PUB 5
+[t=  1.572 wall=1795798346.358] EVENT offered_deadline_missed total 1
+[t=  2.071 wall=1795798346.857] EVENT offered_deadline_missed total 2
+[t=  2.570 wall=1795798347.357] EVENT offered_deadline_missed total 3
+[t=  3.069 wall=1795798347.856] EVENT offered_deadline_missed total 4
+[t=  3.568 wall=1795798348.355] EVENT offered_deadline_missed total 5
+[t=  4.067 wall=1795798348.854] EVENT offered_deadline_missed total 6
+[t=  4.189 wall=1795798348.975] DONE
+== dl_ls sub (18 lines)
+[t=  0.013 wall=1795798344.409] QOS QoSProfile(history=1, depth=10, reliability=1, durability=2, lifespan=0 nanoseconds, deadline=500000000 nanoseconds, liveliness=0, liveliness_lease_duration=0 nanoseconds, avoid_ros_namespace_conventions=False)
+[t=  1.061 wall=1795798345.457] RECV q1
+[t=  1.162 wall=1795798345.557] RECV q2
+[t=  1.262 wall=1795798345.658] RECV q3
+[t=  1.363 wall=1795798345.759] RECV q4
+[t=  1.464 wall=1795798345.860] RECV q5
+[t=  1.963 wall=1795798346.358] EVENT requested_deadline_missed total 1
+[t=  2.462 wall=1795798346.857] EVENT requested_deadline_missed total 2
+[t=  2.961 wall=1795798347.357] EVENT requested_deadline_missed total 3
+[t=  3.460 wall=1795798347.856] EVENT requested_deadline_missed total 4
+[t=  3.959 wall=1795798348.355] EVENT requested_deadline_missed total 5
+[t=  4.458 wall=1795798348.854] EVENT requested_deadline_missed total 6
+[t=  4.958 wall=1795798349.353] EVENT requested_deadline_missed total 7
+[t=  5.456 wall=1795798349.852] EVENT requested_deadline_missed total 8
+[t=  5.956 wall=1795798350.351] EVENT requested_deadline_missed total 9
+[t=  6.455 wall=1795798350.850] EVENT requested_deadline_missed total 10
+[t=  6.954 wall=1795798351.350] EVENT requested_deadline_missed total 11
+[t=  7.055 wall=1795798351.451] DONE
+== mm_rel pub (13 lines)
+[t=  0.025 wall=1795798355.248] QOS QoSProfile(history=1, depth=10, reliability=2, durability=2, lifespan=0 nanoseconds, deadline=0 nanoseconds, liveliness=0, liveliness_lease_duration=0 nanoseconds, avoid_ros_namespace_conventions=False)
+[t=  0.025 wall=1795798355.248] PUB 1
+[t=  0.118 wall=1795798355.341] EVENT offered_incompatible_qos total 1 last_policy rmw_qos_policy_kind_t.RMW_QOS_POLICY_RELIABILITY
+[t=  0.126 wall=1795798355.349] PUB 2
+[t=  0.226 wall=1795798355.450] PUB 3
+[t=  0.327 wall=1795798355.550] PUB 4
+[t=  0.428 wall=1795798355.651] PUB 5
+[t=  0.528 wall=1795798355.752] PUB 6
+[t=  0.629 wall=1795798355.852] PUB 7
+[t=  0.730 wall=1795798355.953] PUB 8
+[t=  0.830 wall=1795798356.053] PUB 9
+[t=  0.931 wall=1795798356.154] PUB 10
+[t=  3.051 wall=1795798358.274] DONE
+== mm_rel sub (3 lines)
+[t=  0.027 wall=1795798354.812] QOS QoSProfile(history=1, depth=10, reliability=1, durability=2, lifespan=0 nanoseconds, deadline=0 nanoseconds, liveliness=0, liveliness_lease_duration=0 nanoseconds, avoid_ros_namespace_conventions=False)
+[WARN] [1795798355.254588040] [qos_sub]: New publisher discovered on topic 'qos_demo', offering incompatible QoS. No messages will be received from it. Last incompatible policy: RELIABILITY
+[t=  6.064 wall=1795798360.849] DONE
+== mm_dur pub (13 lines)
+[t=  0.013 wall=1795798363.525] QOS QoSProfile(history=1, depth=10, reliability=1, durability=2, lifespan=0 nanoseconds, deadline=0 nanoseconds, liveliness=0, liveliness_lease_duration=0 nanoseconds, avoid_ros_namespace_conventions=False)
+[t=  0.013 wall=1795798363.525] PUB 1
+[t=  0.114 wall=1795798363.626] PUB 2
+[t=  0.118 wall=1795798363.630] EVENT offered_incompatible_qos total 1 last_policy rmw_qos_policy_kind_t.RMW_QOS_POLICY_DURABILITY
+[t=  0.215 wall=1795798363.726] PUB 3
+[t=  0.315 wall=1795798363.827] PUB 4
+[t=  0.415 wall=1795798363.927] PUB 5
+[t=  0.516 wall=1795798364.028] PUB 6
+[t=  0.617 wall=1795798364.129] PUB 7
+[t=  0.717 wall=1795798364.229] PUB 8
+[t=  0.818 wall=1795798364.330] PUB 9
+[t=  0.919 wall=1795798364.431] PUB 10
+[t=  3.028 wall=1795798366.539] DONE
+== mm_dur sub (3 lines)
+[t=  0.013 wall=1795798363.152] QOS QoSProfile(history=1, depth=10, reliability=1, durability=1, lifespan=0 nanoseconds, deadline=0 nanoseconds, liveliness=0, liveliness_lease_duration=0 nanoseconds, avoid_ros_namespace_conventions=False)
+[WARN] [1795798363.531838043] [qos_sub]: New publisher discovered on topic 'qos_demo', offering incompatible QoS. No messages will be received from it. Last incompatible policy: DURABILITY
+[t=  6.028 wall=1795798369.167] DONE
+== loss_d1 pub (53 lines)
+[t=  0.037 wall=1795798742.593] QOS QoSProfile(history=1, depth=1, reliability=1, durability=2, lifespan=0 nanoseconds, deadline=0 nanoseconds, liveliness=0, liveliness_lease_duration=0 nanoseconds, avoid_ros_namespace_conventions=False)
+[t=  1.143 wall=1795798743.699] matched subscriptions 1
+[t=  1.647 wall=1795798744.203] PUB 1
+[t=  1.653 wall=1795798744.209] PUB 2
+[t=  1.659 wall=1795798744.215] PUB 3
+[t=  1.665 wall=1795798744.220] PUB 4
+[t=  1.670 wall=1795798744.226] PUB 5
+[t=  1.676 wall=1795798744.232] PUB 6
+[t=  1.681 wall=1795798744.237] PUB 7
+[t=  1.687 wall=1795798744.243] PUB 8
+[t=  1.692 wall=1795798744.248] PUB 9
+[t=  1.697 wall=1795798744.253] PUB 10
+[t=  1.703 wall=1795798744.259] PUB 11
+[t=  1.708 wall=1795798744.264] PUB 12
+[t=  1.713 wall=1795798744.269] PUB 13
+[t=  1.719 wall=1795798744.275] PUB 14
+[t=  1.724 wall=1795798744.280] PUB 15
+[t=  1.729 wall=1795798744.285] PUB 16
+[t=  1.735 wall=1795798744.291] PUB 17
+[t=  1.740 wall=1795798744.296] PUB 18
+[t=  1.746 wall=1795798744.301] PUB 19
+[t=  1.751 wall=1795798744.307] PUB 20
+[t=  1.756 wall=1795798744.312] PUB 21
+[t=  1.762 wall=1795798744.318] PUB 22
+[t=  1.767 wall=1795798744.323] PUB 23
+[t=  1.772 wall=1795798744.328] PUB 24
+[t=  1.778 wall=1795798744.334] PUB 25
+[t=  1.783 wall=1795798744.339] PUB 26
+[t=  1.788 wall=1795798744.344] PUB 27
+[t=  1.794 wall=1795798744.350] PUB 28
+[t=  1.799 wall=1795798744.355] PUB 29
+[t=  1.804 wall=1795798744.360] PUB 30
+[t=  1.810 wall=1795798744.366] PUB 31
+[t=  1.815 wall=1795798744.371] PUB 32
+[t=  1.821 wall=1795798744.377] PUB 33
+[t=  1.827 wall=1795798744.383] PUB 34
+[t=  1.832 wall=1795798744.388] PUB 35
+[t=  1.838 wall=1795798744.394] PUB 36
+[t=  1.844 wall=1795798744.400] PUB 37
+[t=  1.849 wall=1795798744.405] PUB 38
+[t=  1.855 wall=1795798744.411] PUB 39
+[t=  1.861 wall=1795798744.417] PUB 40
+[t=  1.867 wall=1795798744.423] PUB 41
+[t=  1.872 wall=1795798744.428] PUB 42
+[t=  1.878 wall=1795798744.434] PUB 43
+[t=  1.884 wall=1795798744.440] PUB 44
+[t=  1.889 wall=1795798744.445] PUB 45
+[t=  1.895 wall=1795798744.451] PUB 46
+[t=  1.901 wall=1795798744.457] PUB 47
+[t=  1.906 wall=1795798744.462] PUB 48
+[t=  1.912 wall=1795798744.468] PUB 49
+[t=  1.918 wall=1795798744.474] PUB 50
+[t=  3.932 wall=1795798746.488] DONE
+== loss_d1 sub (40 lines)
+[t=  0.029 wall=1795798742.024] QOS QoSProfile(history=1, depth=50, reliability=1, durability=2, lifespan=0 nanoseconds, deadline=0 nanoseconds, liveliness=0, liveliness_lease_duration=0 nanoseconds, avoid_ros_namespace_conventions=False)
+[t=  2.215 wall=1795798744.210] RECV q2
+[t=  2.226 wall=1795798744.221] RECV q4
+[t=  2.232 wall=1795798744.227] RECV q5
+[t=  2.243 wall=1795798744.238] RECV q7
+[t=  2.253 wall=1795798744.248] RECV q9
+[t=  2.259 wall=1795798744.254] RECV q10
+[t=  2.264 wall=1795798744.259] RECV q11
+[t=  2.269 wall=1795798744.265] RECV q12
+[t=  2.275 wall=1795798744.270] RECV q13
+[t=  2.280 wall=1795798744.275] RECV q14
+[t=  2.291 wall=1795798744.286] RECV q16
+[t=  2.296 wall=1795798744.291] RECV q17
+[t=  2.302 wall=1795798744.297] RECV q18
+[t=  2.312 wall=1795798744.307] RECV q20
+[t=  2.317 wall=1795798744.312] RECV q21
+[t=  2.323 wall=1795798744.318] RECV q22
+[t=  2.328 wall=1795798744.323] RECV q23
+[t=  2.334 wall=1795798744.329] RECV q24
+[t=  2.339 wall=1795798744.334] RECV q25
+[t=  2.344 wall=1795798744.339] RECV q26
+[t=  2.350 wall=1795798744.345] RECV q27
+[t=  2.355 wall=1795798744.350] RECV q28
+[t=  2.360 wall=1795798744.355] RECV q29
+[t=  2.371 wall=1795798744.366] RECV q31
+[t=  2.382 wall=1795798744.377] RECV q33
+[t=  2.388 wall=1795798744.383] RECV q34
+[t=  2.399 wall=1795798744.394] RECV q36
+[t=  2.405 wall=1795798744.400] RECV q37
+[t=  2.411 wall=1795798744.406] RECV q38
+[t=  2.422 wall=1795798744.417] RECV q40
+[t=  2.428 wall=1795798744.423] RECV q41
+[t=  2.434 wall=1795798744.429] RECV q42
+[t=  2.439 wall=1795798744.434] RECV q43
+[t=  2.445 wall=1795798744.440] RECV q44
+[t=  2.456 wall=1795798744.452] RECV q46
+[t=  2.462 wall=1795798744.457] RECV q47
+[t=  2.468 wall=1795798744.463] RECV q48
+[t=  2.479 wall=1795798744.474] RECV q50
+[t=  6.059 wall=1795798748.054] DONE
+== loss_d50 pub (53 lines)
+[t=  0.014 wall=1795798750.829] QOS QoSProfile(history=1, depth=50, reliability=1, durability=2, lifespan=0 nanoseconds, deadline=0 nanoseconds, liveliness=0, liveliness_lease_duration=0 nanoseconds, avoid_ros_namespace_conventions=False)
+[t=  0.165 wall=1795798750.980] matched subscriptions 1
+[t=  0.669 wall=1795798751.484] PUB 1
+[t=  0.675 wall=1795798751.490] PUB 2
+[t=  0.681 wall=1795798751.496] PUB 3
+[t=  0.687 wall=1795798751.502] PUB 4
+[t=  0.692 wall=1795798751.507] PUB 5
+[t=  0.698 wall=1795798751.513] PUB 6
+[t=  0.704 wall=1795798751.519] PUB 7
+[t=  0.709 wall=1795798751.524] PUB 8
+[t=  0.715 wall=1795798751.530] PUB 9
+[t=  0.721 wall=1795798751.536] PUB 10
+[t=  0.726 wall=1795798751.541] PUB 11
+[t=  0.732 wall=1795798751.547] PUB 12
+[t=  0.738 wall=1795798751.553] PUB 13
+[t=  0.743 wall=1795798751.559] PUB 14
+[t=  0.749 wall=1795798751.564] PUB 15
+[t=  0.755 wall=1795798751.570] PUB 16
+[t=  0.760 wall=1795798751.575] PUB 17
+[t=  0.765 wall=1795798751.580] PUB 18
+[t=  0.771 wall=1795798751.586] PUB 19
+[t=  0.776 wall=1795798751.591] PUB 20
+[t=  0.782 wall=1795798751.597] PUB 21
+[t=  0.787 wall=1795798751.602] PUB 22
+[t=  0.793 wall=1795798751.608] PUB 23
+[t=  0.799 wall=1795798751.614] PUB 24
+[t=  0.804 wall=1795798751.619] PUB 25
+[t=  0.810 wall=1795798751.625] PUB 26
+[t=  0.816 wall=1795798751.631] PUB 27
+[t=  0.821 wall=1795798751.636] PUB 28
+[t=  0.827 wall=1795798751.642] PUB 29
+[t=  0.833 wall=1795798751.648] PUB 30
+[t=  0.838 wall=1795798751.653] PUB 31
+[t=  0.844 wall=1795798751.659] PUB 32
+[t=  0.850 wall=1795798751.665] PUB 33
+[t=  0.856 wall=1795798751.671] PUB 34
+[t=  0.861 wall=1795798751.676] PUB 35
+[t=  0.867 wall=1795798751.682] PUB 36
+[t=  0.873 wall=1795798751.688] PUB 37
+[t=  0.878 wall=1795798751.693] PUB 38
+[t=  0.884 wall=1795798751.699] PUB 39
+[t=  0.890 wall=1795798751.705] PUB 40
+[t=  0.896 wall=1795798751.711] PUB 41
+[t=  0.901 wall=1795798751.716] PUB 42
+[t=  0.907 wall=1795798751.722] PUB 43
+[t=  0.913 wall=1795798751.728] PUB 44
+[t=  0.918 wall=1795798751.733] PUB 45
+[t=  0.924 wall=1795798751.739] PUB 46
+[t=  0.930 wall=1795798751.745] PUB 47
+[t=  0.935 wall=1795798751.750] PUB 48
+[t=  0.941 wall=1795798751.756] PUB 49
+[t=  0.947 wall=1795798751.762] PUB 50
+[t=  2.970 wall=1795798753.785] DONE
+== loss_d50 sub (52 lines)
+[t=  0.013 wall=1795798750.444] QOS QoSProfile(history=1, depth=50, reliability=1, durability=2, lifespan=0 nanoseconds, deadline=0 nanoseconds, liveliness=0, liveliness_lease_duration=0 nanoseconds, avoid_ros_namespace_conventions=False)
+[t=  1.054 wall=1795798751.485] RECV q1
+[t=  1.060 wall=1795798751.491] RECV q2
+[t=  1.066 wall=1795798751.496] RECV q3
+[t=  1.071 wall=1795798751.502] RECV q4
+[t=  1.077 wall=1795798751.508] RECV q5
+[t=  1.083 wall=1795798751.513] RECV q6
+[t=  1.088 wall=1795798751.519] RECV q7
+[t=  1.342 wall=1795798751.773] RECV q8
+[t=  1.343 wall=1795798751.774] RECV q9
+[t=  1.343 wall=1795798751.774] RECV q10
+[t=  1.343 wall=1795798751.774] RECV q11
+[t=  1.344 wall=1795798751.775] RECV q12
+[t=  1.344 wall=1795798751.775] RECV q13
+[t=  1.344 wall=1795798751.775] RECV q14
+[t=  1.345 wall=1795798751.776] RECV q15
+[t=  1.345 wall=1795798751.776] RECV q16
+[t=  1.346 wall=1795798751.776] RECV q17
+[t=  1.346 wall=1795798751.777] RECV q18
+[t=  1.346 wall=1795798751.777] RECV q19
+[t=  1.347 wall=1795798751.777] RECV q20
+[t=  1.347 wall=1795798751.778] RECV q21
+[t=  1.347 wall=1795798751.778] RECV q22
+[t=  1.348 wall=1795798751.778] RECV q23
+[t=  1.348 wall=1795798751.779] RECV q24
+[t=  1.348 wall=1795798751.779] RECV q25
+[t=  1.349 wall=1795798751.779] RECV q26
+[t=  1.349 wall=1795798751.780] RECV q27
+[t=  1.349 wall=1795798751.780] RECV q28
+[t=  1.350 wall=1795798751.781] RECV q29
+[t=  1.350 wall=1795798751.781] RECV q30
+[t=  1.350 wall=1795798751.781] RECV q31
+[t=  1.351 wall=1795798751.782] RECV q32
+[t=  1.351 wall=1795798751.782] RECV q33
+[t=  1.351 wall=1795798751.782] RECV q34
+[t=  1.352 wall=1795798751.783] RECV q35
+[t=  1.352 wall=1795798751.783] RECV q36
+[t=  1.352 wall=1795798751.783] RECV q37
+[t=  1.353 wall=1795798751.784] RECV q38
+[t=  1.353 wall=1795798751.784] RECV q39
+[t=  1.353 wall=1795798751.784] RECV q40
+[t=  1.354 wall=1795798751.785] RECV q41
+[t=  1.354 wall=1795798751.785] RECV q42
+[t=  1.354 wall=1795798751.785] RECV q43
+[t=  1.355 wall=1795798751.785] RECV q44
+[t=  1.355 wall=1795798751.786] RECV q45
+[t=  1.355 wall=1795798751.786] RECV q46
+[t=  1.355 wall=1795798751.786] RECV q47
+[t=  1.356 wall=1795798751.787] RECV q48
+[t=  1.356 wall=1795798751.787] RECV q49
+[t=  1.356 wall=1795798751.787] RECV q50
+[t=  6.028 wall=1795798756.459] DONE
